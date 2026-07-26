@@ -14,7 +14,7 @@ import { SeriesLeaderboard } from './SeriesLeaderboard';
 import { SeriesScoreSummary } from './SeriesScoreSummary';
 import { ConfirmDialog } from './ConfirmDialog';
 import { UserMenu } from './UserMenu';
-import { submitScore, fetchLeaderboard, submitSeriesScore } from './api';
+import { submitScore, fetchLeaderboard, submitSeriesScore, fetchSeriesLeaderboard } from './api';
 import { scenarios } from './scenarios';
 import { useAuth } from './auth';
 import type {
@@ -463,19 +463,26 @@ export default function App() {
     // Series complete — compute average and submit to the series leaderboard.
     const avgProbability = results.reduce((sum, r) => sum + r.probability, 0) / results.length;
     const totalDice = results.reduce((sum, r) => sum + r.diceCount, 0);
-    setState(s => ({ ...s, phase: 'playing' }));
     try {
       const entry = await submitSeriesScore(seriesRun.playerName, avgProbability, totalDice, results, idToken);
       rememberLocalScore('series', entry.id);
       setSeriesHighlight(entry.id);
       setProgressRefreshKey(k => k + 1);
+      setState(s => ({ ...s, phase: 'playing' }));
+      setSeriesRun(null);
+      setAppMode('series-leaderboard');
+      // The backing store can take a moment to become read-consistent after a
+      // write, so wait before re-fetching (mirrors the individual leaderboard).
+      await new Promise(res => setTimeout(res, 3000));
+      const entries = await fetchSeriesLeaderboard();
+      setSeriesInitialEntries(entries);
+      setSeriesRefreshKey(k => k + 1);
     } catch {
       setSeriesHighlight(undefined);
+      setState(s => ({ ...s, phase: 'playing' }));
+      setSeriesRun(null);
+      setAppMode('series-leaderboard');
     }
-    setSeriesRun(null);
-    setSeriesInitialEntries(undefined);
-    setSeriesRefreshKey(k => k + 1);
-    setAppMode('series-leaderboard');
   }, [activeScenario, seriesRun, state.actionLog, setState, idToken, computeStartOfPlayZoom]);
 
   const requestLeaveSeries = useCallback(() => {
