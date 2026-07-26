@@ -145,6 +145,59 @@ describe('handoff to an already-activated receiver', () => {
   });
 });
 
+describe('receiving a pass/handoff in the end zone scores a touchdown', () => {
+  it('(e) pass: catching the ball in the end zone sets phase to touchdown', () => {
+    const state = makeState([
+      thrower(),
+      // Human end zone is row 0; dx=0/dy=10 from the thrower is in "long" pass range.
+      catcher({ position: { col: 7, row: 0 } }),
+    ]);
+    const { result } = renderHook(() => useGameState(state));
+
+    act(() => result.current.handlePassAction('thrower'));
+    act(() => result.current.handleSquareClick(7, 10));
+    expect(result.current.state.passReceiverKeys.has('7,0')).toBe(true);
+
+    act(() => result.current.handlePassTarget(7, 0));
+
+    const { state: after } = result.current;
+    const catcherPiece = after.pieces.find(p => p.id === 'catcher')!;
+    expect(catcherPiece.hasBall).toBe(true);
+    expect(after.phase).toBe('touchdown');
+  });
+
+  it('(f) handoff: receiving the ball in the end zone sets phase to touchdown', () => {
+    const state = makeState([
+      thrower({ position: { col: 7, row: 1 } }),
+      // Adjacent to the carrier and standing in the human end zone (row 0).
+      catcher({ position: { col: 7, row: 0 } }),
+    ]);
+    const { result } = renderHook(() => useGameState(state));
+
+    act(() => result.current.handleHandoffAction('thrower'));
+    act(() => result.current.handleSquareClick(7, 1));
+    expect(result.current.state.handoffTargets.has('7,0')).toBe(true);
+
+    act(() => result.current.handleHandoffTarget(7, 0));
+
+    const { state: after } = result.current;
+    const catcherPiece = after.pieces.find(p => p.id === 'catcher')!;
+    expect(catcherPiece.hasBall).toBe(true);
+    expect(after.phase).toBe('touchdown');
+  });
+
+  it('(g) pass: a completed pass that stays in play does not change phase', () => {
+    const state = makeState([thrower(), catcher()]);
+    const { result } = renderHook(() => useGameState(state));
+
+    act(() => result.current.handlePassAction('thrower'));
+    act(() => result.current.handleSquareClick(7, 10));
+    act(() => result.current.handlePassTarget(7, 8));
+
+    expect(result.current.state.phase).toBe('playing');
+  });
+});
+
 describe('zero valid targets auto-activates the carrier', () => {
   it('(c) pass: carrier with no teammates ends its activation instead of hanging in targeting mode', () => {
     const state = makeState([thrower()]);
