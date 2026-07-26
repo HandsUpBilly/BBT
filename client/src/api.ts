@@ -17,10 +17,14 @@ export async function submitScore(
   probability: number,
   diceCount: number,
   moves: RiskyMove[],
+  idToken?: string | null,
 ): Promise<LeaderboardEntry> {
   const res = await fetch(`${BASE}/leaderboard/${scenarioId}`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+      ...(idToken ? { Authorization: `Bearer ${idToken}` } : {}),
+    },
     body: JSON.stringify({ name, probability, diceCount, moves }),
   });
   if (!res.ok) throw new Error('Failed to submit score');
@@ -41,10 +45,14 @@ export async function submitSeriesScore(
   probability: number,
   diceCount: number,
   puzzles: SeriesPuzzleResult[],
+  idToken?: string | null,
 ): Promise<SeriesLeaderboardEntry> {
   const res = await fetch(`${BASE}/series-leaderboard`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+      ...(idToken ? { Authorization: `Bearer ${idToken}` } : {}),
+    },
     body: JSON.stringify({ name, probability, diceCount, puzzles }),
   });
   if (!res.ok) throw new Error('Failed to submit series score');

@@ -190,6 +190,10 @@ export interface LeaderboardEntry {
   diceCount: number;
   date: string;
   moves: RiskyMove[];
+  userId?: string;
+  authProvider?: 'google';
+  displayName?: string;
+  avatarUrl?: string;
 }
 
 // ── Series ──────────────────────────────────────────────────────────────────
@@ -210,4 +214,8 @@ export interface SeriesLeaderboardEntry {
   diceCount: number;     // total dice rolls across all puzzles (tie-break)
   date: string;
   puzzles: SeriesPuzzleResult[];
+  userId?: string;
+  authProvider?: 'google';
+  displayName?: string;
+  avatarUrl?: string;
 }

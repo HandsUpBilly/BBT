@@ -16,6 +16,7 @@ import { SeriesScoreSummary } from './SeriesScoreSummary';
 import { ConfirmDialog } from './ConfirmDialog';
 import { submitScore, fetchLeaderboard, submitSeriesScore } from './api';
 import { scenarios } from './scenarios';
+import { useAuth } from './auth';
 import type {
   AppMode, PlayerPiece, Scenario, LeaderboardEntry,
   SeriesLeaderboardEntry, SeriesPuzzleResult, RiskyMove, ActionLogEntry,
@@ -105,6 +106,7 @@ interface SeriesRunState {
 }
 
 export default function App() {
+  const { currentUser, idToken, isConfigured: authConfigured, signIn, signOut } = useAuth();
   const [appMode, setAppMode] = useState<AppMode>('home');
   const [activeScenario, setActiveScenario] = useState<Scenario | null>(null);
   const [leaderboardHighlight, setLeaderboardHighlight] = useState<string | undefined>();
@@ -252,7 +254,7 @@ export default function App() {
     if (!activeScenario) return;
     const { cumulativeProb, diceCount, moves } = summarizeActionLog(state.actionLog);
     try {
-      const entry = await submitScore(activeScenario.id, name, cumulativeProb, diceCount, moves);
+      const entry = await submitScore(activeScenario.id, name, cumulativeProb, diceCount, moves, idToken);
       rememberLocalScore(activeScenario.id, entry.id);
       setLeaderboardHighlight(entry.id);
       setProgressRefreshKey(k => k + 1);
@@ -266,7 +268,7 @@ export default function App() {
       setState(s => ({ ...s, phase: 'playing' }));
       setAppMode('leaderboard');
     }
-  }, [activeScenario, state.actionLog, setState]);
+  }, [activeScenario, state.actionLog, setState, idToken]);
 
   const handleSkipSubmit = useCallback(() => {
     setState(s => ({ ...s, phase: 'playing' }));
@@ -305,7 +307,7 @@ export default function App() {
     // Submit to the puzzle's own leaderboard too (best-effort — series flow
     // continues even if this fails).
     try {
-      await submitScore(activeScenario.id, seriesRun.playerName, cumulativeProb, diceCount, moves);
+      await submitScore(activeScenario.id, seriesRun.playerName, cumulativeProb, diceCount, moves, idToken);
     } catch {
       // Individual leaderboard submission is best-effort in series mode.
     }
@@ -333,7 +335,7 @@ export default function App() {
     const totalDice = results.reduce((sum, r) => sum + r.diceCount, 0);
     setState(s => ({ ...s, phase: 'playing' }));
     try {
-      const entry = await submitSeriesScore(seriesRun.playerName, avgProbability, totalDice, results);
+      const entry = await submitSeriesScore(seriesRun.playerName, avgProbability, totalDice, results, idToken);
       rememberLocalScore('series', entry.id);
       setSeriesHighlight(entry.id);
       setProgressRefreshKey(k => k + 1);
@@ -344,7 +346,7 @@ export default function App() {
     setSeriesInitialEntries(undefined);
     setSeriesRefreshKey(k => k + 1);
     setAppMode('series-leaderboard');
-  }, [activeScenario, seriesRun, state.actionLog, setState]);
+  }, [activeScenario, seriesRun, state.actionLog, setState, idToken]);
 
   const requestLeaveSeries = useCallback(() => {
     setConfirmLeaveSeries(true);
@@ -379,6 +381,10 @@ export default function App() {
           onSeriesLeaderboard={() => { setSeriesHighlight(undefined); setSeriesInitialEntries(undefined); setAppMode('series-leaderboard'); }}
           onAdmin={() => setAppMode('admin')}
           progressRefreshKey={progressRefreshKey}
+          currentUser={currentUser}
+          authConfigured={authConfigured}
+          onSignIn={() => { void signIn(); }}
+          onSignOut={signOut}
         />
       </div>
     );
@@ -391,6 +397,8 @@ export default function App() {
           puzzleCount={scenarios.length}
           onStart={handleSeriesNameSubmit}
           onCancel={cancelSeriesEntry}
+          defaultName={currentUser?.displayName}
+          signedInName={currentUser?.displayName}
         />
       </div>
     );
@@ -645,6 +653,8 @@ export default function App() {
           actionLog={state.actionLog}
           onSubmit={handleSubmit}
           onDismiss={handleSkipSubmit}
+          defaultName={currentUser?.displayName}
+          signedInName={currentUser?.displayName}
         />
       )}
 

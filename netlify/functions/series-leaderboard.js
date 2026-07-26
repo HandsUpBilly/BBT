@@ -1,5 +1,6 @@
 import { getStore } from '@netlify/blobs';
 import { randomUUID } from 'crypto';
+import { AuthError, authErrorResponse, entryAuthFields, verifyOptionalGoogleUser } from './auth.js';
 
 const TOP_N = 10;
 const KEY = 'series';
@@ -43,6 +44,14 @@ export default async function handler(req) {
 
   // ── POST ─────────────────────────────────────────────────────────────────
   if (req.method === 'POST') {
+    let user = null;
+    try {
+      user = await verifyOptionalGoogleUser(req);
+    } catch (error) {
+      if (error instanceof AuthError) return authErrorResponse(error);
+      throw error;
+    }
+
     let body;
     try {
       body = await req.json();
@@ -54,7 +63,7 @@ export default async function handler(req) {
     }
 
     const { name, probability, diceCount, puzzles } = body;
-    if (!name || probability == null || diceCount == null) {
+    if ((!name && !user) || probability == null || diceCount == null) {
       return new Response(
         JSON.stringify({ error: 'name, probability and diceCount are required' }),
         { status: 400, headers: { 'Content-Type': 'application/json' } }
@@ -63,17 +72,19 @@ export default async function handler(req) {
 
     const entry = {
       id: randomUUID(),
-      name: String(name).slice(0, 32),
+      name: String(user?.name ?? name).slice(0, 32),
       probability: Number(probability),
       diceCount: Number(diceCount),
       date: new Date().toISOString(),
       puzzles: Array.isArray(puzzles) ? puzzles : [],
+      ...entryAuthFields(user),
     };
 
     const entries = await readEntries(store);
 
-    // Upsert by name — replace existing entry for same name
-    const idx = entries.findIndex(e => e.name === entry.name);
+    const idx = user
+      ? entries.findIndex(e => e.userId === user.providerUserId)
+      : entries.findIndex(e => e.name === entry.name);
     if (idx >= 0) {
       entries[idx] = entry;
     } else {

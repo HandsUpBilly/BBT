@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { fetchLeaderboard, fetchSeriesLeaderboard } from './api';
 import { scenarios } from './scenarios';
 import type { LeaderboardEntry, Scenario, SeriesLeaderboardEntry } from './types';
+import type { AuthUser } from './auth';
 import './ScenarioSelect.css';
 
 const LOCAL_SCORE_KEY = 'bbt.localScores.v1';
@@ -23,6 +24,10 @@ interface Props {
   onSeriesLeaderboard: () => void;
   onAdmin: () => void;
   progressRefreshKey: number;
+  currentUser: AuthUser | null;
+  authConfigured: boolean;
+  onSignIn: () => void;
+  onSignOut: () => void;
 }
 
 const CHALLENGE_COPY: Record<string, { title: string; description: string }> = {
@@ -51,13 +56,17 @@ function readLocalScores(): LocalScoreMap {
   }
 }
 
-function progressFromEntries(entries: LeaderboardEntry[] | SeriesLeaderboardEntry[], localIds: string[] = []): ScenarioProgress {
+function progressFromEntries(
+  entries: LeaderboardEntry[] | SeriesLeaderboardEntry[],
+  localIds: string[] = [],
+  userId?: string,
+): ScenarioProgress {
   const localIdSet = new Set(localIds);
   let bestPercent: number | null = null;
   let bestRank: number | null = null;
 
   entries.forEach((entry, index) => {
-    if (!localIdSet.has(entry.id)) return;
+    if (!localIdSet.has(entry.id) && entry.userId !== userId) return;
     if (bestPercent === null || entry.probability > bestPercent) {
       bestPercent = entry.probability;
       bestRank = index + 1;
@@ -87,6 +96,10 @@ export function ScenarioSelect({
   onSeriesLeaderboard,
   onAdmin,
   progressRefreshKey,
+  currentUser,
+  authConfigured,
+  onSignIn,
+  onSignOut,
 }: Props) {
   const [leaderboards, setLeaderboards] = useState<Record<string, LeaderboardEntry[]>>({});
   const [seriesLeaderboard, setSeriesLeaderboard] = useState<SeriesLeaderboardEntry[]>([]);
@@ -124,14 +137,14 @@ export function ScenarioSelect({
     return Object.fromEntries(
       scenarios.map(scenario => [
         scenario.id,
-        progressFromEntries(leaderboards[scenario.id] ?? [], localScores[scenario.id]),
+        progressFromEntries(leaderboards[scenario.id] ?? [], localScores[scenario.id], currentUser?.id),
       ]),
     ) as Record<string, ScenarioProgress>;
-  }, [leaderboards, localScores]);
+  }, [currentUser?.id, leaderboards, localScores]);
 
   const seriesProgress = useMemo(() => {
-    return progressFromEntries(seriesLeaderboard, localScores[SERIES_SCORE_KEY]);
-  }, [seriesLeaderboard, localScores]);
+    return progressFromEntries(seriesLeaderboard, localScores[SERIES_SCORE_KEY], currentUser?.id);
+  }, [currentUser?.id, seriesLeaderboard, localScores]);
 
   const individualProgress = useMemo(() => {
     const items = scenarios.map(scenario => scenarioProgress[scenario.id]).filter(Boolean);
@@ -154,10 +167,36 @@ export function ScenarioSelect({
   return (
     <div className="scenario-select">
       <div className="scenario-select__header">
-        <h1 className="scenario-select__title">BB Tactics</h1>
-        <p className="scenario-select__subtitle">
-          The gauntlet rewards clean routes, controlled risk, and the highest-probability score.
-        </p>
+        <div>
+          <h1 className="scenario-select__title">BB Tactics</h1>
+          <p className="scenario-select__subtitle">
+            The gauntlet rewards clean routes, controlled risk, and the highest-probability score.
+          </p>
+        </div>
+        <div className="auth-card">
+          {currentUser ? (
+            <>
+              {currentUser.avatarUrl && (
+                <img className="auth-card__avatar" src={currentUser.avatarUrl} alt="" referrerPolicy="no-referrer" />
+              )}
+              <div className="auth-card__identity">
+                <span className="auth-card__label">Signed in</span>
+                <strong>{currentUser.displayName}</strong>
+              </div>
+              <button className="btn btn--secondary" onClick={onSignOut}>Sign Out</button>
+            </>
+          ) : (
+            <>
+              <div className="auth-card__identity">
+                <span className="auth-card__label">Leaderboard identity</span>
+                <strong>{authConfigured ? 'Sign in with Google' : 'Google sign-in not configured'}</strong>
+              </div>
+              <button className="btn btn--primary" disabled={!authConfigured} onClick={onSignIn}>
+                Sign In
+              </button>
+            </>
+          )}
+        </div>
       </div>
 
       <div className="mode-grid">

@@ -12,6 +12,8 @@ interface Props {
    */
   seriesMode?: boolean;
   continueLabel?: string;
+  defaultName?: string;
+  signedInName?: string;
 }
 
 function pct(p: number) { return `${(p * 100).toFixed(1)}%`; }
@@ -61,8 +63,8 @@ function capitalize(s: string): string {
   return s.charAt(0).toUpperCase() + s.slice(1);
 }
 
-export function SubmitModal({ actionLog, onSubmit, onDismiss, seriesMode, continueLabel }: Props) {
-  const [name, setName] = useState('');
+export function SubmitModal({ actionLog, onSubmit, onDismiss, seriesMode, continueLabel, defaultName = '', signedInName }: Props) {
+  const [name, setName] = useState(defaultName);
 
   const riskyMoves = actionLog.filter(e =>
     e.kind === 'handoff' || e.kind === 'pass' || e.kind === 'pass-catch' || e.isGfi || e.dodgeTarget !== null
@@ -113,17 +115,23 @@ export function SubmitModal({ actionLog, onSubmit, onDismiss, seriesMode, contin
           </div>
         ) : (
           <>
-            <p className="submit-modal__prompt">Enter your name for the leaderboard:</p>
-            <input
-              className="submit-modal__input"
-              type="text"
-              maxLength={32}
-              placeholder="Your name"
-              value={name}
-              onChange={e => setName(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && name.trim() && onSubmit(name.trim())}
-              autoFocus
-            />
+            {signedInName ? (
+              <p className="submit-modal__prompt">Submit as {signedInName}</p>
+            ) : (
+              <>
+                <p className="submit-modal__prompt">Enter your name for the leaderboard:</p>
+                <input
+                  className="submit-modal__input"
+                  type="text"
+                  maxLength={32}
+                  placeholder="Your name"
+                  value={name}
+                  onChange={e => setName(e.target.value)}
+                  onKeyDown={e => e.key === 'Enter' && name.trim() && onSubmit(name.trim())}
+                  autoFocus
+                />
+              </>
+            )}
             <div className="submit-modal__actions">
               <button
                 className="modal__roll-btn"

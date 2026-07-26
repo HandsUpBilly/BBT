@@ -867,3 +867,313 @@ leaderboards and standalone Play/Leaderboard/Sandbox options must continue to wo
    exercise the full series flow (all 5 puzzles, one forced failure/retry, series
    leaderboard submission and breakdown view) and confirm standalone Play/Leaderboard/
    Sandbox flows are unaffected.
+
+---
+
+# Google Social Sign-On Plan
+
+## Purpose
+
+Add optional social sign-on so players can use a Google account for leaderboard identity,
+personal progress, and rank tracking without changing the core puzzle gameplay.
+
+This section records the sign-on implementation plan and the first implemented pass.
+
+## Assumptions
+
+- Use direct Google Identity Services rather than a managed auth provider.
+- Sign-in is optional for playing challenges.
+- Signed-in submissions use the verified Google profile name by default.
+- Existing anonymous/manual-name leaderboard submissions remain supported during the
+  initial rollout.
+- Production storage remains Netlify Blobs for the first version.
+- Local development continues to use the Express API and in-memory stores.
+
+Reference documentation:
+
+- Google Identity Services overview:
+  `https://developers.google.com/identity/gsi/web/guides/overview`
+- Google ID token verification:
+  `https://developers.google.com/identity/gsi/web/guides/verify-google-id-token`
+- Google Auth Library for Node.js:
+  `https://github.com/googleapis/google-auth-library-nodejs`
+
+## Requirements
+
+### User Experience
+
+- The home screen shows sign-in state:
+  - Signed out: a Google sign-in button.
+  - Signed in: display name/avatar and a sign-out action.
+- Signed-in players can submit individual challenge scores without typing a name.
+- Signed-in players can submit series scores without typing a name.
+- Leaderboard entries submitted while signed in are linked to a stable user identity.
+- Home screen progress should prefer signed-in user history when available.
+- Existing local-device progress remains a fallback for signed-out users.
+- Public leaderboard viewing stays available while signed out.
+- Signing out does not delete previously submitted leaderboard entries.
+
+### Backend Behavior
+
+- Score submission endpoints accept an optional bearer token:
+
+```txt
+Authorization: Bearer <google-id-token>
+```
+
+- If a bearer token is present:
+  - Verify it server-side before trusting identity fields.
+  - Reject invalid tokens with `401`.
+  - Store verified auth metadata on the leaderboard entry.
+- If no bearer token is present:
+  - Preserve current anonymous/manual-name submission behavior unless product policy
+    later requires sign-in for ranked submissions.
+- GET leaderboard endpoints remain public.
+
+### Token Verification
+
+The backend must verify:
+
+- Signature is valid.
+- Token is not expired.
+- `aud` matches configured Google OAuth client ID.
+- `iss` is a valid Google issuer.
+
+Use Google `sub` as the stable identity key, not email.
+
+## Constraints
+
+- Current app architecture:
+  - `client/`: React + TypeScript + Vite.
+  - `server/index.js`: local Express API with in-memory leaderboards.
+  - `netlify/functions/`: production serverless APIs.
+  - Netlify Blobs: production leaderboard persistence.
+- There is no current auth/session layer.
+- There is no current persistent user table.
+- Netlify Blobs are acceptable for small user-history and leaderboard datasets, but not
+  ideal for complex account queries.
+- Do not expose Google client secrets to the frontend.
+- Do not store Google access tokens in browser storage.
+- The first version should avoid long-lived custom sessions; verify ID tokens on submit.
+
+## Architecture
+
+### Frontend
+
+Add:
+
+```txt
+client/src/auth.ts
+client/src/AuthProvider.tsx
+```
+
+Responsibilities:
+
+- Load and initialize Google Identity Services.
+- Hold current auth state in React.
+- Expose:
+  - `currentUser`
+  - `idToken`
+  - `signIn()`
+  - `signOut()`
+- Decode client-side credential only for immediate display.
+- Treat backend-verified identity as authoritative for score writes.
+
+Update:
+
+```txt
+client/src/api.ts
+```
+
+- `submitScore(...)` accepts optional `idToken`.
+- `submitSeriesScore(...)` accepts optional `idToken`.
+- When an ID token exists, send `Authorization: Bearer <idToken>`.
+
+Update UI:
+
+- Home/front screen:
+  - Add sign-in status near top-level navigation.
+  - Use signed-in history for "played before / best % / rank".
+- `SubmitModal`:
+  - Signed in: show account identity and submit under that identity.
+  - Signed out: keep the current manual name input.
+- `SeriesNameEntry`:
+  - Signed in: default to account display name.
+  - Signed out: keep current name entry.
+
+### Local Express API
+
+Add:
+
+```txt
+server/auth.js
+```
+
+Responsibilities:
+
+- Extract bearer token.
+- Verify ID token with `google-auth-library`.
+- Return normalized user:
+
+```js
+{
+  provider: 'google',
+  providerUserId: payload.sub,
+  name: payload.name,
+  email: payload.email,
+  picture: payload.picture
+}
+```
+
+Update:
+
+- `POST /api/leaderboard/:scenarioId`
+- `POST /api/series-leaderboard`
+
+If token is valid, store verified identity fields on entries. If token is missing, keep
+anonymous behavior. If token is present but invalid, return `401`.
+
+### Netlify Functions
+
+Add:
+
+```txt
+netlify/functions/auth.js
+```
+
+Update:
+
+- `netlify/functions/leaderboard.js`
+- `netlify/functions/series-leaderboard.js`
+
+The production auth helper should mirror the Express helper and use the same environment
+variables.
+
+### Storage Shape
+
+Extend leaderboard entries with optional auth fields:
+
+```ts
+type AuthenticatedEntryFields = {
+  userId?: string;          // Google sub or derived app-scoped ID
+  authProvider?: 'google';
+  displayName?: string;
+  avatarUrl?: string;
+};
+```
+
+Apply those fields to:
+
+- `LeaderboardEntry`
+- `SeriesLeaderboardEntry`
+
+For more reliable personal history, add a separate blob store:
+
+```txt
+store: user-scores
+key: google:<sub>
+```
+
+Suggested value:
+
+```ts
+{
+  userId: string;
+  displayName?: string;
+  avatarUrl?: string;
+  individual: Record<string, string[]>; // scenarioId -> leaderboard entry IDs
+  series: string[];                     // series leaderboard entry IDs
+}
+```
+
+This avoids relying only on top-N leaderboard rows to determine whether a signed-in user
+has played before.
+
+## Environment Variables
+
+Frontend:
+
+```txt
+VITE_GOOGLE_CLIENT_ID=<google web oauth client id>
+```
+
+Server and Netlify functions:
+
+```txt
+GOOGLE_CLIENT_ID=<same google web oauth client id>
+```
+
+Existing Netlify Blobs variables remain:
+
+```txt
+NETLIFY_SITE_ID / SITE_ID
+NETLIFY_TOKEN / NETLIFY_AUTH_TOKEN
+```
+
+## Implementation Steps
+
+1. Create a Google Cloud OAuth web client.
+   - Configure local dev, preview, and production origins.
+   - Add `VITE_GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_ID`.
+
+2. Add frontend auth provider.
+   - Initialize Google Identity Services.
+   - Add sign-in/sign-out state and UI.
+   - Keep tokens in memory for submit requests.
+
+3. Update API client.
+   - Add optional ID-token support to individual and series score submission.
+   - Keep GET endpoints unchanged.
+
+4. Add Express token verification.
+   - Add `server/auth.js`.
+   - Verify bearer token for submission endpoints.
+   - Store optional verified user metadata.
+
+5. Add Netlify token verification.
+   - Add `netlify/functions/auth.js`.
+   - Apply to leaderboard and series leaderboard functions.
+
+6. Add user-history persistence.
+   - Write per-user submitted entry IDs to Netlify Blobs in production.
+   - Keep a local/in-memory equivalent for Express dev if useful.
+
+7. Update front-screen progress logic.
+   - Prefer signed-in user history.
+   - Fall back to local-device submitted entry IDs.
+   - Preserve "not played" state for users with no history.
+
+8. Update score submission UI.
+   - Use signed-in display name by default.
+   - Keep manual-name submission when signed out.
+
+9. Verify.
+   - `npm run build`
+   - `cd client && npm run lint`
+   - Local signed-out submission.
+   - Local signed-in submission with valid token.
+   - Invalid-token submission returns `401`.
+   - Netlify preview signed-in submission.
+
+## Success Criteria
+
+- A player can sign in with Google from the app.
+- The app shows signed-in profile state and supports sign out.
+- Signed-in individual challenge submissions are tied to verified Google identity.
+- Signed-in series submissions are tied to verified Google identity.
+- Invalid bearer tokens are rejected server-side.
+- Public leaderboard viewing still works when signed out.
+- Existing anonymous leaderboard entries still display.
+- Home screen progress can show played/best/rank for signed-in users.
+- Anonymous/manual-name submission remains available unless intentionally disabled.
+- Build and lint pass.
+
+## Future Enhancements
+
+- Require sign-in for ranked submissions while leaving practice play public.
+- Protect Admin Mode with an allowlist of Google user IDs.
+- Add an account page with full score history.
+- Move user and leaderboard history from Netlify Blobs to a relational database if query
+  needs grow.
+- Add other social providers through a managed auth service if Google-only becomes too
+  narrow.

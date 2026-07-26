@@ -5,10 +5,12 @@ interface Props {
   puzzleCount: number;
   onStart: (name: string) => void;
   onCancel: () => void;
+  defaultName?: string;
+  signedInName?: string;
 }
 
-export function SeriesNameEntry({ puzzleCount, onStart, onCancel }: Props) {
-  const [name, setName] = useState('');
+export function SeriesNameEntry({ puzzleCount, onStart, onCancel, defaultName = '', signedInName }: Props) {
+  const [name, setName] = useState(defaultName);
 
   return (
     <div className="modal-backdrop">
@@ -18,17 +20,23 @@ export function SeriesNameEntry({ puzzleCount, onStart, onCancel }: Props) {
           Play {puzzleCount} puzzles back-to-back. Your average success chance across
           all {puzzleCount} will be posted to the Series Leaderboard.
         </p>
-        <p className="submit-modal__prompt">Enter your name:</p>
-        <input
-          className="submit-modal__input"
-          type="text"
-          maxLength={32}
-          placeholder="Your name"
-          value={name}
-          onChange={e => setName(e.target.value)}
-          onKeyDown={e => e.key === 'Enter' && name.trim() && onStart(name.trim())}
-          autoFocus
-        />
+        {signedInName ? (
+          <p className="submit-modal__prompt">Series will be submitted as {signedInName}</p>
+        ) : (
+          <>
+            <p className="submit-modal__prompt">Enter your name:</p>
+            <input
+              className="submit-modal__input"
+              type="text"
+              maxLength={32}
+              placeholder="Your name"
+              value={name}
+              onChange={e => setName(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && name.trim() && onStart(name.trim())}
+              autoFocus
+            />
+          </>
+        )}
         <div className="submit-modal__actions">
           <button
             className="modal__roll-btn"

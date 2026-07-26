@@ -3,6 +3,7 @@ import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import { randomUUID } from 'crypto';
 import { existsSync } from 'fs';
+import { AuthError, entryAuthFields, verifyOptionalGoogleUser } from './auth.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const app = express();
@@ -32,19 +33,33 @@ app.get('/api/leaderboard/:scenarioId', (req, res) => {
   res.json(top20);
 });
 
-app.post('/api/leaderboard/:scenarioId', (req, res) => {
+app.post('/api/leaderboard/:scenarioId', async (req, res) => {
+  let user = null;
+  try {
+    user = await verifyOptionalGoogleUser(req);
+  } catch (error) {
+    if (error instanceof AuthError) return res.status(401).json({ error: error.message });
+    throw error;
+  }
+
   const { name, probability, diceCount } = req.body;
-  if (!name || probability == null || diceCount == null)
+  if ((!name && !user) || probability == null || diceCount == null)
     return res.status(400).json({ error: 'name, probability and diceCount are required' });
   const entry = {
     id: randomUUID(),
     scenarioId: req.params.scenarioId,
-    name: String(name).slice(0, 32),
+    name: String(user?.name ?? name).slice(0, 32),
     probability: Number(probability),
     diceCount: Number(diceCount),
     date: new Date().toISOString(),
+    ...entryAuthFields(user),
   };
-  getBoard(req.params.scenarioId).push(entry);
+  const board = getBoard(req.params.scenarioId);
+  const idx = user
+    ? board.findIndex(e => e.userId === user.providerUserId)
+    : -1;
+  if (idx >= 0) board[idx] = entry;
+  else board.push(entry);
   res.status(201).json(entry);
 });
 
@@ -58,20 +73,30 @@ app.get('/api/series-leaderboard', (_req, res) => {
   res.json(top20);
 });
 
-app.post('/api/series-leaderboard', (req, res) => {
+app.post('/api/series-leaderboard', async (req, res) => {
+  let user = null;
+  try {
+    user = await verifyOptionalGoogleUser(req);
+  } catch (error) {
+    if (error instanceof AuthError) return res.status(401).json({ error: error.message });
+    throw error;
+  }
+
   const { name, probability, diceCount, puzzles } = req.body;
-  if (!name || probability == null || diceCount == null)
+  if ((!name && !user) || probability == null || diceCount == null)
     return res.status(400).json({ error: 'name, probability and diceCount are required' });
   const entry = {
     id: randomUUID(),
-    name: String(name).slice(0, 32),
+    name: String(user?.name ?? name).slice(0, 32),
     probability: Number(probability),
     diceCount: Number(diceCount),
     date: new Date().toISOString(),
     puzzles: Array.isArray(puzzles) ? puzzles : [],
+    ...entryAuthFields(user),
   };
-  // Upsert by name — replace an existing entry for the same name
-  const idx = seriesBoard.findIndex(e => e.name === entry.name);
+  const idx = user
+    ? seriesBoard.findIndex(e => e.userId === user.providerUserId)
+    : seriesBoard.findIndex(e => e.name === entry.name);
   if (idx >= 0) seriesBoard[idx] = entry;
   else seriesBoard.push(entry);
   res.status(201).json(entry);
