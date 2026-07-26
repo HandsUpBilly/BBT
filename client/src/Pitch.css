@@ -184,8 +184,8 @@
 
 /* ── Pieces ─────────────────────────────────────────────────────────── */
 .piece {
-  width: 72%;
-  height: 72%;
+  width: 88%;
+  height: 88%;
   border-radius: 50%;
   box-sizing: border-box;
   position: relative;
@@ -197,15 +197,21 @@
 }
 
 .piece--human {
-  background: #1a2a1a;
-  border: 2px solid #c8a84a;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.5);
+  background: #0f3c78;
+  border: 3px solid #4aa3ff;
+  box-shadow:
+    0 2px 6px rgba(0,0,0,0.55),
+    0 0 0 1px rgba(180, 220, 255, 0.85),
+    inset 0 0 0 2px rgba(15, 72, 140, 0.65);
 }
 
 .piece--orc {
-  background: #0a0a0a;
-  border: 2px solid #c8a84a;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.5);
+  background: #751414;
+  border: 3px solid #ff4b4b;
+  box-shadow:
+    0 2px 6px rgba(0,0,0,0.55),
+    0 0 0 1px rgba(255, 185, 185, 0.8),
+    inset 0 0 0 2px rgba(135, 20, 20, 0.7);
 }
 
 .piece--selected {
@@ -221,8 +227,12 @@
 }
 
 .piece--carrier {
-  border: 3px solid #e03030 !important;
-  box-shadow: 0 0 0 2px rgba(224,48,48,0.55), 0 2px 10px rgba(224,48,48,0.45) !important;
+  background: #7a5700;
+  border: 3px solid #ffd24a !important;
+  box-shadow:
+    0 0 0 2px rgba(255, 214, 74, 0.8),
+    0 0 16px 4px rgba(255, 190, 40, 0.65),
+    0 2px 10px rgba(0,0,0,0.6) !important;
 }
 
 .piece--ghost {
@@ -232,8 +242,8 @@
 }
 
 .piece__portrait {
-  width: 100%;
-  height: 100%;
+  width: 92%;
+  height: 92%;
   object-fit: cover;
   object-position: center 20%;
   border-radius: 50%;
@@ -244,8 +254,8 @@
 /* ── Ball marker ────────────────────────────────────────────────────── */
 .ball-marker {
   position: absolute;
-  width: 65%;
-  height: 65%;
+  width: 58%;
+  height: 58%;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);

@@ -12,24 +12,17 @@ export function PhaseModal({ state, onContinue }: Props) {
   const isGameOver = state.phase === 'game_over';
   const { human, orc } = state.score;
 
-  let title = '';
-  let body = '';
-  let btnLabel = '';
-
-  if (isGameOver) {
-    title = 'Full Time!';
-    body =
+  const title = isGameOver ? 'Full Time!' : 'Half Time!';
+  const body = isGameOver
+    ? (
       human > orc
         ? 'Human wins!'
         : orc > human
         ? 'Orc wins!'
-        : "It's a draw!";
-    btnLabel = 'Play Again';
-  } else {
-    title = 'Half Time!';
-    body = `Score: Human ${human} – ${orc} Orc`;
-    btnLabel = 'Start 2nd Half';
-  }
+        : "It's a draw!"
+    )
+    : `Score: Human ${human} – ${orc} Orc`;
+  const btnLabel = isGameOver ? 'Play Again' : 'Start 2nd Half';
 
   return (
     <div className="modal-backdrop">

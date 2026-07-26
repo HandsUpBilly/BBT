@@ -37,8 +37,11 @@ export function Leaderboard({ scenario, onBack, highlightId, initialEntries, onE
 
   useEffect(() => {
     if (initialEntries) return;
-    load();
-  }, [scenario.id]); // eslint-disable-line react-hooks/exhaustive-deps
+    const timeoutId = window.setTimeout(() => {
+      void load();
+    }, 0);
+    return () => window.clearTimeout(timeoutId);
+  }, [initialEntries, load]);
 
   return (
     <div className="leaderboard">

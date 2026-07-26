@@ -15,8 +15,15 @@
   align-self: flex-start;
 }
 
-.panel--human { border-color: #1a6fc4; }
-.panel--orc   { border-color: #8b3a0f; }
+.panel--human {
+  border-color: #4aa3ff;
+  box-shadow: inset 4px 0 0 #1d78d8;
+}
+
+.panel--orc {
+  border-color: #ff4b4b;
+  box-shadow: inset 4px 0 0 #c62828;
+}
 .panel--empty { border-color: #333; justify-content: center; align-items: center; min-height: 200px; }
 
 /* ── Portrait ────────────────────────────────────────────── */
@@ -26,6 +33,14 @@
   aspect-ratio: 1 / 1;
   overflow: hidden;
   background: #111;
+}
+
+.panel--human .panel__portrait-wrap {
+  background: #0f3c78;
+}
+
+.panel--orc .panel__portrait-wrap {
+  background: #751414;
 }
 
 .panel__portrait {

@@ -220,8 +220,12 @@ body,
   display: flex;
   flex-direction: column;
   gap: 6px;
-  width: 130px;
+  width: clamp(170px, 17vw, 260px);
   flex-shrink: 0;
+}
+
+.side-col--right {
+  width: clamp(150px, 14vw, 210px);
 }
 
 /* ── Pitch wrapper ───────────────────────────────────────────────────── */

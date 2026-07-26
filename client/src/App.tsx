@@ -117,8 +117,8 @@ export default function App() {
     // Anything else (opponent, activated piece) — fall through to normal click
     hookSquareClick(col, row);
   }, [state.pieces, state.selectedPieceId, state.reachableKeys, state.activeTeam,
-      state.isHandoffTargeting, state.handoffTargets,
-      hookSquareClick, handleHandoffTarget, handleCancelSelection]);
+      state.isHandoffTargeting, state.handoffTargets, state.isPassTargeting, state.passReceiverKeys,
+      hookSquareClick, handleHandoffTarget, handlePassTarget, handleCancelSelection]);
 
   const handleMenuAction = useCallback((actionKey: string) => {
     if (!pieceMenu) return;
@@ -135,19 +135,18 @@ export default function App() {
 
   const dismissMenu = useCallback(() => setPieceMenu(null), []);
 
-  // Hover state for right panel (opponent info) — combined with movement hover
-  const [hoveredOpponent, setHoveredOpponent] = useState<PlayerPiece | null>(null);
+  // Hover state for the shared player card — combined with movement hover
+  const [hoveredPiece, setHoveredPiece] = useState<PlayerPiece | null>(null);
   const handleSquareHover = useCallback((col: number, row: number) => {
     // Update movement preview in game state
     hookSquareHover(col, row);
-    // Update opponent panel
     const k = key({ col, row });
     const piece = state.pieces.find(p => key(p.position) === k);
-    setHoveredOpponent(piece && piece.team !== state.activeTeam ? piece : null);
-  }, [hookSquareHover, state.pieces, state.activeTeam]);
+    setHoveredPiece(piece ?? null);
+  }, [hookSquareHover, state.pieces]);
   const handleSquareLeave = useCallback(() => {
     hookSquareLeave();
-    setHoveredOpponent(null);
+    setHoveredPiece(null);
   }, [hookSquareLeave]);
 
   // Submission handler
@@ -168,7 +167,7 @@ export default function App() {
           pieceName: e.pieceName, pieceRole: e.pieceRole,
           receiverName: e.receiverName, receiverRole: e.receiverRole,
           from: e.from, to: e.to,
-          dodgeTarget: null as null, isGfi: false as false,
+          dodgeTarget: null as null, isGfi: false as const,
           catchTarget: e.catchTarget,
           actionProb: e.actionProb, cumulativeProb: e.cumulativeProb,
         };
@@ -178,7 +177,7 @@ export default function App() {
           pieceName: e.pieceName, pieceRole: e.pieceRole,
           receiverName: e.receiverName, receiverRole: e.receiverRole,
           from: e.from, to: e.to,
-          dodgeTarget: null as null, isGfi: false as false,
+          dodgeTarget: null as null, isGfi: false as const,
           passTarget: e.passTarget, rangeBand: e.rangeBand,
           actionProb: e.actionProb, cumulativeProb: e.cumulativeProb,
         };
@@ -187,7 +186,7 @@ export default function App() {
         return {
           pieceName: e.pieceName, pieceRole: e.pieceRole,
           from: e.from, to: e.to,
-          dodgeTarget: null as null, isGfi: false as false,
+          dodgeTarget: null as null, isGfi: false as const,
           catchTarget: e.catchTarget,
           actionProb: e.actionProb, cumulativeProb: e.cumulativeProb,
         };
@@ -267,6 +266,7 @@ export default function App() {
   const selectedPiece = state.selectedPieceId
     ? state.pieces.find(p => p.id === state.selectedPieceId) ?? null
     : null;
+  const inspectedPiece = hoveredPiece ?? selectedPiece;
 
   const teamLabel = state.activeTeam === 'human' ? 'Human' : 'Orc';
   const activePiece = state.pieces.find(p => p.team === state.activeTeam);
@@ -352,7 +352,6 @@ export default function App() {
 
       <div className="game-area">
         <div className="side-col side-col--left">
-          <PlayerPanel piece={selectedPiece} side="left" />
           <DiceLog
             log={state.actionLog}
             pendingProb={state.pendingProb}
@@ -372,7 +371,7 @@ export default function App() {
         </main>
 
         <div className="side-col side-col--right">
-          <PlayerPanel piece={hoveredOpponent} side="right" />
+          <PlayerPanel piece={inspectedPiece} side="right" />
         </div>
       </div>
 
