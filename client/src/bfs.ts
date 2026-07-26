@@ -142,39 +142,65 @@ export function dodgeTargetAt(dest: Position, ag: number, opponentPositions: Pos
 
 // ── Passing ───────────────────────────────────────────────────────────────────
 
-/** Chebyshev distance (max of col/row deltas — matches BB grid movement). */
-export function chebyshevDist(a: Position, b: Position): number {
-  return Math.max(Math.abs(a.col - b.col), Math.abs(a.row - b.row));
+export type PassRangeBand = 'quick' | 'short' | 'long' | 'bomb';
+
+const BB2025_THROWING_RANGE_TABLE = [
+  ['T', 'Q', 'Q', 'Q', 'S', 'S', 'S', 'L', 'L', 'L', 'L', 'B', 'B', 'B'],
+  ['Q', 'Q', 'Q', 'Q', 'S', 'S', 'S', 'L', 'L', 'L', 'L', 'B', 'B', 'B'],
+  ['Q', 'Q', 'Q', 'S', 'S', 'S', 'S', 'L', 'L', 'L', 'L', 'B', 'B', 'B'],
+  ['Q', 'Q', 'S', 'S', 'S', 'S', 'S', 'L', 'L', 'L', 'B', 'B', 'B'],
+  ['S', 'S', 'S', 'S', 'S', 'S', 'L', 'L', 'L', 'L', 'B', 'B', 'B'],
+  ['S', 'S', 'S', 'S', 'S', 'L', 'L', 'L', 'L', 'B', 'B', 'B'],
+  ['S', 'S', 'S', 'S', 'L', 'L', 'L', 'L', 'L', 'B', 'B', 'B'],
+  ['L', 'L', 'L', 'L', 'L', 'L', 'L', 'L', 'B', 'B', 'B'],
+  ['L', 'L', 'L', 'L', 'L', 'L', 'L', 'B', 'B', 'B', 'B'],
+  ['L', 'L', 'L', 'L', 'L', 'B', 'B', 'B', 'B', 'B'],
+  ['L', 'L', 'L', 'B', 'B', 'B', 'B', 'B', 'B'],
+  ['B', 'B', 'B', 'B', 'B', 'B', 'B'],
+  ['B', 'B', 'B', 'B', 'B'],
+  ['B', 'B', 'B'],
+] as const;
+
+function passRangeCodeToBand(code: string | undefined): PassRangeBand | null {
+  switch (code) {
+    case 'Q': return 'quick';
+    case 'S': return 'short';
+    case 'L': return 'long';
+    case 'B': return 'bomb';
+    default: return null;
+  }
 }
 
-/** Range band for a given Chebyshev distance. Returns null if out of range (>13). */
-export function rangeBandForDist(dist: number): 'quick' | 'short' | 'long' | 'bomb' | null {
-  if (dist <= 3)  return 'quick';
-  if (dist <= 6)  return 'short';
-  if (dist <= 9)  return 'long';
-  if (dist <= 13) return 'bomb';
-  return null;
+/**
+ * BB2025 range-ruler lookup from FFB's throwing range table.
+ * The table is indexed by absolute square offsets and is symmetrical.
+ */
+export function rangeBandForPass(from: Position, to: Position): PassRangeBand | null {
+  const dx = Math.abs(from.col - to.col);
+  const dy = Math.abs(from.row - to.row);
+  const row = BB2025_THROWING_RANGE_TABLE[Math.min(dx, dy)];
+  return passRangeCodeToBand(row?.[Math.max(dx, dy)]);
 }
 
-/** Pass roll modifier for a range band (+1 quick, 0 short, -1 long, -2 bomb). */
-export function rangeModifier(band: 'quick' | 'short' | 'long' | 'bomb'): number {
+/** BB2025 pass range penalty: quick +0, short +1, long +2, bomb +3. */
+export function rangeModifier(band: PassRangeBand): number {
   switch (band) {
-    case 'quick': return 1;
-    case 'short': return 0;
-    case 'long':  return -1;
-    case 'bomb':  return -2;
+    case 'quick': return 0;
+    case 'short': return 1;
+    case 'long':  return 2;
+    case 'bomb':  return 3;
   }
 }
 
 /**
  * Pass target number for a passer throwing from `passerPos` to `targetPos`.
  *
- * Formula: max(2, min(6, pa - rangeModifier + tzCount))
+ * BB2025 formula: max(2, min(6, pa + rangePenalty + tzCount))
  *   pa            = passer's passing ability stat
- *   rangeModifier = +1 quick, 0 short, -1 long, -2 bomb
+ *   rangePenalty  = +0 quick, +1 short, +2 long, +3 bomb
  *   tzCount       = opposing tackle zones covering the passer's square
  *
- * Returns null if target is out of range (>13 squares).
+ * Returns null if target is out of range according to the BB2025 range ruler.
  */
 export function passTargetAt(
   passerPos: Position,
@@ -182,28 +208,27 @@ export function passTargetAt(
   targetPos: Position,
   opponentPositions: Position[],
 ): number | null {
-  const dist = chebyshevDist(passerPos, targetPos);
-  const band = rangeBandForDist(dist);
+  const band = rangeBandForPass(passerPos, targetPos);
   if (!band) return null;
 
-  const mod = rangeModifier(band);
+  const rangePenalty = rangeModifier(band);
   const tzCount = opponentPositions.filter(op =>
     neighbours(op).some(n => n.col === passerPos.col && n.row === passerPos.row)
   ).length;
 
-  return Math.min(6, Math.max(2, passerPa - mod + tzCount));
+  return Math.min(6, Math.max(2, passerPa + rangePenalty + tzCount));
 }
 
 /**
- * Compute all throwable squares from `passerPos` and their range bands.
- * Returns a Map from position key → band for every square within 13 squares.
+ * Compute all throwable squares from `passerPos` and their BB2025 range bands.
+ * Returns a Map from position key → band for every square in range.
  */
-export function computePassRange(passerPos: Position): Map<string, 'quick' | 'short' | 'long' | 'bomb'> {
-  const result = new Map<string, 'quick' | 'short' | 'long' | 'bomb'>();
+export function computePassRange(passerPos: Position): Map<string, PassRangeBand> {
+  const result = new Map<string, PassRangeBand>();
   for (let c = 0; c < COLS; c++) {
     for (let r = 0; r < ROWS; r++) {
       const pos: Position = { col: c, row: r };
-      const band = rangeBandForDist(chebyshevDist(passerPos, pos));
+      const band = rangeBandForPass(passerPos, pos);
       if (band) result.set(key(pos), band);
     }
   }

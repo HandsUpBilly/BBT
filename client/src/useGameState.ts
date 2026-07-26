@@ -246,7 +246,7 @@ export function useGameState(initialState: GameState) {
 
           // Eligible receivers: teammates (not carrier, not activated) within range
           const passReceiverKeys = new Set<string>();
-          for (const [k, _band] of passRangeKeys) {
+          for (const k of passRangeKeys.keys()) {
             const piece = pieces.find(p => key(p.position) === k);
             if (piece && piece.team === carrier.team && piece.id !== carrier.id && !piece.activated) {
               passReceiverKeys.add(k);

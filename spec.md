@@ -135,22 +135,22 @@ PA represents the target number before modifiers (lower = better, same conventio
 
 ---
 
-### Pass Roll
+### Pass Roll (Third Season / BB2025)
 
-**Target = `max(2, min(6, pa - rangeModifier + tzCount))`**
+**Target = `max(2, min(6, pa + rangePenalty + tzCount))`**
 
-Range modifiers (distance = Chebyshev distance from passer to target square):
+Range is determined with the BB2025 passing range ruler table, matching FFB's `bb2025` implementation. It is not a simple Chebyshev-distance band.
 
-| Band | Distance | Modifier |
-|---|---|---|
-| Quick Pass | 0–3 | +1 (subtract 1 from target) |
-| Short Pass | 4–6 | 0 |
-| Long Pass | 7–9 | −1 (add 1 to target) |
-| Long Bomb | 10–13 | −2 (add 2 to target) |
+| Band | Range penalty |
+|---|---|
+| Quick Pass | +0 |
+| Short Pass | +1 |
+| Long Pass | +2 |
+| Long Bomb | +3 |
 
 TZ modifier: +1 per opposing tackle zone covering the **passer's** square.
 
-Natural 1 always fails (fumble) — modelled by clamping minimum success to 2+, i.e. max target = 6.
+Natural 1 always fails. Natural 6 always succeeds for players with a PA value, so target values above 6 are represented as 6+ in this puzzle engine.
 
 **Success (accurate pass)**: ball travels to target square, receiver makes a catch roll.
 
@@ -172,11 +172,11 @@ Same formula as handoff catch, but the accurate modifier is already baked into t
 
 When the player enters pass targeting mode, the pitch shows a range overlay:
 
-- All squares within 13 squares (Chebyshev) are coloured by band:
-  - Quick (0–3): bright yellow tint
-  - Short (4–6): green tint
-  - Long (7–9): orange tint
-  - Long Bomb (10–13): red tint
+- All squares in range according to the BB2025 range ruler are coloured by band:
+  - Quick: bright yellow tint
+  - Short: green tint
+  - Long: orange tint
+  - Long Bomb: red tint
 - Squares occupied by eligible receivers are highlighted with a distinct border
 - Hovering a receiver square shows the pass target number and catch target in the HUD status
 
@@ -260,20 +260,19 @@ passReceiverKeys: Set<string>; // subset: squares with eligible receivers
 ### `bfs.ts` additions
 
 ```ts
-/** Chebyshev distance between two positions */
-export function chebyshevDist(a: Position, b: Position): number
+export type PassRangeBand = 'quick' | 'short' | 'long' | 'bomb'
 
-/** Range band for a given distance */
-export function rangeBand(dist: number): 'quick' | 'short' | 'long' | 'bomb' | null  // null = out of range (>13)
+/** BB2025 range-ruler lookup from passer to target */
+export function rangeBandForPass(from: Position, to: Position): PassRangeBand | null
 
-/** Range modifier for pass roll (+1 quick, 0 short, -1 long, -2 bomb) */
-export function rangeModifier(band: 'quick' | 'short' | 'long' | 'bomb'): number
+/** BB2025 range penalty for pass roll (+0 quick, +1 short, +2 long, +3 bomb) */
+export function rangeModifier(band: PassRangeBand): number
 
 /** Pass target number for passer at passerPos throwing to targetPos */
 export function passTargetAt(passerPos: Position, passerPa: number, targetPos: Position, opponentPositions: Position[]): number | null  // null = out of range
 
 /** Compute all throwable squares and their range bands from passerPos */
-export function computePassRange(passerPos: Position): Map<string, 'quick' | 'short' | 'long' | 'bomb'>
+export function computePassRange(passerPos: Position): Map<string, PassRangeBand>
 ```
 
 ---
@@ -281,7 +280,7 @@ export function computePassRange(passerPos: Position): Map<string, 'quick' | 'sh
 ### Implementation Plan
 
 1. **`types.ts`**: Add `pa` to `PlayerPiece` and `ScenarioPieceDef`; add `PassLogEntry`; add `pendingPass`, `isPassTargeting`, `passRangeKeys`, `passReceiverKeys` to `GameState`; add `passTarget`/`rangeBand` to `RiskyMove`.
-2. **`bfs.ts`**: Add `chebyshevDist`, `rangeBand`, `rangeModifier`, `passTargetAt`, `computePassRange`.
+2. **`bfs.ts`**: Add the BB2025 range table, `rangeBandForPass`, `rangeModifier`, `passTargetAt`, `computePassRange`.
 3. **`useGameState.ts`**: Add `handlePassAction(pieceId)` (same pattern as `handleHandoffAction`); add `handlePassTarget(col, row)`; intercept end-activation when `pendingPass` to open pass targeting; reset `pendingPass`/`isPassTargeting` in `clearSelection`/`advanceTurn`.
 4. **`PieceMenu.tsx`**: Add "Pass" action (disabled when `passUsed` or piece has no `pa`).
 5. **`App.tsx`**: Wire "Pass" menu action; route square clicks through `handlePassTarget` when `isPassTargeting`; update HUD status text.
