@@ -11,9 +11,8 @@
   width: 100%;
   max-width: 900px;
   display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 18px;
+  flex-direction: column;
+  gap: 8px;
 }
 
 .scenario-select__title {
@@ -28,49 +27,6 @@
   font-size: 0.98rem;
   max-width: 640px;
   line-height: 1.45;
-}
-
-.auth-card {
-  min-width: 250px;
-  background: #262626;
-  border: 1px solid #3a3a3a;
-  border-radius: 8px;
-  padding: 10px;
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 10px;
-}
-
-.auth-card__avatar {
-  width: 34px;
-  height: 34px;
-  border-radius: 50%;
-  object-fit: cover;
-}
-
-.auth-card__identity {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  min-width: 0;
-}
-
-.auth-card__identity strong {
-  font-size: 0.84rem;
-  color: #f0f0f0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  max-width: 180px;
-}
-
-.auth-card__label {
-  font-size: 0.66rem;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: #777;
-  font-weight: 700;
 }
 
 .mode-grid {
@@ -271,15 +227,6 @@
 
   .mode-grid {
     grid-template-columns: 1fr;
-  }
-
-  .scenario-select__header {
-    flex-direction: column;
-  }
-
-  .auth-card {
-    width: 100%;
-    justify-content: space-between;
   }
 
   .scenario-card {
