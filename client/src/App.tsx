@@ -24,6 +24,29 @@ import { key, computeReachable, computeZoomBounds } from './bfs';
 import './App.css';
 
 const TURNS_PER_HALF = 8;
+const LOCAL_SCORE_KEY = 'bbt.localScores.v1';
+
+type LocalScoreMap = Record<string, string[]>;
+
+function readLocalScores(): LocalScoreMap {
+  try {
+    const raw = window.localStorage.getItem(LOCAL_SCORE_KEY);
+    if (!raw) return {};
+    const parsed = JSON.parse(raw) as unknown;
+    return parsed && typeof parsed === 'object' ? parsed as LocalScoreMap : {};
+  } catch {
+    return {};
+  }
+}
+
+function rememberLocalScore(scenarioId: string, entryId: string): void {
+  const scores = readLocalScores();
+  const scenarioScores = scores[scenarioId] ?? [];
+  scores[scenarioId] = scenarioScores.includes(entryId)
+    ? scenarioScores
+    : [...scenarioScores, entryId];
+  window.localStorage.setItem(LOCAL_SCORE_KEY, JSON.stringify(scores));
+}
 
 /** Build the risky-moves list + summary stats from a completed puzzle's action log. */
 function summarizeActionLog(actionLog: ActionLogEntry[]) {
@@ -88,6 +111,7 @@ export default function App() {
   const [leaderboardRefreshKey, setLeaderboardRefreshKey] = useState(0);
   const [leaderboardInitialEntries, setLeaderboardInitialEntries] = useState<LeaderboardEntry[] | undefined>();
   const [selectedEntry, setSelectedEntry] = useState<LeaderboardEntry | undefined>();
+  const [progressRefreshKey, setProgressRefreshKey] = useState(0);
 
   // ── Series mode state ──────────────────────────────────────────────────
   const [seriesRun, setSeriesRun] = useState<SeriesRunState | null>(null);
@@ -229,7 +253,9 @@ export default function App() {
     const { cumulativeProb, diceCount, moves } = summarizeActionLog(state.actionLog);
     try {
       const entry = await submitScore(activeScenario.id, name, cumulativeProb, diceCount, moves);
+      rememberLocalScore(activeScenario.id, entry.id);
       setLeaderboardHighlight(entry.id);
+      setProgressRefreshKey(k => k + 1);
       setState(s => ({ ...s, phase: 'playing' }));
       setAppMode('leaderboard');
       await new Promise(res => setTimeout(res, 3000));
@@ -308,7 +334,9 @@ export default function App() {
     setState(s => ({ ...s, phase: 'playing' }));
     try {
       const entry = await submitSeriesScore(seriesRun.playerName, avgProbability, totalDice, results);
+      rememberLocalScore('series', entry.id);
       setSeriesHighlight(entry.id);
+      setProgressRefreshKey(k => k + 1);
     } catch {
       setSeriesHighlight(undefined);
     }
@@ -347,9 +375,10 @@ export default function App() {
         <ScenarioSelect
           onPlay={startPuzzle}
           onLeaderboard={goLeaderboard}
-          onFreePlay={startFreePlay}
           onStartSeries={startSeries}
           onSeriesLeaderboard={() => { setSeriesHighlight(undefined); setSeriesInitialEntries(undefined); setAppMode('series-leaderboard'); }}
+          onAdmin={() => setAppMode('admin')}
+          progressRefreshKey={progressRefreshKey}
         />
       </div>
     );
@@ -388,6 +417,23 @@ export default function App() {
           onEntriesLoaded={setSeriesInitialEntries}
           onRowClick={setSelectedSeriesEntry}
         />
+      </div>
+    );
+  }
+
+  if (appMode === 'admin') {
+    return (
+      <div className="app app--home">
+        <div className="admin-screen">
+          <div className="admin-screen__header">
+            <h1 className="admin-screen__title">Admin Mode</h1>
+            <p className="admin-screen__subtitle">Development tools and unrestricted practice modes.</p>
+          </div>
+          <div className="admin-screen__actions">
+            <button className="btn btn--primary" onClick={startFreePlay}>Sandbox</button>
+            <button className="btn btn--secondary" onClick={() => setAppMode('home')}>Back</button>
+          </div>
+        </div>
       </div>
     );
   }

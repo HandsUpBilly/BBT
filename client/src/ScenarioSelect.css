@@ -4,11 +4,12 @@
   flex-direction: column;
   align-items: center;
   padding: 40px 20px;
-  gap: 32px;
+  gap: 28px;
 }
 
 .scenario-select__header {
-  text-align: center;
+  width: 100%;
+  max-width: 900px;
 }
 
 .scenario-select__title {
@@ -19,23 +20,106 @@
 }
 
 .scenario-select__subtitle {
-  color: #888;
-  font-size: 0.95rem;
+  color: #aaa;
+  font-size: 0.98rem;
+  max-width: 640px;
+  line-height: 1.45;
+}
+
+.mode-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  width: 100%;
+  max-width: 900px;
+}
+
+.mode-card {
+  background: #262626;
+  border: 1px solid #3a3a3a;
+  border-radius: 8px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  min-height: 220px;
+}
+
+.mode-card--primary {
+  border-color: rgba(74, 140, 42, 0.75);
+}
+
+.mode-card__body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.mode-card__eyebrow {
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-weight: 700;
+  color: #777;
+}
+
+.mode-card__title {
+  font-size: 1.35rem;
+  line-height: 1.2;
+  color: #f0f0f0;
+}
+
+.mode-card__desc {
+  font-size: 0.88rem;
+  line-height: 1.45;
+  color: #aaa;
+}
+
+.mode-card__status {
+  margin-top: 6px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #d8c36a;
+}
+
+.challenge-section {
+  width: 100%;
+  max-width: 900px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.challenge-section__header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.challenge-section__title {
+  font-size: 1.1rem;
+  color: #f0f0f0;
+}
+
+.challenge-section__subtitle {
+  font-size: 0.8rem;
+  color: #777;
 }
 
 .scenario-select__list {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 12px;
   width: 100%;
-  max-width: 560px;
 }
 
 .scenario-card {
   background: #2a2a2a;
   border: 1px solid #383838;
-  border-radius: 10px;
-  padding: 18px 20px;
+  border-radius: 8px;
+  padding: 16px 18px;
   display: flex;
   align-items: center;
   gap: 16px;
@@ -60,6 +144,7 @@
   display: flex;
   flex-direction: column;
   gap: 4px;
+  min-width: 0;
 }
 
 .scenario-card__name {
@@ -70,20 +155,20 @@
 
 .scenario-card__desc {
   font-size: 0.82rem;
-  color: #999;
+  color: #aaa;
   line-height: 1.4;
 }
 
 .scenario-card__meta {
-  font-size: 0.72rem;
-  color: #666;
+  font-size: 0.76rem;
+  color: #d8c36a;
+  font-weight: 700;
   margin-top: 4px;
 }
 
 .scenario-card__actions {
   display: flex;
-  flex-direction: column;
-  gap: 6px;
+  gap: 8px;
   flex-shrink: 0;
 }
 
@@ -96,7 +181,9 @@
   font-weight: 600;
   cursor: pointer;
   white-space: nowrap;
-  transition: background 0.15s, opacity 0.15s;
+  transition: background 0.15s, border-color 0.15s, color 0.15s, opacity 0.15s;
+  text-align: center;
+  text-decoration: none;
 }
 
 .btn--primary {
@@ -119,5 +206,31 @@
 .btn--ghost:hover { color: #aaa; border-color: #666; }
 
 .scenario-select__footer {
-  margin-top: 8px;
+  width: 100%;
+  max-width: 900px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+@media (max-width: 760px) {
+  .scenario-select {
+    padding: 24px 12px;
+  }
+
+  .mode-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .scenario-card {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .scenario-card__actions {
+    width: 100%;
+  }
+
+  .scenario-card__actions .btn {
+    flex: 1;
+  }
 }

@@ -120,6 +120,7 @@ export type AppMode =
   | 'freeplay'
   | 'puzzle'
   | 'leaderboard'
+  | 'admin'
   | 'series-name'
   | 'series-puzzle'
   | 'series-leaderboard';
