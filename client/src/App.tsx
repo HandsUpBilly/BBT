@@ -20,7 +20,7 @@ import type {
   AppMode, PlayerPiece, Scenario, LeaderboardEntry,
   SeriesLeaderboardEntry, SeriesPuzzleResult, RiskyMove, ActionLogEntry,
 } from './types';
-import { key } from './bfs';
+import { key, computeReachable, computeZoomBounds } from './bfs';
 import './App.css';
 
 const TURNS_PER_HALF = 8;
@@ -97,6 +97,8 @@ export default function App() {
   const [selectedSeriesEntry, setSelectedSeriesEntry] = useState<SeriesLeaderboardEntry | undefined>();
   const [confirmLeaveSeries, setConfirmLeaveSeries] = useState(false);
 
+  // ── Zoom mode ────────────────────────────────────────────────────────────
+  const [zoomEnabled, setZoomEnabled] = useState(false);
 
   // Game state — reinitialised when mode/scenario changes
   const { state, setState, handleSquareClick: hookSquareClick, handleSquareHover: hookSquareHover,
@@ -448,6 +450,36 @@ export default function App() {
   // Always show in puzzle mode — starts at 100% and decreases as risky moves are added
   // (showProb removed — always visible)
 
+  // Zoom mode: crop the pitch to the squares a piece could legally move to.
+  // With a piece selected, use its live reachableKeys; otherwise, union the
+  // reachable squares of every un-activated piece on the active team.
+  const zoomBounds = (() => {
+    if (!zoomEnabled) return null;
+
+    if (state.selectedPieceId && state.reachableKeys.size > 0) {
+      const positions = [...state.reachableKeys].map(k => {
+        const [col, row] = k.split(',').map(Number);
+        return { col, row };
+      });
+      if (state.originPos) positions.push(state.originPos);
+      return computeZoomBounds(positions, 1);
+    }
+
+    const opponents = state.pieces.filter(p => p.team !== state.activeTeam).map(p => p.position);
+    const positions = [];
+    for (const piece of state.pieces) {
+      if (piece.team !== state.activeTeam || piece.activated) continue;
+      const others = state.pieces.filter(p => p.id !== piece.id).map(p => p.position);
+      const { reachableKeys } = computeReachable(piece.position, piece.ma, others, opponents, 0);
+      positions.push(piece.position);
+      for (const k of reachableKeys) {
+        const [col, row] = k.split(',').map(Number);
+        positions.push({ col, row });
+      }
+    }
+    return computeZoomBounds(positions, 1);
+  })();
+
   return (
     <div className="app">
       <header className="hud">
@@ -491,6 +523,14 @@ export default function App() {
 
         <div className="hud__status">{activationStatus}</div>
 
+        <button
+          className={`hud__zoom${zoomEnabled ? ' hud__zoom--active' : ''}`}
+          onClick={() => setZoomEnabled(z => !z)}
+          title="Zoom to legal moves"
+        >
+          {zoomEnabled ? '🔍 Zoom On' : '🔍 Zoom'}
+        </button>
+
         {state.isPuzzleMode && (
           <button className="hud__restart" onClick={handleRestartTurn}>↺ Restart</button>
         )}
@@ -526,6 +566,7 @@ export default function App() {
             onPieceClick={handlePieceClick}
             onSquareHover={handleSquareHover}
             onSquareLeave={handleSquareLeave}
+            zoomBounds={zoomBounds}
           />
         </main>
 

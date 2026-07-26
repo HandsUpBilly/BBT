@@ -18,6 +18,47 @@ export function fromKey(k: string): Position {
   return { col, row };
 }
 
+/**
+ * Bounding box in *landscape* grid coordinates (col 0-25 left→right, row 0-14 top→bottom),
+ * used by <Pitch> to crop the rendered grid to a sub-region.
+ */
+export interface ZoomBounds {
+  minCol: number;
+  maxCol: number;
+  minRow: number;
+  maxRow: number;
+}
+
+const LANDSCAPE_COLS = 26;
+const LANDSCAPE_ROWS = 15;
+
+/**
+ * Computes a landscape-coordinate bounding box that encloses the given
+ * portrait-coordinate squares, expanded by `padding` squares on each side
+ * and clamped to the pitch edges. Portrait { col, row } maps to landscape
+ * { col: row, row: col } (see <Pitch> for the same transform).
+ */
+export function computeZoomBounds(positions: Position[], padding: number): ZoomBounds | null {
+  if (positions.length === 0) return null;
+
+  let minCol = Infinity, maxCol = -Infinity, minRow = Infinity, maxRow = -Infinity;
+  for (const p of positions) {
+    const lCol = p.row; // portrait row -> landscape col
+    const lRow = p.col; // portrait col -> landscape row
+    if (lCol < minCol) minCol = lCol;
+    if (lCol > maxCol) maxCol = lCol;
+    if (lRow < minRow) minRow = lRow;
+    if (lRow > maxRow) maxRow = lRow;
+  }
+
+  return {
+    minCol: Math.max(0, minCol - padding),
+    maxCol: Math.min(LANDSCAPE_COLS - 1, maxCol + padding),
+    minRow: Math.max(0, minRow - padding),
+    maxRow: Math.min(LANDSCAPE_ROWS - 1, maxRow + padding),
+  };
+}
+
 export function neighbours(pos: Position): Position[] {
   const result: Position[] = [];
   for (const [dc, dr] of DIRS) {

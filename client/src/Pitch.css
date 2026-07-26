@@ -64,6 +64,18 @@
   box-sizing: border-box;
 }
 
+/* ── Zoom mode: crop to a sub-region, rendered at a larger cell size ── */
+.pitch--zoomed {
+  width: auto;
+  height: 100%;
+  margin: 0 auto;
+}
+
+.pitch--zoomed .pitch__grid {
+  height: 100%;
+  width: auto;
+}
+
 /* ── Base square ────────────────────────────────────────────────────── */
 .square {
   position: relative;
