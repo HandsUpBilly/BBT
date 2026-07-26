@@ -244,13 +244,25 @@ export function useGameState(initialState: GameState) {
 
           const passRangeKeys = computePassRange(carrierPos);
 
-          // Eligible receivers: teammates (not carrier, not activated) within range
+          // Eligible receivers: teammates (not carrier, not already holding the ball)
+          // within range. A receiver's own activation state this turn is irrelevant —
+          // catching a pass does not require the receiver to be unactivated.
           const passReceiverKeys = new Set<string>();
           for (const k of passRangeKeys.keys()) {
             const piece = pieces.find(p => key(p.position) === k);
-            if (piece && piece.team === carrier.team && piece.id !== carrier.id && !piece.activated) {
+            if (piece && piece.team === carrier.team && piece.id !== carrier.id && !piece.hasBall) {
               passReceiverKeys.add(k);
             }
+          }
+
+          if (passReceiverKeys.size === 0) {
+            // No valid receivers — end the carrier's activation at its final position
+            // without consuming passUsed. Marking `activated: true` here is what
+            // prevents the carrier from being reselected/moved again this turn.
+            const activatedPieces = pieces.map(p =>
+              p.id === carrier.id ? { ...p, activated: true } : p
+            );
+            return clearSelection({ ...prev, pieces: activatedPieces });
           }
 
           return {
@@ -276,19 +288,26 @@ export function useGameState(initialState: GameState) {
             p.id === prev.selectedPieceId ? { ...p, position: carrierPos } : p
           );
 
-          // Find adjacent unactivated teammates from the final position
+          // Find adjacent eligible teammates from the final position. A receiver's
+          // own activation state this turn is irrelevant — catching a handoff does
+          // not require the receiver to be unactivated.
           const targets = new Set<string>();
           for (const n of neighbours(carrierPos)) {
             const nk = key(n);
             const piece = pieces.find(p => key(p.position) === nk);
-            if (piece && piece.team === carrier.team && piece.id !== carrier.id && !piece.activated) {
+            if (piece && piece.team === carrier.team && piece.id !== carrier.id && !piece.hasBall) {
               targets.add(nk);
             }
           }
 
           if (targets.size === 0) {
-            // No valid receivers — just commit the move normally
-            return clearSelection({ ...prev, pieces }, !hasMoved);
+            // No valid receivers — end the carrier's activation at its final position
+            // without consuming passUsed. Marking `activated: true` here is what
+            // prevents the carrier from being reselected/moved again this turn.
+            const activatedPieces = pieces.map(p =>
+              p.id === carrier.id ? { ...p, activated: true } : p
+            );
+            return clearSelection({ ...prev, pieces: activatedPieces });
           }
 
           return {
