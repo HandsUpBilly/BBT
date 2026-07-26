@@ -1,7 +1,7 @@
 {
   "id": "scenario-004",
-  "name": "The Gauntlet",
-  "description": "A full orc line stands between your ball carrier and the end zone. Thread the tackle zones — one bad dodge ends the drive.",
+  "name": "Ironjaw's Gauntlet",
+  "description": "A full line of Orcs — Bonecruncher, Gutripper, and the rest of Ironjaw's crew — stands between your ball carrier and glory. Thread the tackle zones; one bad dodge ends the drive.",
   "activeTeam": "human",
   "pieces": [
     {

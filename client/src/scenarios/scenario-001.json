@@ -1,7 +1,7 @@
 {
   "id": "scenario-001",
-  "name": "The Simple Run",
-  "description": "A Thrower with the ball, two Orc Blockers in the way. Find the safest path to the end zone.",
+  "name": "Reikland's Opening Drive",
+  "description": "Nuffle smiles on the Reavers' first snap. Swiftfoot has the ball and two Orc Blockers stand between him and glory — find the safest path to the end zone.",
   "activeTeam": "human",
   "pieces": [
     {

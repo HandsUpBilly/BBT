@@ -1,7 +1,7 @@
 {
   "id": "scenario-002",
-  "name": "The Handoff Play",
-  "description": "The thrower can't reach the end zone alone. Hand off to the catcher and dodge through the orc line.",
+  "name": "The Reikland Handoff",
+  "description": "Swiftfoot can't carry it home alone this time. Feed the ball to Quickhand and dodge her clear of the green-skin line before Nuffle changes his mind.",
   "activeTeam": "human",
   "pieces": [
     {
