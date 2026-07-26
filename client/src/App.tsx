@@ -21,7 +21,8 @@ import type {
   AppMode, PlayerPiece, Scenario, LeaderboardEntry,
   SeriesLeaderboardEntry, SeriesPuzzleResult, RiskyMove, ActionLogEntry,
 } from './types';
-import { key, computeReachable, computeZoomBounds } from './bfs';
+import { key, computeZoomBounds } from './bfs';
+import type { ZoomBounds } from './bfs';
 import './App.css';
 
 const TURNS_PER_HALF = 8;
@@ -124,7 +125,23 @@ export default function App() {
   const [confirmLeaveSeries, setConfirmLeaveSeries] = useState(false);
 
   // ── Zoom mode ────────────────────────────────────────────────────────────
+  // Computed once when play starts (not recalculated as moves are made or
+  // pieces are selected). Radius is the largest MA among the player's own
+  // team's pieces, plus 2 for GFI/rush squares.
   const [zoomEnabled, setZoomEnabled] = useState(false);
+  const [zoomBounds, setZoomBounds] = useState<ZoomBounds | null>(null);
+
+  const computeStartOfPlayZoom = useCallback((pieces: PlayerPiece[], activeTeam: string): ZoomBounds | null => {
+    const ownPieces = pieces.filter(p => p.team === activeTeam);
+    if (ownPieces.length === 0) return null;
+    const maxMa = Math.max(...ownPieces.map(p => p.ma));
+    const radius = maxMa + 2; // MA + max GFI (2 rush squares)
+    const positions = ownPieces.flatMap(p => [
+      { col: p.position.col - radius, row: p.position.row - radius },
+      { col: p.position.col + radius, row: p.position.row + radius },
+    ]);
+    return computeZoomBounds(positions, 1);
+  }, []);
 
   // Game state — reinitialised when mode/scenario changes
   const { state, setState, handleSquareClick: hookSquareClick, handleSquareHover: hookSquareHover,
@@ -134,15 +151,19 @@ export default function App() {
     = useGameState(makeFreePlayState());
 
   const startFreePlay = useCallback(() => {
-    setState(makeFreePlayState());
+    const s = makeFreePlayState();
+    setState(s);
+    setZoomBounds(computeStartOfPlayZoom(s.pieces, s.activeTeam));
     setAppMode('freeplay');
-  }, [setState]);
+  }, [setState, computeStartOfPlayZoom]);
 
   const startPuzzle = useCallback((scenario: Scenario) => {
     setActiveScenario(scenario);
-    setState(makeScenarioState(scenario));
+    const s = makeScenarioState(scenario);
+    setState(s);
+    setZoomBounds(computeStartOfPlayZoom(s.pieces, s.activeTeam));
     setAppMode('puzzle');
-  }, [setState]);
+  }, [setState, computeStartOfPlayZoom]);
 
   const goLeaderboard = useCallback((scenario: Scenario) => {
     setActiveScenario(scenario);
@@ -277,8 +298,10 @@ export default function App() {
 
   const handleRestartTurn = useCallback(() => {
     if (!activeScenario) return;
-    setState(makeScenarioState(activeScenario));
-  }, [activeScenario, setState]);
+    const s = makeScenarioState(activeScenario);
+    setState(s);
+    setZoomBounds(computeStartOfPlayZoom(s.pieces, s.activeTeam));
+  }, [activeScenario, setState, computeStartOfPlayZoom]);
 
   // ── Series mode handlers ──────────────────────────────────────────────────
   const startSeries = useCallback(() => {
@@ -289,9 +312,11 @@ export default function App() {
     const firstScenario = scenarios[0];
     setSeriesRun({ playerName: name, puzzleIndex: 0, results: [] });
     setActiveScenario(firstScenario);
-    setState(makeScenarioState(firstScenario));
+    const s = makeScenarioState(firstScenario);
+    setState(s);
+    setZoomBounds(computeStartOfPlayZoom(s.pieces, s.activeTeam));
     setAppMode('series-puzzle');
-  }, [setState]);
+  }, [setState, computeStartOfPlayZoom]);
 
   const cancelSeriesEntry = useCallback(() => {
     setAppMode('home');
@@ -326,7 +351,9 @@ export default function App() {
       const nextScenario = scenarios[nextIndex];
       setSeriesRun({ ...seriesRun, puzzleIndex: nextIndex, results });
       setActiveScenario(nextScenario);
-      setState(makeScenarioState(nextScenario));
+      const s = makeScenarioState(nextScenario);
+      setState(s);
+      setZoomBounds(computeStartOfPlayZoom(s.pieces, s.activeTeam));
       return;
     }
 
@@ -346,7 +373,7 @@ export default function App() {
     setSeriesInitialEntries(undefined);
     setSeriesRefreshKey(k => k + 1);
     setAppMode('series-leaderboard');
-  }, [activeScenario, seriesRun, state.actionLog, setState, idToken]);
+  }, [activeScenario, seriesRun, state.actionLog, setState, idToken, computeStartOfPlayZoom]);
 
   const requestLeaveSeries = useCallback(() => {
     setConfirmLeaveSeries(true);
@@ -504,36 +531,6 @@ export default function App() {
   // Always show in puzzle mode — starts at 100% and decreases as risky moves are added
   // (showProb removed — always visible)
 
-  // Zoom mode: crop the pitch to the squares a piece could legally move to.
-  // With a piece selected, use its live reachableKeys; otherwise, union the
-  // reachable squares of every un-activated piece on the active team.
-  const zoomBounds = (() => {
-    if (!zoomEnabled) return null;
-
-    if (state.selectedPieceId && state.reachableKeys.size > 0) {
-      const positions = [...state.reachableKeys].map(k => {
-        const [col, row] = k.split(',').map(Number);
-        return { col, row };
-      });
-      if (state.originPos) positions.push(state.originPos);
-      return computeZoomBounds(positions, 1);
-    }
-
-    const opponents = state.pieces.filter(p => p.team !== state.activeTeam).map(p => p.position);
-    const positions = [];
-    for (const piece of state.pieces) {
-      if (piece.team !== state.activeTeam || piece.activated) continue;
-      const others = state.pieces.filter(p => p.id !== piece.id).map(p => p.position);
-      const { reachableKeys } = computeReachable(piece.position, piece.ma, others, opponents, 0);
-      positions.push(piece.position);
-      for (const k of reachableKeys) {
-        const [col, row] = k.split(',').map(Number);
-        positions.push({ col, row });
-      }
-    }
-    return computeZoomBounds(positions, 1);
-  })();
-
   return (
     <div className="app">
       <header className="hud">
@@ -620,7 +617,7 @@ export default function App() {
             onPieceClick={handlePieceClick}
             onSquareHover={handleSquareHover}
             onSquareLeave={handleSquareLeave}
-            zoomBounds={zoomBounds}
+            zoomBounds={zoomEnabled ? zoomBounds : null}
           />
         </main>
 
