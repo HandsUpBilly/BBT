@@ -8,6 +8,7 @@ const LOCAL_SCORE_KEY = 'bbt.localScores.v1';
 const SERIES_SCORE_KEY = 'series';
 
 type LocalScoreMap = Record<string, string[]>;
+type PlayView = 'series' | 'individual';
 
 interface ScenarioProgress {
   played: boolean;
@@ -94,6 +95,7 @@ export function ScenarioSelect({
   progressRefreshKey,
   userId,
 }: Props) {
+  const [playView, setPlayView] = useState<PlayView>('series');
   const [leaderboards, setLeaderboards] = useState<Record<string, LeaderboardEntry[]>>({});
   const [seriesLeaderboard, setSeriesLeaderboard] = useState<SeriesLeaderboardEntry[]>([]);
 
@@ -166,70 +168,83 @@ export function ScenarioSelect({
         </p>
       </div>
 
-      <div className="mode-grid">
-        <section className="mode-card mode-card--primary">
-          <div className="mode-card__body">
-            <span className="mode-card__eyebrow">Ranked path</span>
-            <h2 className="mode-card__title">Series Play</h2>
-            <p className="mode-card__desc">
-              Run the full challenge set as a gauntlet and track your aggregate performance.
-            </p>
-            <div className="mode-card__status">{formatProgress(seriesProgress)}</div>
-          </div>
-          <div className="mode-card__actions">
-            <button className="btn btn--primary" onClick={onStartSeries}>
-              Start Series
-            </button>
-            <button className="btn btn--secondary" onClick={onSeriesLeaderboard}>
-              Series Rankings
-            </button>
-          </div>
-        </section>
-
-        <section className="mode-card">
-          <div className="mode-card__body">
-            <span className="mode-card__eyebrow">Scenario board</span>
-            <h2 className="mode-card__title">Individual Challenges</h2>
-            <p className="mode-card__desc">
-              Pick a board directly, revisit your best route, and compare the table.
-            </p>
-            <div className="mode-card__status">{formatProgress(individualProgress)}</div>
-          </div>
-          <a className="btn btn--secondary" href="#individual-challenges">
-            Browse Challenges
-          </a>
-        </section>
+      <div className="play-switch" role="tablist" aria-label="Play mode">
+        <button
+          className={`play-switch__tab${playView === 'series' ? ' play-switch__tab--active' : ''}`}
+          type="button"
+          role="tab"
+          aria-selected={playView === 'series'}
+          onClick={() => setPlayView('series')}
+        >
+          Series
+        </button>
+        <button
+          className={`play-switch__tab${playView === 'individual' ? ' play-switch__tab--active' : ''}`}
+          type="button"
+          role="tab"
+          aria-selected={playView === 'individual'}
+          onClick={() => setPlayView('individual')}
+        >
+          Individual
+        </button>
       </div>
 
-      <section id="individual-challenges" className="challenge-section">
-        <div className="challenge-section__header">
-          <h2 className="challenge-section__title">Individual Challenges</h2>
-          <p className="challenge-section__subtitle">Choose a ranked board.</p>
-        </div>
+      {playView === 'series' ? (
+        <section className="play-section">
+          <div className="series-row">
+            <div className="series-row__body">
+              <span className="series-row__eyebrow">Featured series</span>
+              <h2 className="series-row__title">Humans vs Orcs: Touchdown or Bust</h2>
+              <p className="series-row__desc">
+                Lead the Reikland attack through green-skin pressure, chain the cleanest route,
+                and cross the line before the Orcs turn the drive into a scrum.
+              </p>
+              <div className="series-row__meta">{formatProgress(seriesProgress)}</div>
+            </div>
+            <div className="series-row__actions">
+              <button className="btn btn--primary" onClick={onStartSeries}>
+                Start Series
+              </button>
+              <button className="btn btn--secondary" onClick={onSeriesLeaderboard}>
+                Rankings
+              </button>
+            </div>
+          </div>
+        </section>
+      ) : (
+        <section className="play-section">
+          <div className="challenge-section__header">
+            <div>
+              <h2 className="challenge-section__title">Individual Challenges</h2>
+              <p className="challenge-section__subtitle">Choose a ranked board.</p>
+            </div>
+            <div className="challenge-section__summary">{formatProgress(individualProgress)}</div>
+          </div>
 
-        <div className="scenario-select__list">
-          {scenarios.map(s => {
-            const copy = CHALLENGE_COPY[s.id] ?? { title: s.name, description: s.description };
-            return (
-              <div key={s.id} className="scenario-card">
-                <div className="scenario-card__body">
-                  <div className="scenario-card__name">{copy.title}</div>
-                  <div className="scenario-card__desc">{copy.description}</div>
-                  <div className="scenario-card__meta">{formatProgress(scenarioProgress[s.id])}</div>
+          <div className="challenge-tile-grid">
+            {scenarios.map(s => {
+              const copy = CHALLENGE_COPY[s.id] ?? { title: s.name, description: s.description };
+              return (
+                <div key={s.id} className="challenge-tile">
+                  <div className="challenge-tile__body">
+                    <div className="challenge-tile__name">{copy.title}</div>
+                    <div className="challenge-tile__desc">{copy.description}</div>
+                    <div className="challenge-tile__meta">{formatProgress(scenarioProgress[s.id])}</div>
+                  </div>
+                  <div className="challenge-tile__actions">
+                    <button className="btn btn--primary" onClick={() => onPlay(s)}>
+                      Play
+                    </button>
+                    <button className="btn btn--secondary" onClick={() => onLeaderboard(s)}>
+                      Rankings
+                    </button>
+                  </div>
                 </div>
-                <div className="scenario-card__actions">
-                  <button className="btn btn--primary" onClick={() => onPlay(s)}>
-                    Play
-                  </button>
-                  <button className="btn btn--secondary" onClick={() => onLeaderboard(s)}>
-                    Rankings
-                  </button>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </section>
+              );
+            })}
+          </div>
+        </section>
+      )}
 
       <div className="scenario-select__footer">
         <button className="btn btn--ghost" onClick={onAdmin}>
