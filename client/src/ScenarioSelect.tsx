@@ -27,17 +27,6 @@ interface Props {
   userId?: string;
 }
 
-const CHALLENGE_COPY: Record<string, { title: string; description: string }> = {
-  'scenario-001': {
-    title: 'Opening Lane',
-    description: 'A compact scoring puzzle with pressure around the central channel.',
-  },
-  'scenario-002': {
-    title: 'Broken Screen',
-    description: 'A wider attacking shape with multiple contact points and a deeper finish.',
-  },
-};
-
 function pct(value: number): string {
   return `${Math.round(value * 100)}%`;
 }
@@ -223,12 +212,11 @@ export function ScenarioSelect({
 
           <div className="challenge-tile-grid">
             {scenarios.map(s => {
-              const copy = CHALLENGE_COPY[s.id] ?? { title: s.name, description: s.description };
               return (
                 <div key={s.id} className="challenge-tile">
                   <div className="challenge-tile__body">
-                    <div className="challenge-tile__name">{copy.title}</div>
-                    <div className="challenge-tile__desc">{copy.description}</div>
+                    <div className="challenge-tile__name">{s.name}</div>
+                    <div className="challenge-tile__desc">{s.description}</div>
                     <div className="challenge-tile__meta">{formatProgress(scenarioProgress[s.id])}</div>
                   </div>
                   <div className="challenge-tile__actions">

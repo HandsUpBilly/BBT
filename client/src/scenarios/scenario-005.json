@@ -1,7 +1,7 @@
 {
   "id": "scenario-005",
-  "name": "The Final Play",
-  "description": "Last chance for the score. Your thrower must dodge free and hand off to the catcher, who still has to beat two blitzers to the line.",
+  "name": "Reikland's Last Stand",
+  "description": "Last chance for the score. Swiftfoot must dodge free and hand off to Quickhand, who still has to beat blitzers Bonecruncher and Headsmash to the line.",
   "activeTeam": "human",
   "pieces": [
     {
