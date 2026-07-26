@@ -570,12 +570,16 @@ export function useGameState(initialState: GameState) {
         return p;
       });
 
+      // Touchdown: the receiver caught the handoff in the end zone
+      const isTouchdown = isTouchdownSquare(receiver.position, receiver.team);
+
       return clearSelection({
         ...prev,
         pieces,
         passUsed: true,
         actionLog: [...prev.actionLog, handoffEntry],
         pendingProb: prev.pendingProb * actionProb,
+        ...(isTouchdown ? { phase: 'touchdown' as const } : {}),
       });
     });
   }, []);
@@ -683,12 +687,16 @@ export function useGameState(initialState: GameState) {
         return p;
       });
 
+      // Touchdown: the receiver caught the pass in the end zone
+      const isTouchdown = isTouchdownSquare(receiver.position, receiver.team);
+
       return clearSelection({
         ...prev,
         pieces,
         passUsed: true,
         actionLog: [...prev.actionLog, passEntry, catchEntry],
         pendingProb: prev.pendingProb * passProb * catchProb,
+        ...(isTouchdown ? { phase: 'touchdown' as const } : {}),
       });
     });
   }, []);
