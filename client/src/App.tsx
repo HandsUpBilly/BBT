@@ -10,7 +10,6 @@ import { ScenarioSelect } from './ScenarioSelect';
 import { SubmitModal } from './SubmitModal';
 import { Leaderboard } from './Leaderboard';
 import { ScoreSummary } from './ScoreSummary';
-import { SeriesNameEntry } from './SeriesNameEntry';
 import { SeriesLeaderboard } from './SeriesLeaderboard';
 import { SeriesScoreSummary } from './SeriesScoreSummary';
 import { ConfirmDialog } from './ConfirmDialog';
@@ -106,8 +105,84 @@ interface SeriesRunState {
   results: SeriesPuzzleResult[]; // one entry per completed puzzle so far
 }
 
+interface IdentityGateProps {
+  authConfigured: boolean;
+  onGoogleSignIn: () => Promise<void>;
+  onGuest: (name: string) => void;
+}
+
+function IdentityGate({ authConfigured, onGoogleSignIn, onGuest }: IdentityGateProps) {
+  const [guestMode, setGuestMode] = useState(false);
+  const [guestName, setGuestName] = useState('');
+  const [signingIn, setSigningIn] = useState(false);
+
+  async function handleGoogleSignIn() {
+    setSigningIn(true);
+    try {
+      await onGoogleSignIn();
+    } finally {
+      setSigningIn(false);
+    }
+  }
+
+  function submitGuest() {
+    const trimmed = guestName.trim();
+    if (!trimmed) return;
+    onGuest(trimmed);
+  }
+
+  return (
+    <div className="identity-gate">
+      <div className="identity-gate__panel">
+        <div className="identity-gate__header">
+          <h1 className="identity-gate__title">BB Tactics</h1>
+          <p className="identity-gate__subtitle">
+            Choose how your leaderboard runs should be identified.
+          </p>
+        </div>
+
+        <div className="identity-gate__actions">
+          <button
+            className="btn btn--primary"
+            disabled={!authConfigured || signingIn}
+            onClick={() => { void handleGoogleSignIn(); }}
+          >
+            {authConfigured ? 'Log In With Google' : 'Google Login Unavailable'}
+          </button>
+          <button className="btn btn--secondary" onClick={() => setGuestMode(true)}>
+            Play As Guest
+          </button>
+        </div>
+
+        {guestMode && (
+          <div className="identity-gate__guest">
+            <label className="identity-gate__label" htmlFor="guest-name">Guest name</label>
+            <div className="identity-gate__guest-row">
+              <input
+                id="guest-name"
+                className="identity-gate__input"
+                type="text"
+                maxLength={32}
+                placeholder="Your name"
+                value={guestName}
+                onChange={e => setGuestName(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && submitGuest()}
+                autoFocus
+              />
+              <button className="btn btn--primary" disabled={!guestName.trim()} onClick={submitGuest}>
+                Continue
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export default function App() {
-  const { currentUser, idToken, isConfigured: authConfigured, signIn, signOut } = useAuth();
+  const { currentUser, idToken, isConfigured: authConfigured, signIn } = useAuth();
+  const [guestName, setGuestName] = useState('');
   const [appMode, setAppMode] = useState<AppMode>('home');
   const [activeScenario, setActiveScenario] = useState<Scenario | null>(null);
   const [leaderboardHighlight, setLeaderboardHighlight] = useState<string | undefined>();
@@ -156,6 +231,9 @@ export default function App() {
     setZoomBounds(computeStartOfPlayZoom(s.pieces, s.activeTeam));
     setAppMode('freeplay');
   }, [setState, computeStartOfPlayZoom]);
+
+  const identityName = currentUser?.displayName ?? guestName;
+  const identityReady = Boolean(identityName.trim());
 
   const startPuzzle = useCallback((scenario: Scenario) => {
     setActiveScenario(scenario);
@@ -305,22 +383,15 @@ export default function App() {
 
   // ── Series mode handlers ──────────────────────────────────────────────────
   const startSeries = useCallback(() => {
-    setAppMode('series-name');
-  }, []);
-
-  const handleSeriesNameSubmit = useCallback((name: string) => {
+    if (!identityName.trim()) return;
     const firstScenario = scenarios[0];
-    setSeriesRun({ playerName: name, puzzleIndex: 0, results: [] });
+    setSeriesRun({ playerName: identityName, puzzleIndex: 0, results: [] });
     setActiveScenario(firstScenario);
     const s = makeScenarioState(firstScenario);
     setState(s);
     setZoomBounds(computeStartOfPlayZoom(s.pieces, s.activeTeam));
     setAppMode('series-puzzle');
-  }, [setState, computeStartOfPlayZoom]);
-
-  const cancelSeriesEntry = useCallback(() => {
-    setAppMode('home');
-  }, []);
+  }, [identityName, setState, computeStartOfPlayZoom]);
 
   // Called when the player continues past a touchdown while in a series run.
   // Submits the puzzle's score to its individual leaderboard, records the
@@ -398,6 +469,18 @@ export default function App() {
   }, [appMode, requestLeaveSeries]);
 
   // ── Render: non-game screens ─────────────────────────────────────────────
+  if (!identityReady) {
+    return (
+      <div className="app app--home">
+        <IdentityGate
+          authConfigured={authConfigured}
+          onGoogleSignIn={signIn}
+          onGuest={setGuestName}
+        />
+      </div>
+    );
+  }
+
   if (appMode === 'home') {
     return (
       <div className="app app--home">
@@ -408,24 +491,7 @@ export default function App() {
           onSeriesLeaderboard={() => { setSeriesHighlight(undefined); setSeriesInitialEntries(undefined); setAppMode('series-leaderboard'); }}
           onAdmin={() => setAppMode('admin')}
           progressRefreshKey={progressRefreshKey}
-          currentUser={currentUser}
-          authConfigured={authConfigured}
-          onSignIn={() => { void signIn(); }}
-          onSignOut={signOut}
-        />
-      </div>
-    );
-  }
-
-  if (appMode === 'series-name') {
-    return (
-      <div className="app app--home">
-        <SeriesNameEntry
-          puzzleCount={scenarios.length}
-          onStart={handleSeriesNameSubmit}
-          onCancel={cancelSeriesEntry}
-          defaultName={currentUser?.displayName}
-          signedInName={currentUser?.displayName}
+          userId={currentUser?.id}
         />
       </div>
     );
@@ -650,8 +716,8 @@ export default function App() {
           actionLog={state.actionLog}
           onSubmit={handleSubmit}
           onDismiss={handleSkipSubmit}
-          defaultName={currentUser?.displayName}
-          signedInName={currentUser?.displayName}
+          defaultName={identityName}
+          signedInName={identityName}
         />
       )}
 

@@ -60,6 +60,98 @@ body,
   gap: 10px;
 }
 
+.identity-gate {
+  min-height: 100%;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+}
+
+.identity-gate__panel {
+  width: min(520px, 100%);
+  background: #262626;
+  border: 1px solid #3a3a3a;
+  border-radius: 8px;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+
+.identity-gate__header {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.identity-gate__title {
+  font-size: 2rem;
+  line-height: 1.1;
+  color: #f0f0f0;
+}
+
+.identity-gate__subtitle {
+  color: #aaa;
+  line-height: 1.45;
+}
+
+.identity-gate__actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.identity-gate__guest {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.identity-gate__label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #888;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.identity-gate__guest-row {
+  display: flex;
+  gap: 10px;
+}
+
+.identity-gate__input {
+  min-width: 0;
+  flex: 1;
+  background: #1d1d1d;
+  border: 1px solid #444;
+  color: #f0f0f0;
+  border-radius: 6px;
+  padding: 9px 10px;
+  font-size: 0.92rem;
+}
+
+.identity-gate__input:focus {
+  outline: none;
+  border-color: #4a8c2a;
+  box-shadow: 0 0 0 2px rgba(74, 140, 42, 0.25);
+}
+
+@media (max-width: 560px) {
+  .identity-gate {
+    padding: 14px;
+  }
+
+  .identity-gate__panel {
+    padding: 18px;
+  }
+
+  .identity-gate__actions,
+  .identity-gate__guest-row {
+    flex-direction: column;
+  }
+}
+
 /* ── HUD ─────────────────────────────────────────────────────────────── */
 .hud {
   display: flex;

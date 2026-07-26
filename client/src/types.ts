@@ -121,7 +121,6 @@ export type AppMode =
   | 'puzzle'
   | 'leaderboard'
   | 'admin'
-  | 'series-name'
   | 'series-puzzle'
   | 'series-leaderboard';
 
