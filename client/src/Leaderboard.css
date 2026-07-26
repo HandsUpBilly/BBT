@@ -97,6 +97,23 @@
 }
 
 .lb-table__rank { font-size: 1rem; width: 2.5em; }
+.lb-table__avatar-cell { width: 2.4em; padding-right: 0; }
+.lb-table__avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  object-fit: cover;
+  display: block;
+}
+.lb-table__avatar--fallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #4a8c2a;
+  color: #fff;
+  font-size: 0.68rem;
+  font-weight: 700;
+}
 .lb-table__name { font-weight: 600; color: #f0f0f0; }
 .lb-table__prob { font-weight: 700; color: #4caf50; }
 .lb-table__dice { color: #aaa; }
