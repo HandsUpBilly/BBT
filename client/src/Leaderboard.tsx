@@ -15,6 +15,15 @@ interface Props {
 
 function pct(p: number) { return `${Math.round(p * 100)}%`; }
 
+function initials(name: string): string {
+  const trimmed = name.trim();
+  if (!trimmed) return '?';
+  const parts = trimmed.split(/\s+/);
+  const first = parts[0]?.[0] ?? '';
+  const last = parts.length > 1 ? parts[parts.length - 1]?.[0] ?? '' : '';
+  return (first + last).toUpperCase();
+}
+
 export function Leaderboard({ scenario, onBack, highlightId, initialEntries, onEntriesLoaded, onRowClick }: Props) {
   const [entries, setEntries] = useState<LeaderboardEntry[]>(initialEntries ?? []);
   const [loading, setLoading] = useState(!initialEntries);
@@ -68,6 +77,7 @@ export function Leaderboard({ scenario, onBack, highlightId, initialEntries, onE
           <thead>
             <tr>
               <th>#</th>
+              <th></th>
               <th>Name</th>
               <th>Probability</th>
               <th>Dice rolls</th>
@@ -86,6 +96,13 @@ export function Leaderboard({ scenario, onBack, highlightId, initialEntries, onE
               >
                 <td className="lb-table__rank">
                   {i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : i + 1}
+                </td>
+                <td className="lb-table__avatar-cell">
+                  {e.avatarUrl ? (
+                    <img className="lb-table__avatar" src={e.avatarUrl} alt={e.name} referrerPolicy="no-referrer" />
+                  ) : (
+                    <span className="lb-table__avatar lb-table__avatar--fallback">{initials(e.name)}</span>
+                  )}
                 </td>
                 <td className="lb-table__name">{e.name}</td>
                 <td className="lb-table__prob">{pct(e.probability)}</td>

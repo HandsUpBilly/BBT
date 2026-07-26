@@ -13,6 +13,7 @@ import { ScoreSummary } from './ScoreSummary';
 import { SeriesLeaderboard } from './SeriesLeaderboard';
 import { SeriesScoreSummary } from './SeriesScoreSummary';
 import { ConfirmDialog } from './ConfirmDialog';
+import { UserMenu } from './UserMenu';
 import { submitScore, fetchLeaderboard, submitSeriesScore } from './api';
 import { scenarios } from './scenarios';
 import { useAuth } from './auth';
@@ -26,8 +27,25 @@ import './App.css';
 
 const TURNS_PER_HALF = 8;
 const LOCAL_SCORE_KEY = 'bbt.localScores.v1';
+const GUEST_NAME_KEY = 'bbt.guestName.v1';
 
 type LocalScoreMap = Record<string, string[]>;
+
+function readGuestName(): string {
+  try {
+    return window.localStorage.getItem(GUEST_NAME_KEY) ?? '';
+  } catch {
+    return '';
+  }
+}
+
+function writeGuestName(name: string): void {
+  try {
+    window.localStorage.setItem(GUEST_NAME_KEY, name);
+  } catch {
+    // Storage unavailable — guest name just won't persist across refreshes.
+  }
+}
 
 function readLocalScores(): LocalScoreMap {
   try {
@@ -181,8 +199,12 @@ function IdentityGate({ authConfigured, onGoogleSignIn, onGuest }: IdentityGateP
 }
 
 export default function App() {
-  const { currentUser, idToken, isConfigured: authConfigured, signIn } = useAuth();
-  const [guestName, setGuestName] = useState('');
+  const { currentUser, idToken, isConfigured: authConfigured, signIn, signOut } = useAuth();
+  const [guestName, setGuestNameState] = useState(readGuestName);
+  const setGuestName = useCallback((name: string) => {
+    setGuestNameState(name);
+    writeGuestName(name);
+  }, []);
   const [appMode, setAppMode] = useState<AppMode>('home');
   const [activeScenario, setActiveScenario] = useState<Scenario | null>(null);
   const [leaderboardHighlight, setLeaderboardHighlight] = useState<string | undefined>();
@@ -234,6 +256,16 @@ export default function App() {
 
   const identityName = currentUser?.displayName ?? guestName;
   const identityReady = Boolean(identityName.trim());
+  const identityAvatarUrl = currentUser?.avatarUrl;
+
+  const handleSignOut = useCallback(() => {
+    if (currentUser) {
+      signOut();
+    } else {
+      setGuestName('');
+    }
+    setAppMode('home');
+  }, [currentUser, signOut, setGuestName]);
 
   const startPuzzle = useCallback((scenario: Scenario) => {
     setActiveScenario(scenario);
@@ -484,6 +516,7 @@ export default function App() {
   if (appMode === 'home') {
     return (
       <div className="app app--home">
+        <UserMenu name={identityName} avatarUrl={identityAvatarUrl} onSignOut={handleSignOut} />
         <ScenarioSelect
           onPlay={startPuzzle}
           onLeaderboard={goLeaderboard}
@@ -501,6 +534,7 @@ export default function App() {
     if (selectedSeriesEntry) {
       return (
         <div className="app app--home">
+          <UserMenu name={identityName} avatarUrl={identityAvatarUrl} onSignOut={handleSignOut} />
           <SeriesScoreSummary
             entry={selectedSeriesEntry}
             onBack={() => setSelectedSeriesEntry(undefined)}
@@ -510,6 +544,7 @@ export default function App() {
     }
     return (
       <div className="app app--home">
+        <UserMenu name={identityName} avatarUrl={identityAvatarUrl} onSignOut={handleSignOut} />
         <SeriesLeaderboard
           key={seriesRefreshKey}
           onBack={() => { setSeriesInitialEntries(undefined); setAppMode('home'); }}
@@ -525,6 +560,7 @@ export default function App() {
   if (appMode === 'admin') {
     return (
       <div className="app app--home">
+        <UserMenu name={identityName} avatarUrl={identityAvatarUrl} onSignOut={handleSignOut} />
         <div className="admin-screen">
           <div className="admin-screen__header">
             <h1 className="admin-screen__title">Admin Mode</h1>
@@ -543,6 +579,7 @@ export default function App() {
     if (selectedEntry) {
       return (
         <div className="app app--home">
+          <UserMenu name={identityName} avatarUrl={identityAvatarUrl} onSignOut={handleSignOut} />
           <ScoreSummary
             entry={selectedEntry}
             onBack={() => setSelectedEntry(undefined)}
@@ -552,6 +589,7 @@ export default function App() {
     }
     return (
       <div className="app app--home">
+        <UserMenu name={identityName} avatarUrl={identityAvatarUrl} onSignOut={handleSignOut} />
         <Leaderboard
           key={leaderboardRefreshKey}
           scenario={activeScenario}
@@ -651,6 +689,8 @@ export default function App() {
         {state.isPuzzleMode && (
           <button className="hud__restart" onClick={handleRestartTurn}>↺ Restart</button>
         )}
+
+        <UserMenu name={identityName} avatarUrl={identityAvatarUrl} onSignOut={handleSignOut} />
       </header>
 
       <div className="legend">
