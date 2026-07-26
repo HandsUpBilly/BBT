@@ -687,3 +687,183 @@ In-memory store is replaced with a real database (Supabase/Postgres) in a later 
 8. **Leaderboard view** — table component showing rank, name, probability %, dice count, date.
 9. **First scenario JSON** — author one playable scenario to validate the full flow end-to-end.
 10. **Wire routing** — home → scenario select → puzzle play → submission → leaderboard.
+
+---
+---
+
+# Series Mode Specification
+
+## Problem Statement
+
+Today the home screen (`ScenarioSelect`) lists individual puzzle scenarios, each played and
+scored independently on its own leaderboard. The user wants a new primary flow: a **Series**
+of 5 puzzles played back-to-back under one name, with a combined result (average success
+probability across all 5) posted to a new **Series Leaderboard**. Existing per-puzzle
+leaderboards and standalone Play/Leaderboard/Sandbox options must continue to work unchanged.
+
+## Requirements
+
+### 1. Scenario content
+- Author 3 new scenario JSON files (`scenario-003.json`, `scenario-004.json`,
+  `scenario-005.json`) in `client/src/scenarios/`, following the existing schema
+  (see `scenario-001.json` / `scenario-002.json`). Each should be a distinct, solvable
+  puzzle (varying piece counts / layouts / risk profile), consistent with existing tone
+  and naming (human vs orc pieces, thrower/catcher/blocker/blitzer roles).
+- The series is fixed to these 5 scenarios in **ascending `id` order**
+  (`scenario-001` → `scenario-005`).
+
+### 2. Home screen changes
+- Add a new primary entry point, e.g. "Start Series" button, alongside the existing
+  per-scenario Play/Leaderboard list and the Sandbox button (all existing options remain
+  as-is).
+- Add a "Series Leaderboard" entry point (separate from per-puzzle leaderboards) to view
+  the combined-score board.
+
+### 3. Series entry flow
+- Clicking "Start Series" prompts for the player's name **once**, before puzzle 1 begins
+  (new simple name-entry screen/modal — reuse `SubmitModal`-style input UI).
+- After name entry, load puzzle 1 (`scenario-001`) in puzzle mode immediately.
+
+### 4. Playing through the series
+- Puzzles are played in fixed order 1 → 5, using the existing single-puzzle gameplay
+  (`useGameState` / `makeScenarioState`), unchanged.
+- **Touchdown reached**: show the existing touchdown breakdown modal (move list +
+  cumulative probability), but in series mode:
+  - No name field (name already captured at series start).
+  - No "Skip" option.
+  - Button reads "Continue" (or "Continue to Puzzle N+1" / "Finish Series" on puzzle 5).
+  - On Continue: submit the score to **both** (a) that puzzle's individual leaderboard
+    (existing `submitScore(scenarioId, ...)` — unchanged), and (b) record the puzzle's
+    probability into the in-progress series run state.
+  - If not the last puzzle: advance to the next scenario in the series automatically.
+  - If it was puzzle 5: compute the average probability across all 5 puzzle results and
+    submit the combined series entry to the new series leaderboard, then show the Series
+    Leaderboard screen with the new entry highlighted.
+- **Failure to score a touchdown** (player's turns run out without a touchdown, i.e. the
+  puzzle's turn/phase logic reaches a non-touchdown end state): force a retry of that same
+  puzzle — reset it via `makeScenarioState(scenario)` — the player must keep retrying
+  until they score a touchdown before the series can advance. (Mirrors existing puzzle
+  "↺ Restart" behavior in `App.tsx`; series flow additionally auto-restarts on a failed
+  end state rather than returning to the home menu.)
+- Series progress (current puzzle index, player name, probabilities collected so far)
+  is held in in-memory React state in `App.tsx` (no persistence needed across page
+  reload — reloading loses series progress, same as today's single-puzzle behavior).
+
+### 5. Leaving mid-series
+- Clicking "← Menu" during a series run shows a confirmation dialog
+  ("Leave series? Your progress will be lost.") before navigating back to the home
+  screen. Confirming discards all series-run state; canceling keeps the player on the
+  current puzzle.
+
+### 6. Combined probability calculation
+- Combined score = **arithmetic mean** of the 5 individual puzzle `cumulativeProb` values
+  (each in range 0–1), stored as `probability` on the series entry (same 0–1 scale as
+  existing per-puzzle entries, so existing `pct()` formatting works unchanged).
+
+### 7. Series leaderboard (new)
+- New data model, `SeriesLeaderboardEntry`:
+  ```ts
+  interface SeriesLeaderboardEntry {
+    id: string;
+    name: string;
+    probability: number;       // average of the 5 puzzle probabilities
+    date: string;
+    puzzles: {                 // one per scenario, in series order
+      scenarioId: string;
+      scenarioName: string;
+      probability: number;
+      diceCount: number;
+      moves: RiskyMove[];
+    }[];
+  }
+  ```
+- New API endpoints, mirroring the existing per-scenario leaderboard pattern:
+  - `GET /api/series-leaderboard` → top N series entries sorted by `probability` desc.
+  - `POST /api/series-leaderboard` → submit a new series entry (same upsert-by-name
+    behavior as `netlify/functions/leaderboard.js`, i.e. replace an existing entry for
+    the same name if a better/newer one is submitted — follow existing sort tie-break:
+    higher probability wins; use total dice/rolls count across puzzles as tie-break to
+    mirror the existing pattern).
+  - Implement in both `server/index.js` (Express, in-memory `Map`) and
+    `netlify/functions/leaderboard.js` (extend it or add a new
+    `netlify/functions/series-leaderboard.js` using Netlify Blobs — mirror the existing
+    file's structure) plus corresponding `netlify.toml` redirect
+    (`/api/series-leaderboard` → the new function).
+  - Add `fetchSeriesLeaderboard()` / `submitSeriesScore()` to `client/src/api.ts`.
+- New `SeriesLeaderboard.tsx` component (list view), styled consistently with the
+  existing `Leaderboard.tsx`:
+  - Columns: rank, name, average probability, date.
+  - Clicking a row expands/navigates to a per-puzzle breakdown view showing each of the
+    5 puzzle results (scenario name, probability, dice count) — reuse/extend the
+    `ScoreSummary` pattern (a `SeriesScoreSummary` component, or extend `ScoreSummary`
+    to accept a list of puzzle summaries).
+
+### 8. Non-goals / out of scope
+- No changes to Sandbox (free play) mode.
+- No changes to individual puzzle gameplay mechanics, dice math, or BFS pathing.
+- No persistence of in-progress series across browser reload/close.
+- No server-side validation of "5 real playthroughs" — client computes and submits the
+  average, same trust model as existing per-puzzle score submission.
+- No user-configurable series length — always exactly 5, in fixed order.
+
+## Acceptance Criteria
+
+1. Home screen shows a "Start Series" option plus a "Series Leaderboard" option,
+   alongside existing per-scenario Play/Leaderboard rows and the Sandbox button.
+2. Starting a series prompts for a name once, then loads `scenario-001` in puzzle mode.
+3. Scoring a touchdown on a series puzzle shows the breakdown modal with a
+   "Continue"-style action (no name entry, no Skip); confirming submits to that
+   scenario's individual leaderboard and advances to the next scenario in order.
+4. Failing to score a touchdown on a series puzzle automatically restarts that same
+   puzzle; the player cannot advance without a touchdown.
+5. After completing puzzle 5's touchdown, the app computes the average of the 5
+   cumulative probabilities, submits a new series leaderboard entry, and displays the
+   Series Leaderboard with that entry visible/highlighted.
+6. The Series Leaderboard lists entries sorted by average probability (desc); clicking
+   an entry shows a breakdown of all 5 puzzle results for that run.
+7. Clicking "← Menu" mid-series shows a confirmation dialog; confirming abandons the
+   series and returns home, canceling keeps the current puzzle state intact.
+8. All 5 scenarios (`scenario-001`..`scenario-005`) exist, load via the existing
+   `import.meta.glob` scenario index, and are independently playable/leaderboard-able
+   exactly as scenario-001/002 are today.
+9. `npm run lint` and `npm run build` (client) pass with no new errors.
+10. Existing standalone Play / per-scenario Leaderboard / Sandbox flows are unaffected
+    (manually verified unchanged behavior).
+
+## Implementation Approach
+
+1. **Scenario content**: Author `scenario-003.json`, `scenario-004.json`,
+   `scenario-005.json` under `client/src/scenarios/`.
+2. **Types**: Add `SeriesLeaderboardEntry` and any supporting types to `client/src/types.ts`;
+   extend `AppMode` with new modes (e.g. `'series-name'`, `'series-play'`,
+   `'series-leaderboard'`) as needed.
+3. **API client**: Add `fetchSeriesLeaderboard()` / `submitSeriesScore()` to
+   `client/src/api.ts`.
+4. **Server (dev)**: Add `/api/series-leaderboard` GET/POST routes to `server/index.js`
+   with an in-memory store, mirroring existing per-scenario logic.
+5. **Server (prod)**: Add `netlify/functions/series-leaderboard.js` (Netlify Blobs,
+   mirroring `leaderboard.js`) and register the redirect in `netlify.toml`.
+6. **Series state management**: In `App.tsx`, add series-run state (current puzzle
+   index, player name, array of per-puzzle results collected so far) and orchestration
+   logic:
+   - `startSeries()` → show name entry.
+   - `beginSeriesPuzzle(name)` → initialize series state, load scenario-001.
+   - Modify touchdown handling: in series mode, submit to per-puzzle leaderboard,
+     record result, then either load next scenario or finalize+submit series entry.
+   - Modify failure/non-touchdown end-of-puzzle handling to auto-restart via
+     `makeScenarioState`.
+   - Add confirmation dialog on "← Menu" click while a series is active.
+7. **UI components**:
+   - Add a name-entry screen/modal for series start (reuse `SubmitModal` styling or a
+     new lightweight component).
+   - Adjust `SubmitModal` (or add a `SeriesSubmitModal` variant) to hide name input and
+     Skip button, and relabel the primary button, when in series mode.
+   - Add `SeriesLeaderboard.tsx` (+ CSS) for the combined board.
+   - Add a breakdown view for a series entry (extend `ScoreSummary` or add
+     `SeriesScoreSummary.tsx`).
+   - Update `ScenarioSelect.tsx` to add "Start Series" and "Series Leaderboard" entry
+     points.
+8. **Verification**: Run `cd client && npm run lint` and `npm run build`; manually
+   exercise the full series flow (all 5 puzzles, one forced failure/retry, series
+   leaderboard submission and breakdown view) and confirm standalone Play/Leaderboard/
+   Sandbox flows are unaffected.

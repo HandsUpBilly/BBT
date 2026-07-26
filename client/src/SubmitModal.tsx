@@ -6,6 +6,12 @@ interface Props {
   actionLog: ActionLogEntry[];
   onSubmit: (name: string) => void;
   onDismiss: () => void;
+  /**
+   * Series mode: hides the name input and Skip button, and shows a single
+   * "Continue" action (the name was already captured at series start).
+   */
+  seriesMode?: boolean;
+  continueLabel?: string;
 }
 
 function pct(p: number) { return `${(p * 100).toFixed(1)}%`; }
@@ -55,7 +61,7 @@ function capitalize(s: string): string {
   return s.charAt(0).toUpperCase() + s.slice(1);
 }
 
-export function SubmitModal({ actionLog, onSubmit, onDismiss }: Props) {
+export function SubmitModal({ actionLog, onSubmit, onDismiss, seriesMode, continueLabel }: Props) {
   const [name, setName] = useState('');
 
   const riskyMoves = actionLog.filter(e =>
@@ -99,29 +105,39 @@ export function SubmitModal({ actionLog, onSubmit, onDismiss }: Props) {
           <p className="submit-modal__no-risk">Clean run — no rolls needed!</p>
         )}
 
-        <p className="submit-modal__prompt">Enter your name for the leaderboard:</p>
-        <input
-          className="submit-modal__input"
-          type="text"
-          maxLength={32}
-          placeholder="Your name"
-          value={name}
-          onChange={e => setName(e.target.value)}
-          onKeyDown={e => e.key === 'Enter' && name.trim() && onSubmit(name.trim())}
-          autoFocus
-        />
-        <div className="submit-modal__actions">
-          <button
-            className="modal__roll-btn"
-            disabled={!name.trim()}
-            onClick={() => onSubmit(name.trim())}
-          >
-            Submit Score
-          </button>
-          <button className="modal__continue-btn" onClick={onDismiss}>
-            Skip
-          </button>
-        </div>
+        {seriesMode ? (
+          <div className="submit-modal__actions">
+            <button className="modal__roll-btn" onClick={() => onSubmit('')}>
+              {continueLabel ?? 'Continue'}
+            </button>
+          </div>
+        ) : (
+          <>
+            <p className="submit-modal__prompt">Enter your name for the leaderboard:</p>
+            <input
+              className="submit-modal__input"
+              type="text"
+              maxLength={32}
+              placeholder="Your name"
+              value={name}
+              onChange={e => setName(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && name.trim() && onSubmit(name.trim())}
+              autoFocus
+            />
+            <div className="submit-modal__actions">
+              <button
+                className="modal__roll-btn"
+                disabled={!name.trim()}
+                onClick={() => onSubmit(name.trim())}
+              >
+                Submit Score
+              </button>
+              <button className="modal__continue-btn" onClick={onDismiss}>
+                Skip
+              </button>
+            </div>
+          </>
+        )}
       </div>
     </div>
   );
