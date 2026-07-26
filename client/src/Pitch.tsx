@@ -1,5 +1,6 @@
 import type { GameState, Team } from './types';
 import { tacklezoneKeys, key } from './bfs';
+import type { ZoomBounds } from './bfs';
 import './Pitch.css';
 
 function BallIcon({ ghost }: { ghost?: boolean }) {
@@ -106,9 +107,11 @@ interface Props {
   onPieceClick: (col: number, row: number, x: number, y: number) => void;
   onSquareHover: (col: number, row: number) => void;
   onSquareLeave: () => void;
+  /** When set, only this landscape-coordinate sub-region of the pitch is rendered. */
+  zoomBounds?: ZoomBounds | null;
 }
 
-export function Pitch({ state, onSquareClick, onPieceClick, onSquareHover, onSquareLeave }: Props) {
+export function Pitch({ state, onSquareClick, onPieceClick, onSquareHover, onSquareLeave, zoomBounds }: Props) {
   const pieceMap = new Map(state.pieces.map(p => [key(p.position), p]));
 
   // Preview path: map from key -> step info
@@ -149,9 +152,16 @@ export function Pitch({ state, onSquareClick, onPieceClick, onSquareHover, onSqu
   //                 ROWS=15  (top→bottom  = portrait cols 0→14)
   // Portrait game state uses { col: 0-14, row: 0-25 }
   // Mapping: landscape col = portrait row, landscape row = portrait col
+  const colStart = zoomBounds ? zoomBounds.minCol : 0;
+  const colEnd   = zoomBounds ? zoomBounds.maxCol : COLS - 1;
+  const rowStart = zoomBounds ? zoomBounds.minRow : 0;
+  const rowEnd   = zoomBounds ? zoomBounds.maxRow : ROWS - 1;
+  const visibleCols = colEnd - colStart + 1;
+  const visibleRows = rowEnd - rowStart + 1;
+
   const squares = [];
-  for (let lRow = 0; lRow < ROWS; lRow++) {
-    for (let lCol = 0; lCol < COLS; lCol++) {
+  for (let lRow = rowStart; lRow <= rowEnd; lRow++) {
+    for (let lCol = colStart; lCol <= colEnd; lCol++) {
       // Translate to portrait coordinates used by game state
       const pCol = lRow;       // portrait col = landscape row
       const pRow = lCol;       // portrait row = landscape col
@@ -275,18 +285,30 @@ export function Pitch({ state, onSquareClick, onPieceClick, onSquareHover, onSqu
     }
   }
 
-  const colLabels = Array.from({ length: COLS }, (_, i) => (
-    <div key={i} className="pitch__col-label">{i}</div>
+  const colLabels = Array.from({ length: visibleCols }, (_, i) => (
+    <div key={colStart + i} className="pitch__col-label">{colStart + i}</div>
   ));
 
-  const rowLabels = Array.from({ length: ROWS }, (_, i) => (
-    <div key={i} className="pitch__row-label">{String.fromCharCode(65 + i)}</div>
+  const rowLabels = Array.from({ length: visibleRows }, (_, i) => (
+    <div key={rowStart + i} className="pitch__row-label">{String.fromCharCode(65 + rowStart + i)}</div>
   ));
+
+  const gridStyle = zoomBounds
+    ? {
+        aspectRatio: `${visibleCols} / ${visibleRows}`,
+        gridTemplateColumns: `repeat(${visibleCols}, 1fr)`,
+        gridTemplateRows: `repeat(${visibleRows}, 1fr)`,
+      }
+    : undefined;
+
+  const colLabelsStyle = zoomBounds
+    ? { gridTemplateColumns: `1.4em repeat(${visibleCols}, 1fr) 1.4em` }
+    : undefined;
 
   return (
-    <div className="pitch">
+    <div className={`pitch${zoomBounds ? ' pitch--zoomed' : ''}`}>
       {/* Column labels — top */}
-      <div className="pitch__col-labels pitch__col-labels--top">
+      <div className="pitch__col-labels pitch__col-labels--top" style={colLabelsStyle}>
         <div className="pitch__corner" />
         {colLabels}
         <div className="pitch__corner" />
@@ -297,14 +319,14 @@ export function Pitch({ state, onSquareClick, onPieceClick, onSquareHover, onSqu
         <div className="pitch__row-labels">{rowLabels}</div>
 
         {/* The field */}
-        <div className="pitch__grid">{squares}</div>
+        <div className="pitch__grid" style={gridStyle}>{squares}</div>
 
         {/* Row labels — right */}
         <div className="pitch__row-labels">{rowLabels}</div>
       </div>
 
       {/* Column labels — bottom */}
-      <div className="pitch__col-labels pitch__col-labels--bottom">
+      <div className="pitch__col-labels pitch__col-labels--bottom" style={colLabelsStyle}>
         <div className="pitch__corner" />
         {colLabels}
         <div className="pitch__corner" />

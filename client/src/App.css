@@ -67,6 +67,25 @@ body,
 }
 .hud__restart:hover { color: #e09090; border-color: #884444; }
 
+.hud__zoom {
+  background: transparent;
+  border: 1px solid #445533;
+  color: #9dbb7a;
+  border-radius: 5px;
+  padding: 4px 10px;
+  font-size: 0.78rem;
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.hud__zoom:hover { color: #c0e090; border-color: #6a8844; }
+.hud__zoom--active {
+  background: #4a8c2a;
+  color: #fff;
+  border-color: #4a8c2a;
+}
+.hud__zoom--active:hover { background: #5aac34; border-color: #5aac34; }
+
 /* Live probability (puzzle mode) */
 .hud__prob {
   display: flex;
@@ -247,6 +266,14 @@ body,
   /* Fill available width; height follows 1653:951 aspect ratio */
   width: 100%;
   height: auto;
+}
+
+/* Zoom mode: fit to the wrapper's height so cropped squares render larger,
+   rather than stretching to the full wrapper width. */
+.pitch-wrapper .pitch.pitch--zoomed {
+  width: auto;
+  height: 100%;
+  max-width: 100%;
 }
 
 /* ── Mobile: hide side panels, stack vertically ──────────────────────── */

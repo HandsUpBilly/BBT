@@ -115,7 +115,14 @@ export type GamePhase =
   | 'game_over'
   | 'touchdown';
 
-export type AppMode = 'home' | 'freeplay' | 'puzzle' | 'leaderboard';
+export type AppMode =
+  | 'home'
+  | 'freeplay'
+  | 'puzzle'
+  | 'leaderboard'
+  | 'series-name'
+  | 'series-puzzle'
+  | 'series-leaderboard';
 
 export interface GameState {
   pieces: PlayerPiece[];
@@ -182,4 +189,24 @@ export interface LeaderboardEntry {
   diceCount: number;
   date: string;
   moves: RiskyMove[];
+}
+
+// ── Series ──────────────────────────────────────────────────────────────────
+
+/** One puzzle's result as recorded within a series run. */
+export interface SeriesPuzzleResult {
+  scenarioId: string;
+  scenarioName: string;
+  probability: number;
+  diceCount: number;
+  moves: RiskyMove[];
+}
+
+export interface SeriesLeaderboardEntry {
+  id: string;
+  name: string;
+  probability: number;   // average of the puzzle probabilities
+  diceCount: number;     // total dice rolls across all puzzles (tie-break)
+  date: string;
+  puzzles: SeriesPuzzleResult[];
 }

@@ -10,12 +10,76 @@ import { ScenarioSelect } from './ScenarioSelect';
 import { SubmitModal } from './SubmitModal';
 import { Leaderboard } from './Leaderboard';
 import { ScoreSummary } from './ScoreSummary';
-import { submitScore, fetchLeaderboard } from './api';
-import type { AppMode, PlayerPiece, Scenario, LeaderboardEntry } from './types';
-import { key } from './bfs';
+import { SeriesNameEntry } from './SeriesNameEntry';
+import { SeriesLeaderboard } from './SeriesLeaderboard';
+import { SeriesScoreSummary } from './SeriesScoreSummary';
+import { ConfirmDialog } from './ConfirmDialog';
+import { submitScore, fetchLeaderboard, submitSeriesScore } from './api';
+import { scenarios } from './scenarios';
+import type {
+  AppMode, PlayerPiece, Scenario, LeaderboardEntry,
+  SeriesLeaderboardEntry, SeriesPuzzleResult, RiskyMove, ActionLogEntry,
+} from './types';
+import { key, computeReachable, computeZoomBounds } from './bfs';
 import './App.css';
 
 const TURNS_PER_HALF = 8;
+
+/** Build the risky-moves list + summary stats from a completed puzzle's action log. */
+function summarizeActionLog(actionLog: ActionLogEntry[]) {
+  const cumulativeProb = actionLog.length > 0
+    ? actionLog[actionLog.length - 1].cumulativeProb
+    : 1;
+  const riskyMoves = actionLog.filter(e =>
+    e.kind === 'handoff' || e.kind === 'pass' || e.kind === 'pass-catch' ||
+    e.dodgeTarget !== null || e.isGfi
+  );
+  const diceCount = riskyMoves.length;
+  const moves: RiskyMove[] = riskyMoves.map(e => {
+    if (e.kind === 'handoff') {
+      return {
+        pieceName: e.pieceName, pieceRole: e.pieceRole,
+        receiverName: e.receiverName, receiverRole: e.receiverRole,
+        from: e.from, to: e.to,
+        dodgeTarget: null, isGfi: false,
+        catchTarget: e.catchTarget,
+        actionProb: e.actionProb, cumulativeProb: e.cumulativeProb,
+      };
+    }
+    if (e.kind === 'pass') {
+      return {
+        pieceName: e.pieceName, pieceRole: e.pieceRole,
+        receiverName: e.receiverName, receiverRole: e.receiverRole,
+        from: e.from, to: e.to,
+        dodgeTarget: null, isGfi: false,
+        passTarget: e.passTarget, rangeBand: e.rangeBand,
+        actionProb: e.actionProb, cumulativeProb: e.cumulativeProb,
+      };
+    }
+    if (e.kind === 'pass-catch') {
+      return {
+        pieceName: e.pieceName, pieceRole: e.pieceRole,
+        from: e.from, to: e.to,
+        dodgeTarget: null, isGfi: false,
+        catchTarget: e.catchTarget,
+        actionProb: e.actionProb, cumulativeProb: e.cumulativeProb,
+      };
+    }
+    return {
+      pieceName: e.pieceName, pieceRole: e.pieceRole,
+      from: e.from, to: e.to,
+      dodgeTarget: e.dodgeTarget, isGfi: e.isGfi,
+      actionProb: e.actionProb, cumulativeProb: e.cumulativeProb,
+    };
+  });
+  return { cumulativeProb, diceCount, moves };
+}
+
+interface SeriesRunState {
+  playerName: string;
+  puzzleIndex: number;           // 0-based index into `scenarios`
+  results: SeriesPuzzleResult[]; // one entry per completed puzzle so far
+}
 
 export default function App() {
   const [appMode, setAppMode] = useState<AppMode>('home');
@@ -25,6 +89,16 @@ export default function App() {
   const [leaderboardInitialEntries, setLeaderboardInitialEntries] = useState<LeaderboardEntry[] | undefined>();
   const [selectedEntry, setSelectedEntry] = useState<LeaderboardEntry | undefined>();
 
+  // ── Series mode state ──────────────────────────────────────────────────
+  const [seriesRun, setSeriesRun] = useState<SeriesRunState | null>(null);
+  const [seriesHighlight, setSeriesHighlight] = useState<string | undefined>();
+  const [seriesRefreshKey, setSeriesRefreshKey] = useState(0);
+  const [seriesInitialEntries, setSeriesInitialEntries] = useState<SeriesLeaderboardEntry[] | undefined>();
+  const [selectedSeriesEntry, setSelectedSeriesEntry] = useState<SeriesLeaderboardEntry | undefined>();
+  const [confirmLeaveSeries, setConfirmLeaveSeries] = useState(false);
+
+  // ── Zoom mode ────────────────────────────────────────────────────────────
+  const [zoomEnabled, setZoomEnabled] = useState(false);
 
   // Game state — reinitialised when mode/scenario changes
   const { state, setState, handleSquareClick: hookSquareClick, handleSquareHover: hookSquareHover,
@@ -149,57 +223,12 @@ export default function App() {
     setHoveredPiece(null);
   }, [hookSquareLeave]);
 
-  // Submission handler
+  // Submission handler (standalone puzzle mode)
   const handleSubmit = useCallback(async (name: string) => {
     if (!activeScenario) return;
-    const cumulativeProb = state.actionLog.length > 0
-      ? state.actionLog[state.actionLog.length - 1].cumulativeProb
-      : 1;
-    // Risky moves: dodge/GFI steps, handoff catch rolls, pass rolls, pass catch rolls
-    const riskyMoves = state.actionLog.filter(e =>
-      e.kind === 'handoff' || e.kind === 'pass' || e.kind === 'pass-catch' ||
-      e.dodgeTarget !== null || e.isGfi
-    );
-    const dodgeCount = riskyMoves.length;
-    const moves = riskyMoves.map(e => {
-      if (e.kind === 'handoff') {
-        return {
-          pieceName: e.pieceName, pieceRole: e.pieceRole,
-          receiverName: e.receiverName, receiverRole: e.receiverRole,
-          from: e.from, to: e.to,
-          dodgeTarget: null as null, isGfi: false as const,
-          catchTarget: e.catchTarget,
-          actionProb: e.actionProb, cumulativeProb: e.cumulativeProb,
-        };
-      }
-      if (e.kind === 'pass') {
-        return {
-          pieceName: e.pieceName, pieceRole: e.pieceRole,
-          receiverName: e.receiverName, receiverRole: e.receiverRole,
-          from: e.from, to: e.to,
-          dodgeTarget: null as null, isGfi: false as const,
-          passTarget: e.passTarget, rangeBand: e.rangeBand,
-          actionProb: e.actionProb, cumulativeProb: e.cumulativeProb,
-        };
-      }
-      if (e.kind === 'pass-catch') {
-        return {
-          pieceName: e.pieceName, pieceRole: e.pieceRole,
-          from: e.from, to: e.to,
-          dodgeTarget: null as null, isGfi: false as const,
-          catchTarget: e.catchTarget,
-          actionProb: e.actionProb, cumulativeProb: e.cumulativeProb,
-        };
-      }
-      return {
-        pieceName: e.pieceName, pieceRole: e.pieceRole,
-        from: e.from, to: e.to,
-        dodgeTarget: e.dodgeTarget, isGfi: e.isGfi,
-        actionProb: e.actionProb, cumulativeProb: e.cumulativeProb,
-      };
-    });
+    const { cumulativeProb, diceCount, moves } = summarizeActionLog(state.actionLog);
     try {
-      const entry = await submitScore(activeScenario.id, name, cumulativeProb, dodgeCount, moves);
+      const entry = await submitScore(activeScenario.id, name, cumulativeProb, diceCount, moves);
       setLeaderboardHighlight(entry.id);
       setState(s => ({ ...s, phase: 'playing' }));
       setAppMode('leaderboard');
@@ -223,6 +252,94 @@ export default function App() {
     setState(makeScenarioState(activeScenario));
   }, [activeScenario, setState]);
 
+  // ── Series mode handlers ──────────────────────────────────────────────────
+  const startSeries = useCallback(() => {
+    setAppMode('series-name');
+  }, []);
+
+  const handleSeriesNameSubmit = useCallback((name: string) => {
+    const firstScenario = scenarios[0];
+    setSeriesRun({ playerName: name, puzzleIndex: 0, results: [] });
+    setActiveScenario(firstScenario);
+    setState(makeScenarioState(firstScenario));
+    setAppMode('series-puzzle');
+  }, [setState]);
+
+  const cancelSeriesEntry = useCallback(() => {
+    setAppMode('home');
+  }, []);
+
+  // Called when the player continues past a touchdown while in a series run.
+  // Submits the puzzle's score to its individual leaderboard, records the
+  // result, then either advances to the next puzzle or finalizes the series.
+  const handleSeriesContinue = useCallback(async () => {
+    if (!activeScenario || !seriesRun) return;
+    const { cumulativeProb, diceCount, moves } = summarizeActionLog(state.actionLog);
+
+    // Submit to the puzzle's own leaderboard too (best-effort — series flow
+    // continues even if this fails).
+    try {
+      await submitScore(activeScenario.id, seriesRun.playerName, cumulativeProb, diceCount, moves);
+    } catch {
+      // Individual leaderboard submission is best-effort in series mode.
+    }
+
+    const result: SeriesPuzzleResult = {
+      scenarioId: activeScenario.id,
+      scenarioName: activeScenario.name,
+      probability: cumulativeProb,
+      diceCount,
+      moves,
+    };
+    const results = [...seriesRun.results, result];
+    const nextIndex = seriesRun.puzzleIndex + 1;
+
+    if (nextIndex < scenarios.length) {
+      const nextScenario = scenarios[nextIndex];
+      setSeriesRun({ ...seriesRun, puzzleIndex: nextIndex, results });
+      setActiveScenario(nextScenario);
+      setState(makeScenarioState(nextScenario));
+      return;
+    }
+
+    // Series complete — compute average and submit to the series leaderboard.
+    const avgProbability = results.reduce((sum, r) => sum + r.probability, 0) / results.length;
+    const totalDice = results.reduce((sum, r) => sum + r.diceCount, 0);
+    setState(s => ({ ...s, phase: 'playing' }));
+    try {
+      const entry = await submitSeriesScore(seriesRun.playerName, avgProbability, totalDice, results);
+      setSeriesHighlight(entry.id);
+    } catch {
+      setSeriesHighlight(undefined);
+    }
+    setSeriesRun(null);
+    setSeriesInitialEntries(undefined);
+    setSeriesRefreshKey(k => k + 1);
+    setAppMode('series-leaderboard');
+  }, [activeScenario, seriesRun, state.actionLog, setState]);
+
+  const requestLeaveSeries = useCallback(() => {
+    setConfirmLeaveSeries(true);
+  }, []);
+
+  const confirmLeaveSeriesYes = useCallback(() => {
+    setConfirmLeaveSeries(false);
+    setSeriesRun(null);
+    setAppMode('home');
+  }, []);
+
+  const confirmLeaveSeriesNo = useCallback(() => {
+    setConfirmLeaveSeries(false);
+  }, []);
+
+  const handleBackClick = useCallback(() => {
+    if (appMode === 'series-puzzle') {
+      requestLeaveSeries();
+    } else {
+      setAppMode('home');
+    }
+  }, [appMode, requestLeaveSeries]);
+
   // ── Render: non-game screens ─────────────────────────────────────────────
   if (appMode === 'home') {
     return (
@@ -231,6 +348,45 @@ export default function App() {
           onPlay={startPuzzle}
           onLeaderboard={goLeaderboard}
           onFreePlay={startFreePlay}
+          onStartSeries={startSeries}
+          onSeriesLeaderboard={() => { setSeriesHighlight(undefined); setSeriesInitialEntries(undefined); setAppMode('series-leaderboard'); }}
+        />
+      </div>
+    );
+  }
+
+  if (appMode === 'series-name') {
+    return (
+      <div className="app app--home">
+        <SeriesNameEntry
+          puzzleCount={scenarios.length}
+          onStart={handleSeriesNameSubmit}
+          onCancel={cancelSeriesEntry}
+        />
+      </div>
+    );
+  }
+
+  if (appMode === 'series-leaderboard') {
+    if (selectedSeriesEntry) {
+      return (
+        <div className="app app--home">
+          <SeriesScoreSummary
+            entry={selectedSeriesEntry}
+            onBack={() => setSelectedSeriesEntry(undefined)}
+          />
+        </div>
+      );
+    }
+    return (
+      <div className="app app--home">
+        <SeriesLeaderboard
+          key={seriesRefreshKey}
+          onBack={() => { setSeriesInitialEntries(undefined); setAppMode('home'); }}
+          highlightId={seriesHighlight}
+          initialEntries={seriesInitialEntries}
+          onEntriesLoaded={setSeriesInitialEntries}
+          onRowClick={setSelectedSeriesEntry}
         />
       </div>
     );
@@ -294,10 +450,40 @@ export default function App() {
   // Always show in puzzle mode — starts at 100% and decreases as risky moves are added
   // (showProb removed — always visible)
 
+  // Zoom mode: crop the pitch to the squares a piece could legally move to.
+  // With a piece selected, use its live reachableKeys; otherwise, union the
+  // reachable squares of every un-activated piece on the active team.
+  const zoomBounds = (() => {
+    if (!zoomEnabled) return null;
+
+    if (state.selectedPieceId && state.reachableKeys.size > 0) {
+      const positions = [...state.reachableKeys].map(k => {
+        const [col, row] = k.split(',').map(Number);
+        return { col, row };
+      });
+      if (state.originPos) positions.push(state.originPos);
+      return computeZoomBounds(positions, 1);
+    }
+
+    const opponents = state.pieces.filter(p => p.team !== state.activeTeam).map(p => p.position);
+    const positions = [];
+    for (const piece of state.pieces) {
+      if (piece.team !== state.activeTeam || piece.activated) continue;
+      const others = state.pieces.filter(p => p.id !== piece.id).map(p => p.position);
+      const { reachableKeys } = computeReachable(piece.position, piece.ma, others, opponents, 0);
+      positions.push(piece.position);
+      for (const k of reachableKeys) {
+        const [col, row] = k.split(',').map(Number);
+        positions.push({ col, row });
+      }
+    }
+    return computeZoomBounds(positions, 1);
+  })();
+
   return (
     <div className="app">
       <header className="hud">
-        <button className="hud__back" onClick={() => setAppMode('home')}>← Menu</button>
+        <button className="hud__back" onClick={handleBackClick}>← Menu</button>
 
         {!state.isPuzzleMode && (
           <div className="hud__score">
@@ -311,6 +497,11 @@ export default function App() {
 
         {state.isPuzzleMode && (
           <div className="hud__prob">
+            {seriesRun && (
+              <span className="hud__prob-label">
+                Puzzle {seriesRun.puzzleIndex + 1} / {scenarios.length} ·{' '}
+              </span>
+            )}
             <span className="hud__prob-label">Success chance</span>
             <span className={`hud__prob-value ${liveProbPct < 50 ? 'hud__prob-value--risky' : ''}`}>
               {liveProbPct}%
@@ -331,6 +522,14 @@ export default function App() {
         </div>
 
         <div className="hud__status">{activationStatus}</div>
+
+        <button
+          className={`hud__zoom${zoomEnabled ? ' hud__zoom--active' : ''}`}
+          onClick={() => setZoomEnabled(z => !z)}
+          title="Zoom to legal moves"
+        >
+          {zoomEnabled ? '🔍 Zoom On' : '🔍 Zoom'}
+        </button>
 
         {state.isPuzzleMode && (
           <button className="hud__restart" onClick={handleRestartTurn}>↺ Restart</button>
@@ -367,6 +566,7 @@ export default function App() {
             onPieceClick={handlePieceClick}
             onSquareHover={handleSquareHover}
             onSquareLeave={handleSquareLeave}
+            zoomBounds={zoomBounds}
           />
         </main>
 
@@ -381,11 +581,36 @@ export default function App() {
       )}
 
       {/* Touchdown — show summary and submit score */}
-      {state.phase === 'touchdown' && (
+      {state.phase === 'touchdown' && appMode === 'series-puzzle' && seriesRun && (
+        <SubmitModal
+          actionLog={state.actionLog}
+          onSubmit={handleSeriesContinue}
+          onDismiss={handleSeriesContinue}
+          seriesMode
+          continueLabel={
+            seriesRun.puzzleIndex + 1 < scenarios.length
+              ? `Continue to Puzzle ${seriesRun.puzzleIndex + 2}`
+              : 'Finish Series'
+          }
+        />
+      )}
+      {state.phase === 'touchdown' && appMode === 'puzzle' && (
         <SubmitModal
           actionLog={state.actionLog}
           onSubmit={handleSubmit}
           onDismiss={handleSkipSubmit}
+        />
+      )}
+
+      {/* Confirm leaving a series run in progress */}
+      {confirmLeaveSeries && (
+        <ConfirmDialog
+          title="Leave series?"
+          message="Your progress in this series run will be lost."
+          confirmLabel="Leave"
+          cancelLabel="Keep Playing"
+          onConfirm={confirmLeaveSeriesYes}
+          onCancel={confirmLeaveSeriesNo}
         />
       )}
 

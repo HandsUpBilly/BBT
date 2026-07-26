@@ -1,4 +1,4 @@
-import type { LeaderboardEntry, RiskyMove } from './types';
+import type { LeaderboardEntry, RiskyMove, SeriesLeaderboardEntry, SeriesPuzzleResult } from './types';
 
 const BASE = '/api';
 
@@ -24,5 +24,29 @@ export async function submitScore(
     body: JSON.stringify({ name, probability, diceCount, moves }),
   });
   if (!res.ok) throw new Error('Failed to submit score');
+  return res.json();
+}
+
+export async function fetchSeriesLeaderboard(): Promise<SeriesLeaderboardEntry[]> {
+  const res = await fetch(`${BASE}/series-leaderboard`);
+  if (!res.ok) {
+    const body = await res.text().catch(() => '');
+    throw new Error(`${res.status} ${res.statusText}${body ? `: ${body}` : ''}`);
+  }
+  return res.json();
+}
+
+export async function submitSeriesScore(
+  name: string,
+  probability: number,
+  diceCount: number,
+  puzzles: SeriesPuzzleResult[],
+): Promise<SeriesLeaderboardEntry> {
+  const res = await fetch(`${BASE}/series-leaderboard`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name, probability, diceCount, puzzles }),
+  });
+  if (!res.ok) throw new Error('Failed to submit series score');
   return res.json();
 }

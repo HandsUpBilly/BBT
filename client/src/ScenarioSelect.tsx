@@ -6,9 +6,11 @@ interface Props {
   onPlay: (scenario: Scenario) => void;
   onLeaderboard: (scenario: Scenario) => void;
   onFreePlay: () => void;
+  onStartSeries: () => void;
+  onSeriesLeaderboard: () => void;
 }
 
-export function ScenarioSelect({ onPlay, onLeaderboard, onFreePlay }: Props) {
+export function ScenarioSelect({ onPlay, onLeaderboard, onFreePlay, onStartSeries, onSeriesLeaderboard }: Props) {
   return (
     <div className="scenario-select">
       <div className="scenario-select__header">
@@ -16,6 +18,24 @@ export function ScenarioSelect({ onPlay, onLeaderboard, onFreePlay }: Props) {
         <p className="scenario-select__subtitle">
           Plan the perfect play. Compete for the highest probability touchdown.
         </p>
+      </div>
+
+      <div className="scenario-card scenario-card--series">
+        <div className="scenario-card__body">
+          <div className="scenario-card__name">Series: 5-Puzzle Challenge</div>
+          <div className="scenario-card__desc">
+            Play all {scenarios.length} puzzles back-to-back under one name. Your average
+            success chance is posted to the Series Leaderboard.
+          </div>
+        </div>
+        <div className="scenario-card__actions">
+          <button className="btn btn--primary" onClick={onStartSeries}>
+            Start Series
+          </button>
+          <button className="btn btn--secondary" onClick={onSeriesLeaderboard}>
+            Series Leaderboard
+          </button>
+        </div>
       </div>
 
       <div className="scenario-select__list">

@@ -46,6 +46,15 @@
   border-color: #4a8c2a;
 }
 
+.scenario-card--series {
+  border-color: #c8732a;
+  max-width: 560px;
+  width: 100%;
+}
+.scenario-card--series:hover {
+  border-color: #e08a3a;
+}
+
 .scenario-card__body {
   flex: 1;
   display: flex;

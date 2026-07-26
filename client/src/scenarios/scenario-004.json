@@ -1,0 +1,78 @@
+{
+  "id": "scenario-004",
+  "name": "The Gauntlet",
+  "description": "A full orc line stands between your ball carrier and the end zone. Thread the tackle zones — one bad dodge ends the drive.",
+  "activeTeam": "human",
+  "pieces": [
+    {
+      "id": "carrier",
+      "team": "human",
+      "role": "catcher",
+      "name": "Sera Quickhand",
+      "ma": 8, "st": 2, "ag": 4, "pa": 5, "av": 7,
+      "skills": ["Catch", "Dodge"],
+      "position": { "col": 7, "row": 9 },
+      "hasBall": true
+    },
+    {
+      "id": "orc1",
+      "team": "orc",
+      "role": "blocker",
+      "name": "Grukk Ironjaw",
+      "ma": 4, "st": 3, "ag": 3, "pa": 6, "av": 9,
+      "skills": ["Animosity"],
+      "position": { "col": 5, "row": 7 },
+      "hasBall": false
+    },
+    {
+      "id": "orc2",
+      "team": "orc",
+      "role": "blocker",
+      "name": "Muzgash Skullkrak",
+      "ma": 4, "st": 3, "ag": 3, "pa": 6, "av": 9,
+      "skills": ["Animosity"],
+      "position": { "col": 9, "row": 7 },
+      "hasBall": false
+    },
+    {
+      "id": "orc3",
+      "team": "orc",
+      "role": "blitzer",
+      "name": "Vrak Bonecruncher",
+      "ma": 6, "st": 3, "ag": 3, "pa": 5, "av": 9,
+      "skills": ["Block"],
+      "position": { "col": 7, "row": 6 },
+      "hasBall": false
+    },
+    {
+      "id": "orc4",
+      "team": "orc",
+      "role": "blocker",
+      "name": "Dorg Gutripper",
+      "ma": 4, "st": 3, "ag": 3, "pa": 6, "av": 9,
+      "skills": ["Animosity"],
+      "position": { "col": 4, "row": 4 },
+      "hasBall": false
+    },
+    {
+      "id": "orc5",
+      "team": "orc",
+      "role": "blocker",
+      "name": "Skrag Headsmash",
+      "ma": 6, "st": 3, "ag": 3, "pa": 5, "av": 9,
+      "skills": ["Block"],
+      "position": { "col": 10, "row": 4 },
+      "hasBall": false
+    },
+    {
+      "id": "orc6",
+      "team": "orc",
+      "role": "blitzer",
+      "name": "Zug Bloodfang",
+      "ma": 6, "st": 3, "ag": 3, "pa": 5, "av": 9,
+      "skills": ["Block"],
+      "position": { "col": 7, "row": 3 },
+      "hasBall": false
+    }
+  ]
+}
