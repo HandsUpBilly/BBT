@@ -225,11 +225,6 @@ export default function App() {
     scenarios: staticScenarios,
     series: staticSeries,
   }));
-  useEffect(() => {
-    let cancelled = false;
-    void loadScenarioData().then(data => { if (!cancelled) setScenarioData(data); });
-    return () => { cancelled = true; };
-  }, []);
   const seriesScenarios = resolveSeriesScenarios(scenarioData.series, scenarioData.scenarios);
   const [guestName, setGuestNameState] = useState(readGuestName);
   const setGuestName = useCallback((name: string) => {
@@ -237,6 +232,17 @@ export default function App() {
     writeGuestName(name);
   }, []);
   const [appMode, setAppMode] = useState<AppMode>('home');
+  // Re-fetch whenever the player lands on the home/select screen (including on
+  // first load) so a scenario published while this tab was open — or before
+  // this tab was ever opened — shows up without a hard refresh. Cheap no-op if
+  // nothing changed since /api/scenarios falls back to the static bundle on
+  // failure and the fetch itself is a single small JSON payload.
+  useEffect(() => {
+    if (appMode !== 'home') return;
+    let cancelled = false;
+    void loadScenarioData().then(data => { if (!cancelled) setScenarioData(data); });
+    return () => { cancelled = true; };
+  }, [appMode]);
   const [activeScenario, setActiveScenario] = useState<Scenario | null>(null);
   const [leaderboardHighlight, setLeaderboardHighlight] = useState<string | undefined>();
   const [leaderboardRefreshKey, setLeaderboardRefreshKey] = useState(0);
