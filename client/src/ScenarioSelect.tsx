@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { fetchLeaderboard, fetchSeriesLeaderboard } from './api';
 import { scenarios } from './scenarios';
+import { defaultSeries } from './series';
 import type { LeaderboardEntry, Scenario, SeriesLeaderboardEntry } from './types';
 import './ScenarioSelect.css';
 
@@ -194,11 +195,8 @@ export function ScenarioSelect({
           <div className="series-row">
             <div className="series-row__body">
               <span className="series-row__eyebrow">Featured series</span>
-              <h2 className="series-row__title">Humans vs Orcs: Touchdown or Bust</h2>
-              <p className="series-row__desc">
-                Lead the Reikland attack through green-skin pressure, chain the cleanest route,
-                and cross the line before the Orcs turn the drive into a scrum.
-              </p>
+              <h2 className="series-row__title">{defaultSeries.name}</h2>
+              <p className="series-row__desc">{defaultSeries.description}</p>
               <div className="series-row__meta">{formatProgress(seriesProgress)}</div>
             </div>
             <div className="series-row__actions">

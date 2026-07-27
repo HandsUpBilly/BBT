@@ -3,6 +3,7 @@
   "name": "The Handoff Play",
   "description": "The thrower can't reach the end zone alone. Hand off to the catcher and dodge through the orc line.",
   "activeTeam": "human",
+  "published": true,
   "pieces": [
     {
       "id": "thrower",

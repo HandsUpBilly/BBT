@@ -1177,3 +1177,433 @@ NETLIFY_TOKEN / NETLIFY_AUTH_TOKEN
   needs grow.
 - Add other social providers through a managed auth service if Google-only becomes too
   narrow.
+
+---
+
+# Puzzle Editor / Creator Plan
+
+## Purpose
+
+Replace the current Admin Mode sandbox entry point with a puzzle editor that can create,
+edit, validate, and organize Blood Bowl tactics puzzles using the same pitch and scenario
+shape the game already runs.
+
+The editor should let an admin build a puzzle visually:
+
+- choose available teams and player types from a palette,
+- drag players onto the pitch,
+- place the ball,
+- save over an existing puzzle or create a new puzzle,
+- assign puzzles to the current series.
+
+## Current State
+
+The app currently stores playable puzzles as static JSON files in:
+
+```txt
+client/src/scenarios/*.json
+```
+
+They are loaded at build time through:
+
+```txt
+client/src/scenarios/index.ts
+```
+
+The current `Scenario` data shape is:
+
+```ts
+{
+  id: string;
+  name: string;
+  description: string;
+  activeTeam: 'human' | 'orc';
+  pieces: ScenarioPieceDef[];
+}
+```
+
+Each `ScenarioPieceDef` includes team, role/name, core stats, skills, board position, and
+`hasBall`.
+
+The current series flow uses the ordered `scenarios` array directly. There is no separate
+series metadata file yet.
+
+Admin Mode currently exposes sandbox/free-play behavior. The editor should take over this
+screen as the default admin destination. Free-play can remain as a secondary admin tool if
+useful, but it should no longer be the main Admin Mode experience.
+
+## Assumptions
+
+These are planning assumptions because clarification tooling was unavailable:
+
+- First implementation is local-file based, not a production CMS.
+- Saved puzzles generate or update JSON compatible with `client/src/scenarios/*.json`.
+- The editor is admin-only and remains behind the existing Admin Mode entry point.
+- The first series implementation supports one current series with ordered puzzle
+  assignment.
+- Humans and Orcs are the initial supported teams because they are the teams currently in
+  the app.
+- The editor uses existing pitch dimensions and position coordinates:
+  - columns `0..25`
+  - rows `0..14`
+- The active team is still selected per puzzle, with humans as the normal scoring team
+  for the current puzzle set unless changed in editor metadata.
+- Production admin access should be based on verified Google user IDs (`sub`), not
+  display names.
+
+If the product direction changes to browser-based production editing, this plan should be
+extended with authenticated admin APIs and persistent backend storage.
+
+## Requirements
+
+### Editor Entry
+
+- Replace the current Admin Mode screen with Puzzle Editor.
+- Keep a way back to the main menu.
+- Remove Sandbox/Free Play from Admin Mode for this first editor pass.
+- The editor should be unavailable to normal players if production admin authorization is
+  later added.
+
+### Puzzle List
+
+- Show existing puzzles loaded from `client/src/scenarios`.
+- Each puzzle row/card should show:
+  - puzzle name,
+  - scenario id,
+  - description,
+  - active team,
+  - number of pieces,
+  - whether it is assigned to the current series.
+- Selecting a puzzle loads it into the editor.
+- Provide a "New Puzzle" action.
+- Provide a duplicate/copy action if it is cheap, because new puzzles will often start
+  from an existing layout.
+
+### Pitch Editing
+
+- Use the same pitch coordinate system and visual pitch component concepts as gameplay.
+- Allow placing, moving, selecting, and deleting pieces.
+- Drag from palette to pitch to create a piece.
+- Drag an existing piece to another empty square.
+- Clicking/selecting a piece opens an inspector for editable fields.
+- Prevent multiple pieces from occupying the same square.
+- Show the ball location clearly.
+- Allow assigning the ball by:
+  - selecting a "Ball" tool and clicking a square or player,
+  - or toggling "has ball" on a selected player.
+- Enforce one ball per puzzle.
+- If the ball is on a player, exactly one piece should have `hasBall: true`.
+- Support a loose ball with a separate `ballPosition` field. Gameplay can fully solve
+  carried-ball puzzles first; loose-ball gameplay behavior can be expanded later.
+
+### Palette
+
+- Provide a palette grouped by team:
+  - Humans
+  - Orcs
+- Each team group contains player type templates derived from existing scenario data and
+  the current game rules.
+- Initial templates should include at least the roles already represented in scenarios:
+  - Human thrower
+  - Human catcher/runner/lineman as available from existing scenarios
+  - Orc blocker
+  - Orc guard/tackle/lineman as available from existing scenarios
+- A palette item should define:
+  - team,
+  - role,
+  - default name prefix,
+  - MA/ST/AG/PA/AV,
+  - default skills.
+- Dragging a template onto the pitch creates a unique piece id and display name.
+
+### Piece Inspector
+
+- Selecting a placed player should allow editing:
+  - name,
+  - team,
+  - role,
+  - MA/ST/AG/PA/AV,
+  - skills,
+  - has ball,
+  - position, preferably through dragging rather than manual coordinate entry.
+- Stats should use bounded numeric inputs.
+- Skills can start as a comma-separated input if a full skill picker is too large for the
+  first pass.
+- The inspector should include a delete action.
+
+### Puzzle Metadata
+
+- Editable fields:
+  - id,
+  - name,
+  - description,
+  - active team.
+- For new puzzles:
+  - generate a slug-like id such as `scenario-006` or a name-derived id,
+  - validate uniqueness before save.
+- For existing puzzles:
+  - allow "Save" to overwrite the current puzzle data,
+  - allow "Save As New" to create a new id.
+
+### Validation
+
+Before save, validate:
+
+- id is non-empty and unique for new puzzles,
+- name is non-empty,
+- description is non-empty,
+- active team is valid,
+- every piece has a unique id,
+- every piece has a valid team,
+- every piece has a valid position within the pitch,
+- no two pieces share the same square,
+- exactly one ball exists, either carried by one player or placed loose on the pitch,
+- at least one piece belongs to the active team,
+- all stats are numbers in valid ranges.
+
+Validation errors should be visible and actionable, not hidden in console output.
+
+### Save / Export
+
+First-pass local-file approach:
+
+- The editor should produce JSON in the current `Scenario` format.
+- Saving over an existing puzzle should update its JSON representation.
+- Creating a new puzzle should produce a new JSON representation.
+- Because browser code cannot safely write to repo files by itself, choose one of these
+  implementation paths:
+  - add a local development API endpoint that writes to `client/src/scenarios/*.json`, or
+  - provide an export/download/copy JSON action and commit generated files manually.
+
+Recommended first implementation:
+
+- Add local Express-only editor API endpoints for development:
+
+```txt
+GET  /api/editor/scenarios
+PUT  /api/editor/scenarios/:scenarioId
+POST /api/editor/scenarios
+```
+
+- These endpoints write formatted JSON to `client/src/scenarios`.
+- They are local/admin tooling only and should not be exposed as public production write
+  endpoints.
+- In Netlify production, editor save should be disabled unless a protected storage-backed
+  admin API is explicitly built.
+
+### Series Assignment
+
+Add a series metadata model instead of relying only on sorted scenario ids.
+
+Recommended first-pass file:
+
+```txt
+client/src/series/default.json
+```
+
+Shape:
+
+```ts
+{
+  id: 'default',
+  name: string,
+  description: string,
+  scenarioIds: string[]
+}
+```
+
+Requirements:
+
+- Editor can add/remove a puzzle from the default series.
+- Editor can reorder puzzles in the default series.
+- Series Play should use `default.json.scenarioIds` instead of every scenario sorted by id.
+- Individual play should still show all scenarios, including scenarios not assigned to the
+  series.
+- If a series references a missing scenario id, show an editor validation warning and skip
+  or block gameplay until fixed.
+
+## Constraints
+
+- Keep edits compatible with the existing `Scenario` and `ScenarioPieceDef` gameplay
+  consumers.
+- Avoid changing movement/pathfinding rules as part of the editor work.
+- Avoid introducing a database for the first pass unless production editing becomes a
+  requirement.
+- Do not let public production users write arbitrary scenario JSON.
+- Do not store generated content in localStorage as the source of truth; localStorage can
+  be used only for unsaved draft recovery.
+- Build still uses Vite and static scenario imports, so file-backed scenario changes
+  require rebuild/reload to ship.
+- The project has no monorepo tooling; client/server changes remain in their existing
+  package boundaries.
+- TypeScript `noUnusedLocals` / `noUnusedParameters` are enforced by build.
+
+## Architecture
+
+### Frontend Components
+
+Add editor-specific components under:
+
+```txt
+client/src/editor/
+```
+
+Suggested modules:
+
+```txt
+client/src/editor/PuzzleEditor.tsx
+client/src/editor/PuzzleList.tsx
+client/src/editor/EditorPitch.tsx
+client/src/editor/PlayerPalette.tsx
+client/src/editor/PieceInspector.tsx
+client/src/editor/PuzzleMetadataForm.tsx
+client/src/editor/SeriesAssignment.tsx
+client/src/editor/editorTypes.ts
+client/src/editor/editorValidation.ts
+client/src/editor/playerTemplates.ts
+```
+
+Responsibilities:
+
+- `PuzzleEditor`: top-level editor state and save orchestration.
+- `PuzzleList`: existing/new/copy puzzle selection.
+- `EditorPitch`: pitch drop targets, piece selection, piece movement, ball placement.
+- `PlayerPalette`: team and role templates.
+- `PieceInspector`: selected piece editing.
+- `PuzzleMetadataForm`: scenario id/name/description/active team.
+- `SeriesAssignment`: default series inclusion and ordering.
+- `editorValidation`: pure validation helpers.
+- `playerTemplates`: current supported team/player templates.
+
+Use structured scenario objects throughout; do not manipulate JSON strings except at
+import/export boundaries.
+
+### App Integration
+
+Update app mode behavior:
+
+- Keep `AppMode` value `admin` or rename to `editor` if the refactor is clean.
+- The Admin Mode screen should render `PuzzleEditor`.
+- Sandbox/Free Play is removed from Admin Mode in this pass.
+
+### API Integration
+
+Local Express development API:
+
+```txt
+server/editor.js
+```
+
+Responsibilities:
+
+- read scenarios from `client/src/scenarios`,
+- validate incoming scenario JSON,
+- write formatted JSON,
+- create new scenario files,
+- optionally read/write `client/src/series/default.json`.
+
+Do not add equivalent Netlify write functions in first pass unless production editing is
+explicitly required.
+
+Production behavior:
+
+- Editor can be hidden, read-only, or export-only.
+- If production editing is required later, use Google sign-in plus an admin allowlist and
+  protected Netlify functions or a database.
+
+### Series Data Loading
+
+Add:
+
+```txt
+client/src/series/index.ts
+client/src/series/default.json
+```
+
+`series/index.ts` should resolve scenario ids to `Scenario[]` for Series Play.
+
+Update Series Play in `App.tsx` to use the default series list instead of the full
+`scenarios` array.
+
+## Implementation Steps
+
+1. Define editor data helpers.
+   - Add player templates for current Human/Orc roles.
+   - Add scenario clone/normalize helpers.
+   - Add validation functions and tests if practical.
+
+2. Add series metadata.
+   - Create `client/src/series/default.json`.
+   - Add loader helpers that resolve `scenarioIds`.
+   - Update Series Play to use the default series.
+
+3. Replace Admin Mode UI.
+   - Render `PuzzleEditor` from the admin route.
+   - Remove the old Sandbox action.
+
+4. Build editor layout.
+   - Puzzle list on one side.
+   - Pitch in the center.
+   - Palette and inspector in side panels.
+   - Metadata and series assignment controls in compact panels.
+
+5. Implement drag/drop and selection.
+   - Drag palette templates to pitch.
+   - Move existing pieces.
+   - Select/delete pieces.
+   - Assign ball.
+
+6. Implement validation.
+   - Show blocking save errors.
+   - Highlight invalid positions or duplicate ball state.
+
+7. Implement save/export.
+   - Add local Express editor endpoints.
+   - Wire save over existing puzzle.
+   - Wire save as new puzzle.
+   - Wire series assignment save.
+   - Add export JSON fallback if file write is disabled.
+
+8. Verify gameplay compatibility.
+   - Load every existing scenario.
+   - Play a saved/edited scenario.
+   - Run Series Play with the new series metadata.
+
+9. Run checks.
+   - `npm run build`
+   - `cd client && npm run lint`
+   - Manual editor smoke test:
+     - create new puzzle,
+     - drag Human and Orc players,
+     - assign ball,
+     - save,
+     - reload,
+     - play puzzle,
+     - assign to series and run series.
+
+## Success Criteria
+
+- Admin Mode opens the puzzle editor instead of the old sandbox-first screen.
+- An admin can create a new puzzle visually using player templates.
+- An admin can edit an existing puzzle and save over it.
+- An admin can save an edited puzzle as a new puzzle with a unique id.
+- The editor prevents invalid saves with clear validation messages.
+- A puzzle can contain Human and Orc players placed by drag/drop.
+- Exactly one ball can be set, either carried by a player or placed loose on the pitch.
+- Saved puzzle JSON is compatible with the current gameplay engine.
+- Individual play can show and launch newly created puzzles.
+- Series Play uses explicit series assignment instead of all scenarios by sorted id.
+- The editor can assign/reorder puzzles in the default series.
+- Build and lint pass.
+
+## Future Enhancements
+
+- Production editor backed by protected APIs and persistent storage.
+- Google-account admin allowlist for editor access.
+- Multiple named series.
+- Loose-ball scenario support with `ballPosition`.
+- Full skill picker with rule validation.
+- Undo/redo for editor changes.
+- Draft autosave and restore.
+- Import/export scenario packs.
+- Visual validation overlays for tackle zones and likely routes.

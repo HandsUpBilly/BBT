@@ -3,6 +3,7 @@
   "name": "The Long Throw",
   "description": "The ground route is sealed off. Step clear of the tackle zones and launch a long pass downfield to your catcher.",
   "activeTeam": "human",
+  "published": true,
   "pieces": [
     {
       "id": "thrower",

@@ -3,6 +3,7 @@
   "name": "The Gauntlet",
   "description": "A full orc line stands between your ball carrier and the end zone. Thread the tackle zones — one bad dodge ends the drive.",
   "activeTeam": "human",
+  "published": true,
   "pieces": [
     {
       "id": "carrier",

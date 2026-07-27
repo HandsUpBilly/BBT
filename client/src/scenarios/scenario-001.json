@@ -3,6 +3,7 @@
   "name": "The Simple Run",
   "description": "A Thrower with the ball, two Orc Blockers in the way. Find the safest path to the end zone.",
   "activeTeam": "human",
+  "published": true,
   "pieces": [
     {
       "id": "carrier",
