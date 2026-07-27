@@ -192,6 +192,7 @@ export default function App() {
   const [leaderboardInitialEntries, setLeaderboardInitialEntries] = useState<LeaderboardEntry[] | undefined>();
   const [selectedEntry, setSelectedEntry] = useState<LeaderboardEntry | undefined>();
   const [progressRefreshKey, setProgressRefreshKey] = useState(0);
+  const [editorPreviewScenario, setEditorPreviewScenario] = useState<Scenario | null>(null);
 
   // ── Series mode state ──────────────────────────────────────────────────
   const [seriesRun, setSeriesRun] = useState<SeriesRunState | null>(null);
@@ -231,6 +232,16 @@ export default function App() {
   const identityReady = Boolean(identityName.trim());
 
   const startPuzzle = useCallback((scenario: Scenario) => {
+    setEditorPreviewScenario(null);
+    setActiveScenario(scenario);
+    const s = makeScenarioState(scenario);
+    setState(s);
+    setZoomBounds(computeStartOfPlayZoom(s.pieces, s.activeTeam));
+    setAppMode('puzzle');
+  }, [setState, computeStartOfPlayZoom]);
+
+  const previewPuzzle = useCallback((scenario: Scenario) => {
+    setEditorPreviewScenario(scenario);
     setActiveScenario(scenario);
     const s = makeScenarioState(scenario);
     setState(s);
@@ -459,10 +470,12 @@ export default function App() {
   const handleBackClick = useCallback(() => {
     if (appMode === 'series-puzzle') {
       requestLeaveSeries();
+    } else if (editorPreviewScenario) {
+      setAppMode('admin');
     } else {
       setAppMode('home');
     }
-  }, [appMode, requestLeaveSeries]);
+  }, [appMode, editorPreviewScenario, requestLeaveSeries]);
 
   // ── Render: non-game screens ─────────────────────────────────────────────
   if (!identityReady) {
@@ -523,7 +536,8 @@ export default function App() {
       <div className="app app--home">
         <PuzzleEditor
           onBack={() => setAppMode('home')}
-          onPlay={startPuzzle}
+          onPlay={previewPuzzle}
+          previewScenario={editorPreviewScenario}
         />
       </div>
     );
@@ -590,7 +604,7 @@ export default function App() {
   return (
     <div className="app">
       <header className="hud">
-        <button className="hud__back" onClick={handleBackClick}>← Menu</button>
+        <button className="hud__back" onClick={handleBackClick}>{editorPreviewScenario ? '← Designer' : '← Menu'}</button>
 
         {!state.isPuzzleMode && (
           <div className="hud__score">

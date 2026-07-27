@@ -95,12 +95,51 @@ export const PLAYER_TEMPLATES: PlayerTemplate[] = [
   },
 ];
 
-export function templateToPiece(template: PlayerTemplate, id: string, col: number, row: number): ScenarioPieceDef {
+const HUMAN_NAMES = [
+  'Aldric Swiftfoot',
+  'Bramm Surehands',
+  'Cedric Linebreaker',
+  'Dieter Longstride',
+  'Edwin Brighthelm',
+  'Franz Quickstep',
+  'Garran Ballwise',
+  'Hugo Ironlace',
+  'Jorek Fleetmark',
+  'Kasper Dawnboot',
+];
+
+const ORC_NAMES = [
+  'Grukk Ironjaw',
+  'Muzgash Skullkrak',
+  'Vrak Bonecruncher',
+  'Dorg Gutripper',
+  'Skrag Headsmash',
+  'Zug Bloodfang',
+  'Rukbad Bootsnappa',
+  'Gorzag Teefgrinda',
+  'Nobgul Linebasher',
+  'Throg Chainbellow',
+];
+
+export function generatedPlayerName(template: PlayerTemplate, index: number): string {
+  const names = template.team === 'human' ? HUMAN_NAMES : ORC_NAMES;
+  const base = names[index % names.length];
+  const cycle = Math.floor(index / names.length);
+  return cycle === 0 ? base : `${base} ${cycle + 1}`;
+}
+
+export function templateToPiece(
+  template: PlayerTemplate,
+  id: string,
+  col: number,
+  row: number,
+  name: string,
+): ScenarioPieceDef {
   return {
     id,
     team: template.team,
     role: template.role,
-    name: `${template.namePrefix} ${id.split('-').pop()}`,
+    name,
     ma: template.ma,
     st: template.st,
     ag: template.ag,

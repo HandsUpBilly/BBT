@@ -187,8 +187,8 @@
 
 .editor-pitch__square--light { background: #497a36; }
 .editor-pitch__square--dark { background: #3f6e30; }
-.editor-pitch__square--endzone-left { background: #315d8a; }
-.editor-pitch__square--endzone-right { background: #8a3b31; }
+.editor-pitch__square--endzone-top { background: #315d8a; }
+.editor-pitch__square--endzone-bottom { background: #8a3b31; }
 .editor-pitch__square--scrimmage { box-shadow: inset 0 -2px 0 rgba(255, 255, 255, 0.35); }
 .editor-pitch__square--selected { outline: 2px solid #d8c36a; z-index: 1; }
 

@@ -1,9 +1,9 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { DragEvent } from 'react';
 import type { Scenario, ScenarioPieceDef, SeriesDefinition, Team } from '../types';
 import { createScenario, fetchEditorData, updateDefaultSeries, updateScenario } from './editorApi';
 import { nextScenarioId, validateScenarioDraft } from './editorValidation';
-import { PLAYER_TEMPLATES, templateToPiece } from './playerTemplates';
+import { PLAYER_TEMPLATES, generatedPlayerName, templateToPiece } from './playerTemplates';
 import './PuzzleEditor.css';
 
 const COLS = 15;
@@ -54,9 +54,10 @@ function groupTemplates(team: Team) {
 interface Props {
   onBack: () => void;
   onPlay: (scenario: Scenario) => void;
+  previewScenario: Scenario | null;
 }
 
-export function PuzzleEditor({ onBack, onPlay }: Props) {
+export function PuzzleEditor({ onBack, onPlay, previewScenario }: Props) {
   const [scenarios, setScenarios] = useState<Scenario[]>([]);
   const [series, setSeries] = useState<SeriesDefinition>(EMPTY_SERIES);
   const [draft, setDraft] = useState<Scenario>(() => emptyScenario([]));
@@ -66,25 +67,25 @@ export function PuzzleEditor({ onBack, onPlay }: Props) {
   const [status, setStatus] = useState('Loading editor data...');
   const [saving, setSaving] = useState(false);
 
-  async function load() {
+  const load = useCallback(async () => {
     try {
       const data = await fetchEditorData();
       setScenarios(data.scenarios);
       setSeries(data.series);
-      const first = data.scenarios[0] ?? emptyScenario([]);
+      const first = previewScenario ?? data.scenarios[0] ?? emptyScenario([]);
       setDraft(cloneScenario(first));
-      setOriginalId(first.id);
+      setOriginalId(data.scenarios.some(scenario => scenario.id === first.id) ? first.id : undefined);
       setSelectedPieceId(null);
       setStatus('Loaded editor data.');
     } catch (error) {
       setStatus(error instanceof Error ? error.message : 'Failed to load editor data.');
     }
-  }
+  }, [previewScenario]);
 
   useEffect(() => {
     const timer = window.setTimeout(() => { void load(); }, 0);
     return () => window.clearTimeout(timer);
-  }, []);
+  }, [load]);
 
   const existingIds = useMemo(() => scenarios.map(scenario => scenario.id), [scenarios]);
   const validationErrors = useMemo(
@@ -204,7 +205,11 @@ export function PuzzleEditor({ onBack, onPlay }: Props) {
     if (!template) return;
     updateDraft(scenario => {
       const id = makePieceId(scenario, template.team, template.role);
-      return { ...scenario, pieces: [...scenario.pieces, templateToPiece(template, id, col, row)] };
+      const sameTeamCount = scenario.pieces.filter(piece => piece.team === template.team).length;
+      return {
+        ...scenario,
+        pieces: [...scenario.pieces, templateToPiece(template, id, col, row, generatedPlayerName(template, sameTeamCount))],
+      };
     });
   }
 
@@ -340,8 +345,8 @@ export function PuzzleEditor({ onBack, onPlay }: Props) {
                     className={[
                       'editor-pitch__square',
                       (col + row) % 2 === 0 ? 'editor-pitch__square--light' : 'editor-pitch__square--dark',
-                      col === 0 ? 'editor-pitch__square--endzone-left' : '',
-                      col === 14 ? 'editor-pitch__square--endzone-right' : '',
+                      row === 0 ? 'editor-pitch__square--endzone-top' : '',
+                      row === 25 ? 'editor-pitch__square--endzone-bottom' : '',
                       row === 13 ? 'editor-pitch__square--scrimmage' : '',
                       piece?.id === selectedPieceId ? 'editor-pitch__square--selected' : '',
                     ].filter(Boolean).join(' ')}
