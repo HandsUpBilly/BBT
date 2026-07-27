@@ -1,5 +1,6 @@
 import { readdir, readFile, writeFile, mkdir } from 'fs/promises';
 import { join, basename } from 'path';
+import { AdminAuthError, requireAdminGoogleUser } from './auth.js';
 
 const ROOT = join(process.cwd(), '..');
 const SCENARIO_DIR = join(ROOT, 'client/src/scenarios');
@@ -129,7 +130,24 @@ export function registerEditorRoutes(app) {
     jsonResponse(res, 200, { scenarios, series });
   });
 
+  // Public read endpoint mirroring netlify/functions/scenarios.js. Local dev has
+  // no draft/published split (editor writes go straight to these JSON files),
+  // so this just re-reads the same files as /api/editor/scenarios but filters
+  // to published: true — kept as a separate route so the client can use one
+  // fetch path (/api/scenarios) in both environments.
+  app.get('/api/scenarios', async (_req, res) => {
+    const [scenarios, series] = await Promise.all([readScenarios(), readDefaultSeries()]);
+    const published = scenarios.filter(scenario => scenario.published !== false);
+    jsonResponse(res, 200, { scenarios: published, series });
+  });
+
   app.post('/api/editor/scenarios', async (req, res) => {
+    try {
+      await requireAdminGoogleUser(req);
+    } catch (error) {
+      if (error instanceof AdminAuthError) return jsonResponse(res, error.status, { errors: [error.message] });
+      throw error;
+    }
     const existing = await readScenarios();
     const existingIds = new Set(existing.map(scenario => scenario.id));
     const scenario = normalizeScenario(req.body);
@@ -140,6 +158,12 @@ export function registerEditorRoutes(app) {
   });
 
   app.put('/api/editor/scenarios/:scenarioId', async (req, res) => {
+    try {
+      await requireAdminGoogleUser(req);
+    } catch (error) {
+      if (error instanceof AdminAuthError) return jsonResponse(res, error.status, { errors: [error.message] });
+      throw error;
+    }
     const id = String(req.params.scenarioId);
     if (basename(id) !== id || !SCENARIO_ID_RE.test(id)) return jsonResponse(res, 400, { errors: ['Invalid scenario id'] });
     const scenario = normalizeScenario({ ...req.body, id });
@@ -150,6 +174,12 @@ export function registerEditorRoutes(app) {
   });
 
   app.put('/api/editor/series/default', async (req, res) => {
+    try {
+      await requireAdminGoogleUser(req);
+    } catch (error) {
+      if (error instanceof AdminAuthError) return jsonResponse(res, error.status, { errors: [error.message] });
+      throw error;
+    }
     const scenarios = await readScenarios();
     const scenarioIds = new Set(scenarios.map(scenario => scenario.id));
     const series = normalizeSeries(req.body);
@@ -158,5 +188,22 @@ export function registerEditorRoutes(app) {
     await mkdir(SERIES_DIR, { recursive: true });
     await writeFile(DEFAULT_SERIES_PATH, `${JSON.stringify(series, null, 2)}\n`);
     jsonResponse(res, 200, series);
+  });
+
+  // Local dev writes straight to the scenario/series JSON files players read
+  // (via import.meta.glob), so there's no separate draft/published split here —
+  // this endpoint exists only so the client can call the same publish() action
+  // in both environments. See netlify/functions/editor-publish.js for the
+  // Netlify equivalent, which actually copies Blobs draft state to a
+  // published key.
+  app.post('/api/editor/publish', async (req, res) => {
+    try {
+      await requireAdminGoogleUser(req);
+    } catch (error) {
+      if (error instanceof AdminAuthError) return jsonResponse(res, error.status, { errors: [error.message] });
+      throw error;
+    }
+    const [scenarios, series] = await Promise.all([readScenarios(), readDefaultSeries()]);
+    jsonResponse(res, 200, { scenarios, series });
   });
 }

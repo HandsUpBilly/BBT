@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { DragEvent } from 'react';
 import type { Scenario, ScenarioPieceDef, SeriesDefinition, Team } from '../types';
-import { createScenario, fetchEditorData, updateDefaultSeries, updateScenario } from './editorApi';
+import { createScenario, fetchEditorData, publishEditorData, updateDefaultSeries, updateScenario } from './editorApi';
 import { nextScenarioId, validateScenarioDraft } from './editorValidation';
 import { PLAYER_TEMPLATES, generatedPlayerName, templateToPiece } from './playerTemplates';
 import './PuzzleEditor.css';
@@ -55,9 +55,10 @@ interface Props {
   onBack: () => void;
   onPlay: (scenario: Scenario) => void;
   previewScenario: Scenario | null;
+  idToken: string | null;
 }
 
-export function PuzzleEditor({ onBack, onPlay, previewScenario }: Props) {
+export function PuzzleEditor({ onBack, onPlay, previewScenario, idToken }: Props) {
   const [scenarios, setScenarios] = useState<Scenario[]>([]);
   const [series, setSeries] = useState<SeriesDefinition>(EMPTY_SERIES);
   const [draft, setDraft] = useState<Scenario>(() => emptyScenario([]));
@@ -66,6 +67,7 @@ export function PuzzleEditor({ onBack, onPlay, previewScenario }: Props) {
   const [ballTool, setBallTool] = useState(false);
   const [status, setStatus] = useState('Loading editor data...');
   const [saving, setSaving] = useState(false);
+  const [publishing, setPublishing] = useState(false);
 
   const load = useCallback(async () => {
     try {
@@ -222,8 +224,8 @@ export function PuzzleEditor({ onBack, onPlay, previewScenario }: Props) {
     setSaving(true);
     try {
       const saved = overwrite && originalId === draft.id
-        ? await updateScenario(draft)
-        : await createScenario(draft);
+        ? await updateScenario(draft, idToken)
+        : await createScenario(draft, idToken);
       const next = scenarios.filter(scenario => scenario.id !== saved.id);
       const sorted = [...next, saved].sort((a, b) => a.id.localeCompare(b.id));
       setScenarios(sorted);
@@ -240,13 +242,25 @@ export function PuzzleEditor({ onBack, onPlay, previewScenario }: Props) {
   async function saveSeries(nextSeries: SeriesDefinition) {
     setSaving(true);
     try {
-      const saved = await updateDefaultSeries(nextSeries);
+      const saved = await updateDefaultSeries(nextSeries, idToken);
       setSeries(saved);
       setStatus('Saved series assignment.');
     } catch (error) {
       setStatus(error instanceof Error ? error.message : 'Failed to save series.');
     } finally {
       setSaving(false);
+    }
+  }
+
+  async function publish() {
+    setPublishing(true);
+    try {
+      await publishEditorData(idToken);
+      setStatus('Published. Live for players now.');
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : 'Failed to publish.');
+    } finally {
+      setPublishing(false);
     }
   }
 
@@ -271,12 +285,17 @@ export function PuzzleEditor({ onBack, onPlay, previewScenario }: Props) {
       <header className="editor__header">
         <div>
           <h1 className="editor__title">Puzzle Editor</h1>
-          <p className="editor__subtitle">Build local scenario JSON, publish puzzles, and manage the current series.</p>
+          <p className="editor__subtitle">
+            Build scenario JSON and manage the current series. Saves are drafts — click Publish to make them live for players.
+          </p>
         </div>
         <div className="editor__header-actions">
           <button className="btn btn--secondary" onClick={onBack}>Back</button>
           <button className="btn btn--primary" onClick={() => onPlay(draft)} disabled={validationErrors.length > 0}>
             Play Draft
+          </button>
+          <button className="btn btn--primary" disabled={publishing} onClick={() => { void publish(); }}>
+            {publishing ? 'Publishing…' : 'Publish'}
           </button>
         </div>
       </header>

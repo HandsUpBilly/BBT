@@ -3,7 +3,20 @@ import { OAuth2Client } from 'google-auth-library';
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
 const client = new OAuth2Client(GOOGLE_CLIENT_ID);
 
+const ADMIN_EMAILS = new Set(
+  (process.env.ADMIN_EMAILS ?? '')
+    .split(',')
+    .map(email => email.trim().toLowerCase())
+    .filter(Boolean),
+);
+
 export class AuthError extends Error {}
+export class AdminAuthError extends AuthError {
+  constructor(message, status = 403) {
+    super(message);
+    this.status = status;
+  }
+}
 
 function bearerToken(req) {
   const header = req.get('authorization') ?? '';
@@ -34,6 +47,25 @@ export async function verifyOptionalGoogleUser(req) {
   } catch {
     throw new AuthError('Invalid Google identity token');
   }
+}
+
+export function isAdminUser(user) {
+  return Boolean(user?.email && ADMIN_EMAILS.has(user.email.toLowerCase()));
+}
+
+/** Verifies the request carries a Google identity token belonging to an allowlisted
+ * admin email. Throws AdminAuthError (a subclass of AuthError) if not signed in or
+ * not an admin, so callers can share the same 401/403 handling as verifyOptionalGoogleUser.
+ *
+ * If ADMIN_EMAILS is not configured at all, admin gating is disabled (matches the
+ * editor's previous unrestricted behavior) — this keeps local dev usable without
+ * Google OAuth set up, while production can opt into enforcement by setting the env var. */
+export async function requireAdminGoogleUser(req) {
+  if (ADMIN_EMAILS.size === 0) return null;
+  const user = await verifyOptionalGoogleUser(req);
+  if (!user) throw new AdminAuthError('Sign-in required', 401);
+  if (!isAdminUser(user)) throw new AdminAuthError('Admin access required', 403);
+  return user;
 }
 
 export function entryAuthFields(user) {

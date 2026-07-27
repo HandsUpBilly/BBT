@@ -79,6 +79,41 @@ Drop a new `.json` file in `client/src/scenarios/`. It is picked up automaticall
 | `PORT` | `server/index.js` | Express port (default: `3001`) |
 | `NETLIFY_SITE_ID` / `SITE_ID` | `netlify/functions/leaderboard.js` | Netlify Blobs site ID |
 | `NETLIFY_TOKEN` / `NETLIFY_AUTH_TOKEN` | `netlify/functions/leaderboard.js` | Netlify Blobs auth |
+| `ADMIN_EMAILS` | `server/auth.js`, `netlify/functions/auth.js` | Comma-separated allowlist gating `/api/editor/*` writes. Unset = unrestricted (matches pre-admin-gating behavior). |
+| `VITE_ADMIN_EMAILS` | `client/src/App.tsx` | Same list, client-side, controls Admin Mode button visibility only — not a security boundary. Keep in sync with `ADMIN_EMAILS`. |
+
+## Puzzle Editor: Draft vs. Published Scenarios
+
+On Netlify, the editor (`client/src/editor/PuzzleEditor.tsx`) reads/writes
+**draft** scenario/series state in Netlify Blobs
+(`netlify/functions/editor-scenarios.js`, `editor-series.js`,
+`editorStore.js`). Draft saves never reach players directly.
+
+Players' clients fetch the **published** state at runtime from the public,
+unauthenticated `GET /api/scenarios` endpoint
+(`netlify/functions/scenarios.js` in production, an equivalent route in
+`server/editor.js` for local dev) — see `client/src/scenarios/runtime.ts`
+(`loadScenarioData`), called from `App.tsx`. If that fetch fails, the app
+falls back to the build-time static bundle (`client/src/scenarios/*.json`
+via `import.meta.glob`, `client/src/series/default.json`).
+
+The editor's **Publish** button (`publishEditorData` in
+`client/src/editor/editorApi.ts` → `POST /api/editor/publish` →
+`netlify/functions/editor-publish.js`) copies draft → published Blobs
+keys. This is an explicit action so an admin can stage multiple edits
+before making them live — publishing is NOT automatic on every draft save.
+
+Local dev has no draft/published split: `server/editor.js` writes straight
+to `client/src/scenarios/*.json` / `client/src/series/default.json`
+(already "live" for local dev), and its `/api/editor/publish` route is a
+no-op confirmation kept only so the client's publish button works
+identically in both environments.
+
+Write endpoints (`POST`/`PUT` on `/api/editor/*`, plus
+`/api/editor/publish`) require `requireAdminGoogleUser` — a Google ID
+token (sent as `Authorization: Bearer <idToken>`, added by
+`editorApi.ts`'s `authHeaders`) whose email is in `ADMIN_EMAILS`. See
+"Identity / Auth Notes" below for how ID tokens are obtained.
 
 ## Leaderboard Eventual-Consistency Pattern
 
@@ -117,6 +152,11 @@ submit flow — replicate this pattern for any new leaderboard-writing flow:
   (or initials fallback via a shared `initials(name)` helper) when present.
 - `IdentityGate` (in `App.tsx`) gates all UI behind `identityReady` — true
   once a Google user or a non-empty guest name exists.
+- `requireAdminGoogleUser` (`server/auth.js`, `netlify/functions/auth.js`)
+  reuses the same `verifyOptionalGoogleUser` token verification, then checks
+  the verified email against `ADMIN_EMAILS`. Throws `AdminAuthError` (401 if
+  not signed in, 403 if signed in but not allowlisted) — guest sessions have
+  no ID token and can never pass this check, only Google-signed-in admins can.
 
 ## Scenario Naming
 

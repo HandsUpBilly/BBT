@@ -1,8 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { fetchLeaderboard, fetchSeriesLeaderboard } from './api';
-import { scenarios } from './scenarios';
-import { defaultSeries } from './series';
-import type { LeaderboardEntry, Scenario, SeriesLeaderboardEntry } from './types';
+import type { LeaderboardEntry, Scenario, SeriesDefinition, SeriesLeaderboardEntry } from './types';
 import './ScenarioSelect.css';
 
 const LOCAL_SCORE_KEY = 'bbt.localScores.v1';
@@ -19,6 +17,8 @@ interface ScenarioProgress {
 }
 
 interface Props {
+  scenarios: Scenario[];
+  series: SeriesDefinition;
   onPlay: (scenario: Scenario) => void;
   onLeaderboard: (scenario: Scenario) => void;
   onStartSeries: () => void;
@@ -26,6 +26,7 @@ interface Props {
   onAdmin: () => void;
   progressRefreshKey: number;
   userId?: string;
+  isAdmin: boolean;
 }
 
 function pct(value: number): string {
@@ -77,6 +78,8 @@ function formatProgress(progress?: ScenarioProgress): string {
 }
 
 export function ScenarioSelect({
+  scenarios,
+  series,
   onPlay,
   onLeaderboard,
   onStartSeries,
@@ -84,6 +87,7 @@ export function ScenarioSelect({
   onAdmin,
   progressRefreshKey,
   userId,
+  isAdmin,
 }: Props) {
   const [playView, setPlayView] = useState<PlayView>('series');
   const [leaderboards, setLeaderboards] = useState<Record<string, LeaderboardEntry[]>>({});
@@ -114,7 +118,7 @@ export function ScenarioSelect({
 
     void loadProgress();
     return () => { cancelled = true; };
-  }, [progressRefreshKey]);
+  }, [progressRefreshKey, scenarios]);
 
   const localScores = readLocalScores();
 
@@ -125,7 +129,7 @@ export function ScenarioSelect({
         progressFromEntries(leaderboards[scenario.id] ?? [], localScores[scenario.id], userId),
       ]),
     ) as Record<string, ScenarioProgress>;
-  }, [leaderboards, localScores, userId]);
+  }, [scenarios, leaderboards, localScores, userId]);
 
   const seriesProgress = useMemo(() => {
     return progressFromEntries(seriesLeaderboard, localScores[SERIES_SCORE_KEY], userId);
@@ -147,7 +151,7 @@ export function ScenarioSelect({
       if (!best || (item.bestPercent ?? 0) > (best.bestPercent ?? 0)) return item;
       return best;
     });
-  }, [scenarioProgress]);
+  }, [scenarios, scenarioProgress]);
 
   return (
     <div className="scenario-select">
@@ -184,8 +188,8 @@ export function ScenarioSelect({
           <div className="series-row">
             <div className="series-row__body">
               <span className="series-row__eyebrow">Featured series</span>
-              <h2 className="series-row__title">{defaultSeries.name}</h2>
-              <p className="series-row__desc">{defaultSeries.description}</p>
+              <h2 className="series-row__title">{series.name}</h2>
+              <p className="series-row__desc">{series.description}</p>
               <div className="series-row__meta">{formatProgress(seriesProgress)}</div>
             </div>
             <div className="series-row__actions">
@@ -232,11 +236,13 @@ export function ScenarioSelect({
         </section>
       )}
 
-      <div className="scenario-select__footer">
-        <button className="btn btn--ghost" onClick={onAdmin}>
-          Admin Mode
-        </button>
-      </div>
+      {isAdmin && (
+        <div className="scenario-select__footer">
+          <button className="btn btn--ghost" onClick={onAdmin}>
+            Admin Mode
+          </button>
+        </div>
+      )}
     </div>
   );
 }
