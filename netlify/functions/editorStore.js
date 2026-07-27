@@ -13,6 +13,8 @@ import defaultSeries from '../../client/src/series/default.json' with { type: 'j
 const STATIC_SCENARIOS = [scenario001, scenario002, scenario003, scenario004, scenario005];
 const SCENARIOS_KEY = 'scenarios';
 const SERIES_KEY = 'series-default';
+const PUBLISHED_SCENARIOS_KEY = 'published-scenarios';
+const PUBLISHED_SERIES_KEY = 'published-series-default';
 
 export function editorStore() {
   return getStore({
@@ -56,4 +58,45 @@ export async function readDraftSeries(store) {
 
 export async function writeDraftSeries(store, series) {
   await store.set(SERIES_KEY, JSON.stringify(series));
+}
+
+/**
+ * Published state is what the public scenarios endpoint (netlify/functions/scenarios.js)
+ * serves to players. It's a separate Blobs key from the draft state above — publishing
+ * is an explicit copy-draft-to-published action (see editor-publish.js), not automatic
+ * on every draft save, so an admin can stage several edits before making them live.
+ * Seeds from the static bundle on first read, same as the draft keys.
+ */
+export async function readPublishedScenarios(store) {
+  const raw = await store.get(PUBLISHED_SCENARIOS_KEY, { type: 'text' });
+  if (raw) {
+    try {
+      return JSON.parse(raw);
+    } catch {
+      // fall through to reseed on corrupt data
+    }
+  }
+  await store.set(PUBLISHED_SCENARIOS_KEY, JSON.stringify(STATIC_SCENARIOS));
+  return STATIC_SCENARIOS;
+}
+
+export async function writePublishedScenarios(store, scenarios) {
+  await store.set(PUBLISHED_SCENARIOS_KEY, JSON.stringify(scenarios));
+}
+
+export async function readPublishedSeries(store) {
+  const raw = await store.get(PUBLISHED_SERIES_KEY, { type: 'text' });
+  if (raw) {
+    try {
+      return JSON.parse(raw);
+    } catch {
+      // fall through to reseed on corrupt data
+    }
+  }
+  await store.set(PUBLISHED_SERIES_KEY, JSON.stringify(defaultSeries));
+  return defaultSeries;
+}
+
+export async function writePublishedSeries(store, series) {
+  await store.set(PUBLISHED_SERIES_KEY, JSON.stringify(series));
 }

@@ -1,5 +1,6 @@
 import { normalizeScenario, validateScenario, SCENARIO_ID_RE } from './editorValidation.js';
 import { editorStore, readDraftScenarios, writeDraftScenarios, readDraftSeries } from './editorStore.js';
+import { AdminAuthError, authErrorResponse, requireAdminGoogleUser } from './auth.js';
 
 function jsonResponse(status, body) {
   return new Response(JSON.stringify(body), {
@@ -29,6 +30,13 @@ export default async function handler(req) {
   }
 
   if (req.method === 'POST') {
+    try {
+      await requireAdminGoogleUser(req);
+    } catch (error) {
+      if (error instanceof AdminAuthError) return authErrorResponse(error);
+      throw error;
+    }
+
     let body;
     try {
       body = await req.json();
@@ -47,6 +55,13 @@ export default async function handler(req) {
   }
 
   if (req.method === 'PUT') {
+    try {
+      await requireAdminGoogleUser(req);
+    } catch (error) {
+      if (error instanceof AdminAuthError) return authErrorResponse(error);
+      throw error;
+    }
+
     const id = scenarioIdFromPath(url.pathname) ?? url.searchParams.get('scenarioId');
     if (!id || !SCENARIO_ID_RE.test(id)) return jsonResponse(400, { errors: ['Invalid scenario id'] });
 

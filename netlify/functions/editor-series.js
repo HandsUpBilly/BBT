@@ -1,5 +1,6 @@
 import { normalizeSeries } from './editorValidation.js';
 import { editorStore, readDraftScenarios, writeDraftSeries } from './editorStore.js';
+import { AdminAuthError, authErrorResponse, requireAdminGoogleUser } from './auth.js';
 
 function jsonResponse(status, body) {
   return new Response(JSON.stringify(body), {
@@ -11,6 +12,13 @@ function jsonResponse(status, body) {
 export default async function handler(req) {
   if (req.method !== 'PUT') {
     return jsonResponse(405, { errors: ['Method not allowed'] });
+  }
+
+  try {
+    await requireAdminGoogleUser(req);
+  } catch (error) {
+    if (error instanceof AdminAuthError) return authErrorResponse(error);
+    throw error;
   }
 
   let body;

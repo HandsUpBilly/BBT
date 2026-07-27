@@ -16,6 +16,10 @@ import { ConfirmDialog } from './ConfirmDialog';
 import { UserMenu } from './UserMenu';
 import { submitScore, fetchLeaderboard, submitSeriesScore, fetchSeriesLeaderboard } from './api';
 import { resolveSeriesScenarios } from './series';
+import { loadScenarioData } from './scenarios/runtime';
+import type { ScenarioData } from './scenarios/runtime';
+import { scenarios as staticScenarios } from './scenarios';
+import { defaultSeries as staticSeries } from './series';
 import { PuzzleEditor } from './editor/PuzzleEditor';
 import { useAuth } from './auth';
 import type {
@@ -28,8 +32,20 @@ import './App.css';
 
 const TURNS_PER_HALF = 8;
 const LOCAL_SCORE_KEY = 'bbt.localScores.v1';
-const seriesScenarios = resolveSeriesScenarios();
 const GUEST_NAME_KEY = 'bbt.guestName.v1';
+
+// Client-side allowlist controlling whether the "Admin Mode" button is shown at
+// all — this is a UX nicety only, NOT the security boundary. The actual write
+// endpoints (netlify/functions/editor-*.js, server/editor.js) independently
+// verify the signed-in user's Google identity token against the server-side
+// ADMIN_EMAILS env var, so hiding this button doesn't grant write access and
+// showing it doesn't bypass the server check. Keep the two lists in sync.
+const ADMIN_EMAILS = new Set(
+  (import.meta.env.VITE_ADMIN_EMAILS ?? '')
+    .split(',')
+    .map((email: string) => email.trim().toLowerCase())
+    .filter(Boolean),
+);
 
 type LocalScoreMap = Record<string, string[]>;
 
@@ -202,6 +218,19 @@ function IdentityGate({ authConfigured, onGoogleSignIn, onGuest }: IdentityGateP
 
 export default function App() {
   const { currentUser, idToken, isConfigured: authConfigured, signIn, signOut } = useAuth();
+  // Scenario/series data starts as the build-time static bundle (immediate,
+  // no loading flash) and is replaced by the currently published set fetched
+  // from /api/scenarios once that resolves — see scenarios/runtime.ts.
+  const [scenarioData, setScenarioData] = useState<ScenarioData>(() => ({
+    scenarios: staticScenarios,
+    series: staticSeries,
+  }));
+  useEffect(() => {
+    let cancelled = false;
+    void loadScenarioData().then(data => { if (!cancelled) setScenarioData(data); });
+    return () => { cancelled = true; };
+  }, []);
+  const seriesScenarios = resolveSeriesScenarios(scenarioData.series, scenarioData.scenarios);
   const [guestName, setGuestNameState] = useState(readGuestName);
   const setGuestName = useCallback((name: string) => {
     setGuestNameState(name);
@@ -253,6 +282,16 @@ export default function App() {
   const identityName = currentUser?.displayName ?? guestName;
   const identityReady = Boolean(identityName.trim());
   const identityAvatarUrl = currentUser?.avatarUrl;
+  // Empty ADMIN_EMAILS (unset in this environment) means "show to everyone" —
+  // matches the server-side fallback in requireAdminGoogleUser, keeping local
+  // dev usable without any Google OAuth/admin config.
+  const isAdmin = ADMIN_EMAILS.size === 0
+    || Boolean(currentUser?.email && ADMIN_EMAILS.has(currentUser.email.toLowerCase()));
+  // Defense in depth: appMode is client-only state with no URL routing, so this
+  // shouldn't be reachable since the Admin Mode button is hidden for non-admins.
+  // The real gate is server-side (ADMIN_EMAILS check on the write endpoints).
+  // Render 'home' instead of setState-in-effect to avoid an extra render pass.
+  const effectiveAppMode = appMode === 'admin' && !isAdmin ? 'home' : appMode;
 
   const handleSignOut = useCallback(() => {
     if (currentUser) {
@@ -430,7 +469,7 @@ export default function App() {
     setState(s);
     setZoomBounds(computeStartOfPlayZoom(s.pieces, s.activeTeam));
     setAppMode('series-puzzle');
-  }, [identityName, setState, computeStartOfPlayZoom]);
+  }, [identityName, seriesScenarios, setState, computeStartOfPlayZoom]);
 
   // Called when the player continues past a touchdown while in a series run.
   // Submits the puzzle's score to its individual leaderboard, records the
@@ -490,7 +529,7 @@ export default function App() {
       setSeriesRun(null);
       setAppMode('series-leaderboard');
     }
-  }, [activeScenario, seriesRun, state.actionLog, setState, idToken, computeStartOfPlayZoom]);
+  }, [activeScenario, seriesRun, seriesScenarios, state.actionLog, setState, idToken, computeStartOfPlayZoom]);
 
   const requestLeaveSeries = useCallback(() => {
     setConfirmLeaveSeries(true);
@@ -529,11 +568,13 @@ export default function App() {
     );
   }
 
-  if (appMode === 'home') {
+  if (effectiveAppMode === 'home') {
     return (
       <div className="app app--home">
         <UserMenu name={identityName} avatarUrl={identityAvatarUrl} onSignOut={handleSignOut} />
         <ScenarioSelect
+          scenarios={scenarioData.scenarios}
+          series={scenarioData.series}
           onPlay={startPuzzle}
           onLeaderboard={goLeaderboard}
           onStartSeries={startSeries}
@@ -541,12 +582,13 @@ export default function App() {
           onAdmin={() => setAppMode('admin')}
           progressRefreshKey={progressRefreshKey}
           userId={currentUser?.id}
+          isAdmin={isAdmin}
         />
       </div>
     );
   }
 
-  if (appMode === 'series-leaderboard') {
+  if (effectiveAppMode === 'series-leaderboard') {
     if (selectedSeriesEntry) {
       return (
         <div className="app app--home">
@@ -573,7 +615,7 @@ export default function App() {
     );
   }
 
-  if (appMode === 'admin') {
+  if (effectiveAppMode === 'admin') {
     return (
       <div className="app app--home">
         <UserMenu name={identityName} avatarUrl={identityAvatarUrl} onSignOut={handleSignOut} />
@@ -581,12 +623,13 @@ export default function App() {
           onBack={() => setAppMode('home')}
           onPlay={previewPuzzle}
           previewScenario={editorPreviewScenario}
+          idToken={idToken}
         />
       </div>
     );
   }
 
-  if (appMode === 'leaderboard' && activeScenario) {
+  if (effectiveAppMode === 'leaderboard' && activeScenario) {
     if (selectedEntry) {
       return (
         <div className="app app--home">

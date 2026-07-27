@@ -31,9 +31,9 @@ configures:
 
 - `base = "client"`, `command = "npm install && npm run build && cd ../netlify/functions && npm install"`, `publish = "dist"`
 - `functions = "../netlify/functions"` (bundled with esbuild)
-- Redirects routing `/api/leaderboard/*`, `/api/series-leaderboard`, and
-  `/api/editor/*` to their respective functions, with an SPA fallback for
-  everything else.
+- Redirects routing `/api/leaderboard/*`, `/api/series-leaderboard`,
+  `/api/editor/*`, and `/api/scenarios` to their respective functions,
+  with an SPA fallback for everything else.
 
 ### Environment variables
 
@@ -45,6 +45,8 @@ Set these in Netlify's UI under **Site configuration → Environment variables**
 | `GOOGLE_CLIENT_ID` | Functions | Server-side verification of Google ID tokens (`netlify/functions/auth.js`) |
 | `NETLIFY_SITE_ID` (or `SITE_ID`) | Functions | Netlify Blobs site scoping |
 | `NETLIFY_TOKEN` (or `NETLIFY_AUTH_TOKEN`) | Functions | Netlify Blobs auth |
+| `ADMIN_EMAILS` | Functions | Comma-separated Google account emails allowed to write via `/api/editor/*` (see below). Unset = no restriction. |
+| `VITE_ADMIN_EMAILS` | Build | Same list, baked into the client bundle to control whether the "Admin Mode" button is shown. Keep in sync with `ADMIN_EMAILS`. |
 
 ### Google Cloud OAuth config
 
@@ -69,38 +71,43 @@ deploy finishes, confirm:
 ### Puzzle Editor on Netlify
 
 Admin Mode's puzzle editor (create/edit scenarios, edit the default
-series) is reachable on the deployed site with **no access
-restriction** — anyone with the site URL can open it. This is a known
-limitation of the current setup, not a bug; there is no login/allowlist
-gating on the editor functions.
+series) writes to **Netlify Blobs**, since Netlify Functions have no
+persistent filesystem — unlike local dev, where the editor writes
+straight to `client/src/scenarios/*.json` via `server/editor.js`.
 
-Netlify Functions have no persistent filesystem, so unlike local dev
-(where the editor writes straight to `client/src/scenarios/*.json` via
-`server/editor.js`), the deployed editor saves edits as **drafts in
-Netlify Blobs** (`netlify/functions/editor-scenarios.js`,
-`editor-series.js`). Draft edits:
+Blobs holds two states:
 
-- Do **not** affect what players see. The live game always serves
-  scenarios from the static bundle built from
-  `client/src/scenarios/*.json` and `client/src/series/default.json`.
-- Persist across editor sessions (stored in Blobs), but only as drafts.
-- Seed themselves from the currently-published static JSON the first
-  time the editor is opened after a deploy.
+- **Draft** — every scenario/series save from the editor
+  (`netlify/functions/editor-scenarios.js`, `editor-series.js`) goes
+  here. Lets you stage multiple edits without affecting players.
+- **Published** — what the live game actually serves to players, via
+  the public `GET /api/scenarios` endpoint
+  (`netlify/functions/scenarios.js`), fetched at runtime by the client
+  (`client/src/scenarios/runtime.ts`). Falls back to the build-time
+  static bundle (`client/src/scenarios/*.json`,
+  `client/src/series/default.json`) if that fetch fails.
 
-**To publish an edited scenario or series:**
+**Publishing**: click **Publish** in the editor toolbar. This calls
+`POST /api/editor/publish` (`netlify/functions/editor-publish.js`),
+which copies the current draft into the published Blobs keys — no
+redeploy required, and it's live for players within a page refresh.
 
-1. Make your changes in the deployed Admin Mode editor.
-2. Fetch the current draft JSON directly from the API, e.g.:
-   ```bash
-   curl https://<your-site>.netlify.app/api/editor/scenarios
-   ```
-   (or open that URL / the Network tab in browser devtools).
-3. Copy each edited scenario object into its corresponding
-   `client/src/scenarios/scenario-00N.json` file (or add a new file for
-   a new scenario), and copy the `series` object into
-   `client/src/series/default.json`, matching the existing formatting.
-4. Commit and push. Netlify redeploys and the change goes live.
+If you'd rather commit puzzles to the repo (e.g. to keep the static
+fallback current, or avoid depending on Blobs), fetch the draft/published
+JSON directly and copy it into the scenario files by hand:
 
-There is no built-in export/publish button — this is a manual copy-paste
-step by design, since automatic publishing would require the live game
-to read scenarios from a runtime store instead of the static bundle.
+```bash
+curl https://<your-site>.netlify.app/api/scenarios
+```
+
+**Access control**: write endpoints (`/api/editor/*`) require a signed-in
+Google user whose email is in the `ADMIN_EMAILS` env var (comma-separated).
+The "Admin Mode" button is hidden client-side for non-allowlisted users
+(`VITE_ADMIN_EMAILS`), but that's a UX nicety, not the security boundary —
+the server-side `ADMIN_EMAILS` check is what actually blocks writes.
+`GET /api/scenarios` (what players' clients fetch) is intentionally public
+and unauthenticated.
+
+If neither `ADMIN_EMAILS` nor `VITE_ADMIN_EMAILS` is set, the editor is
+open to everyone (matches the previous unrestricted behavior) — this is
+also why local dev works without any Google OAuth setup.
