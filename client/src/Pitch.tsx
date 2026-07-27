@@ -144,6 +144,20 @@ export function Pitch({ state, onSquareClick, onPieceClick, onSquareHover, onSqu
     : null;
   const ghostHasBall = selectedPiece?.hasBall ?? false;
 
+  // Current action label for the selected piece — shown at the bottom-right
+  // of its icon so it's clear which mode (Move / Pass / Hand Off) is active.
+  // A pass/handoff is only "declared" once the carrier has finished moving
+  // and receiver targeting opens (isPassTargeting/isHandoffTargeting) — up
+  // until then the piece is still just being moved, so the label reads
+  // "Move" even if Pass or Hand Off was chosen from the piece menu.
+  const actionLabel = !selectedPiece
+    ? null
+    : state.isPassTargeting
+      ? 'Pass'
+      : state.isHandoffTargeting
+        ? 'Hand Off'
+        : 'Move';
+
   const isSelecting = !!state.selectedPieceId;
   const opponents   = state.pieces.filter(p => p.team !== state.activeTeam).map(p => p.position);
   const tzKeys      = isSelecting ? tacklezoneKeys(opponents) : new Set<string>();
@@ -244,6 +258,9 @@ export function Pitch({ state, onSquareClick, onPieceClick, onSquareHover, onSqu
               <PieceIcon team={piece.team} role={piece.role} />
               {piece.hasBall && <BallIcon />}
             </div>
+          )}
+          {isSelected && actionLabel && (
+            <span className="piece__action-label">{actionLabel}</span>
           )}
 
           {displayStep !== null && (

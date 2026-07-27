@@ -253,6 +253,28 @@
   filter: saturate(0.5);
 }
 
+.piece__action-label {
+  position: absolute;
+  bottom: 1%;
+  right: 1%;
+  max-width: 96%;
+  background: rgba(10, 10, 10, 0.88);
+  color: #fff;
+  font-size: 0.38rem;
+  font-weight: 700;
+  line-height: 1.2;
+  padding: 0.06em 0.3em;
+  border-radius: 0.5em;
+  border: 1px solid rgba(255, 255, 255, 0.65);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  pointer-events: none;
+  z-index: 6;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
 .piece__portrait {
   width: 92%;
   height: 92%;

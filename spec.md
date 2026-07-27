@@ -1607,3 +1607,175 @@ Update Series Play in `App.tsx` to use the default series list instead of the fu
 - Draft autosave and restore.
 - Import/export scenario packs.
 - Visual validation overlays for tackle zones and likely routes.
+
+---
+
+## Bug Fix — Pass/Handoff fails when receiver already activated this turn
+
+### Problem Statement
+
+Reported bug ("long bomb" scenario, `scenario-003.json`, but the defect is
+in shared game logic, not scenario-specific):
+
+1. Move the catcher into the end zone (catcher's activation ends, so
+   `activated: true` is set on that piece).
+2. Activate the thrower (still holding the ball), choose "Pass", move it,
+   then attempt to complete the pass to the catcher.
+3. The pass cannot be completed — the catcher does not appear as a legal
+   target — even though the catcher is a legal in-range receiver by the
+   rules (a player does not need to be "unactivated" to catch a pass).
+4. Because no receiver square was ever clicked, `handlePassTarget` never
+   runs, so the thrower's `activated` flag is never set to `true`.
+5. The player can then reselect and move the same thrower again for free
+   in the same turn, since the game only prevents reselecting pieces
+   where `activated === true`.
+
+### Root Cause (confirmed by code reading)
+
+In `client/src/useGameState.ts`:
+
+- The `pendingPass` branch of `handleSquareClick` (~line 237) builds
+  `passReceiverKeys` by filtering candidates with `!piece.activated` —
+  this incorrectly excludes teammates who already completed their own
+  activation earlier in the turn.
+- The equivalent `pendingHandoff` branch (~line 279) has the identical
+  `!piece.activated` filter for handoff receivers.
+- There is no fallback: if `passReceiverKeys` (or `handoffTargets`) ends
+  up empty after the carrier's move, the UI is left in
+  `isPassTargeting` / `isHandoffTargeting` limbo with the carrier's
+  `activated` flag still `false`, allowing that piece to be reselected
+  and moved again.
+
+### Requirements
+
+1. **Receiver eligibility fix (pass and handoff)**
+   - Remove the `!piece.activated` condition from both the
+     pass-receiver filter and the handoff-receiver filter, so any
+     teammate (other than the carrier itself) within range/adjacency is
+     a valid target regardless of whether they already completed a move
+     this turn.
+   - The receiver must still not already hold the ball (`hasBall: true`
+     pieces cannot be receivers) and must be on the same team, not the
+     carrier.
+   - Catching a pass/handoff must not itself flip a receiver's
+     `activated` flag to `true` as a side effect — only the carrier
+     becomes `activated` when the play resolves. A receiver's existing
+     `activated` state (from an earlier move this turn) is preserved
+     unchanged.
+
+2. **Auto-activate on zero valid targets (pass and handoff)**
+   - After the carrier commits its move for a pass or handoff action,
+     if the computed target set (`passReceiverKeys` / `handoffTargets`)
+     is empty, the activation must end immediately instead of entering
+     targeting mode:
+     - Mark the carrier as `activated: true` at its final (moved)
+       position.
+     - Clear all pass/handoff pending/targeting state (`pendingPass`,
+       `isPassTargeting`, `passRangeKeys`, `passReceiverKeys`,
+       `pendingHandoff`, `isHandoffTargeting`, `handoffTargets`).
+     - Do not set `passUsed: true` in this case — no pass/handoff roll
+       occurred, so the team's pass/handoff resource for the turn is
+       not consumed.
+     - No pass/handoff action-log entries are added; only the move log
+       entries already recorded for this activation remain.
+   - This guarantees the piece cannot be reselected/moved again this
+     turn, fixing the "moves the same player again" symptom, and is the
+     authoritative fix — it must work even without item 3 below.
+
+3. **Preemptive UX (secondary, best-effort)**
+   - Where practical, disable/hide the "Pass" and "Hand Off" piece-menu
+     actions up front if it's already knowable that no legal receiver
+     exists from the carrier's current (pre-move) position. This is a
+     UX nicety; requirement 2's auto-activate fallback remains
+     authoritative and must still work if this step is skipped or
+     imperfect (e.g. a receiver could become invalid due to the
+     carrier's own movement path, which isn't known until move-time).
+
+4. **Scope**
+   - The fix lives in shared code (`client/src/useGameState.ts`) and
+     applies to all game modes: Free Play and every puzzle scenario,
+     not just `scenario-003` (long bomb).
+
+5. **Testing**
+   - Introduce Vitest as the test runner for the `client` package (no
+     test framework currently exists in the repo).
+     - Add `vitest` as a dev dependency in `client/package.json`
+       (add `jsdom` only if a DOM environment turns out to be required
+       — pure-logic tests on `useGameState`/`bfs` should not need it).
+     - Add a `"test": "vitest run"` script to `client/package.json`.
+     - Add a minimal `vitest.config.ts` (or a `test` block in the
+       existing `vite.config.ts`) sufficient to run `.test.ts` files
+       under `client/src`.
+   - Add regression tests colocated with `useGameState.ts` (e.g.
+     `client/src/useGameState.test.ts`) covering, at minimum:
+     a. Reproduction of the reported bug: activate & move a catcher to
+        end its activation, then activate the thrower, move it, declare
+        Pass, and confirm the catcher IS present in `passReceiverKeys`
+        (fails against current code, passes after the fix).
+     b. Completing that pass to the already-activated catcher succeeds:
+        ball transfers, thrower ends up `activated: true`,
+        `passUsed: true`, and the thrower cannot be reselected
+        afterward.
+     c. Zero-valid-target case: construct a state where, after a
+        carrier's move, no teammate is in pass range / adjacent for
+        handoff; declare Pass (and separately Hand Off), commit the
+        move, and assert the carrier is auto-activated
+        (`activated: true`), targeting state is cleared, `passUsed`
+        remains `false`, and the carrier cannot be reselected/moved
+        again this turn.
+     d. Equivalent handoff-specific version of (a)/(b): handing off to
+        an already-activated adjacent teammate succeeds.
+   - `npm run build`, `npm run lint`, and `npm run test` in `client/`
+     must all pass (there is no hosted CI for this repo).
+
+### Acceptance Criteria
+
+- [ ] In the long bomb scenario (and generally, in any game mode):
+      moving the catcher into the end zone first, then activating the
+      thrower, moving it, and passing to the catcher, successfully
+      completes the pass (or fails only due to an actual dice-roll
+      failure per the pass/catch target numbers — never due to the
+      catcher being ineligible).
+- [ ] Handing off to an already-activated adjacent teammate works the
+      same way.
+- [ ] If a pass or handoff genuinely has no legal receiver after the
+      carrier's move, the carrier's activation ends automatically
+      (`activated: true`) and it cannot be moved again this turn;
+      `passUsed` is not consumed.
+- [ ] A receiver who catches a ball via pass or handoff does not become
+      `activated` merely because it received the ball (its prior
+      activation state, if any, is preserved).
+- [ ] `client/src/useGameState.ts` no longer filters pass/handoff
+      receiver candidates on `!piece.activated`.
+- [ ] New Vitest suite exists, covering the four scenarios in
+      Requirement 5, and `npm run test` passes in `client/`.
+- [ ] `npm run build` and `npm run lint` in `client/` pass with no new
+      errors/warnings.
+- [ ] No regressions to existing pass/handoff/move behavior for the
+      normal case (receiver not yet activated).
+
+### Implementation Approach
+
+1. **Set up Vitest** in `client/`: add `vitest` devDependency,
+   `"test": "vitest run"` script, and a `vitest.config.ts` (or `test`
+   block in `vite.config.ts`).
+2. **Fix receiver eligibility** in `useGameState.ts`: remove
+   `!piece.activated` from the pass-receiver filter (`pendingPass`
+   branch) and the handoff-target filter (`pendingHandoff` branch).
+3. **Add auto-activate-on-empty-targets fallback**: in the
+   `pendingPass` branch, after computing `passReceiverKeys`, if it's
+   empty, skip entering `isPassTargeting` and instead commit the
+   carrier's move/activation via the existing "normal end-activation"
+   path — reuse/extend the pattern the `pendingHandoff` branch already
+   applies for its own empty-`targets` case (~line 289-292) rather than
+   duplicating logic. Confirm the `pendingHandoff` branch's existing
+   empty-target handling still behaves correctly with the eligibility
+   fix applied.
+4. **Write regression tests** (`client/src/useGameState.test.ts`)
+   covering the four cases in Requirement 5.
+5. **Verify**: run `npm run test`, `npm run lint`, and `npm run build`
+   in `client/`; manually sanity-check via the dev server using the
+   exact repro steps from the bug report on the long bomb scenario.
+6. **Cleanup**: ensure only the intended diffs (`useGameState.ts`, new
+   test file, `package.json`, `vitest.config.ts`) are part of the
+   change.
