@@ -3,6 +3,7 @@
   "name": "Reikland's Opening Drive",
   "description": "Nuffle smiles on the Reavers' first snap. Swiftfoot has the ball and two Orc Blockers stand between him and glory — find the safest path to the end zone.",
   "activeTeam": "human",
+  "published": true,
   "pieces": [
     {
       "id": "carrier",

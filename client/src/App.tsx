@@ -15,7 +15,8 @@ import { SeriesScoreSummary } from './SeriesScoreSummary';
 import { ConfirmDialog } from './ConfirmDialog';
 import { UserMenu } from './UserMenu';
 import { submitScore, fetchLeaderboard, submitSeriesScore, fetchSeriesLeaderboard } from './api';
-import { scenarios } from './scenarios';
+import { resolveSeriesScenarios } from './series';
+import { PuzzleEditor } from './editor/PuzzleEditor';
 import { useAuth } from './auth';
 import type {
   AppMode, PlayerPiece, Scenario, LeaderboardEntry,
@@ -27,6 +28,7 @@ import './App.css';
 
 const TURNS_PER_HALF = 8;
 const LOCAL_SCORE_KEY = 'bbt.localScores.v1';
+const seriesScenarios = resolveSeriesScenarios();
 const GUEST_NAME_KEY = 'bbt.guestName.v1';
 
 type LocalScoreMap = Record<string, string[]>;
@@ -119,7 +121,7 @@ function summarizeActionLog(actionLog: ActionLogEntry[]) {
 
 interface SeriesRunState {
   playerName: string;
-  puzzleIndex: number;           // 0-based index into `scenarios`
+  puzzleIndex: number;           // 0-based index into the active series
   results: SeriesPuzzleResult[]; // one entry per completed puzzle so far
 }
 
@@ -212,6 +214,7 @@ export default function App() {
   const [leaderboardInitialEntries, setLeaderboardInitialEntries] = useState<LeaderboardEntry[] | undefined>();
   const [selectedEntry, setSelectedEntry] = useState<LeaderboardEntry | undefined>();
   const [progressRefreshKey, setProgressRefreshKey] = useState(0);
+  const [editorPreviewScenario, setEditorPreviewScenario] = useState<Scenario | null>(null);
 
   // ── Series mode state ──────────────────────────────────────────────────
   const [seriesRun, setSeriesRun] = useState<SeriesRunState | null>(null);
@@ -247,13 +250,6 @@ export default function App() {
           handlePassAction, handlePassTarget }
     = useGameState(makeFreePlayState());
 
-  const startFreePlay = useCallback(() => {
-    const s = makeFreePlayState();
-    setState(s);
-    setZoomBounds(computeStartOfPlayZoom(s.pieces, s.activeTeam));
-    setAppMode('freeplay');
-  }, [setState, computeStartOfPlayZoom]);
-
   const identityName = currentUser?.displayName ?? guestName;
   const identityReady = Boolean(identityName.trim());
   const identityAvatarUrl = currentUser?.avatarUrl;
@@ -268,6 +264,16 @@ export default function App() {
   }, [currentUser, signOut, setGuestName]);
 
   const startPuzzle = useCallback((scenario: Scenario) => {
+    setEditorPreviewScenario(null);
+    setActiveScenario(scenario);
+    const s = makeScenarioState(scenario);
+    setState(s);
+    setZoomBounds(computeStartOfPlayZoom(s.pieces, s.activeTeam));
+    setAppMode('puzzle');
+  }, [setState, computeStartOfPlayZoom]);
+
+  const previewPuzzle = useCallback((scenario: Scenario) => {
+    setEditorPreviewScenario(scenario);
     setActiveScenario(scenario);
     const s = makeScenarioState(scenario);
     setState(s);
@@ -416,7 +422,8 @@ export default function App() {
   // ── Series mode handlers ──────────────────────────────────────────────────
   const startSeries = useCallback(() => {
     if (!identityName.trim()) return;
-    const firstScenario = scenarios[0];
+    const firstScenario = seriesScenarios[0];
+    if (!firstScenario) return;
     setSeriesRun({ playerName: identityName, puzzleIndex: 0, results: [] });
     setActiveScenario(firstScenario);
     const s = makeScenarioState(firstScenario);
@@ -450,8 +457,8 @@ export default function App() {
     const results = [...seriesRun.results, result];
     const nextIndex = seriesRun.puzzleIndex + 1;
 
-    if (nextIndex < scenarios.length) {
-      const nextScenario = scenarios[nextIndex];
+    if (nextIndex < seriesScenarios.length) {
+      const nextScenario = seriesScenarios[nextIndex];
       setSeriesRun({ ...seriesRun, puzzleIndex: nextIndex, results });
       setActiveScenario(nextScenario);
       const s = makeScenarioState(nextScenario);
@@ -502,10 +509,12 @@ export default function App() {
   const handleBackClick = useCallback(() => {
     if (appMode === 'series-puzzle') {
       requestLeaveSeries();
+    } else if (editorPreviewScenario) {
+      setAppMode('admin');
     } else {
       setAppMode('home');
     }
-  }, [appMode, requestLeaveSeries]);
+  }, [appMode, editorPreviewScenario, requestLeaveSeries]);
 
   // ── Render: non-game screens ─────────────────────────────────────────────
   if (!identityReady) {
@@ -568,16 +577,11 @@ export default function App() {
     return (
       <div className="app app--home">
         <UserMenu name={identityName} avatarUrl={identityAvatarUrl} onSignOut={handleSignOut} />
-        <div className="admin-screen">
-          <div className="admin-screen__header">
-            <h1 className="admin-screen__title">Admin Mode</h1>
-            <p className="admin-screen__subtitle">Development tools and unrestricted practice modes.</p>
-          </div>
-          <div className="admin-screen__actions">
-            <button className="btn btn--primary" onClick={startFreePlay}>Sandbox</button>
-            <button className="btn btn--secondary" onClick={() => setAppMode('home')}>Back</button>
-          </div>
-        </div>
+        <PuzzleEditor
+          onBack={() => setAppMode('home')}
+          onPlay={previewPuzzle}
+          previewScenario={editorPreviewScenario}
+        />
       </div>
     );
   }
@@ -645,7 +649,7 @@ export default function App() {
   return (
     <div className="app">
       <header className="hud">
-        <button className="hud__back" onClick={handleBackClick}>← Menu</button>
+        <button className="hud__back" onClick={handleBackClick}>{editorPreviewScenario ? '← Designer' : '← Menu'}</button>
 
         {!state.isPuzzleMode && (
           <div className="hud__score">
@@ -661,7 +665,7 @@ export default function App() {
           <div className="hud__prob">
             {seriesRun && (
               <span className="hud__prob-label">
-                Puzzle {seriesRun.puzzleIndex + 1} / {scenarios.length} ·{' '}
+                Puzzle {seriesRun.puzzleIndex + 1} / {seriesScenarios.length} ·{' '}
               </span>
             )}
             <span className="hud__prob-label">Success chance</span>
@@ -752,7 +756,7 @@ export default function App() {
           onDismiss={handleSeriesContinue}
           seriesMode
           continueLabel={
-            seriesRun.puzzleIndex + 1 < scenarios.length
+            seriesRun.puzzleIndex + 1 < seriesScenarios.length
               ? `Continue to Puzzle ${seriesRun.puzzleIndex + 2}`
               : 'Finish Series'
           }

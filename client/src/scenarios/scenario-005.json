@@ -3,6 +3,7 @@
   "name": "Reikland's Last Stand",
   "description": "Last chance for the score. Swiftfoot must dodge free and hand off to Quickhand, who still has to beat blitzers Bonecruncher and Headsmash to the line.",
   "activeTeam": "human",
+  "published": true,
   "pieces": [
     {
       "id": "thrower",

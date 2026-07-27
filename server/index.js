@@ -4,6 +4,7 @@ import { dirname, join } from 'path';
 import { randomUUID } from 'crypto';
 import { existsSync } from 'fs';
 import { AuthError, entryAuthFields, verifyOptionalGoogleUser } from './auth.js';
+import { registerEditorRoutes } from './editor.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const app = express();
@@ -12,6 +13,7 @@ const distPath = join(__dirname, '../client/dist');
 const isProd = existsSync(distPath);
 
 app.use(express.json());
+registerEditorRoutes(app);
 
 // Serve built client in production only
 if (isProd) {

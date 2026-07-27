@@ -3,6 +3,7 @@
   "name": "The Reikland Handoff",
   "description": "Swiftfoot can't carry it home alone this time. Feed the ball to Quickhand and dodge her clear of the green-skin line before Nuffle changes his mind.",
   "activeTeam": "human",
+  "published": true,
   "pieces": [
     {
       "id": "thrower",

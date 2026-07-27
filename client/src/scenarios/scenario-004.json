@@ -3,6 +3,7 @@
   "name": "Ironjaw's Gauntlet",
   "description": "A full line of Orcs — Bonecruncher, Gutripper, and the rest of Ironjaw's crew — stands between your ball carrier and glory. Thread the tackle zones; one bad dodge ends the drive.",
   "activeTeam": "human",
+  "published": true,
   "pieces": [
     {
       "id": "carrier",

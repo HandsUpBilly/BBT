@@ -28,6 +28,7 @@ export interface PlayerPiece {
 export interface ScenarioPieceDef {
   id: string;
   team: Team;
+  role?: string;
   name: string;
   ma: number;
   st: number;
@@ -44,7 +45,16 @@ export interface Scenario {
   name: string;
   description: string;
   activeTeam: Team;
+  published?: boolean;
+  ballPosition?: Position | null;
   pieces: ScenarioPieceDef[];
+}
+
+export interface SeriesDefinition {
+  id: string;
+  name: string;
+  description: string;
+  scenarioIds: string[];
 }
 
 // ── Game ────────────────────────────────────────────────────────────────────
