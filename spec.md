@@ -1779,3 +1779,338 @@ In `client/src/useGameState.ts`:
 6. **Cleanup**: ensure only the intended diffs (`useGameState.ts`, new
    test file, `package.json`, `vitest.config.ts`) are part of the
    change.
+
+---
+
+## Agent Context Documentation Plan
+
+### Problem Statement
+
+New agent sessions currently need to rediscover too much of the repository by
+reading source files, PR history, and prior specs. That burns tokens and time,
+especially for repeated work in the same areas (`App.tsx`, scenario JSON,
+leaderboards, auth, editor, Netlify functions).
+
+The repository should provide a small, durable documentation layer that lets a
+new agent quickly answer:
+
+- What exists?
+- Where should I make this type of change?
+- What are the invariants I must not break?
+- What commands prove the change is safe?
+- What recent gotchas have already been learned?
+
+### Requirements
+
+1. **Keep `AGENTS.md` as the bootstrap**
+   - `AGENTS.md` should stay short enough to read on every task.
+   - It should contain repo layout, commands, hard rules, and links to deeper
+     docs.
+   - It should not become a full architecture manual.
+
+2. **Add focused agent docs under a dedicated directory**
+   - Recommended path:
+
+     ```txt
+     docs/agent-context/
+     ```
+
+   - Each file should cover one stable area of the system.
+   - A new agent should be able to open only the relevant file for the task.
+
+3. **Separate stable architecture from volatile plans**
+   - Stable current-state docs belong in `docs/agent-context/`.
+   - Feature plans and future implementation proposals can remain in
+     `spec.md`.
+   - Once a feature ships, the durable facts should be summarized in the
+     relevant agent-context doc and the old plan should not be the primary
+     source of truth.
+
+4. **Document invariants, not every line of code**
+   - Focus on things agents often need to rediscover:
+     - data shapes,
+     - routing,
+     - persistence model,
+     - user-visible flows,
+     - important async consistency patterns,
+     - admin/editor constraints,
+     - validation rules,
+     - production-vs-local differences.
+   - Avoid restating implementation line-by-line.
+
+5. **Make docs cheap to scan**
+   - Use short headings and tables.
+   - Prefer bullet lists and file references.
+   - Include "When changing X, check Y" sections.
+   - Keep each doc roughly 100-250 lines unless the domain truly needs more.
+
+6. **Keep docs current as part of PR work**
+   - Any PR changing one of the documented systems should update the relevant
+     agent-context doc in the same PR.
+   - If a doc is intentionally not updated, the PR description should say why.
+
+### Recommended Documentation Structure
+
+Create:
+
+```txt
+docs/agent-context/
+  README.md
+  frontend-flow.md
+  game-rules-engine.md
+  scenarios-and-series.md
+  leaderboard-and-auth.md
+  puzzle-editor.md
+  netlify-deploy.md
+  testing-and-pr-workflow.md
+```
+
+#### `README.md`
+
+Purpose:
+
+- Index of available context docs.
+- A decision tree for which docs to read for common task types.
+
+Suggested content:
+
+```txt
+If task touches home screen or app modes -> frontend-flow.md
+If task touches movement/pass/handoff/dice -> game-rules-engine.md
+If task touches scenario JSON or series -> scenarios-and-series.md
+If task touches login/leaderboards -> leaderboard-and-auth.md
+If task touches Admin Mode/editor -> puzzle-editor.md
+If task touches Netlify/functions/deploy -> netlify-deploy.md
+If task touches PRs/conflicts/checks -> testing-and-pr-workflow.md
+```
+
+#### `frontend-flow.md`
+
+Capture:
+
+- `AppMode` values and what renders for each.
+- Identity gate behavior.
+- User menu placement.
+- Home screen Series/Individual switch.
+- Editor preview return behavior.
+- Common conflict area: `App.tsx`.
+
+Must include:
+
+- File references:
+  - `client/src/App.tsx`
+  - `client/src/ScenarioSelect.tsx`
+  - `client/src/UserMenu.tsx`
+
+#### `game-rules-engine.md`
+
+Capture:
+
+- Core coordinate system.
+- Movement/reachable-square model.
+- Pass and handoff targeting rules.
+- Activation rules.
+- Touchdown and probability logging.
+- Known regression tests.
+
+Must include:
+
+- File references:
+  - `client/src/useGameState.ts`
+  - `client/src/bfs.ts`
+  - `client/src/useGameState.test.ts`
+  - `client/src/types.ts`
+
+#### `scenarios-and-series.md`
+
+Capture:
+
+- Scenario JSON schema.
+- `published` behavior.
+- `ballPosition` vs `hasBall`.
+- Scenario naming source of truth.
+- Default series metadata and order.
+- How normal players vs admins see disabled puzzles.
+
+Must include:
+
+- File references:
+  - `client/src/scenarios/*.json`
+  - `client/src/scenarios/index.ts`
+  - `client/src/series/default.json`
+  - `client/src/series/index.ts`
+
+#### `leaderboard-and-auth.md`
+
+Capture:
+
+- Google Sign-In client flow.
+- Server-side token verification.
+- Guest identity persistence.
+- Leaderboard entry auth fields.
+- Netlify Blobs eventual-consistency submit pattern.
+- Local vs production storage.
+
+Must include:
+
+- File references:
+  - `client/src/AuthProvider.tsx`
+  - `client/src/auth.ts`
+  - `client/src/api.ts`
+  - `server/auth.js`
+  - `server/index.js`
+  - `netlify/functions/auth.js`
+  - `netlify/functions/leaderboard.js`
+  - `netlify/functions/series-leaderboard.js`
+
+#### `puzzle-editor.md`
+
+Capture:
+
+- What works locally.
+- What does not yet work on deployed Netlify.
+- Editor API endpoints.
+- Palette templates and fixed stats.
+- Save-over vs save-as-new behavior.
+- Series assignment behavior.
+- Editor preview return behavior.
+- Loose-ball limitation in gameplay.
+
+Must include:
+
+- File references:
+  - `client/src/editor/*`
+  - `server/editor.js`
+  - `client/src/App.tsx`
+
+#### `netlify-deploy.md`
+
+Capture:
+
+- Existing `netlify.toml` build/redirects.
+- Required environment variables.
+- Google OAuth origin setup.
+- What production functions exist today.
+- What is needed for production puzzle editing.
+
+Must include:
+
+- File references:
+  - `netlify.toml`
+  - `netlify/functions/*`
+
+#### `testing-and-pr-workflow.md`
+
+Capture:
+
+- Required commands:
+
+  ```bash
+  npm run build
+  cd client && npm run lint
+  cd client && npm test -- --run
+  ```
+
+- When tests are required.
+- Common PR conflict patterns.
+- How to continue rebases without `$EDITOR`.
+- How to preserve unrelated local changes.
+
+### `AGENTS.md` Changes
+
+Once the context docs exist, update `AGENTS.md` to add a short section:
+
+```md
+## Agent Context Docs
+
+Before broad source inspection, read the smallest matching doc in
+`docs/agent-context/`.
+
+- Home/app modes: `docs/agent-context/frontend-flow.md`
+- Rules/movement/dice: `docs/agent-context/game-rules-engine.md`
+- Scenarios/series: `docs/agent-context/scenarios-and-series.md`
+- Auth/leaderboards: `docs/agent-context/leaderboard-and-auth.md`
+- Puzzle editor/admin: `docs/agent-context/puzzle-editor.md`
+- Netlify/deploy: `docs/agent-context/netlify-deploy.md`
+- Checks/PR workflow: `docs/agent-context/testing-and-pr-workflow.md`
+```
+
+Move detailed sections that are now too long for `AGENTS.md` into the matching
+context docs, leaving only pointers and critical hard rules in `AGENTS.md`.
+
+### Constraints
+
+- Documentation must not require an agent to read every file before starting.
+- Docs must not duplicate entire source files.
+- Docs must be kept factual and current; avoid speculative roadmap content
+  except where clearly labeled as "future".
+- Keep `spec.md` for plans, not as the long-term operational manual.
+- Do not remove critical commands or hard repo rules from `AGENTS.md`.
+- Do not store secrets or concrete personal tokens in docs.
+
+### Architecture
+
+Use a three-layer documentation model:
+
+1. **Bootstrap layer**
+   - `AGENTS.md`
+   - Always read.
+   - Contains repo rules, commands, and context-doc routing.
+
+2. **Context layer**
+   - `docs/agent-context/*.md`
+   - Read selectively based on task.
+   - Describes current shipped behavior and invariants.
+
+3. **Planning layer**
+   - `spec.md`
+   - Used for new feature planning and implementation specs.
+   - Not assumed to be current operational truth after a feature ships unless
+     promoted into context docs.
+
+### Implementation Steps
+
+1. Create `docs/agent-context/README.md`.
+   - Add the task-to-doc routing table.
+   - Explain that docs are selective, not mandatory full reading.
+
+2. Create the first three high-value docs:
+   - `frontend-flow.md`
+   - `scenarios-and-series.md`
+   - `puzzle-editor.md`
+
+3. Create support docs:
+   - `leaderboard-and-auth.md`
+   - `game-rules-engine.md`
+   - `netlify-deploy.md`
+   - `testing-and-pr-workflow.md`
+
+4. Trim `AGENTS.md`.
+   - Keep hard rules and setup.
+   - Add links to context docs.
+   - Move detailed explanatory sections into matching context docs.
+
+5. Add a PR checklist item.
+   - "If this changes documented behavior, update `docs/agent-context/*`."
+   - If no PR template exists, document this in `testing-and-pr-workflow.md`.
+
+6. Validate usefulness with a dry run.
+   - Pick a sample task, e.g. "change leaderboard display".
+   - Confirm a new agent can read only `AGENTS.md` +
+     `leaderboard-and-auth.md` and know where to work and what checks to run.
+
+### Success Criteria
+
+- A new agent can identify the right files for common tasks without broad
+  repository scanning.
+- `AGENTS.md` stays short enough to read on every turn.
+- Each major subsystem has a focused current-state context doc.
+- Implementation plans in `spec.md` no longer need to be reread for shipped
+  behavior.
+- PRs that change documented behavior update the matching context docs.
+- The documented verification commands match the repo's actual scripts.
+- The docs explain production/local differences for auth, leaderboards,
+  Netlify, and puzzle editing.
+- Token usage for routine tasks should drop because agents can read one small
+  context doc instead of repeatedly inspecting `App.tsx`, scenario loaders,
+  server functions, and old specs.

@@ -72,6 +72,23 @@ Drop a new `.json` file in `client/src/scenarios/`. It is picked up automaticall
 - **Production** (Netlify) uses `netlify/functions/leaderboard.js` backed by Netlify Blobs.
 - No monorepo tooling (no workspaces, Turborepo, etc.) — each package is managed independently.
 
+## Agent Context Docs
+
+Before broad source inspection, read the smallest matching doc in
+`docs/agent-context/`:
+
+| Task area | Read |
+|---|---|
+| Home screen, app modes, navigation, identity gate | `docs/agent-context/frontend-flow.md` |
+| Movement, dodges, pass, handoff, dice logging | `docs/agent-context/game-rules-engine.md` |
+| Scenario JSON, published puzzles, series order | `docs/agent-context/scenarios-and-series.md` |
+| Google login, guest identity, leaderboards | `docs/agent-context/leaderboard-and-auth.md` |
+| Admin Mode, puzzle editor, local save API | `docs/agent-context/puzzle-editor.md` |
+| Netlify build, redirects, production functions | `docs/agent-context/netlify-deploy.md` |
+| Verification commands, tests, PR conflicts | `docs/agent-context/testing-and-pr-workflow.md` |
+
+Keep durable shipped behavior in these docs. Keep future plans in `spec.md`.
+
 ## Environment Variables
 
 | Variable | Used in | Purpose |
