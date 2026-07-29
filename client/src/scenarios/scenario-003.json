@@ -4,15 +4,25 @@
   "description": "Ironjaw's boys have shut the ground game down cold. Step clear of their tackle zones and launch a long pass downfield to Quickhand before the whistle blows.",
   "activeTeam": "human",
   "published": true,
+  "ballPosition": null,
   "pieces": [
     {
       "id": "thrower",
       "team": "human",
       "role": "thrower",
       "name": "Aldric Swiftfoot",
-      "ma": 6, "st": 3, "ag": 3, "pa": 3, "av": 8,
-      "skills": ["Block"],
-      "position": { "col": 7, "row": 10 },
+      "ma": 6,
+      "st": 3,
+      "ag": 3,
+      "pa": 3,
+      "av": 8,
+      "skills": [
+        "Block"
+      ],
+      "position": {
+        "col": 7,
+        "row": 10
+      },
       "hasBall": true
     },
     {
@@ -20,9 +30,19 @@
       "team": "human",
       "role": "catcher",
       "name": "Sera Quickhand",
-      "ma": 8, "st": 2, "ag": 4, "pa": 5, "av": 7,
-      "skills": ["Catch", "Dodge"],
-      "position": { "col": 7, "row": 3 },
+      "ma": 8,
+      "st": 2,
+      "ag": 4,
+      "pa": 5,
+      "av": 7,
+      "skills": [
+        "Catch",
+        "Dodge"
+      ],
+      "position": {
+        "col": 7,
+        "row": 3
+      },
       "hasBall": false
     },
     {
@@ -30,9 +50,18 @@
       "team": "orc",
       "role": "blocker",
       "name": "Grukk Ironjaw",
-      "ma": 4, "st": 3, "ag": 3, "pa": 6, "av": 9,
-      "skills": ["Animosity"],
-      "position": { "col": 6, "row": 9 },
+      "ma": 4,
+      "st": 3,
+      "ag": 3,
+      "pa": 6,
+      "av": 9,
+      "skills": [
+        "Animosity"
+      ],
+      "position": {
+        "col": 6,
+        "row": 9
+      },
       "hasBall": false
     },
     {
@@ -40,9 +69,18 @@
       "team": "orc",
       "role": "blocker",
       "name": "Muzgash Skullkrak",
-      "ma": 4, "st": 3, "ag": 3, "pa": 6, "av": 9,
-      "skills": ["Animosity"],
-      "position": { "col": 8, "row": 9 },
+      "ma": 4,
+      "st": 3,
+      "ag": 3,
+      "pa": 6,
+      "av": 9,
+      "skills": [
+        "Animosity"
+      ],
+      "position": {
+        "col": 8,
+        "row": 9
+      },
       "hasBall": false
     },
     {
@@ -50,9 +88,18 @@
       "team": "orc",
       "role": "blitzer",
       "name": "Vrak Bonecruncher",
-      "ma": 6, "st": 3, "ag": 3, "pa": 5, "av": 9,
-      "skills": ["Block"],
-      "position": { "col": 7, "row": 8 },
+      "ma": 6,
+      "st": 3,
+      "ag": 3,
+      "pa": 5,
+      "av": 9,
+      "skills": [
+        "Block"
+      ],
+      "position": {
+        "col": 7,
+        "row": 8
+      },
       "hasBall": false
     },
     {
@@ -60,9 +107,73 @@
       "team": "orc",
       "role": "blocker",
       "name": "Dorg Gutripper",
-      "ma": 4, "st": 3, "ag": 3, "pa": 6, "av": 9,
-      "skills": ["Animosity"],
-      "position": { "col": 8, "row": 3 },
+      "ma": 4,
+      "st": 3,
+      "ag": 3,
+      "pa": 6,
+      "av": 9,
+      "skills": [
+        "Animosity"
+      ],
+      "position": {
+        "col": 8,
+        "row": 3
+      },
+      "hasBall": false
+    },
+    {
+      "id": "orc-blocker-7",
+      "team": "orc",
+      "role": "blocker",
+      "name": "Skrag Headsmash",
+      "ma": 4,
+      "st": 3,
+      "ag": 3,
+      "pa": 6,
+      "av": 9,
+      "skills": [
+        "Animosity"
+      ],
+      "position": {
+        "col": 4,
+        "row": 3
+      },
+      "hasBall": false
+    },
+    {
+      "id": "human-lineman-8",
+      "team": "human",
+      "role": "lineman",
+      "name": "Cedric Linebreaker",
+      "ma": 6,
+      "st": 3,
+      "ag": 3,
+      "pa": 4,
+      "av": 8,
+      "skills": [],
+      "position": {
+        "col": 10,
+        "row": 11
+      },
+      "hasBall": false
+    },
+    {
+      "id": "orc-lineman-9",
+      "team": "orc",
+      "role": "lineman",
+      "name": "Zug Bloodfang",
+      "ma": 5,
+      "st": 3,
+      "ag": 3,
+      "pa": 5,
+      "av": 9,
+      "skills": [
+        "Animosity"
+      ],
+      "position": {
+        "col": 11,
+        "row": 10
+      },
       "hasBall": false
     }
   ]
