@@ -68,6 +68,7 @@ export type MoveLogEntry = {
   steps: number;
   dodgeTarget: number | null;  // null = free move
   isGfi: boolean;              // true = Go For It step (2+ roll)
+  pickupTarget?: number | null; // Agility test to pick up a loose ball on this step, null/undefined = no pickup
   actionProb: number;          // probability of this step alone (1 if no roll needed)
   cumulativeProb: number;      // running product up to and including this step
 };
@@ -160,6 +161,8 @@ export interface GameState {
   actionLog: ActionLogEntry[];
   isPuzzleMode: boolean;
   scenarioId: string | null;
+  // Loose ball on the pitch, not carried by any piece (null once picked up)
+  ballPosition: Position | null;
   // Handoff / Pass (shared passUsed flag — one per turn)
   passUsed: boolean;
   // Handoff
@@ -184,6 +187,7 @@ export interface RiskyMove {
   to: Position;
   dodgeTarget: number | null;
   isGfi: boolean;
+  pickupTarget?: number | null;                       // loose-ball pickup
   catchTarget?: number;                               // handoff / pass-catch
   passTarget?: number;                                // pass
   rangeBand?: 'quick' | 'short' | 'long' | 'bomb';  // pass

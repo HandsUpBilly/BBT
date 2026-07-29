@@ -37,6 +37,7 @@ function makeBlankState(overrides: Partial<GameState> = {}): GameState {
     actionLog: [],
     isPuzzleMode: false,
     scenarioId: null,
+    ballPosition: null,
     passUsed: false,
     pendingHandoff: false,
     isHandoffTargeting: false,
@@ -59,6 +60,7 @@ export function makeScenarioState(scenario: Scenario): GameState {
     activeTeam: scenario.activeTeam,
     isPuzzleMode: true,
     scenarioId: scenario.id,
+    ballPosition: scenario.ballPosition ?? null,
   });
 }
 
@@ -112,12 +114,19 @@ function clearSelection(state: GameState, cancelActivation = false): GameState {
   };
 }
 
-/** Move piece to the last square in committedPath. */
+/**
+ * Move piece to the last square in committedPath, finalizing hasBall if the
+ * activation's walked path crossed the loose ball's square.
+ */
 function commitMove(state: GameState): GameState['pieces'] {
   if (!state.selectedPieceId || state.committedPath.length === 0) return state.pieces;
   const dest = state.committedPath[state.committedPath.length - 1];
+  const pickedUpBall = state.ballPosition !== null &&
+    state.walkedSquares.some(p => key(p) === key(state.ballPosition!));
   return state.pieces.map(p =>
-    p.id === state.selectedPieceId ? { ...p, position: dest, activated: true } : p
+    p.id === state.selectedPieceId
+      ? { ...p, position: dest, activated: true, hasBall: p.hasBall || pickedUpBall }
+      : p
   );
 }
 
@@ -194,7 +203,7 @@ export function useGameState(initialState: GameState) {
       const opponents = prev.pieces.filter(p => p.team !== piece.team).map(p => p.position);
       const others    = prev.pieces.filter(p => p.id !== piece.id).map(p => p.position);
 
-      const path = findShortestPath(tip, hovered, prev.remainingMa, others, opponents, piece.ag, prev.remainingGfi);
+      const path = findShortestPath(tip, hovered, prev.remainingMa, others, opponents, piece.ag, prev.remainingGfi, prev.ballPosition);
       return { ...prev, pathPreview: path ?? [] };
     });
   }, []);
@@ -322,11 +331,18 @@ export function useGameState(initialState: GameState) {
           };
         }
 
-        // Normal end-activation
+        // Normal end-activation — finalize hasBall if the activation's walked
+        // path crossed the loose ball's square, and clear the loose ball.
+        const pickedUpBall = prev.ballPosition !== null &&
+          prev.walkedSquares.some(p => key(p) === key(prev.ballPosition!));
         const pieces = dest
-          ? prev.pieces.map(p => p.id === prev.selectedPieceId ? { ...p, position: dest, activated: true } : p)
-          : prev.pieces.map(p => p.id === prev.selectedPieceId ? { ...p, activated: true } : p);
-        return clearSelection({ ...prev, pieces }, !hasMoved);
+          ? prev.pieces.map(p => p.id === prev.selectedPieceId ? { ...p, position: dest, activated: true, hasBall: p.hasBall || pickedUpBall } : p)
+          : prev.pieces.map(p => p.id === prev.selectedPieceId ? { ...p, activated: true, hasBall: p.hasBall || pickedUpBall } : p);
+        return clearSelection({
+          ...prev,
+          pieces,
+          ballPosition: pickedUpBall ? null : prev.ballPosition,
+        }, !hasMoved);
       }
 
       // Commit move to a reachable square
@@ -339,7 +355,7 @@ export function useGameState(initialState: GameState) {
         const opponents = prev.pieces.filter(p => p.team !== piece.team).map(p => p.position);
         const others    = prev.pieces.filter(p => p.id !== piece.id).map(p => p.position);
 
-        const path = findShortestPath(tip, clickedPos, prev.remainingMa, others, opponents, piece.ag, prev.remainingGfi);
+        const path = findShortestPath(tip, clickedPos, prev.remainingMa, others, opponents, piece.ag, prev.remainingGfi, prev.ballPosition);
         if (!path || path.length === 0) return prev;
 
         // Deduct MA and GFI separately
@@ -364,13 +380,14 @@ export function useGameState(initialState: GameState) {
 
         let fromPos = tip;
         for (const step of path) {
-          // GFI = 2+ (5/6 success). Dodge and GFI can stack — multiply probabilities.
+          // GFI = 2+ (5/6 success). Dodge, GFI, and pickup can all stack — multiply probabilities.
           const gfiProb  = step.isGfi ? successChance(2) : 1;
           const dodgeProb = step.dodgeTarget !== null ? successChance(step.dodgeTarget) : 1;
-          const stepProb = gfiProb * dodgeProb;
+          const pickupProb = step.pickupTarget !== null ? successChance(step.pickupTarget) : 1;
+          const stepProb = gfiProb * dodgeProb * pickupProb;
           runningCumProb = runningCumProb * stepProb;
 
-          if (step.isGfi || step.dodgeTarget !== null) {
+          if (step.isGfi || step.dodgeTarget !== null || step.pickupTarget !== null) {
             runningPendingProb = runningPendingProb * stepProb;
             if (step.dodgeTarget !== null) newDodgeTargets.push(step.dodgeTarget);
           }
@@ -384,6 +401,7 @@ export function useGameState(initialState: GameState) {
             steps: 1,
             dodgeTarget: step.dodgeTarget,
             isGfi: step.isGfi,
+            pickupTarget: step.pickupTarget,
             actionProb: stepProb,
             cumulativeProb: runningCumProb,
           });
@@ -393,14 +411,25 @@ export function useGameState(initialState: GameState) {
         const newPendingProb = runningPendingProb;
         const newActionLog = [...prev.actionLog, ...perStepEntries];
 
-        // Touchdown: ball carrier reached the end zone
-        if (piece.hasBall && isTouchdownSquare(clickedPos, piece.team)) {
+        // A piece carries the ball at the end of this click if it already had
+        // it, or if any square walked so far this activation (across all
+        // clicks, not just this one) crossed the loose ball's square.
+        const pickedUpBallThisActivation = prev.ballPosition !== null &&
+          newWalkedSquares.some(p => key(p) === key(prev.ballPosition!));
+        const carriesBallThisClick = piece.hasBall || pickedUpBallThisActivation;
+
+        // Touchdown: ball carrier (including one who just picked up the ball
+        // this same click, or earlier in the same activation) reached the end
+        // zone — this finalizes the piece's position/hasBall and clears the
+        // loose ball immediately.
+        if (carriesBallThisClick && isTouchdownSquare(clickedPos, piece.team)) {
           const pieces = prev.pieces.map(p =>
-            p.id === piece.id ? { ...p, position: clickedPos, activated: true } : p
+            p.id === piece.id ? { ...p, position: clickedPos, activated: true, hasBall: true } : p
           );
           return clearSelection({
             ...prev,
             pieces,
+            ballPosition: pickedUpBallThisActivation ? null : prev.ballPosition,
             committedPath: newCommittedPath,
             walkedSquares: newWalkedSquares,
             pendingDodgeTargets: newDodgeTargets,
@@ -410,7 +439,9 @@ export function useGameState(initialState: GameState) {
           });
         }
 
-        // No MA or GFI left — freeze reachable
+        // No MA or GFI left — freeze reachable. Piece position/hasBall/loose-ball
+        // are NOT finalized here — that only happens when the activation itself
+        // is finalized (end-activation click or handleEndTurn).
         if (newRemainingMa <= 0 && newRemainingGfi <= 0) {
           return {
             ...prev,
@@ -707,13 +738,19 @@ export function useGameState(initialState: GameState) {
 
       const pieces = prev.committedPath.length > 0 ? commitMove(prev) : prev.pieces;
 
+      // commitMove finalizes hasBall if the activation's walked path crossed
+      // the loose ball's square — clear the loose ball to match.
+      const pickedUpBall = prev.ballPosition !== null &&
+        prev.walkedSquares.some(p => key(p) === key(prev.ballPosition!));
+      const ballPosition = pickedUpBall ? null : prev.ballPosition;
+
       // Check if the ball carrier just reached the end zone
       const ballCarrier = pieces.find(p => p.hasBall && p.team === prev.activeTeam);
       if (ballCarrier && isTouchdownSquare(ballCarrier.position, ballCarrier.team)) {
-        return clearSelection({ ...prev, pieces, phase: 'touchdown' });
+        return clearSelection({ ...prev, pieces, ballPosition, phase: 'touchdown' });
       }
 
-      return advanceTurn({ ...prev, pieces });
+      return advanceTurn({ ...prev, pieces, ballPosition });
     });
   }, []);
 

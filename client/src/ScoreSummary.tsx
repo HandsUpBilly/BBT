@@ -19,6 +19,7 @@ function cumFraction(moves: LeaderboardEntry['moves']): string {
     if (m.catchTarget !== undefined) { num *= (7 - m.catchTarget); den *= 6; continue; }
     if (m.isGfi) { num *= 5; den *= 6; }
     if (m.dodgeTarget !== null) { num *= (7 - m.dodgeTarget); den *= 6; }
+    if (m.pickupTarget) { num *= (7 - m.pickupTarget); den *= 6; }
   }
   const g = gcd(num, den);
   return `${num / g}/${den / g}`;
@@ -31,9 +32,11 @@ function actionLabel(m: LeaderboardEntry['moves'][number]): string {
   if (m.catchTarget !== undefined && m.passTarget === undefined && m.receiverName === undefined)
     return `Catch ${m.catchTarget}+`;   // pass-catch
   if (m.catchTarget !== undefined) return `Handoff ${m.catchTarget}+`;
-  if (m.isGfi && m.dodgeTarget !== null) return `GFI 2+ · Dodge ${m.dodgeTarget}+`;
-  if (m.isGfi) return 'Go For It 2+';
-  return `Dodge ${m.dodgeTarget}+`;
+  const pickupSuffix = m.pickupTarget ? ` · Pickup ${m.pickupTarget}+` : '';
+  if (m.isGfi && m.dodgeTarget !== null) return `GFI 2+ · Dodge ${m.dodgeTarget}+${pickupSuffix}`;
+  if (m.isGfi) return `Go For It 2+${pickupSuffix}`;
+  if (m.dodgeTarget !== null) return `Dodge ${m.dodgeTarget}+${pickupSuffix}`;
+  return `Pickup ${m.pickupTarget}+`;
 }
 function playerName(m: LeaderboardEntry['moves'][number]): string {
   if (m.receiverName) return `${m.pieceName} → ${m.receiverName}`;

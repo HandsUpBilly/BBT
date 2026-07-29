@@ -3,10 +3,10 @@ import { tacklezoneKeys, key } from './bfs';
 import type { ZoomBounds } from './bfs';
 import './Pitch.css';
 
-function BallIcon({ ghost }: { ghost?: boolean }) {
+function BallIcon({ ghost, loose }: { ghost?: boolean; loose?: boolean }) {
   return (
     <svg
-      className="ball-marker"
+      className={loose ? 'ball-marker ball-marker--loose' : 'ball-marker'}
       style={{ opacity: ghost ? 0.5 : 1 }}
       viewBox="0 0 16 16"
       xmlns="http://www.w3.org/2000/svg"
@@ -95,6 +95,25 @@ function GfiFace() {
   );
 }
 
+function PickupFace({ target }: { target: number }) {
+  // Same shape as DiceFace but ball-amber tinted, to distinguish a pickup
+  // Agility test from a dodge Agility test when both dice are shown.
+  const dots = DOT_POSITIONS[target] ?? DOT_POSITIONS[6];
+  return (
+    <svg
+      className="pickup-die"
+      viewBox="0 0 20 20"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <rect x="1" y="1" width="18" height="18" rx="3" ry="3"
+        fill="rgba(50,30,0,0.80)" stroke="rgba(255,210,74,0.95)" strokeWidth="1.5" />
+      {dots.map(([cx, cy], i) => (
+        <circle key={i} cx={cx} cy={cy} r="2" fill="rgba(255,224,140,0.95)" />
+      ))}
+    </svg>
+  );
+}
+
 // Landscape layout: 26 cols (left→right) × 15 rows (top→bottom)
 // Col 0 = left end zone (human), col 25 = right end zone (orc)
 // Scrimmage between col 12 and col 13
@@ -115,9 +134,9 @@ export function Pitch({ state, onSquareClick, onPieceClick, onSquareHover, onSqu
   const pieceMap = new Map(state.pieces.map(p => [key(p.position), p]));
 
   // Preview path: map from key -> step info
-  const previewStepMap = new Map<string, { stepNum: number; requiresDodge: boolean; dodgeTarget: number | null; isGfi: boolean }>();
+  const previewStepMap = new Map<string, { stepNum: number; requiresDodge: boolean; dodgeTarget: number | null; isGfi: boolean; pickupTarget: number | null }>();
   state.pathPreview.forEach((s, i) => {
-    previewStepMap.set(key(s.pos), { stepNum: i + 1, requiresDodge: s.requiresDodge, dodgeTarget: s.dodgeTarget, isGfi: s.isGfi });
+    previewStepMap.set(key(s.pos), { stepNum: i + 1, requiresDodge: s.requiresDodge, dodgeTarget: s.dodgeTarget, isGfi: s.isGfi, pickupTarget: s.pickupTarget });
   });
 
   // Ghost = last square in preview path
@@ -132,10 +151,10 @@ export function Pitch({ state, onSquareClick, onPieceClick, onSquareHover, onSqu
 
   // Committed dice: map from destination key -> dice info from actionLog.
   // Persists after a waypoint is set so dice remain visible on committed squares.
-  const committedDiceMap = new Map<string, { isGfi: boolean; dodgeTarget: number | null }>();
+  const committedDiceMap = new Map<string, { isGfi: boolean; dodgeTarget: number | null; pickupTarget: number | null }>();
   for (const entry of state.actionLog) {
-    if (entry.isGfi || entry.dodgeTarget !== null) {
-      committedDiceMap.set(key(entry.to), { isGfi: entry.isGfi, dodgeTarget: entry.dodgeTarget });
+    if (entry.kind === 'move' && (entry.isGfi || entry.dodgeTarget !== null || entry.pickupTarget)) {
+      committedDiceMap.set(key(entry.to), { isGfi: entry.isGfi, dodgeTarget: entry.dodgeTarget, pickupTarget: entry.pickupTarget ?? null });
     }
   }
 
@@ -143,6 +162,8 @@ export function Pitch({ state, onSquareClick, onPieceClick, onSquareHover, onSqu
     ? state.pieces.find(p => p.id === state.selectedPieceId)
     : null;
   const ghostHasBall = selectedPiece?.hasBall ?? false;
+
+  const looseBallKey = state.ballPosition ? key(state.ballPosition) : null;
 
   // Current action label for the selected piece — shown at the bottom-right
   // of its icon so it's clear which mode (Move / Pass / Hand Off) is active.
@@ -247,6 +268,7 @@ export function Pitch({ state, onSquareClick, onPieceClick, onSquareHover, onSqu
           onMouseLeave={onSquareLeave}
         >
           <div className="square__overlay" />
+          {!piece && looseBallKey === k && <BallIcon loose />}
           {piece && (
             <div className={[
               'piece',
@@ -270,12 +292,13 @@ export function Pitch({ state, onSquareClick, onPieceClick, onSquareHover, onSqu
           )}
 
           {/* Dice indicators — preview path (including ghost destination) */}
-          {previewStep && (previewStep.isGfi || previewStep.requiresDodge) && (
+          {previewStep && (previewStep.isGfi || previewStep.requiresDodge || previewStep.pickupTarget !== null) && (
             <div className="square__dice">
               {previewStep.isGfi && <GfiFace />}
               {previewStep.requiresDodge && previewStep.dodgeTarget !== null && (
                 <DiceFace target={previewStep.dodgeTarget} />
               )}
+              {previewStep.pickupTarget !== null && <PickupFace target={previewStep.pickupTarget} />}
             </div>
           )}
 
@@ -286,6 +309,7 @@ export function Pitch({ state, onSquareClick, onPieceClick, onSquareHover, onSqu
               <div className="square__dice">
                 {cd.isGfi && <GfiFace />}
                 {cd.dodgeTarget !== null && <DiceFace target={cd.dodgeTarget} />}
+                {cd.pickupTarget !== null && <PickupFace target={cd.pickupTarget} />}
               </div>
             ) : null;
           })()}

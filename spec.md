@@ -2114,3 +2114,166 @@ Use a three-layer documentation model:
 - Token usage for routine tasks should drop because agents can read one small
   context doc instead of repeatedly inspecting `App.tsx`, scenario loaders,
   server functions, and old specs.
+
+---
+
+# Loose Ball Pickup
+
+## Problem Statement
+
+The game only supports the ball while it is carried by a player
+(`PlayerPiece.hasBall`). The `Scenario` schema and Puzzle Editor already let
+an author place a **loose ball** on the pitch (`Scenario.ballPosition`), and
+editor-side validation already enforces "carried XOR loose" — but nothing in
+the runtime game (`useGameState`, `bfs`, `Pitch`) reads `ballPosition`, so an
+authored loose-ball puzzle currently renders no ball at all and no player can
+ever pick it up.
+
+This spec adds runtime support for a loose ball: rendering it prominently on
+its square, and letting a player pick it up by moving onto that square,
+following this project's existing "always succeed, track the probability"
+pattern (the same pattern already used for dodges and GFI rolls) rather than
+a real pass/fail dice roll.
+
+## Requirements
+
+### Visual
+
+- When `Scenario.ballPosition` is set, render a loose-ball icon on that
+  square in `Pitch.tsx`, reusing the existing `BallIcon` SVG.
+- The loose-ball icon must be visually larger than the current carried-ball
+  marker (`.ball-marker`, currently 58% of the square) — large enough to
+  read clearly as "the ball is here, unguarded" versus the smaller carried
+  marker that sits over a player portrait. Target ~85–90% of the square.
+- Once the ball is picked up, the loose marker disappears from that square
+  and the normal carried `BallIcon` appears on the carrying piece, exactly
+  as it does today for scenario-authored `hasBall` carriers.
+- The editor's own loose-ball rendering (`editor-ball` in
+  `PuzzleEditor.tsx`) is unaffected by this change — this task is about the
+  play view (`Pitch.tsx`) only.
+
+### Gameplay — pickup roll
+
+- Moving a player's path onto the square containing the loose ball
+  initiates a pickup check, using the standard Agility-test target already
+  used for dodges elsewhere in `bfs.ts`:
+  `target = clamp(6 - AG + tackleZoneCount, 2, 6)` where `tackleZoneCount`
+  is the number of opposing tackle zones covering the ball's square (same
+  computation `dodgeTargetAt` already does — a Human AG3 player needs 3+,
+  an AG4 player needs 2+, matching the standard rule quoted in the request).
+- **Per this project's established convention (confirmed with the user):**
+  the pickup never actually fails the move. There is no turnover, no ball
+  scatter, and no branching outcome. Instead, the pickup's success
+  probability is computed and folded into the action log / cumulative
+  probability exactly like a dodge or GFI step — i.e. picking up the ball
+  is modeled as another risky step in the puzzle's overall probability, not
+  as a real dice roll with a random result.
+- A step that both requires a dodge (leaving a tackle zone) *and* lands on
+  the loose ball's square requires both rolls; their probabilities multiply
+  for that step, mirroring how dodge + GFI already stack today.
+- Once a player's committed path includes the loose ball's square, that
+  player becomes the ball carrier (`hasBall: true`) and the scenario's
+  loose-ball position is cleared, at the same point where the game already
+  finalizes piece position/state for a move (end of activation, or
+  immediately for a same-click touchdown). The mid-move touchdown check
+  (a piece reaching the end zone while carrying the ball) must correctly
+  detect a piece that picks up the ball and reaches the end zone within the
+  same committed path/click.
+- Dice-log / action-log UI (`DiceLog.tsx`) should surface the pickup roll
+  the same way it currently surfaces dodge rolls, so puzzle solvers can see
+  the pickup target and its contribution to the overall probability.
+
+### Non-goals (explicitly out of scope, per clarification)
+
+- No real failure / turnover / ball-scatter mechanic — this task keeps the
+  existing "never actually fail, just record probability" model used
+  everywhere else in the game.
+- No change to pass/handoff catch logic — failed catches do not produce a
+  loose ball; this task is scoped to picking up an already-loose,
+  scenario-authored ball only.
+- No "Sure Hands" skill / re-roll support — there is no skill-effect
+  infrastructure in the codebase yet; this is left for future work.
+- No new way for the ball to *become* loose during play (e.g. dropped after
+  a failed roll). The only source of a loose ball is
+  `Scenario.ballPosition`, authored via the Puzzle Editor.
+- No changes to the Free Play mode's fixed roster (`FREE_PLAY_PIECES` has
+  no loose-ball concept and isn't scenario-driven).
+
+## Acceptance Criteria
+
+1. A scenario with `ballPosition` set (no piece has `hasBall: true`) shows
+   a large, unmistakable loose-ball icon on that square when played.
+2. Selecting a piece and moving its path across the loose ball's square
+   causes that piece to end its activation carrying the ball
+   (`hasBall: true`); the loose ball marker is gone from the board
+   afterward, and the piece shows the normal carried-ball icon.
+3. The action log shows a pickup entry (target number + probability) for
+   the step that lands on the ball's square, and the puzzle's overall
+   cumulative probability includes the pickup roll's chance of success.
+4. A step that requires both a dodge and a pickup shows/multiplies both
+   probabilities correctly.
+5. A player who picks up the ball and reaches the end zone within the same
+   move/click correctly triggers the touchdown phase (`phase: 'touchdown'`)
+   — this must work even though the piece's `hasBall` flag was `false` at
+   the start of that click.
+6. Existing carried-ball scenarios, Free Play, pass, and handoff behavior
+   are unchanged (no regressions) — verified via `useGameState.test.ts`
+   plus manual smoke-test in the running app.
+7. `cd client && npm run build` and `npm run lint` both pass.
+
+## Implementation Approach
+
+1. **Types** (`client/src/types.ts`)
+   - Add `ballPosition: Position | null` to `GameState`.
+   - Add an optional `pickupTarget: number | null` field to `MoveLogEntry`
+     (mirroring `dodgeTarget`), defaulted to `null` for existing entries so
+     `DiceLog`'s existing dodge/GFI rendering keeps working unchanged for
+     non-pickup steps.
+
+2. **Pathfinding** (`client/src/bfs.ts`)
+   - Add a `pickupTargetAt(pos, ag, opponentPositions)` helper (same
+     formula as `dodgeTargetAt`).
+   - Extend `PathStep` with `pickupTarget: number | null`.
+   - Extend `findShortestPath` (and any other path-building helper used for
+     committing a move) to accept the current loose-ball `Position | null`
+     and set `pickupTarget` on the step whose destination matches it.
+
+3. **Game state** (`client/src/useGameState.ts`)
+   - `makeScenarioState`: seed `ballPosition` from `scenario.ballPosition`.
+   - Thread the loose-ball position into `findShortestPath`/hover-preview
+     calls alongside the existing `ma`/opponents/others args.
+   - In the move-commit step-processing loop, fold `pickupTarget` into the
+     per-step probability (`stepProb *= pickupProb`) the same way `isGfi`
+     and `dodgeTarget` already do, and populate the new `pickupTarget`
+     field on the resulting `MoveLogEntry`.
+   - Determine "will this activation end with this piece carrying the
+     ball" by checking whether the loose ball's square appears anywhere in
+     the piece's accumulated `walkedSquares` for the activation (not just
+     the final destination) — use this in place of `piece.hasBall` for the
+     same-click touchdown check.
+   - At every point the game finalizes a piece's position for an
+     activation (normal end-activation click, same-click touchdown click,
+     and `handleEndTurn`'s trailing `commitMove`), if the ball was picked
+     up during that activation: set `hasBall: true` on the piece and clear
+     `state.ballPosition` to `null`.
+   - Reset `ballPosition` appropriately in `clearSelection`/`advanceTurn`
+     only if it should persist across turns (it should — a loose ball
+     stays on the pitch until someone picks it up, so it must NOT be reset
+     by `advanceTurn`).
+
+4. **Rendering** (`client/src/Pitch.tsx`, `client/src/Pitch.css`)
+   - Render the loose ball on `state.ballPosition`'s square using the
+     existing `BallIcon`, in a new larger CSS class (e.g.
+     `.ball-marker--loose`) sized to ~85-90% of the square instead of the
+     carried marker's 58%.
+
+5. **Tests**
+   - Extend `client/src/useGameState.test.ts` with cases covering: picking
+     up a loose ball via a plain move, a same-click touchdown after
+     pickup, and a step requiring both dodge and pickup rolls.
+
+6. **Verification**
+   - Run `cd client && npm run lint` and `npm run build`.
+   - Run the existing test suite (`npm run test` / vitest) to confirm no
+     regressions.
+   - Manually smoke-test a loose-ball puzzle via the dev server.

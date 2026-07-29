@@ -10,7 +10,11 @@ import type { GameState, PlayerPiece } from './types';
  * stuck (never marked `activated`) and reselectable for a free extra move.
  */
 
-function makeState(pieces: PlayerPiece[], activeTeam: GameState['activeTeam'] = 'human'): GameState {
+function makeState(
+  pieces: PlayerPiece[],
+  activeTeam: GameState['activeTeam'] = 'human',
+  ballPosition: GameState['ballPosition'] = null,
+): GameState {
   return {
     pieces,
     activeTeam,
@@ -33,6 +37,7 @@ function makeState(pieces: PlayerPiece[], activeTeam: GameState['activeTeam'] = 
     actionLog: [],
     isPuzzleMode: false,
     scenarioId: null,
+    ballPosition,
     passUsed: false,
     pendingHandoff: false,
     isHandoffTargeting: false,
@@ -195,6 +200,102 @@ describe('receiving a pass/handoff in the end zone scores a touchdown', () => {
     act(() => result.current.handlePassTarget(7, 8));
 
     expect(result.current.state.phase).toBe('playing');
+  });
+});
+
+describe('loose ball pickup', () => {
+  it('moving onto the loose ball square sets hasBall and clears the loose ball at end of activation', () => {
+    // Thrower (no ball) starts two squares from the loose ball, no opponents nearby
+    // so no dodge is required — only the pickup Agility test applies.
+    const state = makeState(
+      [thrower({ hasBall: false, position: { col: 7, row: 12 } })],
+      'human',
+      { col: 7, row: 10 },
+    );
+    const { result } = renderHook(() => useGameState(state));
+
+    act(() => result.current.handleSquareClick(7, 12)); // select
+    act(() => result.current.handleSquareClick(7, 10)); // move onto the loose ball
+    act(() => result.current.handleSquareClick(7, 10)); // end activation (click path tip)
+
+    const { state: after } = result.current;
+    const piece = after.pieces.find(p => p.id === 'thrower')!;
+
+    expect(piece.hasBall).toBe(true);
+    expect(piece.position).toEqual({ col: 7, row: 10 });
+    expect(after.ballPosition).toBeNull();
+
+    // The step landing on the ball square logged a pickup target and folded
+    // its probability into the cumulative probability.
+    const pickupEntry = after.actionLog.find(e => e.kind === 'move' && e.to.col === 7 && e.to.row === 10);
+    expect(pickupEntry).toBeDefined();
+    expect(pickupEntry!.kind === 'move' && pickupEntry!.pickupTarget).toBe(3); // AG3 → 6-3=3+, no TZ
+    const expectedProb = 4 / 6; // successChance(3)
+    expect(pickupEntry!.actionProb).toBeCloseTo(expectedProb, 5);
+    expect(after.actionLog[after.actionLog.length - 1].cumulativeProb).toBeCloseTo(expectedProb, 5);
+  });
+
+  it('picking up the ball and reaching the end zone in the same click triggers touchdown', () => {
+    // Ball sits between the thrower and the end zone (row 0) — a single click
+    // to row 0 walks across the ball's square first.
+    const state = makeState(
+      [thrower({ hasBall: false, position: { col: 7, row: 3 } })],
+      'human',
+      { col: 7, row: 2 },
+    );
+    const { result } = renderHook(() => useGameState(state));
+
+    act(() => result.current.handleSquareClick(7, 3));  // select
+    act(() => result.current.handleSquareClick(7, 0));  // move straight through the ball to the end zone
+
+    const { state: after } = result.current;
+    const piece = after.pieces.find(p => p.id === 'thrower')!;
+
+    expect(after.phase).toBe('touchdown');
+    expect(piece.hasBall).toBe(true);
+    expect(piece.position).toEqual({ col: 7, row: 0 });
+    expect(after.ballPosition).toBeNull();
+  });
+
+  it('a step requiring both a dodge and a pickup multiplies both probabilities', () => {
+    // Two orcs flank the loose ball's square so leaving the thrower's
+    // starting tackle zone AND picking up the ball both apply a +1 TZ
+    // modifier — both rolls become 4+ and their probabilities multiply.
+    const state = makeState(
+      [
+        thrower({ hasBall: false, position: { col: 7, row: 10 } }),
+        { id: 'opp1', team: 'orc', role: 'blocker', name: 'Grukk', position: { col: 7, row: 11 }, ma: 4, st: 3, ag: 3, pa: 6, av: 9, skills: [], activated: false, hasBall: false },
+        { id: 'opp2', team: 'orc', role: 'blocker', name: 'Muzgash', position: { col: 8, row: 9 }, ma: 4, st: 3, ag: 3, pa: 6, av: 9, skills: [], activated: false, hasBall: false },
+      ],
+      'human',
+      { col: 7, row: 9 },
+    );
+    const { result } = renderHook(() => useGameState(state));
+
+    act(() => result.current.handleSquareClick(7, 10)); // select (starts in opp1's TZ)
+    act(() => result.current.handleSquareClick(7, 9));  // step onto the loose ball, leaving the TZ
+
+    const { state: after } = result.current;
+    const stepEntry = after.actionLog.find(e => e.kind === 'move' && e.to.col === 7 && e.to.row === 9);
+    expect(stepEntry).toBeDefined();
+    expect(stepEntry!.kind === 'move' && stepEntry!.dodgeTarget).toBe(4);  // 6-3+1 (opp2 covers 7,9)
+    expect(stepEntry!.kind === 'move' && stepEntry!.pickupTarget).toBe(4); // same TZ modifier
+    const expectedProb = (3 / 6) * (3 / 6); // successChance(4) * successChance(4)
+    expect(stepEntry!.actionProb).toBeCloseTo(expectedProb, 5);
+  });
+
+  it('the loose ball persists across turns until picked up', () => {
+    const state = makeState(
+      [thrower({ hasBall: false, position: { col: 7, row: 12 } })],
+      'human',
+      { col: 3, row: 3 },
+    );
+    const { result } = renderHook(() => useGameState(state));
+
+    act(() => result.current.handleSquareClick(7, 12)); // select, no movement
+    act(() => result.current.handleEndTurn());
+
+    expect(result.current.state.ballPosition).toEqual({ col: 3, row: 3 });
   });
 });
 

@@ -92,7 +92,7 @@ function summarizeActionLog(actionLog: ActionLogEntry[]) {
     : 1;
   const riskyMoves = actionLog.filter(e =>
     e.kind === 'handoff' || e.kind === 'pass' || e.kind === 'pass-catch' ||
-    e.dodgeTarget !== null || e.isGfi
+    e.dodgeTarget !== null || e.isGfi || (e.kind === 'move' && !!e.pickupTarget)
   );
   const diceCount = riskyMoves.length;
   const moves: RiskyMove[] = riskyMoves.map(e => {
@@ -129,6 +129,7 @@ function summarizeActionLog(actionLog: ActionLogEntry[]) {
       pieceName: e.pieceName, pieceRole: e.pieceRole,
       from: e.from, to: e.to,
       dodgeTarget: e.dodgeTarget, isGfi: e.isGfi,
+      pickupTarget: e.pickupTarget ?? null,
       actionProb: e.actionProb, cumulativeProb: e.cumulativeProb,
     };
   });
