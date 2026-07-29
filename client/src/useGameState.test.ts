@@ -297,6 +297,78 @@ describe('loose ball pickup', () => {
 
     expect(result.current.state.ballPosition).toEqual({ col: 3, row: 3 });
   });
+
+  it('handleHandoffAction is allowed for a piece without the ball when the ball is loose', () => {
+    const state = makeState(
+      [thrower({ hasBall: false, position: { col: 7, row: 12 } }), catcher({ position: { col: 7, row: 9 } })],
+      'human',
+      { col: 7, row: 10 },
+    );
+    const { result } = renderHook(() => useGameState(state));
+
+    // Declaring handoff on a piece with no ball is only legal because a loose ball exists.
+    act(() => result.current.handleHandoffAction('thrower'));
+    expect(result.current.state.selectedPieceId).toBe('thrower');
+    expect(result.current.state.pendingHandoff).toBe(true);
+  });
+
+  it('picking up the loose ball then hand-off transfers it to the receiver', () => {
+    const state = makeState(
+      [
+        thrower({ hasBall: false, position: { col: 7, row: 12 } }),
+        catcher({ position: { col: 7, row: 9 } }),
+      ],
+      'human',
+      { col: 7, row: 10 },
+    );
+    const { result } = renderHook(() => useGameState(state));
+
+    act(() => result.current.handleHandoffAction('thrower'));
+    act(() => result.current.handleSquareClick(7, 10)); // move onto the loose ball
+    act(() => result.current.handleSquareClick(7, 10)); // end movement (click path tip) — opens handoff targeting
+
+    // Ball should be picked up immediately so handoff targeting can find the carrier.
+    expect(result.current.state.isHandoffTargeting).toBe(true);
+    expect(result.current.state.handoffTargets.has('7,9')).toBe(true);
+    const midState = result.current.state;
+    const throwerMid = midState.pieces.find(p => p.id === 'thrower')!;
+    expect(throwerMid.hasBall).toBe(true);
+    expect(midState.ballPosition).toBeNull();
+
+    act(() => result.current.handleHandoffTarget(7, 9));
+
+    const { state: after } = result.current;
+    const throwerPiece = after.pieces.find(p => p.id === 'thrower')!;
+    const catcherPiece = after.pieces.find(p => p.id === 'catcher')!;
+    expect(throwerPiece.hasBall).toBe(false);
+    expect(catcherPiece.hasBall).toBe(true);
+    expect(after.passUsed).toBe(true);
+  });
+
+  it('declaring hand-off but never reaching the loose ball ends the activation without a handoff', () => {
+    const state = makeState(
+      [
+        thrower({ hasBall: false, position: { col: 7, row: 12 } }),
+        catcher({ position: { col: 7, row: 13 } }),
+      ],
+      'human',
+      { col: 3, row: 3 },
+    );
+    const { result } = renderHook(() => useGameState(state));
+
+    act(() => result.current.handleHandoffAction('thrower'));
+    // End movement immediately without ever reaching the loose ball's square.
+    act(() => result.current.handleSquareClick(7, 12));
+
+    const { state: after } = result.current;
+    expect(after.isHandoffTargeting).toBe(false);
+    expect(after.pendingHandoff).toBe(false);
+    expect(after.passUsed).toBe(false);
+    expect(after.ballPosition).toEqual({ col: 3, row: 3 });
+    const throwerPiece = after.pieces.find(p => p.id === 'thrower')!;
+    expect(throwerPiece.hasBall).toBe(false);
+    expect(throwerPiece.activated).toBe(true);
+  });
 });
 
 describe('zero valid targets auto-activates the carrier', () => {
