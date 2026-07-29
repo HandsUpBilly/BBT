@@ -242,14 +242,31 @@ export function useGameState(initialState: GameState) {
           : null;
         const hasMoved = prev.committedPath.length > 0;
 
-        // Pass declared — move carrier to destination then open pass targeting
+        // Pass declared — move carrier to destination then open pass targeting.
+        // If the carrier's path crossed the loose ball's square this activation,
+        // finalize the pickup (hasBall + clear the loose ball) before opening
+        // targeting, so a piece can pick up a loose ball and immediately pass it.
         if (prev.pendingPass) {
           const carrierPos = dest ?? prev.originPos!;
           const carrier = prev.pieces.find(p => p.id === prev.selectedPieceId)!;
+          const pickedUpBall = prev.ballPosition !== null &&
+            prev.walkedSquares.some(p => key(p) === key(prev.ballPosition!));
+
+          // Declared Pass but never actually picked up the (loose) ball this
+          // activation and didn't already carry it — nothing to throw. End
+          // the activation normally without consuming passUsed, same as the
+          // zero-valid-receivers case below.
+          if (!carrier.hasBall && !pickedUpBall) {
+            const pieces = prev.pieces.map(p =>
+              p.id === carrier.id ? { ...p, position: carrierPos, activated: true } : p
+            );
+            return clearSelection({ ...prev, pieces });
+          }
 
           const pieces = prev.pieces.map(p =>
-            p.id === prev.selectedPieceId ? { ...p, position: carrierPos } : p
+            p.id === prev.selectedPieceId ? { ...p, position: carrierPos, hasBall: p.hasBall || pickedUpBall } : p
           );
+          const ballPosition = pickedUpBall ? null : prev.ballPosition;
 
           const passRangeKeys = computePassRange(carrierPos);
 
@@ -271,12 +288,13 @@ export function useGameState(initialState: GameState) {
             const activatedPieces = pieces.map(p =>
               p.id === carrier.id ? { ...p, activated: true } : p
             );
-            return clearSelection({ ...prev, pieces: activatedPieces });
+            return clearSelection({ ...prev, pieces: activatedPieces, ballPosition });
           }
 
           return {
             ...prev,
             pieces,
+            ballPosition,
             committedPath: dest ? prev.committedPath : [],
             reachableKeys: new Set(),
             pathPreview: [],
@@ -287,15 +305,32 @@ export function useGameState(initialState: GameState) {
           };
         }
 
-        // Handoff declared — move carrier to destination then open receiver targeting
+        // Handoff declared — move carrier to destination then open receiver targeting.
+        // If the carrier's path crossed the loose ball's square this activation,
+        // finalize the pickup (hasBall + clear the loose ball) before opening
+        // targeting, so a piece can pick up a loose ball and immediately hand it off.
         if (prev.pendingHandoff) {
           const carrierPos = dest ?? prev.originPos!;
           const carrier = prev.pieces.find(p => p.id === prev.selectedPieceId)!;
+          const pickedUpBall = prev.ballPosition !== null &&
+            prev.walkedSquares.some(p => key(p) === key(prev.ballPosition!));
+
+          // Declared Hand Off but never actually picked up the (loose) ball
+          // this activation and didn't already carry it — nothing to hand
+          // off. End the activation normally without consuming passUsed,
+          // same as the zero-valid-targets case below.
+          if (!carrier.hasBall && !pickedUpBall) {
+            const pieces = prev.pieces.map(p =>
+              p.id === carrier.id ? { ...p, position: carrierPos, activated: true } : p
+            );
+            return clearSelection({ ...prev, pieces });
+          }
 
           // Move carrier to final position
           const pieces = prev.pieces.map(p =>
-            p.id === prev.selectedPieceId ? { ...p, position: carrierPos } : p
+            p.id === prev.selectedPieceId ? { ...p, position: carrierPos, hasBall: p.hasBall || pickedUpBall } : p
           );
+          const ballPosition = pickedUpBall ? null : prev.ballPosition;
 
           // Find adjacent eligible teammates from the final position. A receiver's
           // own activation state this turn is irrelevant — catching a handoff does
@@ -316,12 +351,13 @@ export function useGameState(initialState: GameState) {
             const activatedPieces = pieces.map(p =>
               p.id === carrier.id ? { ...p, activated: true } : p
             );
-            return clearSelection({ ...prev, pieces: activatedPieces });
+            return clearSelection({ ...prev, pieces: activatedPieces, ballPosition });
           }
 
           return {
             ...prev,
             pieces,
+            ballPosition,
             committedPath: dest ? prev.committedPath : [],
             reachableKeys: new Set(),
             pathPreview: [],
@@ -523,8 +559,12 @@ export function useGameState(initialState: GameState) {
     setState(prev => {
       if (prev.passUsed) return prev;
 
+      // Eligible if the piece already carries the ball, or the ball is
+      // currently loose — in that case the player is expected to move this
+      // piece onto the loose ball's square (picking it up) before handing off.
       const carrier = prev.pieces.find(p => p.id === pieceId);
-      if (!carrier || !carrier.hasBall || carrier.activated) return prev;
+      if (!carrier || carrier.activated) return prev;
+      if (!carrier.hasBall && prev.ballPosition === null) return prev;
 
       const { reachableKeys } = recomputeReachable(prev, pieceId, carrier.position, carrier.ma, MAX_GFI);
 
@@ -623,8 +663,12 @@ export function useGameState(initialState: GameState) {
   const handlePassAction = useCallback((pieceId: string) => {
     setState(prev => {
       if (prev.passUsed) return prev;
+      // Eligible if the piece already carries the ball, or the ball is
+      // currently loose — in that case the player is expected to move this
+      // piece onto the loose ball's square (picking it up) before passing.
       const carrier = prev.pieces.find(p => p.id === pieceId);
-      if (!carrier || !carrier.hasBall || carrier.activated) return prev;
+      if (!carrier || carrier.activated) return prev;
+      if (!carrier.hasBall && prev.ballPosition === null) return prev;
 
       const { reachableKeys } = recomputeReachable(prev, pieceId, carrier.position, carrier.ma, MAX_GFI);
 

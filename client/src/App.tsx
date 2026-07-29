@@ -837,8 +837,12 @@ export default function App() {
       {/* Piece context menu */}
       {pieceMenu && (() => {
         const menuPiece = pieceMenu.piece;
-        const canHandoff = menuPiece.hasBall && !state.passUsed && !menuPiece.activated;
-        const canPass    = menuPiece.hasBall && !state.passUsed && !menuPiece.activated;
+        // A piece can Hand Off / Pass if it already carries the ball, or if the
+        // ball is currently loose on the pitch — in the latter case the player
+        // is expected to move this piece onto the ball's square first (a pickup
+        // roll), then hand off/pass with the ball it just picked up.
+        const canHandoff = (menuPiece.hasBall || state.ballPosition !== null) && !state.passUsed && !menuPiece.activated;
+        const canPass    = (menuPiece.hasBall || state.ballPosition !== null) && !state.passUsed && !menuPiece.activated;
         const menuActions: PieceMenuAction[] = [
           { label: 'Move',     key: 'move' },
           { label: 'Hand Off', key: 'handoff', disabled: !canHandoff },
