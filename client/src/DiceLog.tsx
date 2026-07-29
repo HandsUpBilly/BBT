@@ -18,6 +18,7 @@ function cumFraction(log: ActionLogEntry[]): string {
     if (e.kind === 'pass-catch') { num *= (7 - e.catchTarget); den *= 6; continue; }
     if (e.isGfi) { num *= 5; den *= 6; }
     if (e.dodgeTarget !== null) { num *= (7 - e.dodgeTarget); den *= 6; }
+    if (e.kind === 'move' && e.pickupTarget) { num *= (7 - e.pickupTarget); den *= 6; }
   }
   const g = gcd(num, den);
   return `${num / g}/${den / g}`;
@@ -34,6 +35,7 @@ function entryClass(e: ActionLogEntry): string {
   if (e.kind === 'handoff')    return 'dice-log__entry--handoff';
   if (e.kind === 'pass')       return 'dice-log__entry--pass';
   if (e.kind === 'pass-catch') return 'dice-log__entry--pass-catch';
+  if (e.kind === 'move' && e.pickupTarget) return 'dice-log__entry--pickup';
   if (e.isGfi && e.dodgeTarget !== null) return 'dice-log__entry--gfi-dodge';
   if (e.isGfi) return 'dice-log__entry--gfi';
   if (e.dodgeTarget !== null) return 'dice-log__entry--dodge';
@@ -45,7 +47,10 @@ export function DiceLog({ log, pendingProb }: Props) {
 
   const lastCumProb = log[log.length - 1].cumulativeProb;
   const overallProb = lastCumProb * pendingProb;
-  const hasRoll = log.some(e => e.kind === 'handoff' || e.kind === 'pass' || e.kind === 'pass-catch' || e.isGfi || e.dodgeTarget !== null);
+  const hasRoll = log.some(e =>
+    e.kind === 'handoff' || e.kind === 'pass' || e.kind === 'pass-catch' ||
+    e.isGfi || e.dodgeTarget !== null || (e.kind === 'move' && !!e.pickupTarget)
+  );
 
   return (
     <div className="dice-log">
@@ -79,15 +84,16 @@ export function DiceLog({ log, pendingProb }: Props) {
               <span className="dice-log__pass-catch-tag">Catch {entry.catchTarget}+</span>
               {' '}<span className="dice-log__prob-pct">({pct(entry.actionProb)})</span>
             </span>
-          ) : (entry.isGfi || entry.dodgeTarget !== null) && (
+          ) : (entry.isGfi || entry.dodgeTarget !== null || !!entry.pickupTarget) && (
             <span className="dice-log__prob">
               {entry.isGfi && <span className="dice-log__gfi-tag">GFI 2+</span>}
               {entry.dodgeTarget !== null && (
-                <span>{entry.dodgeTarget}+ <span className="dice-log__prob-pct">({pct(entry.actionProb)})</span></span>
+                <span>{entry.dodgeTarget}+</span>
               )}
-              {entry.isGfi && entry.dodgeTarget === null && (
-                <span className="dice-log__prob-pct">({pct(entry.actionProb)})</span>
+              {!!entry.pickupTarget && (
+                <span className="dice-log__pickup-tag">Pickup {entry.pickupTarget}+</span>
               )}
+              <span className="dice-log__prob-pct">({pct(entry.actionProb)})</span>
             </span>
           )}
         </div>

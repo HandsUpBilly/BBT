@@ -298,6 +298,15 @@
   overflow: visible;
 }
 
+/* Loose ball on the ground — much larger than the carried marker so it
+   reads clearly as "the ball is here, unguarded" from across the pitch. */
+.ball-marker--loose {
+  width: 88%;
+  height: 88%;
+  z-index: 4;
+  filter: drop-shadow(0 0 3px rgba(0, 0, 0, 0.6));
+}
+
 /* ── Dice container ─────────────────────────────────────────────────── */
 .square__dice {
   position: absolute;
@@ -312,7 +321,8 @@
 }
 
 .gfi-die,
-.dodge-die {
+.dodge-die,
+.pickup-die {
   /* Scale with the square — fill most of it when alone, share when stacked */
   width: 70%;
   height: 70%;

@@ -162,6 +162,11 @@ export interface PathStep {
   dodgeTarget: number | null;
   /** True if this step costs a GFI (Go For It) rather than regular MA */
   isGfi: boolean;
+  /**
+   * Pickup target number (2–6) if this step's destination is the loose
+   * ball's square, otherwise null. Same formula as dodgeTargetAt.
+   */
+  pickupTarget: number | null;
 }
 
 /**
@@ -177,6 +182,22 @@ export function dodgeTargetAt(dest: Position, ag: number, opponentPositions: Pos
   const base = 6 - ag;
   const tzCount = opponentPositions.filter(op =>
     neighbours(op).some(n => n.col === dest.col && n.row === dest.row)
+  ).length;
+  return Math.min(6, Math.max(2, base + tzCount));
+}
+
+/**
+ * Compute the pickup target for a player moving onto a loose ball's square.
+ *
+ * Standard Agility-test rule (same shape as dodgeTargetAt):
+ *   base = 6 - AG  (AG3 → 3+, AG4 → 2+)
+ *   +1 for each opponent tackle zone covering the ball's square
+ *   clamped to [2, 6]
+ */
+export function pickupTargetAt(pos: Position, ag: number, opponentPositions: Position[]): number {
+  const base = 6 - ag;
+  const tzCount = opponentPositions.filter(op =>
+    neighbours(op).some(n => n.col === pos.col && n.row === pos.row)
   ).length;
   return Math.min(6, Math.max(2, base + tzCount));
 }
@@ -314,6 +335,7 @@ export function findShortestPath(
   opponentPositions: Position[],
   ag: number = 3,
   gfiRemaining: number = 0,
+  ballPosition: Position | null = null,
 ): PathStep[] | null {
   const blockedKeys = new Set(allPiecePositions.map(key));
   const tzKeys = tacklezoneKeys(opponentPositions);
@@ -385,11 +407,14 @@ export function findShortestPath(
       }
       visited.set(stateKey, [newSteps, newDev]);
 
+      const isBallSquare = ballPosition !== null && next.col === ballPosition.col && next.row === ballPosition.row;
+
       const step: PathStep = {
         pos: next,
         requiresDodge: needsDodge,
         dodgeTarget: needsDodge ? dodgeTargetAt(next, ag, opponentPositions) : null,
         isGfi: stepIsGfi,
+        pickupTarget: isBallSquare ? pickupTargetAt(next, ag, opponentPositions) : null,
       };
       queue.push({
         pos: next,

@@ -26,6 +26,7 @@ function cumFraction(entries: ActionLogEntry[]): string {
     if (e.kind === 'pass-catch') { num *= (7 - e.catchTarget); den *= 6; continue; }
     if (e.isGfi) { num *= 5; den *= 6; }
     if (e.dodgeTarget !== null) { num *= (7 - e.dodgeTarget); den *= 6; }
+    if (e.kind === 'move' && e.pickupTarget) { num *= (7 - e.pickupTarget); den *= 6; }
   }
   const g = gcd(num, den);
   return `${num / g}/${den / g}`;
@@ -41,9 +42,11 @@ function actionLabel(e: ActionLogEntry): string {
   if (e.kind === 'handoff')    return `Handoff ${e.catchTarget}+`;
   if (e.kind === 'pass')       return `${BAND_LABEL[e.rangeBand]} Pass ${e.passTarget}+`;
   if (e.kind === 'pass-catch') return `Catch ${e.catchTarget}+`;
-  if (e.isGfi && e.dodgeTarget !== null) return `GFI 2+ · Dodge ${e.dodgeTarget}+`;
-  if (e.isGfi) return 'Go For It 2+';
-  return `Dodge ${e.dodgeTarget}+`;
+  const pickupSuffix = e.kind === 'move' && e.pickupTarget ? ` · Pickup ${e.pickupTarget}+` : '';
+  if (e.isGfi && e.dodgeTarget !== null) return `GFI 2+ · Dodge ${e.dodgeTarget}+${pickupSuffix}`;
+  if (e.isGfi) return `Go For It 2+${pickupSuffix}`;
+  if (e.dodgeTarget !== null) return `Dodge ${e.dodgeTarget}+${pickupSuffix}`;
+  return `Pickup ${e.kind === 'move' ? e.pickupTarget : ''}+`;
 }
 
 function entryPlayerName(e: ActionLogEntry): string {
@@ -67,7 +70,8 @@ export function SubmitModal({ actionLog, onSubmit, onDismiss, seriesMode, contin
   const [name, setName] = useState(defaultName);
 
   const riskyMoves = actionLog.filter(e =>
-    e.kind === 'handoff' || e.kind === 'pass' || e.kind === 'pass-catch' || e.isGfi || e.dodgeTarget !== null
+    e.kind === 'handoff' || e.kind === 'pass' || e.kind === 'pass-catch' ||
+    e.isGfi || e.dodgeTarget !== null || (e.kind === 'move' && !!e.pickupTarget)
   );
   const cumulativeProb = actionLog.length > 0
     ? actionLog[actionLog.length - 1].cumulativeProb
