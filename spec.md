@@ -2939,4 +2939,41 @@ The redesign is complete when all of the following are true:
 
 ## Non-goals and Follow-up
 
-This first pass deliberately proves the visual language on the home experience. A later, separately scoped phase may extend the system to the game HUD/pitch, leaderboards, summaries, dialogs, and editor. That follow-up should reuse only the tokens and motifs that remain legible under dense tactical gameplay; it must not be silently included in this implementation.
+The first pass established the visual language on the home experience. Phase 2 below extends the motifs that remain legible under dense tactical gameplay to the rest of the player-facing game; the editor remains separately scoped.
+
+## Phase 2 — Player-Facing Visual Extension
+
+The tabletop playbook system is extended through the rest of the player-facing
+game while preserving all rules, data, authentication, and navigation behavior.
+
+### Included
+
+- Gameplay HUD, score/probability display, action legend, pitch frame and field
+  palette, player card, action log, piece menu, and block outcome choices.
+- Touchdown, phase, and confirmation modals.
+- Individual and series leaderboards plus their score/run summaries.
+- Desktop and mobile presentation, focus states, reduced motion, contained
+  table overflow, and existing user-menu placements.
+
+### Constraints
+
+- The implementation uses a late-loaded, `app--playbook`-scoped CSS layer; it
+  does not alter game-state or API logic.
+- `app--game` and `app--archive` provide surface-specific layout hooks.
+- Admin Mode and the puzzle editor remain outside this phase.
+- No runtime dependency, remote font, or new image request is introduced.
+- Dense game information remains readable and tactical overlay colors retain
+  distinct meanings.
+
+### Success Criteria
+
+1. Gameplay, menus, modals, rankings, and summaries visibly belong to the same
+   tabletop playbook system as the home screen.
+2. The pitch and overlay states remain easy to read and player pieces retain
+   clear team, selected, activated, carrier, and down states.
+3. Existing game rules, score submission, leaderboard loading, navigation,
+   authentication, and Admin Mode behavior remain unchanged.
+4. Player-facing pages do not overflow horizontally at 390 px; dense tables
+   provide an internal horizontal scroll area where needed.
+5. Admin Mode does not inherit the player-facing theme.
+6. Tests, production build, and lint pass with no new browser console errors.

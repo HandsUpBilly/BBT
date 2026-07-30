@@ -31,6 +31,7 @@ import type {
 import { key, computeZoomBounds } from './bfs';
 import type { ZoomBounds } from './bfs';
 import './App.css';
+import './PlaybookTheme.css';
 
 const TURNS_PER_HALF = 8;
 const LOCAL_SCORE_KEY = 'bbt.localScores.v1';
@@ -626,7 +627,7 @@ export default function App() {
   // ── Render: non-game screens ─────────────────────────────────────────────
   if (!identityReady) {
     return (
-      <div className="app app--home app--landing">
+      <div className="app app--home app--landing app--playbook">
         <IdentityGate
           authConfigured={authConfigured}
           onGoogleSignIn={signIn}
@@ -638,7 +639,7 @@ export default function App() {
 
   if (effectiveAppMode === 'home') {
     return (
-      <div className="app app--home app--landing">
+      <div className="app app--home app--landing app--playbook">
         <ScenarioSelect
           scenarios={scenarioData.scenarios}
           series={scenarioData.series}
@@ -659,7 +660,7 @@ export default function App() {
   if (effectiveAppMode === 'series-leaderboard') {
     if (selectedSeriesEntry) {
       return (
-        <div className="app app--home">
+        <div className="app app--home app--archive app--playbook">
           <UserMenu name={identityName} avatarUrl={identityAvatarUrl} onSignOut={handleSignOut} />
           <SeriesScoreSummary
             entry={selectedSeriesEntry}
@@ -669,7 +670,7 @@ export default function App() {
       );
     }
     return (
-      <div className="app app--home">
+      <div className="app app--home app--archive app--playbook">
         <UserMenu name={identityName} avatarUrl={identityAvatarUrl} onSignOut={handleSignOut} />
         <SeriesLeaderboard
           key={seriesRefreshKey}
@@ -700,7 +701,7 @@ export default function App() {
   if (effectiveAppMode === 'leaderboard' && activeScenario) {
     if (selectedEntry) {
       return (
-        <div className="app app--home">
+        <div className="app app--home app--archive app--playbook">
           <UserMenu name={identityName} avatarUrl={identityAvatarUrl} onSignOut={handleSignOut} />
           <ScoreSummary
             entry={selectedEntry}
@@ -710,7 +711,7 @@ export default function App() {
       );
     }
     return (
-      <div className="app app--home">
+      <div className="app app--home app--archive app--playbook">
         <UserMenu name={identityName} avatarUrl={identityAvatarUrl} onSignOut={handleSignOut} />
         <Leaderboard
           key={leaderboardRefreshKey}
@@ -771,7 +772,7 @@ export default function App() {
   // (showProb removed — always visible)
 
   return (
-    <div className="app">
+    <div className="app app--game app--playbook">
       <header className="hud">
         <button className="hud__back" onClick={handleBackClick}>{editorPreviewScenario ? '← Designer' : '← Menu'}</button>
 

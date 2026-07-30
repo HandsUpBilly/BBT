@@ -1,0 +1,921 @@
+/* Player-facing tabletop playbook theme. All rules are scoped so Admin Mode
+   keeps its dense utility styling. */
+.app--playbook {
+  --home-felt-950: #101915;
+  --home-felt-900: #17251d;
+  --home-felt-700: #2f4a38;
+  --home-ink-950: #171713;
+  --home-ink-700: #4f4b40;
+  --home-paper-100: #f1e8cf;
+  --home-paper-200: #dfd2b3;
+  --home-charcoal-900: #242621;
+  --home-chalk-100: #f6f1df;
+  --home-gold-500: #d7a63b;
+  --home-gold-600: #b88322;
+  --home-blue-500: #477da5;
+  --home-rust-500: #a8533e;
+  --home-danger-500: #bd5548;
+  --playbook-paper-lines: repeating-linear-gradient(
+    0deg,
+    transparent 0 27px,
+    rgba(79, 75, 64, 0.1) 28px 29px
+  );
+}
+
+.app--playbook:not(.app--landing) {
+  color: var(--home-chalk-100);
+  background:
+    radial-gradient(circle at 18% 24%, rgba(255, 255, 255, 0.03) 0 1px, transparent 1.5px) 0 0 / 11px 11px,
+    radial-gradient(circle at 72% 68%, rgba(0, 0, 0, 0.12) 0 1px, transparent 1.5px) 0 0 / 13px 13px,
+    radial-gradient(circle at 50% -35%, var(--home-felt-700), transparent 62%),
+    var(--home-felt-950);
+}
+
+.app--playbook button:focus-visible,
+.app--playbook input:focus-visible,
+.app--playbook label:has(input:focus-visible) {
+  outline: 3px solid var(--home-gold-500);
+  outline-offset: 3px;
+}
+
+/* ── Game board shell ─────────────────────────────────────────────── */
+.app--game {
+  padding: 8px;
+  gap: 7px;
+  overflow: hidden;
+}
+
+.app--game .hud {
+  position: relative;
+  min-height: 62px;
+  gap: 16px;
+  padding: 9px 13px;
+  color: var(--home-chalk-100);
+  background:
+    linear-gradient(100deg, rgba(255, 255, 255, 0.035), transparent 45%),
+    var(--home-charcoal-900);
+  border: 1px solid #080c09;
+  border-radius: 4px;
+  box-shadow:
+    inset 0 0 0 1px rgba(241, 232, 207, 0.12),
+    0 5px 16px rgba(0, 0, 0, 0.35);
+}
+
+.app--game .hud::after {
+  content: 'MATCH DAY · COACH\'S BOARD';
+  position: absolute;
+  right: 14px;
+  bottom: 3px;
+  color: rgba(246, 241, 223, 0.19);
+  font-family: 'Courier New', monospace;
+  font-size: 0.48rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  pointer-events: none;
+}
+
+.app--game .hud__back,
+.app--game .hud__restart,
+.app--game .hud__zoom,
+.app--game .hud__end-turn {
+  min-height: 34px;
+  padding: 6px 10px;
+  color: var(--home-chalk-100);
+  background: rgba(16, 25, 21, 0.7);
+  border: 1px solid rgba(246, 241, 223, 0.3);
+  border-radius: 2px;
+  font-family: 'Courier New', monospace;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.035em;
+  text-transform: uppercase;
+}
+
+.app--game .hud__back:hover,
+.app--game .hud__restart:hover,
+.app--game .hud__zoom:hover,
+.app--game .hud__end-turn:hover:not(:disabled) {
+  color: var(--home-ink-950);
+  background: var(--home-gold-500);
+  border-color: var(--home-gold-600);
+}
+
+.app--game .hud__restart {
+  color: #e39b8f;
+  border-color: rgba(189, 85, 72, 0.55);
+}
+
+.app--game .hud__zoom--active {
+  color: var(--home-ink-950);
+  background: var(--home-gold-500);
+  border-color: var(--home-gold-600);
+}
+
+.app--game .hud__prob {
+  min-width: 84px;
+  padding: 3px 12px 3px 10px;
+  border-left: 3px solid var(--home-gold-500);
+}
+
+.app--game .hud__prob-label,
+.app--game .hud__score-label,
+.app--game .hud__turn {
+  color: rgba(246, 241, 223, 0.55);
+  font-family: 'Courier New', monospace;
+  font-weight: 800;
+  letter-spacing: 0.055em;
+  text-transform: uppercase;
+}
+
+.app--game .hud__prob-value {
+  color: var(--home-gold-500);
+  font-family: Rockwell, 'Roboto Slab', 'Courier New', serif;
+  font-size: 1.4rem;
+}
+
+.app--game .hud__prob-value--risky {
+  color: #e47f5f;
+}
+
+.app--game .hud__status {
+  color: rgba(246, 241, 223, 0.68);
+  font-size: 0.78rem;
+}
+
+.app--game .hud__team {
+  font-family: Rockwell, 'Roboto Slab', 'Courier New', serif;
+  font-size: 0.94rem;
+  text-transform: uppercase;
+}
+
+.app--game .hud__dot {
+  border-color: var(--home-paper-200);
+  box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.35);
+}
+
+.app--game .hud__divider {
+  background: rgba(246, 241, 223, 0.2);
+}
+
+.app--game .hud__half {
+  color: var(--home-chalk-100);
+}
+
+.app--game .legend {
+  min-height: 27px;
+  align-items: center;
+  gap: 7px;
+  overflow-x: auto;
+  padding: 1px 5px 2px;
+  scrollbar-width: thin;
+}
+
+.app--game .legend__item {
+  flex-shrink: 0;
+  padding: 3px 8px;
+  color: var(--home-ink-950);
+  background: var(--home-paper-200);
+  border: 1px solid #8f8266;
+  border-radius: 2px;
+  font-family: 'Courier New', monospace;
+  font-size: 0.61rem;
+  font-weight: 800;
+  letter-spacing: 0.025em;
+  text-transform: uppercase;
+}
+
+.app--game .legend__item--tz,
+.app--game .legend__item--dodge,
+.app--game .legend__item--block-target {
+  color: #6e251d;
+  border-left: 4px solid var(--home-rust-500);
+}
+
+.app--game .legend__item--free,
+.app--game .legend__item--range-quick,
+.app--game .legend__item--push-target {
+  color: #5f430e;
+  border-left: 4px solid var(--home-gold-500);
+}
+
+.app--game .legend__item--gfi,
+.app--game .legend__item--range-short,
+.app--game .legend__item--range-long,
+.app--game .legend__item--range-bomb {
+  color: #244e6b;
+  border-left: 4px solid var(--home-blue-500);
+}
+
+.app--game .game-area {
+  gap: 8px;
+}
+
+.app--game .pitch-wrapper {
+  position: relative;
+  padding: 8px;
+  background:
+    linear-gradient(110deg, rgba(255, 255, 255, 0.04), transparent 40%),
+    #20231e;
+  border: 1px solid #080c09;
+  border-radius: 4px;
+  box-shadow:
+    inset 0 0 0 1px rgba(241, 232, 207, 0.16),
+    0 10px 25px rgba(0, 0, 0, 0.35);
+}
+
+.app--game .pitch-wrapper::before {
+  content: '';
+  position: absolute;
+  inset: 3px;
+  border: 1px dashed rgba(215, 166, 59, 0.22);
+  pointer-events: none;
+}
+
+.app--game .pitch {
+  position: relative;
+  z-index: 1;
+}
+
+.app--game .pitch__grid {
+  border-color: rgba(241, 232, 207, 0.72);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.38);
+}
+
+.app--game .square--light { background: #456f35; }
+.app--game .square--dark { background: #3d6430; }
+.app--game .square--endzone-left.square--dark { background: #294b62; }
+.app--game .square--endzone-left.square--light { background: #315b76; }
+.app--game .square--endzone-right.square--dark { background: #713b32; }
+.app--game .square--endzone-right.square--light { background: #82483d; }
+
+.app--game .pitch__col-label,
+.app--game .pitch__row-label {
+  color: rgba(241, 232, 207, 0.82);
+  font-weight: 800;
+}
+
+.app--game .piece__action-label {
+  color: var(--home-ink-950);
+  background: var(--home-paper-100);
+  border-color: var(--home-ink-950);
+  border-radius: 1px;
+  font-family: 'Courier New', monospace;
+}
+
+/* ── Game side cards and action log ───────────────────────────────── */
+.app--game .panel,
+.app--game .dice-log {
+  color: var(--home-ink-950);
+  background:
+    var(--playbook-paper-lines),
+    var(--home-paper-100);
+  border-color: #8f8266;
+  border-radius: 3px;
+  box-shadow: 3px 4px 0 rgba(0, 0, 0, 0.28);
+}
+
+.app--game .panel--human {
+  border-color: var(--home-blue-500);
+  box-shadow: inset 4px 0 0 var(--home-blue-500), 3px 4px 0 rgba(0, 0, 0, 0.28);
+}
+
+.app--game .panel--orc {
+  border-color: var(--home-rust-500);
+  box-shadow: inset 4px 0 0 var(--home-rust-500), 3px 4px 0 rgba(0, 0, 0, 0.28);
+}
+
+.app--game .panel__name {
+  color: var(--home-ink-950);
+  font-family: Rockwell, 'Roboto Slab', 'Courier New', serif;
+}
+
+.app--game .panel__role,
+.app--game .panel__stat-label {
+  color: var(--home-ink-700);
+  font-family: 'Courier New', monospace;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.app--game .panel__stat {
+  background: rgba(223, 210, 179, 0.58);
+  border: 1px solid rgba(79, 75, 64, 0.22);
+  border-radius: 2px;
+}
+
+.app--game .panel__stat-value {
+  color: var(--home-ink-950);
+}
+
+.app--game .panel__skill {
+  color: var(--home-ink-700);
+  background: rgba(241, 232, 207, 0.7);
+  border-color: #8f8266;
+  border-radius: 1px;
+  font-family: 'Courier New', monospace;
+  font-weight: 700;
+}
+
+.app--game .dice-log {
+  gap: 5px;
+  padding: 9px;
+}
+
+.app--game .dice-log__title {
+  padding-bottom: 6px;
+  color: var(--home-rust-500);
+  border-bottom: 2px solid rgba(79, 75, 64, 0.45);
+  font-family: 'Courier New', monospace;
+  font-weight: 900;
+  letter-spacing: 0.1em;
+}
+
+.app--game .dice-log__entry {
+  color: var(--home-ink-950);
+  background: rgba(255, 255, 255, 0.25);
+  border-radius: 1px;
+}
+
+.app--game .dice-log__detail,
+.app--game .dice-log__piece {
+  color: var(--home-ink-700);
+}
+
+.app--game .dice-log__piece {
+  color: var(--home-ink-950);
+}
+
+.app--game .dice-log__prob-row {
+  border-color: rgba(79, 75, 64, 0.35);
+}
+
+.app--game .dice-log__prob-label,
+.app--game .dice-log__prob-pct {
+  color: var(--home-ink-700);
+}
+
+.app--game .dice-log__prob-total {
+  color: #486a2d;
+}
+
+.app--game .dice-log__prob-total--risky {
+  color: #a34a36;
+}
+
+/* ── Context menu ─────────────────────────────────────────────────── */
+.app--playbook .piece-menu {
+  color: var(--home-ink-950);
+  background:
+    var(--playbook-paper-lines),
+    var(--home-paper-100);
+  border-color: #8f8266;
+  border-radius: 3px;
+  box-shadow: 6px 8px 0 rgba(0, 0, 0, 0.34);
+}
+
+.app--playbook .piece-menu__header {
+  color: var(--home-rust-500);
+  border-bottom-color: rgba(79, 75, 64, 0.35);
+  font-family: 'Courier New', monospace;
+  font-weight: 900;
+}
+
+.app--playbook .piece-menu__item {
+  color: var(--home-ink-950);
+  font-family: 'Courier New', monospace;
+  font-size: 0.79rem;
+  font-weight: 700;
+}
+
+.app--playbook .piece-menu__item:hover {
+  background: rgba(215, 166, 59, 0.28);
+}
+
+.app--playbook .piece-menu__item--disabled {
+  color: rgba(79, 75, 64, 0.45);
+}
+
+.app--playbook .piece-menu__confirm {
+  color: var(--home-ink-950);
+  background: var(--home-gold-500);
+  border: 1px solid var(--home-gold-600);
+  border-radius: 2px;
+  font-family: 'Courier New', monospace;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.app--playbook .piece-menu__confirm:hover:not(:disabled) {
+  background: #e4b84f;
+}
+
+/* ── Shared modals and block outcome sheet ────────────────────────── */
+.app--playbook .modal-backdrop {
+  padding: 16px;
+  background: rgba(7, 12, 9, 0.82);
+  backdrop-filter: blur(2px);
+}
+
+.app--playbook .modal {
+  position: relative;
+  min-width: 0;
+  width: min(820px, calc(100vw - 32px));
+  max-height: calc(100vh - 32px);
+  overflow-y: auto;
+  padding: 36px 40px 32px;
+  color: var(--home-ink-950);
+  background:
+    linear-gradient(90deg, transparent 0 30px, rgba(168, 83, 62, 0.22) 31px 32px, transparent 33px),
+    var(--playbook-paper-lines),
+    var(--home-paper-100);
+  border: 1px solid #8f8266;
+  border-radius: 3px 3px 9px 4px;
+  box-shadow:
+    0 0 0 8px var(--home-charcoal-900),
+    0 22px 55px rgba(0, 0, 0, 0.48);
+}
+
+.app--playbook .modal::before {
+  content: '';
+  position: absolute;
+  top: -6px;
+  left: 50%;
+  width: 110px;
+  height: 25px;
+  background: rgba(215, 166, 59, 0.82);
+  transform: translateX(-50%) rotate(-1deg);
+  clip-path: polygon(2% 7%, 100% 0, 97% 100%, 0 91%);
+}
+
+.app--playbook .modal__title,
+.app--playbook .submit-modal__td {
+  color: var(--home-ink-950);
+  font-family: Rockwell, 'Roboto Slab', 'Courier New', serif;
+  text-transform: uppercase;
+}
+
+.app--playbook .modal__title {
+  font-size: 1.55rem;
+}
+
+.app--playbook .submit-modal__td {
+  color: var(--home-rust-500);
+  font-size: clamp(1.7rem, 5vw, 2.6rem);
+}
+
+.app--playbook .modal__desc,
+.app--playbook .submit-modal__prompt {
+  color: var(--home-ink-700);
+}
+
+.app--playbook .modal__roll-btn,
+.app--playbook .modal__continue-btn {
+  min-height: 42px;
+  padding: 10px 22px;
+  border: 1px solid transparent;
+  border-radius: 2px;
+  font-family: 'Courier New', monospace;
+  font-size: 0.76rem;
+  font-weight: 900;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.app--playbook .modal__roll-btn {
+  color: var(--home-ink-950);
+  background: var(--home-gold-500);
+  border-color: var(--home-gold-600);
+  box-shadow: 2px 3px 0 #7e5a16;
+}
+
+.app--playbook .modal__roll-btn:hover:not(:disabled) {
+  background: #e4b84f;
+}
+
+.app--playbook .modal__continue-btn {
+  color: var(--home-chalk-100);
+  background: var(--home-charcoal-900);
+  border-color: #0f100e;
+}
+
+.app--playbook .modal__continue-btn:hover {
+  background: #34372f;
+}
+
+.app--playbook .submit-modal__input {
+  color: var(--home-ink-950);
+  background: rgba(255, 255, 255, 0.38);
+  border-color: #8f8266;
+  border-radius: 2px;
+}
+
+.app--playbook .submit-modal__input:focus-visible {
+  border-color: var(--home-ink-950);
+}
+
+.app--playbook .submit-modal__moves,
+.app--playbook .score-summary__moves,
+.app--playbook .block-outcome__rows {
+  color: var(--home-ink-950);
+  background: rgba(255, 255, 255, 0.24);
+  border: 1px solid rgba(79, 75, 64, 0.28);
+  border-radius: 2px;
+}
+
+.app--playbook .submit-modal__moves-header,
+.app--playbook .score-summary__moves-header {
+  color: var(--home-ink-700);
+  border-color: rgba(79, 75, 64, 0.35);
+  font-family: 'Courier New', monospace;
+  font-weight: 900;
+}
+
+.app--playbook .submit-modal__move-row,
+.app--playbook .score-summary__move-row,
+.app--playbook .block-outcome__row {
+  border-color: rgba(79, 75, 64, 0.2);
+}
+
+.app--playbook .submit-modal__move-name,
+.app--playbook .score-summary__move-name,
+.app--playbook .block-outcome__row-label,
+.app--playbook .block-outcome__continue-option {
+  color: var(--home-ink-950);
+}
+
+.app--playbook .submit-modal__move-role,
+.app--playbook .submit-modal__move-pos,
+.app--playbook .submit-modal__move-prob,
+.app--playbook .score-summary__move-role,
+.app--playbook .score-summary__move-pos,
+.app--playbook .score-summary__move-prob,
+.app--playbook .block-outcome__row-prob,
+.app--playbook .block-outcome__continue-label {
+  color: var(--home-ink-700);
+}
+
+.app--playbook .submit-modal__move-action,
+.app--playbook .score-summary__move-action {
+  color: #8c3d30;
+}
+
+.app--playbook .submit-modal__cum-row,
+.app--playbook .score-summary__cum-row {
+  border-color: rgba(79, 75, 64, 0.35);
+}
+
+.app--playbook .submit-modal__cum-label,
+.app--playbook .submit-modal__cum-pct,
+.app--playbook .score-summary__cum-label,
+.app--playbook .score-summary__cum-pct {
+  color: var(--home-ink-700);
+}
+
+.app--playbook .submit-modal__cum-value,
+.app--playbook .score-summary__cum-value,
+.app--playbook .block-outcome__combined,
+.app--playbook .submit-modal__no-risk {
+  color: #486a2d;
+}
+
+.app--playbook .submit-modal__cum-value--risky,
+.app--playbook .score-summary__cum-value--risky {
+  color: #a34a36;
+}
+
+.app--playbook .block-outcome {
+  width: min(540px, calc(100vw - 32px));
+  max-width: 540px;
+}
+
+.app--playbook .block-outcome input {
+  accent-color: var(--home-rust-500);
+}
+
+/* ── Leaderboards and run summaries ───────────────────────────────── */
+.app--archive {
+  min-height: 100%;
+  height: 100%;
+  overflow-x: hidden;
+  padding: 0;
+}
+
+.app--archive .leaderboard,
+.app--archive .score-summary {
+  position: relative;
+  width: min(900px, calc(100% - 40px));
+  max-width: 900px;
+  min-height: min(680px, calc(100vh - 80px));
+  margin: 40px auto;
+  padding: 48px 46px;
+  color: var(--home-ink-950);
+  background:
+    linear-gradient(90deg, transparent 0 38px, rgba(168, 83, 62, 0.22) 39px 40px, transparent 41px),
+    var(--playbook-paper-lines),
+    var(--home-paper-100);
+  border: 1px solid #8f8266;
+  border-radius: 3px 3px 9px 4px;
+  box-shadow:
+    0 0 0 8px var(--home-charcoal-900),
+    0 20px 48px rgba(0, 0, 0, 0.4);
+}
+
+.app--archive .leaderboard::before,
+.app--archive .score-summary::before {
+  content: '';
+  position: absolute;
+  top: -19px;
+  left: 50%;
+  width: 126px;
+  height: 34px;
+  background: rgba(215, 166, 59, 0.86);
+  transform: translateX(-50%) rotate(-1deg);
+  clip-path: polygon(3% 7%, 97% 0, 100% 90%, 1% 100%);
+}
+
+.app--archive .leaderboard__header,
+.app--archive .score-summary__header {
+  padding-bottom: 19px;
+  border-bottom: 3px double rgba(23, 23, 19, 0.65);
+}
+
+.app--archive .leaderboard__header > div,
+.app--archive .score-summary__header > div {
+  flex: 1;
+}
+
+.app--archive .leaderboard__title,
+.app--archive .score-summary__name {
+  color: var(--home-ink-950);
+  font-family: Rockwell, 'Roboto Slab', 'Courier New', serif;
+  font-size: clamp(1.5rem, 4vw, 2.25rem);
+  line-height: 1.05;
+  text-transform: uppercase;
+}
+
+.app--archive .leaderboard__subtitle,
+.app--archive .score-summary__meta,
+.app--archive .leaderboard__state,
+.app--archive .score-summary__empty {
+  color: var(--home-ink-700);
+}
+
+.app--archive .lb-back-btn,
+.app--archive .lb-reload-btn {
+  color: var(--home-chalk-100);
+  background: var(--home-charcoal-900);
+  border-color: #0f100e;
+  border-radius: 2px;
+  font-family: 'Courier New', monospace;
+  font-weight: 800;
+}
+
+.app--archive .lb-back-btn:hover,
+.app--archive .lb-reload-btn:hover:not(:disabled) {
+  color: var(--home-ink-950);
+  background: var(--home-gold-500);
+  border-color: var(--home-gold-600);
+}
+
+.app--archive .lb-table {
+  color: var(--home-ink-950);
+  border: 1px solid rgba(79, 75, 64, 0.3);
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.app--archive .lb-table th {
+  color: var(--home-ink-700);
+  background: rgba(223, 210, 179, 0.56);
+  border-color: rgba(79, 75, 64, 0.35);
+  font-family: 'Courier New', monospace;
+  font-weight: 900;
+}
+
+.app--archive .lb-table td {
+  color: var(--home-ink-700);
+  border-color: rgba(79, 75, 64, 0.2);
+}
+
+.app--archive .lb-table__name {
+  color: var(--home-ink-950);
+}
+
+.app--archive .lb-table__prob {
+  color: #486a2d;
+}
+
+.app--archive .lb-table__dice,
+.app--archive .lb-table__date {
+  color: var(--home-ink-700);
+}
+
+.app--archive .lb-table__row--clickable:hover td {
+  background: rgba(215, 166, 59, 0.2);
+}
+
+.app--archive .lb-table__row--highlight td {
+  color: var(--home-ink-950);
+  background: rgba(215, 166, 59, 0.3);
+}
+
+.app--archive .lb-table__avatar--fallback {
+  background: var(--home-rust-500);
+}
+
+.app--archive > .user-menu .user-menu__trigger,
+.app--game .user-menu__trigger {
+  color: var(--home-ink-950);
+  background: var(--home-paper-100);
+  border-color: #8f8266;
+  border-radius: 3px;
+}
+
+.app--archive > .user-menu .user-menu__trigger:hover,
+.app--game .user-menu__trigger:hover {
+  color: var(--home-ink-950);
+  background: #fff5da;
+  border-color: var(--home-gold-500);
+}
+
+.app--archive > .user-menu .user-menu__avatar--fallback,
+.app--game .user-menu__avatar--fallback {
+  background: var(--home-rust-500);
+}
+
+.app--archive > .user-menu .user-menu__caret,
+.app--game .user-menu__caret {
+  color: var(--home-ink-700);
+}
+
+.app--archive > .user-menu .user-menu__dropdown,
+.app--game .user-menu__dropdown {
+  color: var(--home-ink-950);
+  background:
+    var(--playbook-paper-lines),
+    var(--home-paper-100);
+  border-color: #8f8266;
+  border-radius: 3px;
+  box-shadow: 6px 8px 0 rgba(0, 0, 0, 0.3);
+}
+
+.app--archive > .user-menu .user-menu__dropdown-name,
+.app--game .user-menu__dropdown-name {
+  color: var(--home-ink-950);
+}
+
+.app--archive > .user-menu .user-menu__item,
+.app--game .user-menu__item {
+  color: var(--home-ink-700);
+}
+
+.app--archive > .user-menu .user-menu__item:hover:not(:disabled),
+.app--game .user-menu__item:hover:not(:disabled) {
+  color: var(--home-ink-950);
+  background: rgba(215, 166, 59, 0.25);
+}
+
+/* ── Responsive player surfaces ───────────────────────────────────── */
+@media (max-width: 900px) {
+  .app--game .hud {
+    gap: 8px;
+  }
+
+  .app--game .hud::after {
+    display: none;
+  }
+
+  .app--archive .leaderboard,
+  .app--archive .score-summary {
+    width: calc(100% - 28px);
+    margin: 34px auto;
+    padding: 42px 28px 30px;
+  }
+}
+
+@media (max-width: 768px) {
+  .app--game {
+    padding: 5px;
+  }
+
+  .app--game .hud {
+    min-height: 0;
+    padding: 7px;
+  }
+
+  .app--game .hud__status {
+    order: 10;
+    flex-basis: 100%;
+    padding: 4px 6px 0;
+    border-top: 1px solid rgba(246, 241, 223, 0.15);
+  }
+
+  .app--game .hud__team {
+    font-size: 0.78rem;
+  }
+
+  .app--game .hud .user-menu__name,
+  .app--game .hud .user-menu__caret {
+    display: none;
+  }
+
+  .app--game .pitch-wrapper {
+    padding: 4px;
+  }
+
+  .app--playbook .modal {
+    padding: 34px 22px 26px;
+  }
+
+  .app--playbook .submit-modal__moves,
+  .app--playbook .score-summary__moves {
+    overflow-x: auto;
+  }
+
+  .app--playbook .submit-modal__moves-header,
+  .app--playbook .submit-modal__move-row,
+  .app--playbook .score-summary__moves-header,
+  .app--playbook .score-summary__move-row {
+    min-width: 610px;
+  }
+
+  .app--archive .leaderboard,
+  .app--archive .score-summary {
+    width: calc(100% - 24px);
+    min-height: calc(100vh - 48px);
+    margin: 24px auto;
+    padding: 42px 18px 24px;
+  }
+
+  .app--archive .leaderboard__header,
+  .app--archive .score-summary__header {
+    gap: 9px;
+  }
+
+  .app--archive .lb-table {
+    display: block;
+    overflow-x: auto;
+  }
+
+  .app--archive .lb-table thead,
+  .app--archive .lb-table tbody {
+    display: table;
+    width: 100%;
+    min-width: 590px;
+    table-layout: fixed;
+  }
+}
+
+@media (max-width: 480px) {
+  .app--game .hud__prob {
+    min-width: 67px;
+    padding-inline: 7px;
+  }
+
+  .app--game .hud__prob-value {
+    font-size: 1.15rem;
+  }
+
+  .app--game .hud__back,
+  .app--game .hud__restart,
+  .app--game .hud__zoom {
+    min-height: 32px;
+    padding-inline: 7px;
+  }
+
+  .app--playbook .modal-backdrop {
+    padding: 10px;
+  }
+
+  .app--playbook .modal,
+  .app--playbook .block-outcome {
+    width: calc(100vw - 20px);
+    max-height: calc(100vh - 20px);
+  }
+
+  .app--playbook .submit-modal__actions {
+    width: 100%;
+    flex-direction: column;
+  }
+
+  .app--playbook .submit-modal__actions button {
+    width: 100%;
+  }
+
+  .app--archive .leaderboard__header,
+  .app--archive .score-summary__header {
+    flex-wrap: wrap;
+  }
+
+  .app--archive .leaderboard__header > div,
+  .app--archive .score-summary__header > div {
+    min-width: calc(100% - 92px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .app--playbook *,
+  .app--playbook *::before,
+  .app--playbook *::after {
+    scroll-behavior: auto !important;
+  }
+}
