@@ -1,5 +1,5 @@
 import { normalizeScenario, validateScenario, SCENARIO_ID_RE } from './editorValidation.js';
-import { editorStore, readDraftScenarios, writeDraftScenarios, readDraftSeries } from './editorStore.js';
+import { editorStore, readDraftScenarios, writeDraftScenarios, readDraftSeries, writeDraftSeries } from './editorStore.js';
 import { AdminAuthError, authErrorResponse, requireAdminGoogleUser } from './auth.js';
 
 function jsonResponse(status, body) {
@@ -83,6 +83,32 @@ export default async function handler(req) {
       : [...existing, scenario];
     await writeDraftScenarios(store, updated);
     return jsonResponse(200, scenario);
+  }
+
+  if (req.method === 'DELETE') {
+    try {
+      await requireAdminGoogleUser(req);
+    } catch (error) {
+      if (error instanceof AdminAuthError) return authErrorResponse(error);
+      throw error;
+    }
+
+    const id = scenarioIdFromPath(url.pathname) ?? url.searchParams.get('scenarioId');
+    if (!id || !SCENARIO_ID_RE.test(id)) return jsonResponse(400, { errors: ['Invalid scenario id'] });
+
+    const [existing, currentSeries] = await Promise.all([
+      readDraftScenarios(store),
+      readDraftSeries(store),
+    ]);
+    if (!existing.some(s => s.id === id)) return jsonResponse(404, { errors: ['Scenario not found'] });
+
+    const scenarios = existing.filter(s => s.id !== id);
+    const series = {
+      ...currentSeries,
+      scenarioIds: currentSeries.scenarioIds.filter(scenarioId => scenarioId !== id),
+    };
+    await Promise.all([writeDraftScenarios(store, scenarios), writeDraftSeries(store, series)]);
+    return jsonResponse(200, { scenarios, series });
   }
 
   return jsonResponse(405, { errors: ['Method not allowed'] });

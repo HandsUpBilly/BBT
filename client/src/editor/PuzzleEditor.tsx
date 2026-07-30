@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { DragEvent } from 'react';
 import type { Scenario, ScenarioPieceDef, SeriesDefinition, Team } from '../types';
-import { createScenario, fetchEditorData, publishEditorData, updateDefaultSeries, updateScenario } from './editorApi';
+import { createScenario, deleteScenario, fetchEditorData, publishEditorData, updateDefaultSeries, updateScenario } from './editorApi';
 import { nextScenarioId, validateScenarioDraft } from './editorValidation';
 import { PLAYER_TEMPLATES, generatedPlayerName, templateToPiece } from './playerTemplates';
 import './PuzzleEditor.css';
@@ -264,6 +264,32 @@ export function PuzzleEditor({ onBack, onPlay, previewScenario, idToken }: Props
     }
   }
 
+  async function deleteCurrentScenario() {
+    if (!originalId) {
+      setStatus('Unsaved drafts can be cleared with New or Reload.');
+      return;
+    }
+    const confirmed = window.confirm(`Delete ${draft.name}? This removes it from drafts and the current series.`);
+    if (!confirmed) return;
+
+    setSaving(true);
+    try {
+      const data = await deleteScenario(originalId, idToken);
+      setScenarios(data.scenarios);
+      setSeries(data.series);
+      const nextDraft = data.scenarios[0] ?? emptyScenario([]);
+      setDraft(cloneScenario(nextDraft));
+      setOriginalId(data.scenarios.some(scenario => scenario.id === nextDraft.id) ? nextDraft.id : undefined);
+      setSelectedPieceId(null);
+      setBallTool(false);
+      setStatus(`Deleted ${originalId}. Click Publish Drafts to update players.`);
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : 'Failed to delete puzzle.');
+    } finally {
+      setSaving(false);
+    }
+  }
+
   function toggleSeriesAssignment() {
     const scenarioIds = inSeries
       ? series.scenarioIds.filter(id => id !== draft.id)
@@ -286,7 +312,7 @@ export function PuzzleEditor({ onBack, onPlay, previewScenario, idToken }: Props
         <div>
           <h1 className="editor__title">Puzzle Editor</h1>
           <p className="editor__subtitle">
-            Build scenario JSON and manage the current series. Saves are drafts — click Publish to make them live for players.
+            Build scenario JSON and manage the current series. Saves stay as drafts until Publish Drafts makes them live for players.
           </p>
         </div>
         <div className="editor__header-actions">
@@ -295,7 +321,7 @@ export function PuzzleEditor({ onBack, onPlay, previewScenario, idToken }: Props
             Play Draft
           </button>
           <button className="btn btn--primary" disabled={publishing} onClick={() => { void publish(); }}>
-            {publishing ? 'Publishing…' : 'Publish'}
+            {publishing ? 'Publishing…' : 'Publish Drafts'}
           </button>
         </div>
       </header>
@@ -315,7 +341,7 @@ export function PuzzleEditor({ onBack, onPlay, previewScenario, idToken }: Props
               >
                 <strong>{scenario.name}</strong>
                 <span>{scenario.id}</span>
-                <span>{scenario.published === false ? 'Disabled' : 'Published'} · {scenario.pieces.length} players</span>
+                <span>{scenario.published === false ? 'Disabled' : 'Enabled'} · {scenario.pieces.length} players</span>
               </button>
             ))}
           </div>
@@ -345,7 +371,7 @@ export function PuzzleEditor({ onBack, onPlay, previewScenario, idToken }: Props
                 checked={draft.published !== false}
                 onChange={event => setMetadata('published', event.target.checked)}
               />
-              Published
+              Enabled for players
             </label>
             <label className="editor__metadata-desc">
               Description
@@ -485,6 +511,9 @@ export function PuzzleEditor({ onBack, onPlay, previewScenario, idToken }: Props
             </button>
             <button className="btn btn--secondary" disabled={saving || validationErrors.length > 0} onClick={() => { void saveScenario(false); }}>
               Save As New
+            </button>
+            <button className="btn btn--ghost" disabled={saving || !originalId} onClick={() => { void deleteCurrentScenario(); }}>
+              Delete Puzzle
             </button>
             <button className="btn btn--secondary" onClick={() => { void load(); }}>Reload</button>
             <p className="editor__status">{status}</p>

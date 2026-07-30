@@ -26,7 +26,9 @@ Local editor features:
 - place ball on a player or loose on the ground,
 - save over existing puzzle,
 - save as new puzzle,
-- publish/disable puzzles,
+- delete saved draft puzzles,
+- enable/disable puzzles for players,
+- publish draft changes,
 - add/remove/reorder puzzle in default series,
 - play draft and return to designer.
 
@@ -37,23 +39,29 @@ Local editor features:
 - `GET /api/editor/scenarios`
 - `POST /api/editor/scenarios`
 - `PUT /api/editor/scenarios/:scenarioId`
+- `DELETE /api/editor/scenarios/:scenarioId`
 - `PUT /api/editor/series/default`
+- `POST /api/editor/publish`
 
 These write local JSON files under:
 
 - `client/src/scenarios/`
 - `client/src/series/default.json`
 
-## Production Limitation
+Deleting a scenario also removes its id from `client/src/series/default.json`.
 
-Netlify production does not yet persist editor changes. The deployed app can
-play built static scenarios, but editor saves require local Express.
+## Production Editor
 
-For production editing later:
+Netlify production persists editor drafts in Netlify Blobs:
 
-- add protected Netlify editor functions,
-- store scenarios/series in Netlify Blobs or another backend,
-- gate writes by verified Google `sub`, not display name.
+- `netlify/functions/editor-scenarios.js` handles scenario draft create/update/delete.
+- `netlify/functions/editor-series.js` handles the default draft series.
+- `netlify/functions/editor-publish.js` copies draft scenarios/series to the published keys.
+- `netlify/functions/scenarios.js` serves published scenarios/series to players.
+
+Draft saves are not player-visible until an admin clicks Publish Drafts.
+Deleting a draft scenario also removes it from the draft series; publishing is
+still required before players see that deletion.
 
 ## Pitch Orientation
 
@@ -70,4 +78,3 @@ Gameplay pitch rendering is separate and visually landscape.
 Stats come from `playerTemplates.ts`. The editor does not allow stat editing in
 the inspector. Add new player types by adding templates, not by changing saved
 scenario pieces manually.
-

@@ -51,6 +51,14 @@ export async function updateScenario(scenario: Scenario, idToken: string | null)
   return parseJsonResponse<Scenario>(response);
 }
 
+export async function deleteScenario(scenarioId: string, idToken: string | null): Promise<EditorLoadResponse> {
+  const response = await fetch(`/api/editor/scenarios/${encodeURIComponent(scenarioId)}`, {
+    method: 'DELETE',
+    headers: authHeaders(idToken),
+  });
+  return parseJsonResponse<EditorLoadResponse>(response);
+}
+
 export async function updateDefaultSeries(series: SeriesDefinition, idToken: string | null): Promise<SeriesDefinition> {
   const response = await fetch('/api/editor/series/default', {
     method: 'PUT',

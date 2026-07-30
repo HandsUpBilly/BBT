@@ -42,6 +42,36 @@ function entryClass(e: ActionLogEntry): string {
   return 'dice-log__entry--move';
 }
 
+function movementDirection(e: ActionLogEntry): string | null {
+  if (e.kind !== 'move' || e.isGfi || e.dodgeTarget !== null) return null;
+  return `${Math.sign(e.to.col - e.from.col)},${Math.sign(e.to.row - e.from.row)}`;
+}
+
+function compactDisplayLog(log: ActionLogEntry[]): ActionLogEntry[] {
+  return log.reduce<ActionLogEntry[]>((entries, entry) => {
+    const previous = entries[entries.length - 1];
+    if (
+      previous?.kind === 'move' &&
+      entry.kind === 'move' &&
+      previous.pieceName === entry.pieceName &&
+      previous.pieceRole === entry.pieceRole &&
+      previous.to.col === entry.from.col &&
+      previous.to.row === entry.from.row &&
+      movementDirection(previous) === movementDirection(entry)
+    ) {
+      entries[entries.length - 1] = {
+        ...previous,
+        to: entry.to,
+        steps: previous.steps + entry.steps,
+        cumulativeProb: entry.cumulativeProb,
+      };
+      return entries;
+    }
+    entries.push(entry);
+    return entries;
+  }, []);
+}
+
 export function DiceLog({ log, pendingProb }: Props) {
   if (log.length === 0) return null;
 
@@ -51,12 +81,13 @@ export function DiceLog({ log, pendingProb }: Props) {
     e.kind === 'handoff' || e.kind === 'pass' || e.kind === 'pass-catch' ||
     e.isGfi || e.dodgeTarget !== null || (e.kind === 'move' && !!e.pickupTarget)
   );
+  const displayLog = compactDisplayLog(log);
 
   return (
     <div className="dice-log">
       <div className="dice-log__title">Action Log</div>
 
-      {log.map((entry, i) => (
+      {displayLog.map((entry, i) => (
         <div key={i} className={`dice-log__entry ${entryClass(entry)}`}>
           <span className="dice-log__icon">→</span>
           <span className="dice-log__detail">

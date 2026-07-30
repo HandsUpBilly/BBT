@@ -1,4 +1,4 @@
-import { readdir, readFile, writeFile, mkdir } from 'fs/promises';
+import { readdir, readFile, writeFile, mkdir, unlink } from 'fs/promises';
 import { join, basename } from 'path';
 import { AdminAuthError, requireAdminGoogleUser } from './auth.js';
 
@@ -171,6 +171,31 @@ export function registerEditorRoutes(app) {
     if (errors.length) return jsonResponse(res, 400, { errors });
     await writeFile(scenarioPath(id), `${JSON.stringify(scenario, null, 2)}\n`);
     jsonResponse(res, 200, scenario);
+  });
+
+  app.delete('/api/editor/scenarios/:scenarioId', async (req, res) => {
+    try {
+      await requireAdminGoogleUser(req);
+    } catch (error) {
+      if (error instanceof AdminAuthError) return jsonResponse(res, error.status, { errors: [error.message] });
+      throw error;
+    }
+    const id = String(req.params.scenarioId);
+    if (basename(id) !== id || !SCENARIO_ID_RE.test(id)) return jsonResponse(res, 400, { errors: ['Invalid scenario id'] });
+
+    const scenarios = await readScenarios();
+    if (!scenarios.some(scenario => scenario.id === id)) return jsonResponse(res, 404, { errors: ['Scenario not found'] });
+
+    await unlink(scenarioPath(id));
+    const remainingScenarios = scenarios.filter(scenario => scenario.id !== id);
+    const currentSeries = await readDefaultSeries();
+    const savedSeries = {
+      ...currentSeries,
+      scenarioIds: currentSeries.scenarioIds.filter(scenarioId => scenarioId !== id),
+    };
+    await mkdir(SERIES_DIR, { recursive: true });
+    await writeFile(DEFAULT_SERIES_PATH, `${JSON.stringify(savedSeries, null, 2)}\n`);
+    jsonResponse(res, 200, { scenarios: remainingScenarios, series: savedSeries });
   });
 
   app.put('/api/editor/series/default', async (req, res) => {

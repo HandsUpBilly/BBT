@@ -147,16 +147,51 @@
   z-index: 2;
 }
 
-.square--tz .square__overlay {
-  box-shadow: inset 0 0 0 2px rgba(220, 60, 60, 0.8);
+.square__tz-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 3;
+  box-shadow: inset 0 0 0 2px rgba(230, 45, 45, 0.76);
+  background:
+    linear-gradient(135deg, rgba(235, 55, 55, 0.22) 0 10%, transparent 10% 100%);
+}
+
+.square--tz-2 .square__tz-overlay {
+  box-shadow: inset 0 0 0 3px rgba(245, 54, 54, 0.88);
+  background:
+    linear-gradient(135deg, rgba(245, 54, 54, 0.30) 0 12%, transparent 12% 100%),
+    linear-gradient(225deg, rgba(245, 54, 54, 0.20) 0 10%, transparent 10% 100%);
+}
+
+.square--tz-3 .square__tz-overlay,
+.square--tz-4 .square__tz-overlay {
+  box-shadow: inset 0 0 0 3px rgba(255, 42, 42, 0.96);
+  background:
+    linear-gradient(135deg, rgba(255, 42, 42, 0.38) 0 14%, transparent 14% 100%),
+    linear-gradient(225deg, rgba(255, 42, 42, 0.26) 0 12%, transparent 12% 100%);
 }
 
 .square--reachable .square__overlay {
-  background: rgba(220, 200, 0, 0.18);
+  background:
+    repeating-linear-gradient(
+      135deg,
+      rgba(255, 232, 92, 0.26) 0,
+      rgba(255, 232, 92, 0.26) 2px,
+      transparent 2px,
+      transparent 7px
+    );
 }
 
 .square--preview-free .square__overlay {
-  background: rgba(220, 200, 0, 0.55);
+  background:
+    repeating-linear-gradient(
+      135deg,
+      rgba(255, 232, 92, 0.56) 0,
+      rgba(255, 232, 92, 0.56) 3px,
+      rgba(25, 70, 20, 0.08) 3px,
+      rgba(25, 70, 20, 0.08) 8px
+    );
 }
 
 .square--preview-gfi .square__overlay {

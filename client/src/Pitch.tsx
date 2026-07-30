@@ -1,5 +1,5 @@
 import type { GameState, Team } from './types';
-import { tacklezoneKeys, key } from './bfs';
+import { key, neighbours } from './bfs';
 import type { ZoomBounds } from './bfs';
 import './Pitch.css';
 
@@ -180,8 +180,16 @@ export function Pitch({ state, onSquareClick, onPieceClick, onSquareHover, onSqu
         : 'Move';
 
   const isSelecting = !!state.selectedPieceId;
-  const opponents   = state.pieces.filter(p => p.team !== state.activeTeam).map(p => p.position);
-  const tzKeys      = isSelecting ? tacklezoneKeys(opponents) : new Set<string>();
+  const opponents = state.pieces.filter(p => p.team !== state.activeTeam).map(p => p.position);
+  const tzCounts = new Map<string, number>();
+  if (isSelecting) {
+    for (const opponent of opponents) {
+      for (const pos of neighbours(opponent)) {
+        const zoneKey = key(pos);
+        tzCounts.set(zoneKey, (tzCounts.get(zoneKey) ?? 0) + 1);
+      }
+    }
+  }
 
   // Landscape grid: COLS=26 (left→right = portrait rows 0→25),
   //                 ROWS=15  (top→bottom  = portrait cols 0→14)
@@ -220,7 +228,8 @@ export function Pitch({ state, onSquareClick, onPieceClick, onSquareHover, onSqu
       const isPreviewDodge    = !!previewStep?.requiresDodge && !isGhost;
       const isPreviewFree     = !!previewStep && !previewStep.requiresDodge && !previewStep.isGfi && !isGhost;
       const isReachable       = state.reachableKeys.has(k) && !previewStep && k !== ghostKey;
-      const isInTZ            = tzKeys.has(k) && !isReachable && !previewStep;
+      const tzCount           = tzCounts.get(k) ?? 0;
+      const isInTZ            = tzCount > 0;
       const walkedStep        = walkedMap.get(k);
       const isCommitted       = walkedStep !== undefined && !piece && !isGhost;
       const isHandoffTarget   = state.handoffTargets.has(k);
@@ -240,6 +249,7 @@ export function Pitch({ state, onSquareClick, onPieceClick, onSquareHover, onSqu
         isPreviewDodge && !isPreviewGfi     ? 'square--preview-dodge'     : '',
         isPreviewGfi  && isPreviewDodge     ? 'square--preview-gfi-dodge' : '',
         isInTZ         ? 'square--tz'            : '',
+        tzCount > 1    ? `square--tz-${Math.min(tzCount, 4)}` : '',
         isCommitted    ? 'square--path'          : '',
         isHandoffTarget ? 'square--handoff-target' : '',
         passRangeBand  ? `square--range-${passRangeBand}` : '',
@@ -269,6 +279,7 @@ export function Pitch({ state, onSquareClick, onPieceClick, onSquareHover, onSqu
         >
           <div className="square__overlay" />
           {!piece && looseBallKey === k && <BallIcon loose />}
+          {isInTZ && <div className="square__tz-overlay" />}
           {piece && (
             <div className={[
               'piece',
