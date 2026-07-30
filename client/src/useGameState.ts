@@ -52,6 +52,7 @@ function makeBlankState(overrides: Partial<GameState> = {}): GameState {
     blitzUsed: false,
     pendingBlock: false,
     pendingBlockIsBlitz: false,
+    blitzTargetId: null,
     isBlockTargeting: false,
     blockTargets: new Set(),
     blockChoice: null,
@@ -121,6 +122,7 @@ function clearSelection(state: GameState, cancelActivation = false): GameState {
     passReceiverKeys: new Set(),
     pendingBlock: false,
     pendingBlockIsBlitz: false,
+    blitzTargetId: null,
     isBlockTargeting: false,
     blockTargets: new Set(),
     blockChoice: null,
@@ -146,6 +148,43 @@ function commitMove(state: GameState): GameState['pieces'] {
       ? { ...p, position: dest, activated: true, hasBall: p.hasBall || pickedUpBall }
       : p
   );
+}
+
+function resumeMovementAfterBlitz(
+  state: GameState,
+  pieces: PlayerPiece[],
+  attackerId: string,
+): GameState {
+  const attacker = pieces.find(piece => piece.id === attackerId)!;
+  const stateWithPieces = { ...state, pieces };
+  const reachableKeys = state.remainingMa > 0 || state.remainingGfi > 0
+    ? recomputeReachable(
+        stateWithPieces,
+        attackerId,
+        attacker.position,
+        state.remainingMa,
+        state.remainingGfi,
+      ).reachableKeys
+    : new Set<string>();
+
+  return {
+    ...stateWithPieces,
+    selectedPieceId: attackerId,
+    originPos: attacker.position,
+    committedPath: [],
+    walkedSquares: [],
+    pathPreview: [],
+    reachableKeys,
+    pendingBlock: false,
+    pendingBlockIsBlitz: false,
+    blitzTargetId: null,
+    isBlockTargeting: false,
+    blockTargets: new Set(),
+    blockChoice: null,
+    pushTargetKeys: new Set(),
+    pendingBlockResolution: null,
+    activationLogStart: state.actionLog.length,
+  };
 }
 
 function isTouchdownSquare(pos: Position, team: string): boolean {
@@ -185,6 +224,7 @@ function advanceTurn(state: GameState): GameState {
   next.blitzUsed = false;
   next.pendingBlock = false;
   next.pendingBlockIsBlitz = false;
+  next.blitzTargetId = null;
   next.isBlockTargeting = false;
   next.blockTargets = new Set();
   next.blockChoice = null;
@@ -393,48 +433,11 @@ export function useGameState(initialState: GameState) {
           };
         }
 
-        // Block/Blitz declared — move attacker to destination (Blitz only; plain
-        // Block never moves, so committedPath is always empty in that case) then
-        // open defender targeting from the final position.
+        // A Blitz stays active until the chosen defender is clicked from an
+        // adjacent square. Clicking the attacker/path tip must not prematurely
+        // end the activation while the block is still pending.
         if (prev.pendingBlock) {
-          const attackerPos = dest ?? prev.originPos!;
-          const attacker = prev.pieces.find(p => p.id === prev.selectedPieceId)!;
-
-          const pieces = dest
-            ? prev.pieces.map(p => p.id === attacker.id ? { ...p, position: attackerPos } : p)
-            : prev.pieces;
-
-          // Adjacent opposing, non-down pieces from the final position.
-          const targets = new Set<string>();
-          for (const n of neighbours(attackerPos)) {
-            const nk = key(n);
-            const piece = pieces.find(p => key(p.position) === nk);
-            if (piece && piece.team !== attacker.team && !piece.down) {
-              targets.add(nk);
-            }
-          }
-
-          if (targets.size === 0) {
-            // No valid targets — end the attacker's activation at its final
-            // position with no block thrown. blitzUsed is NOT consumed.
-            const activatedPieces = pieces.map(p =>
-              p.id === attacker.id ? { ...p, activated: true } : p
-            );
-            return clearSelection({ ...prev, pieces: activatedPieces });
-          }
-
-          // pendingBlockIsBlitz is left as-is (set by handleBlockAction) — it's
-          // read again once handleBlockTarget resolves dice count/picker.
-          return {
-            ...prev,
-            pieces,
-            committedPath: dest ? prev.committedPath : [],
-            reachableKeys: new Set(),
-            pathPreview: [],
-            pendingBlock: false,
-            isBlockTargeting: true,
-            blockTargets: targets,
-          };
+          return prev;
         }
 
         // Normal end-activation — finalize hasBall if the activation's walked
@@ -618,7 +621,7 @@ export function useGameState(initialState: GameState) {
         return { ...prev, pendingPass: false, isPassTargeting: false, passRangeKeys: new Map(), passReceiverKeys: new Set() };
       }
       if (prev.isBlockTargeting) {
-        return { ...prev, pendingBlock: false, isBlockTargeting: false, blockTargets: new Set() };
+        return prev.selectedPieceId ? clearSelection(prev, true) : prev;
       }
       return prev.selectedPieceId ? clearSelection(prev, true) : prev;
     });
@@ -852,9 +855,8 @@ export function useGameState(initialState: GameState) {
 
   /**
    * Called when the player clicks "Block"/"Blitz" in the PieceMenu.
-   * Blitz allows movement first (pendingBlock: true, same shape as Pass/Handoff);
-   * plain Block never moves — it goes straight to defender targeting from the
-   * piece's current position.
+   * Blitz chooses its defender first, then allows movement into contact. Plain
+   * Block never moves and only offers adjacent defenders.
    */
   const handleBlockAction = useCallback((pieceId: string, isBlitz: boolean) => {
     setState(prev => {
@@ -865,6 +867,16 @@ export function useGameState(initialState: GameState) {
 
       if (isBlitz) {
         const { reachableKeys } = recomputeReachable(prev, pieceId, attacker.position, attacker.ma, MAX_GFI);
+        const targets = new Set<string>();
+        for (const defender of prev.pieces) {
+          if (defender.team === attacker.team || defender.down) continue;
+          const canReachContact = neighbours(defender.position).some(pos =>
+            key(pos) === key(attacker.position) || reachableKeys.has(key(pos))
+          );
+          if (canReachContact) targets.add(key(defender.position));
+        }
+        if (targets.size === 0) return prev;
+
         return {
           ...prev,
           selectedPieceId: pieceId,
@@ -876,12 +888,13 @@ export function useGameState(initialState: GameState) {
           remainingGfi: MAX_GFI,
           pendingDodgeTargets: [],
           pendingProb: 1,
-          reachableKeys,
+          reachableKeys: new Set(),
           activationLogStart: prev.actionLog.length,
           pendingBlock: true,
           pendingBlockIsBlitz: true,
-          isBlockTargeting: false,
-          blockTargets: new Set(),
+          blitzTargetId: null,
+          isBlockTargeting: true,
+          blockTargets: targets,
         };
       }
 
@@ -911,6 +924,7 @@ export function useGameState(initialState: GameState) {
         activationLogStart: prev.actionLog.length,
         pendingBlock: false,
         pendingBlockIsBlitz: false,
+        blitzTargetId: null,
         isBlockTargeting: true,
         blockTargets: targets,
       };
@@ -918,33 +932,83 @@ export function useGameState(initialState: GameState) {
   }, []);
 
   /**
-   * Called when the player clicks a highlighted defender square during block
-   * targeting. Computes dice count/picker/outcome probabilities and opens the
-   * outcome checklist (no board mutation yet — see handleBlockOutcomeChoice).
+   * For a Blitz, the first defender click chooses the target and opens movement;
+   * clicking that target again from an adjacent square performs the block.
+   * Plain Block goes directly to the outcome calculation.
    */
   const handleBlockTarget = useCallback((col: number, row: number) => {
     setState(prev => {
-      if (!prev.isBlockTargeting || !prev.selectedPieceId) return prev;
-
       const defenderKey = key({ col, row });
-      if (!prev.blockTargets.has(defenderKey)) return prev;
+      if (!prev.selectedPieceId) return prev;
 
       const attacker = prev.pieces.find(p => p.id === prev.selectedPieceId)!;
       const defender = prev.pieces.find(p => key(p.position) === defenderKey)!;
+      if (!defender || defender.team === attacker.team || defender.down) return prev;
 
-      const attackerTeammates = prev.pieces.filter(p => p.team === attacker.team)
+      const choosingBlitzTarget = prev.pendingBlock
+        && prev.pendingBlockIsBlitz
+        && prev.blitzTargetId === null
+        && prev.isBlockTargeting;
+
+      if (choosingBlitzTarget) {
+        if (!prev.blockTargets.has(defenderKey)) return prev;
+        const { reachableKeys } = recomputeReachable(
+          prev,
+          attacker.id,
+          attacker.position,
+          attacker.ma,
+          MAX_GFI,
+        );
+        return {
+          ...prev,
+          blitzTargetId: defender.id,
+          isBlockTargeting: false,
+          blockTargets: new Set(),
+          reachableKeys,
+        };
+      }
+
+      const executingBlitz = prev.pendingBlock
+        && prev.pendingBlockIsBlitz
+        && prev.blitzTargetId === defender.id;
+      const executingPlainBlock = prev.isBlockTargeting && prev.blockTargets.has(defenderKey);
+      if (!executingBlitz && !executingPlainBlock) return prev;
+
+      const attackerPos = executingBlitz
+        ? (prev.committedPath[prev.committedPath.length - 1] ?? prev.originPos ?? attacker.position)
+        : attacker.position;
+      if (!neighbours(attackerPos).some(pos => key(pos) === defenderKey)) return prev;
+
+      const pickedUpBall = prev.ballPosition !== null
+        && prev.walkedSquares.some(pos => key(pos) === key(prev.ballPosition!));
+      const pieces = prev.pieces.map(piece =>
+        piece.id === attacker.id
+          ? { ...piece, position: attackerPos, hasBall: piece.hasBall || pickedUpBall }
+          : piece
+      );
+      const positionedAttacker = pieces.find(piece => piece.id === attacker.id)!;
+
+      const attackerTeammates = pieces.filter(p => p.team === positionedAttacker.team)
         .map(p => ({ id: p.id, position: p.position, down: p.down }));
-      const defenderTeammates = prev.pieces.filter(p => p.team === defender.team)
+      const defenderTeammates = pieces.filter(p => p.team === defender.team)
         .map(p => ({ id: p.id, position: p.position, down: p.down }));
 
-      const attackerAssists = countAdjacentAssists(attacker.position, attackerTeammates, attacker.id);
+      const attackerAssists = countAdjacentAssists(positionedAttacker.position, attackerTeammates, positionedAttacker.id);
       const defenderAssists = countAdjacentAssists(defender.position, defenderTeammates, defender.id);
 
-      const { diceCount, picker } = blockDiceCount(attacker.st, attackerAssists, defender.st, defenderAssists);
+      const { diceCount, picker } = blockDiceCount(positionedAttacker.st, attackerAssists, defender.st, defenderAssists);
       const outcomeProbs = blockOutcomeProbabilities(diceCount, picker);
 
       return {
         ...prev,
+        pieces,
+        ballPosition: pickedUpBall ? null : prev.ballPosition,
+        originPos: attackerPos,
+        committedPath: [],
+        walkedSquares: [],
+        reachableKeys: new Set(),
+        pathPreview: [],
+        pendingBlock: false,
         isBlockTargeting: false,
         blockTargets: new Set(),
         blockChoice: {
@@ -1014,16 +1078,22 @@ export function useGameState(initialState: GameState) {
 
       if (resolvedFace === 'both-down') {
         const attackerHasBlockSkill = attacker.skills.includes('Block');
+        const attackerHasWrestleSkill = attacker.skills.includes('Wrestle');
         const defenderHasBlockSkill = defender.skills.includes('Block');
+        const attackerFalls = !attackerHasBlockSkill;
+        const wrestleIsUsed = attackerHasWrestleSkill && !attackerHasBlockSkill;
         const pieces = prev.pieces.map(p => {
-          if (p.id === attacker.id) return { ...p, down: !attackerHasBlockSkill, activated: true };
-          if (p.id === defender.id) return { ...p, down: !defenderHasBlockSkill };
+          if (p.id === attacker.id) return { ...p, down: attackerFalls, activated: !isBlitz || attackerFalls };
+          if (p.id === defender.id) return { ...p, down: wrestleIsUsed || !defenderHasBlockSkill };
           return p;
         });
-        return clearSelection({
+        const nextState = {
           ...prev, pieces, actionLog: newActionLog, pendingProb: newPendingProb,
           blitzUsed: newBlitzUsed, blockChoice: null,
-        });
+        };
+        return isBlitz && !attackerFalls
+          ? resumeMovementAfterBlitz(nextState, pieces, attacker.id)
+          : clearSelection(nextState);
       }
 
       // push / defender-stumbles / defender-down all push the defender back.
@@ -1046,13 +1116,16 @@ export function useGameState(initialState: GameState) {
         // falls per defenderFalls (crowd-push mechanics are out of scope).
         const pieces = prev.pieces.map(p => {
           if (p.id === defender.id) return { ...p, down: defenderFalls };
-          if (p.id === attacker.id) return { ...p, activated: true };
+          if (p.id === attacker.id) return { ...p, activated: !isBlitz };
           return p;
         });
-        return clearSelection({
+        const nextState = {
           ...prev, pieces, actionLog: newActionLog, pendingProb: newPendingProb,
           blitzUsed: newBlitzUsed, blockChoice: null,
-        });
+        };
+        return isBlitz
+          ? resumeMovementAfterBlitz(nextState, pieces, attacker.id)
+          : clearSelection(nextState);
       }
 
       const pushTargetKeys = new Set(pushCandidates.map(key));
@@ -1070,6 +1143,7 @@ export function useGameState(initialState: GameState) {
           defenderFalls,
           defenderFrom: defender.position,
           offerFollowUp: resolvedFace === 'defender-down',
+          isBlitz,
         },
       };
     });
@@ -1096,18 +1170,21 @@ export function useGameState(initialState: GameState) {
           return {
             ...p,
             position: resolution.offerFollowUp && followUp ? resolution.defenderFrom : p.position,
-            activated: true,
+            activated: !resolution.isBlitz,
           };
         }
         return p;
       });
 
-      return clearSelection({
+      const nextState = {
         ...prev,
         pieces,
         pendingBlockResolution: null,
-        pushTargetKeys: new Set(),
-      });
+        pushTargetKeys: new Set<string>(),
+      };
+      return resolution.isBlitz
+        ? resumeMovementAfterBlitz(nextState, pieces, resolution.attackerId)
+        : clearSelection(nextState);
     });
   }, []);
 

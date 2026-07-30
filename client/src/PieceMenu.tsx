@@ -1,5 +1,6 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import type { PlayerPiece } from './types';
+import { clampMenuPosition } from './blockControls';
 import './PieceMenu.css';
 
 export interface PieceMenuAction {
@@ -13,10 +14,9 @@ interface Props {
   x: number; // px from left of viewport
   y: number; // px from top of viewport
   actions: PieceMenuAction[];
-  // `moveFirst` reflects whether the "Move" checkbox was also checked
-  // alongside the chosen action — irrelevant for a plain 'move', but tells
-  // the caller whether a 'pass'/'handoff' should move the carrier first or
-  // go straight to targeting from its current square.
+  // `moveFirst` reflects whether the "Move" checkbox was also checked.
+  // Pass/Hand Off use it to choose movement-first vs immediate targeting;
+  // Blitz always owns its target-first movement sequence.
   onAction: (key: string, moveFirst: boolean) => void;
   onDismiss: () => void;
 }
@@ -32,13 +32,32 @@ const ACTIONS: PieceMenuAction[] = [
 export { ACTIONS as DEFAULT_ACTIONS };
 
 // A piece may take exactly one of these actions per activation — checking
-// one unchecks the others. (Move stays independent: it combines with any
-// of these, e.g. "Blitz" + "Move" moves before the block is thrown.)
+// one unchecks the others. Move stays independent for Pass and Hand Off;
+// Blitz always permits movement after its target is chosen.
 const EXCLUSIVE_KEYS = ['pass', 'handoff', 'block', 'blitz'];
 
 export function PieceMenu({ piece, x, y, actions, onAction, onDismiss }: Props) {
   const ref = useRef<HTMLDivElement>(null);
   const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [position, setPosition] = useState({ left: x + 4, top: y + 4 });
+
+  useLayoutEffect(() => {
+    const placeMenu = () => {
+      if (!ref.current) return;
+      const rect = ref.current.getBoundingClientRect();
+      setPosition(clampMenuPosition(
+        x,
+        y,
+        rect.width,
+        rect.height,
+        window.innerWidth,
+        window.innerHeight,
+      ));
+    };
+    placeMenu();
+    window.addEventListener('resize', placeMenu);
+    return () => window.removeEventListener('resize', placeMenu);
+  }, [x, y]);
 
   // Dismiss on outside click
   useEffect(() => {
@@ -76,9 +95,7 @@ export function PieceMenu({ piece, x, y, actions, onAction, onDismiss }: Props) 
     });
   };
 
-  // Pass/Hand Off/Block/Blitz imply movement to the target (Blitz uses the
-  // Move checkbox to decide whether to move first), so any of them takes
-  // priority over a plain Move when both are selected.
+  // Pass/Hand Off/Block/Blitz take priority over plain Move when selected.
   const chosenAction = selected.has('pass')
     ? 'pass'
     : selected.has('handoff')
@@ -95,30 +112,32 @@ export function PieceMenu({ piece, x, y, actions, onAction, onDismiss }: Props) 
     <div
       ref={ref}
       className="piece-menu"
-      style={{ left: x, top: y }}
+      style={position}
     >
       <div className="piece-menu__header">{piece.name}</div>
-      {actions.map(action => {
-        const isExclusiveLockedOut = EXCLUSIVE_KEYS.includes(action.key)
-          && !selected.has(action.key)
-          && EXCLUSIVE_KEYS.some(k => k !== action.key && selected.has(k));
-        const isDisabled = action.disabled || isExclusiveLockedOut;
-        return (
-          <label
-            key={action.key}
-            className={['piece-menu__item', isDisabled ? 'piece-menu__item--disabled' : ''].filter(Boolean).join(' ')}
-          >
-            <input
-              type="checkbox"
-              className="piece-menu__checkbox"
-              checked={selected.has(action.key)}
-              disabled={isDisabled}
-              onChange={() => toggle(action.key)}
-            />
-            {action.label}
-          </label>
-        );
-      })}
+      <div className="piece-menu__actions">
+        {actions.map(action => {
+          const isExclusiveLockedOut = EXCLUSIVE_KEYS.includes(action.key)
+            && !selected.has(action.key)
+            && EXCLUSIVE_KEYS.some(k => k !== action.key && selected.has(k));
+          const isDisabled = action.disabled || isExclusiveLockedOut;
+          return (
+            <label
+              key={action.key}
+              className={['piece-menu__item', isDisabled ? 'piece-menu__item--disabled' : ''].filter(Boolean).join(' ')}
+            >
+              <input
+                type="checkbox"
+                className="piece-menu__checkbox"
+                checked={selected.has(action.key)}
+                disabled={isDisabled}
+                onChange={() => toggle(action.key)}
+              />
+              {action.label}
+            </label>
+          );
+        })}
+      </div>
       <button
         className="piece-menu__confirm"
         disabled={!chosenAction}

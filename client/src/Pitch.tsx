@@ -177,6 +177,8 @@ export function Pitch({ state, onSquareClick, onPieceClick, onSquareHover, onSqu
       ? 'Pass'
       : state.isHandoffTargeting
         ? 'Hand Off'
+        : state.pendingBlockIsBlitz
+          ? 'Blitz'
         : 'Move';
 
   const isSelecting = !!state.selectedPieceId;
@@ -238,6 +240,7 @@ export function Pitch({ state, onSquareClick, onPieceClick, onSquareHover, onSqu
       const passRangeBand     = state.passRangeKeys.get(k);
       const isPassReceiver    = state.passReceiverKeys.has(k);
       const isBlockTarget     = state.blockTargets.has(k);
+      const isBlitzTarget     = piece?.id === state.blitzTargetId;
       const isPushTarget      = state.pushTargetKeys.has(k);
 
       const classes = [
@@ -259,6 +262,7 @@ export function Pitch({ state, onSquareClick, onPieceClick, onSquareHover, onSqu
         passRangeBand  ? `square--range-${passRangeBand}` : '',
         isPassReceiver ? 'square--pass-receiver' : '',
         isBlockTarget  ? 'square--block-target'  : '',
+        isBlitzTarget  ? 'square--blitz-target'  : '',
         isPushTarget   ? 'square--push-target'   : '',
       ].filter(Boolean).join(' ');
 

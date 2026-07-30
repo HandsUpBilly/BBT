@@ -420,6 +420,14 @@ export default function App() {
       return;
     }
 
+    // A Blitz target is chosen before movement. Clicking that same defender
+    // once the attacker is adjacent performs the block without ending the
+    // activation, so remaining movement can be used afterward.
+    if (state.pendingBlockIsBlitz && state.blitzTargetId === piece.id) {
+      handleBlockTarget(col, row);
+      return;
+    }
+
     // If a piece is already selected and this is a reachable square — treat as a move waypoint
     if (state.selectedPieceId && state.reachableKeys.has(k)) {
       hookSquareClick(col, row);
@@ -442,7 +450,7 @@ export default function App() {
     hookSquareClick(col, row);
   }, [state.pieces, state.selectedPieceId, state.reachableKeys, state.activeTeam,
       state.isHandoffTargeting, state.handoffTargets, state.isPassTargeting, state.passReceiverKeys,
-      state.isBlockTargeting, state.blockTargets,
+      state.isBlockTargeting, state.blockTargets, state.pendingBlockIsBlitz, state.blitzTargetId,
       hookSquareClick, handleHandoffTarget, handlePassTarget, handleBlockTarget, handleCancelSelection]);
 
   const handleMenuAction = useCallback((actionKey: string, moveFirst: boolean) => {
@@ -466,9 +474,6 @@ export default function App() {
       handleBlockAction(pieceMenu.piece.id, false);
     } else if (actionKey === 'blitz') {
       handleBlockAction(pieceMenu.piece.id, true);
-      // "Move" wasn't checked — skip movement and target directly, same
-      // pattern as Pass/Hand Off above.
-      if (!moveFirst) hookSquareClick(col, row);
     }
   }, [pieceMenu, hookSquareClick, handleHandoffAction, handlePassAction, handleBlockAction]);
 
@@ -728,12 +733,17 @@ export default function App() {
 
   const teamLabel = state.activeTeam === 'human' ? 'Human' : 'Orc';
   const activePiece = state.pieces.find(p => p.team === state.activeTeam);
+  const blitzTarget = state.blitzTargetId
+    ? state.pieces.find(piece => piece.id === state.blitzTargetId) ?? null
+    : null;
   const activationStatus = state.isHandoffTargeting
     ? 'Select a receiver to hand off to · Esc to cancel'
     : state.isPassTargeting
     ? 'Select a receiver to throw to · Esc to cancel'
     : state.isBlockTargeting
-    ? 'Select an adjacent opponent to block · Esc to cancel'
+    ? (state.pendingBlockIsBlitz
+        ? 'Select the opponent to Blitz · Esc to cancel'
+        : 'Select an adjacent opponent to block · Esc to cancel')
     : state.pendingBlockResolution
     ? (state.pendingBlockResolution.offerFollowUp
         ? 'Choose a push-back square (Defender Down allows a follow-up)'
@@ -743,7 +753,7 @@ export default function App() {
     : state.pendingPass
     ? `Pass declared — move up to ${state.remainingMa} MA, then click piece to throw · Esc to cancel`
     : state.pendingBlock
-    ? `${state.pendingBlockIsBlitz ? 'Blitz' : 'Block'} declared — move up to ${state.remainingMa} MA, then click piece to throw the block · Esc to cancel`
+    ? `Blitz ${blitzTarget?.name ?? 'target'} — move into contact, then click the target to block · ${state.remainingMa} MA left`
     : activePiece?.activated && !state.selectedPieceId
     ? 'Piece activated — end your turn'
     : state.selectedPieceId
@@ -944,6 +954,7 @@ export default function App() {
         return (
           <BlockOutcomePanel
             attackerName={attacker.name}
+            attackerSkills={attacker.skills}
             defenderName={defender.name}
             diceCount={state.blockChoice.diceCount}
             picker={state.blockChoice.picker}

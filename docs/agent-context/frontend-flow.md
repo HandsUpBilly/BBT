@@ -78,3 +78,9 @@ When changing app modes or navigation:
 - Check `handleBackClick`.
 - Check whether `UserMenu` should still appear.
 - Run `npm run build` and `cd client && npm run lint`.
+
+## Gameplay Action Menu
+
+`PieceMenu.tsx` renders actions in a two-column grid. It measures and clamps
+its fixed position to an 8px viewport inset, and keeps its header and Confirm
+button visible while only the action grid scrolls on very short screens.

@@ -43,6 +43,7 @@ function makeState(
     blitzUsed: false,
     pendingBlock: false,
     pendingBlockIsBlitz: false,
+    blitzTargetId: null,
     isBlockTargeting: false,
     blockTargets: new Set(),
     blockChoice: null,
@@ -244,6 +245,21 @@ describe('Block outcome resolution', () => {
     expect(after.pieces.find(p => p.id === 'human1')!.activated).toBe(true);
   });
 
+  it('both-down: Wrestle puts both players down when the attacker lacks Block', () => {
+    const state = makeState([
+      blocker({ skills: ['Wrestle'] }),
+      orc({ skills: ['Block'] }),
+    ]);
+    const { result } = renderHook(() => useGameState(state));
+
+    act(() => result.current.handleBlockAction('human1', false));
+    act(() => result.current.handleBlockTarget(7, 9));
+    act(() => result.current.handleBlockOutcomeChoice(['both-down'], 'both-down'));
+
+    expect(result.current.state.pieces.find(p => p.id === 'human1')!.down).toBe(true);
+    expect(result.current.state.pieces.find(p => p.id === 'orc1')!.down).toBe(true);
+  });
+
   it('push: opens a push-target square choice without ending the activation yet', () => {
     const state = makeState([blocker(), orc()]);
     const { result } = renderHook(() => useGameState(state));
@@ -332,7 +348,7 @@ describe('Block outcome resolution', () => {
 });
 
 describe('Blitz', () => {
-  it('moves the attacker before opening defender targeting, and consumes the once-per-turn flag', () => {
+  it('chooses a target, moves into contact, blocks, then keeps remaining movement', () => {
     const state = makeState([
       blocker({ position: { col: 7, row: 12 } }),
       orc({ position: { col: 7, row: 9 } }),
@@ -342,21 +358,39 @@ describe('Blitz', () => {
     act(() => result.current.handleBlockAction('human1', true));
     expect(result.current.state.pendingBlock).toBe(true);
     expect(result.current.state.pendingBlockIsBlitz).toBe(true);
-
-    // Move up to be adjacent to the orc, then click the path tip again to
-    // finalize movement and open block targeting (same two-step pattern as
-    // Pass/Hand Off: one click to commit the move, one to end it).
-    act(() => result.current.handleSquareClick(7, 10));
-    act(() => result.current.handleSquareClick(7, 10));
-
     expect(result.current.state.isBlockTargeting).toBe(true);
-    expect(result.current.state.pieces.find(p => p.id === 'human1')!.position).toEqual({ col: 7, row: 10 });
     expect(result.current.state.blockTargets.has('7,9')).toBe(true);
+    expect(result.current.state.reachableKeys.size).toBe(0);
 
+    // Choose the defender before movement begins.
     act(() => result.current.handleBlockTarget(7, 9));
-    act(() => result.current.handleBlockOutcomeChoice(['attacker-down'], 'attacker-down'));
+    expect(result.current.state.blitzTargetId).toBe('orc1');
+    expect(result.current.state.isBlockTargeting).toBe(false);
+    expect(result.current.state.reachableKeys.size).toBeGreaterThan(0);
+
+    // Move adjacent, then click the chosen target to throw the block.
+    act(() => result.current.handleSquareClick(7, 10));
+    act(() => result.current.handleBlockTarget(7, 9));
+
+    expect(result.current.state.pieces.find(p => p.id === 'human1')!.position).toEqual({ col: 7, row: 10 });
+    expect(result.current.state.blockChoice?.defenderId).toBe('orc1');
+    expect(result.current.state.remainingMa).toBe(4);
+
+    act(() => result.current.handleBlockOutcomeChoice(['defender-down'], 'defender-down'));
+    act(() => result.current.handlePushChoice(7, 8, true));
 
     expect(result.current.state.blitzUsed).toBe(true);
+    expect(result.current.state.selectedPieceId).toBe('human1');
+    expect(result.current.state.remainingMa).toBe(4);
+    expect(result.current.state.reachableKeys.size).toBeGreaterThan(0);
+    expect(result.current.state.pieces.find(p => p.id === 'human1')!.activated).toBe(false);
+    expect(result.current.state.pieces.find(p => p.id === 'human1')!.position).toEqual({ col: 7, row: 9 });
+
+    // The player can spend remaining movement, then end the activation.
+    act(() => result.current.handleSquareClick(7, 10));
+    act(() => result.current.handleSquareClick(7, 10));
+    expect(result.current.state.selectedPieceId).toBeNull();
+    expect(result.current.state.pieces.find(p => p.id === 'human1')!.activated).toBe(true);
   });
 
   it('cannot be declared a second time in the same team turn', () => {
@@ -368,11 +402,8 @@ describe('Blitz', () => {
     const { result } = renderHook(() => useGameState(state));
 
     act(() => result.current.handleBlockAction('human1', true));
-    // human1 is already adjacent to the orc — clicking its own square ends
-    // movement immediately (no second click needed, unlike the previous test
-    // where the attacker had to travel first).
-    act(() => result.current.handleSquareClick(7, 10));
-    act(() => result.current.handleBlockTarget(7, 9));
+    act(() => result.current.handleBlockTarget(7, 9)); // choose target
+    act(() => result.current.handleBlockTarget(7, 9)); // block from contact
     act(() => result.current.handleBlockOutcomeChoice(['attacker-down'], 'attacker-down'));
 
     expect(result.current.state.blitzUsed).toBe(true);
@@ -393,7 +424,7 @@ describe('Blitz', () => {
     const { result } = renderHook(() => useGameState(state));
 
     act(() => result.current.handleBlockAction('human1', true));
-    act(() => result.current.handleSquareClick(7, 10));
+    act(() => result.current.handleBlockTarget(7, 9));
     act(() => result.current.handleBlockTarget(7, 9));
     act(() => result.current.handleBlockOutcomeChoice(['attacker-down'], 'attacker-down'));
     expect(result.current.state.blitzUsed).toBe(true);
