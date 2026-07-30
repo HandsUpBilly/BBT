@@ -43,6 +43,23 @@ out clears Google auth if signed in, otherwise clears guest name.
 - Do not reintroduce per-screen scenario title override maps. Scenario
   `name`/`description` JSON is the source of truth.
 
+The identity gate and `home` mode use the tabletop-playbook visual shell:
+
+- `App.tsx` adds `app--landing` only to those two entry surfaces. Do not put it
+  on leaderboards, summaries, Admin Mode, or gameplay; it owns the felt/chalk
+  background and home theme tokens.
+- The home `UserMenu` is passed into `ScenarioSelect` and rendered inside its
+  masthead. Non-home screens still render `UserMenu` as their existing sibling
+  or HUD control.
+- `ScenarioSelect.css` supplies the paper play cards, featured playbook,
+  folder-style tabs, and landing-scoped button variants. Generic `.btn` base
+  rules stay neutral because the puzzle editor also uses them.
+- Individual cards derive their displayed `Play 01`, `Play 02`, etc. labels
+  from the loaded scenario array order. These labels are decorative; scenario
+  names and descriptions remain the source of truth.
+- Home artwork is CSS-only. Off-canvas chalk decoration is contained by
+  `app--landing` so 320 px and wider viewports do not scroll horizontally.
+
 ## Editor Preview
 
 Puzzle editor uses `onPlay={previewPuzzle}` from `App.tsx`.
@@ -61,4 +78,3 @@ When changing app modes or navigation:
 - Check `handleBackClick`.
 - Check whether `UserMenu` should still appear.
 - Run `npm run build` and `cd client && npm run lint`.
-
