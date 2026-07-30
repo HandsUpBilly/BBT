@@ -3,6 +3,7 @@ import { renderHook, act } from '@testing-library/react';
 import { useGameState } from './useGameState';
 import type { GameState, PlayerPiece } from './types';
 import { blockOutcomeProbabilities, blockCombinedProbability } from './bfs';
+import { blockActionAvailability } from './blockActionAvailability';
 
 function makeState(
   pieces: PlayerPiece[],
@@ -81,6 +82,41 @@ function orc(overrides: Partial<PlayerPiece> = {}): PlayerPiece {
     ...overrides,
   };
 }
+
+describe('Block and Blitz menu availability', () => {
+  it('allows Blitz before the attacker is adjacent to an opponent', () => {
+    const attacker = blocker({ position: { col: 7, row: 12 } });
+    const pieces = [attacker, orc({ position: { col: 7, row: 9 } })];
+
+    expect(blockActionAvailability(attacker, pieces, false)).toEqual({
+      canBlock: false,
+      canBlitz: true,
+    });
+  });
+
+  it('allows Block when a standing opponent is adjacent', () => {
+    const attacker = blocker();
+
+    expect(blockActionAvailability(attacker, [attacker, orc()], false)).toEqual({
+      canBlock: true,
+      canBlitz: true,
+    });
+  });
+
+  it('disables Blitz after it is spent and disables both actions for an activated player', () => {
+    const attacker = blocker();
+    const pieces = [attacker, orc()];
+
+    expect(blockActionAvailability(attacker, pieces, true)).toEqual({
+      canBlock: true,
+      canBlitz: false,
+    });
+    expect(blockActionAvailability({ ...attacker, activated: true }, pieces, false)).toEqual({
+      canBlock: false,
+      canBlitz: false,
+    });
+  });
+});
 
 describe('plain Block (no movement)', () => {
   it('opens defender targeting directly from the current square', () => {

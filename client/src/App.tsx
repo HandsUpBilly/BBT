@@ -14,6 +14,7 @@ import { SeriesLeaderboard } from './SeriesLeaderboard';
 import { SeriesScoreSummary } from './SeriesScoreSummary';
 import { ConfirmDialog } from './ConfirmDialog';
 import { BlockOutcomePanel } from './BlockOutcomePanel';
+import { blockActionAvailability } from './blockActionAvailability';
 import { UserMenu } from './UserMenu';
 import { submitScore, fetchLeaderboard, submitSeriesScore, fetchSeriesLeaderboard } from './api';
 import { resolveSeriesScenarios } from './series';
@@ -27,7 +28,7 @@ import type {
   AppMode, PlayerPiece, Scenario, LeaderboardEntry,
   SeriesLeaderboardEntry, SeriesPuzzleResult, RiskyMove, ActionLogEntry,
 } from './types';
-import { key, neighbours, computeZoomBounds } from './bfs';
+import { key, computeZoomBounds } from './bfs';
 import type { ZoomBounds } from './bfs';
 import './App.css';
 
@@ -910,12 +911,11 @@ export default function App() {
         // roll), then hand off/pass with the ball it just picked up.
         const canHandoff = (menuPiece.hasBall || state.ballPosition !== null) && !state.passUsed && !menuPiece.activated;
         const canPass    = (menuPiece.hasBall || state.ballPosition !== null) && !state.passUsed && !menuPiece.activated;
-        const adjacentKeys = new Set(neighbours(menuPiece.position).map(key));
-        const hasAdjacentOpponent = state.pieces.some(p =>
-          p.team !== menuPiece.team && !p.down && adjacentKeys.has(key(p.position))
+        const { canBlock, canBlitz } = blockActionAvailability(
+          menuPiece,
+          state.pieces,
+          state.blitzUsed,
         );
-        const canBlock = !menuPiece.activated && !menuPiece.down && hasAdjacentOpponent;
-        const canBlitz = canBlock && !state.blitzUsed;
         const menuActions: PieceMenuAction[] = [
           { label: 'Move',     key: 'move' },
           { label: 'Hand Off', key: 'handoff', disabled: !canHandoff },
