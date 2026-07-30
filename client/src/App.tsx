@@ -403,16 +403,21 @@ export default function App() {
       state.isHandoffTargeting, state.handoffTargets, state.isPassTargeting, state.passReceiverKeys,
       hookSquareClick, handleHandoffTarget, handlePassTarget, handleCancelSelection]);
 
-  const handleMenuAction = useCallback((actionKey: string) => {
+  const handleMenuAction = useCallback((actionKey: string, moveFirst: boolean) => {
     if (!pieceMenu) return;
+    const { col, row } = pieceMenu.piece.position;
     setPieceMenu(null);
     if (actionKey === 'move') {
-      const { col, row } = pieceMenu.piece.position;
       hookSquareClick(col, row);
     } else if (actionKey === 'handoff') {
       handleHandoffAction(pieceMenu.piece.id);
+      // "Move" wasn't checked — skip movement and go straight to receiver
+      // targeting from the carrier's current square, same as clicking the
+      // piece again to end activation with zero squares walked.
+      if (!moveFirst) hookSquareClick(col, row);
     } else if (actionKey === 'pass') {
       handlePassAction(pieceMenu.piece.id);
+      if (!moveFirst) hookSquareClick(col, row);
     }
   }, [pieceMenu, hookSquareClick, handleHandoffAction, handlePassAction]);
 

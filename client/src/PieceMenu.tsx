@@ -13,7 +13,11 @@ interface Props {
   x: number; // px from left of viewport
   y: number; // px from top of viewport
   actions: PieceMenuAction[];
-  onAction: (key: string) => void;
+  // `moveFirst` reflects whether the "Move" checkbox was also checked
+  // alongside the chosen action — irrelevant for a plain 'move', but tells
+  // the caller whether a 'pass'/'handoff' should move the carrier first or
+  // go straight to targeting from its current square.
+  onAction: (key: string, moveFirst: boolean) => void;
   onDismiss: () => void;
 }
 
@@ -110,7 +114,7 @@ export function PieceMenu({ piece, x, y, actions, onAction, onDismiss }: Props) 
       <button
         className="piece-menu__confirm"
         disabled={!chosenAction}
-        onClick={() => { if (chosenAction) onAction(chosenAction); }}
+        onClick={() => { if (chosenAction) onAction(chosenAction, selected.has('move')); }}
       >
         Confirm
       </button>
