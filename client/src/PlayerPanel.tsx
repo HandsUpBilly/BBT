@@ -8,9 +8,9 @@ interface Props {
 
 const PORTRAITS: Record<Team, Record<string, string>> = {
   human: {
-    thrower: '/human-thrower.png',
-    catcher: '/human-catcher.png',
-    lineman:  '/human-lineman.png',
+    thrower: '/human-thrower-gritty.webp',
+    catcher: '/human-catcher-gritty.webp',
+    lineman:  '/human-lineman-gritty.webp',
     blocker:  '/human-blocker.png',
     guard:    '/human-guard.png',
     tackle:   '/human-tackle.png',
@@ -18,10 +18,10 @@ const PORTRAITS: Record<Team, Record<string, string>> = {
   orc: {
     thrower:    '/orc-thrower.png',
     catcher:    '/orc-catcher.png',
-    lineman:    '/orc-lineman.png',
+    lineman:    '/orc-lineman-gritty.webp',
     'black-orc':'/orc-black-orc.png',
-    blocker:    '/orc-blocker.png',
-    blitzer:    '/orc-blitzer.png',
+    blocker:    '/orc-blocker-gritty.webp',
+    blitzer:    '/orc-blitzer-gritty.webp',
     'big-un':   '/orc-big-un.png',
   },
 };
