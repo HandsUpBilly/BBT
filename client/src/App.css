@@ -349,6 +349,8 @@ body,
 .legend__item--range-short { background: rgba(80, 200, 80, 0.35);   color: #90e890; }
 .legend__item--range-long  { background: rgba(255, 140, 30, 0.40);  color: #f0b060; }
 .legend__item--range-bomb  { background: rgba(220, 50, 50, 0.40);   color: #f09090; }
+.legend__item--block-target { background: rgba(220, 30, 30, 0.40);  color: #ff9090; }
+.legend__item--push-target  { background: rgba(255, 140, 0, 0.40);  color: #ffc060; }
 
 /* ── Three-column game area ──────────────────────────────────────────── */
 .game-area {

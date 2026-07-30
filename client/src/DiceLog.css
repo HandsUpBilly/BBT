@@ -37,6 +37,7 @@
 .dice-log__entry--pass       { border-left: 3px solid #b060ff; }
 .dice-log__entry--pass-catch { border-left: 3px solid #9040dd; }
 .dice-log__entry--pickup     { border-left: 3px solid #ffd24a; }
+.dice-log__entry--block      { border-left: 3px solid #ff5050; }
 .dice-log__entry--success   { border-left: 3px solid #4caf50; }
 .dice-log__entry--fail      { border-left: 3px solid #e53935; }
 .dice-log__entry--pending   { border-left: 3px solid #666; opacity: 0.7; }
@@ -112,6 +113,17 @@
   color: #ffd24a;
   font-size: 0.68rem;
   font-weight: 700;
+}
+
+.dice-log__block-tag {
+  color: #ff5050;
+  font-size: 0.68rem;
+  font-weight: 700;
+}
+
+.dice-log__block-face {
+  color: #ff9090;
+  font-size: 0.7rem;
 }
 
 .dice-log__prob-pct {

@@ -16,6 +16,15 @@ function cumFraction(log: ActionLogEntry[]): string {
     if (e.kind === 'handoff')    { num *= (7 - e.catchTarget); den *= 6; continue; }
     if (e.kind === 'pass')       { num *= (7 - e.passTarget);  den *= 6; continue; }
     if (e.kind === 'pass-catch') { num *= (7 - e.catchTarget); den *= 6; continue; }
+    if (e.kind === 'block') {
+      // actionProb isn't naturally an N-in-6 shape (it's a combined
+      // any-die/all-dice probability over an arbitrary accepted subset),
+      // so approximate it as a fraction over 1000 and let the final gcd
+      // reduction simplify it same as every other entry.
+      num *= Math.round(e.actionProb * 1000);
+      den *= 1000;
+      continue;
+    }
     if (e.isGfi) { num *= 5; den *= 6; }
     if (e.dodgeTarget !== null) { num *= (7 - e.dodgeTarget); den *= 6; }
     if (e.kind === 'move' && e.pickupTarget) { num *= (7 - e.pickupTarget); den *= 6; }
@@ -28,6 +37,14 @@ const BAND_LABEL: Record<string, string> = {
   quick: 'Quick', short: 'Short', long: 'Long', bomb: 'Bomb',
 };
 
+const FACE_LABEL: Record<string, string> = {
+  'attacker-down': 'Attacker Down',
+  'both-down': 'Both Down',
+  'push': 'Push Back',
+  'defender-stumbles': 'Defender Stumbles',
+  'defender-down': 'Defender Down',
+};
+
 function colLabel(col: number): string { return String.fromCharCode(65 + col); }
 function posLabel(p: { col: number; row: number }): string { return `${colLabel(p.col)}${p.row + 1}`; }
 
@@ -35,6 +52,7 @@ function entryClass(e: ActionLogEntry): string {
   if (e.kind === 'handoff')    return 'dice-log__entry--handoff';
   if (e.kind === 'pass')       return 'dice-log__entry--pass';
   if (e.kind === 'pass-catch') return 'dice-log__entry--pass-catch';
+  if (e.kind === 'block')      return 'dice-log__entry--block';
   if (e.kind === 'move' && e.pickupTarget) return 'dice-log__entry--pickup';
   if (e.isGfi && e.dodgeTarget !== null) return 'dice-log__entry--gfi-dodge';
   if (e.isGfi) return 'dice-log__entry--gfi';
@@ -78,7 +96,7 @@ export function DiceLog({ log, pendingProb }: Props) {
   const lastCumProb = log[log.length - 1].cumulativeProb;
   const overallProb = lastCumProb * pendingProb;
   const hasRoll = log.some(e =>
-    e.kind === 'handoff' || e.kind === 'pass' || e.kind === 'pass-catch' ||
+    e.kind === 'handoff' || e.kind === 'pass' || e.kind === 'pass-catch' || e.kind === 'block' ||
     e.isGfi || e.dodgeTarget !== null || (e.kind === 'move' && !!e.pickupTarget)
   );
   const displayLog = compactDisplayLog(log);
@@ -96,6 +114,8 @@ export function DiceLog({ log, pendingProb }: Props) {
                 ? `${entry.pieceName} → ${entry.receiverName}`
                 : entry.kind === 'pass'
                 ? `${entry.pieceName} → ${entry.receiverName}`
+                : entry.kind === 'block'
+                ? `${entry.pieceName} ⚔ ${entry.receiverName}`
                 : entry.pieceName}
             </span>
             {' '}{posLabel(entry.from)} → {posLabel(entry.to)}
@@ -113,6 +133,14 @@ export function DiceLog({ log, pendingProb }: Props) {
           ) : entry.kind === 'pass-catch' ? (
             <span className="dice-log__prob">
               <span className="dice-log__pass-catch-tag">Catch {entry.catchTarget}+</span>
+              {' '}<span className="dice-log__prob-pct">({pct(entry.actionProb)})</span>
+            </span>
+          ) : entry.kind === 'block' ? (
+            <span className="dice-log__prob">
+              <span className="dice-log__block-tag">
+                {entry.diceCount}D {entry.picker === 'attacker' ? 'Att' : 'Def'} pick
+              </span>
+              {' '}<span className="dice-log__block-face">{FACE_LABEL[entry.resolvedFace]}</span>
               {' '}<span className="dice-log__prob-pct">({pct(entry.actionProb)})</span>
             </span>
           ) : (entry.isGfi || entry.dodgeTarget !== null || !!entry.pickupTarget) && (

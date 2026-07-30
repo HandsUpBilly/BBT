@@ -11,10 +11,18 @@ function gcd(a: number, b: number): number { return b === 0 ? a : gcd(b, a % b);
 const BAND_LABEL: Record<string, string> = {
   quick: 'Quick', short: 'Short', long: 'Long', bomb: 'Bomb',
 };
+const FACE_LABEL: Record<string, string> = {
+  'attacker-down': 'Attacker Down',
+  'both-down': 'Both Down',
+  'push': 'Push Back',
+  'defender-stumbles': 'Defender Stumbles',
+  'defender-down': 'Defender Down',
+};
 
 function cumFraction(moves: LeaderboardEntry['moves']): string {
   let num = 1, den = 1;
   for (const m of moves) {
+    if (m.resolvedFace !== undefined) { num *= Math.round(m.actionProb * 1000); den *= 1000; continue; }
     if (m.passTarget !== undefined)  { num *= (7 - m.passTarget);  den *= 6; continue; }
     if (m.catchTarget !== undefined) { num *= (7 - m.catchTarget); den *= 6; continue; }
     if (m.isGfi) { num *= 5; den *= 6; }
@@ -27,6 +35,7 @@ function cumFraction(moves: LeaderboardEntry['moves']): string {
 function colLabel(col: number) { return String.fromCharCode(65 + col); }
 function posLabel(p: { col: number; row: number }) { return `${colLabel(p.col)}${p.row + 1}`; }
 function actionLabel(m: LeaderboardEntry['moves'][number]): string {
+  if (m.resolvedFace !== undefined) return `${m.isBlitz ? 'Blitz' : 'Block'} → ${FACE_LABEL[m.resolvedFace]}`;
   if (m.passTarget !== undefined && m.rangeBand)
     return `${BAND_LABEL[m.rangeBand]} Pass ${m.passTarget}+`;
   if (m.catchTarget !== undefined && m.passTarget === undefined && m.receiverName === undefined)
@@ -39,6 +48,7 @@ function actionLabel(m: LeaderboardEntry['moves'][number]): string {
   return `Pickup ${m.pickupTarget}+`;
 }
 function playerName(m: LeaderboardEntry['moves'][number]): string {
+  if (m.resolvedFace !== undefined && m.receiverName) return `${m.pieceName} ⚔ ${m.receiverName}`;
   if (m.receiverName) return `${m.pieceName} → ${m.receiverName}`;
   return m.pieceName;
 }

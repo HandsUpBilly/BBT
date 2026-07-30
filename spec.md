@@ -2277,3 +2277,358 @@ a real pass/fail dice roll.
    - Run the existing test suite (`npm run test` / vitest) to confirm no
      regressions.
    - Manually smoke-test a loose-ball puzzle via the dev server.
+
+---
+
+# Block and Blitz Actions
+
+## Problem Statement
+
+The game has no way to knock down an opponent. Every action implemented so
+far (Move, Handoff, Pass) follows the same shape: **one Agility roll, one
+target number, one outcome** — the game always assumes success and folds
+that roll's probability into the running `cumulativeProb`, exactly like a
+dodge or GFI step. A Block roll does not fit that shape:
+
+- The number of dice rolled (1–3) depends on comparing the two players'
+  Strength, and whenever one side has an advantage, **that side's coach
+  chooses which of the rolled dice to use** — this is a discrete choice
+  among several distinct dice, not a single probability.
+- The die itself has **5 possible faces**, each a materially different
+  outcome for how the board continues (attacker falls / both fall / one is
+  pushed / one is pushed and falls), not a simple pass/fail.
+- Depending on the puzzle, different subsets of those 5 outcomes may be
+  "acceptable" — e.g. a puzzle might only care about a Push, might accept
+  either Push or Pow, or might need a Pow specifically to clear a lane.
+
+This spec defines how Block dice are modeled inside this project's
+existing "always succeed, track the probability" architecture, and adds
+the Block and Blitz actions to the PieceMenu.
+
+## Rules Reference (BB2020/BB2025, via FFB source)
+
+**Number of dice** — compare effective Strength (own ST + assists):
+- Attacker ST > 2× Defender ST → **3 dice**, attacker picks
+- Attacker ST > Defender ST → **2 dice**, attacker picks
+- Attacker ST == Defender ST → **1 die**, no choice
+- Defender ST > Attacker ST → **2 dice**, defender picks
+- Defender ST > 2× Attacker ST → **3 dice**, defender picks
+
+**Assists** — each adjacent teammate of the blocking player adds +1 to
+that side's effective Strength for this comparison (both attacker and
+defender count their own assists).
+
+**The block die (6 faces, standard weighting)**:
+
+| Face | Outcome | Effect |
+|---|---|---|
+| 1 | **Attacker Down** | Attacker falls down. |
+| 2 | **Both Down** | Both players fall down, unless prevented by skill (see below). |
+| 3–4 | **Push Back** | Defender is pushed one square away; nobody falls. |
+| 5 | **Defender Stumbles** | Defender is pushed back and falls down (armor/injury roll follows in full rules), unless the defender has Dodge (downgrades to a plain Push) — unless the attacker also has Tackle (cancels the Dodge, so the defender falls anyway). |
+| 6 | **Defender Down** | Defender is pushed back and falls down. Attacker may follow up into the vacated square. |
+
+**Skills in scope for this pass**:
+- **Block** — a player with this skill does not fall down themself on a
+  Both Down result (checked independently for attacker and defender; if
+  both have Block, neither falls).
+- **Dodge** (defender) / **Tackle** (attacker) — interact only on the
+  Defender Stumbles face, as described above.
+- No other skills (Wrestle, Guard, Stand Firm, Frenzy, etc.) are in scope.
+
+**Push Back / follow-up** — the defender moves one square directly away
+from the attacker's square. There are up to 3 candidate squares (the
+squares in the "away" arc); a square only qualifies if it's on the pitch
+and unoccupied. The attacker's coach chooses the square (if more than one
+qualifies) and separately chooses whether to follow up into the square the
+defender vacated.
+
+**Non-goals for this pass**:
+- No Armor/Injury roll — a "fallen" player is simply marked `down: true`
+  and stops contributing a tackle zone; no elimination/casualty modeling.
+- No standing back up, no Rush/GFI-into-block interactions beyond what
+  Blitz needs.
+- No Wrestle, Guard, Stand Firm, Frenzy, Juggernaut, or other block-related
+  skills.
+- No Puzzle Editor changes — Block/Blitz scenarios are authored by hand in
+  scenario JSON for this pass, same as the current process for any new
+  scenario field.
+- No crowd push / pitch-invasion / multi-block mechanics.
+
+## Design: modeling block dice inside the probability-tracking model
+
+Every other action in this codebase computes one target number and treats
+that roll as "always succeeding," multiplying its chance into
+`cumulativeProb`. Block breaks that because a single roll produces 5
+qualitatively different outcomes, and puzzles may accept more than one of
+them as "good enough to continue."
+
+**Chosen approach — outcome checklist:**
+
+1. When the player declares a Block/Blitz against a defender, the game
+   computes dice count + picker (attacker or defender) from the ST
+   comparison above, and shows the 5 possible outcomes with their
+   individual probabilities (see combination formula below).
+2. The player checks which outcome(s) they'd accept as the block
+   "succeeding" for this puzzle (e.g. just Push Back, or Push Back + both
+   Pow faces).
+3. The combined probability of "the check(s) I made" is computed (see
+   below) and folded into `cumulativeProb`, the same way every other
+   roll's probability already is.
+4. **If exactly one outcome is checked**, the game state simply resolves
+   to that outcome directly (apply its board effects).
+   **If more than one outcome is checked**, the player is asked one more
+   small question — which of the checked outcomes to actually continue
+   simulating from — before the game applies that outcome's board
+   effects. (Only the checked-and-selected outcome's board effects are
+   applied; the others only contributed to the probability number.)
+
+This generalizes the existing single-target-number pattern to "a sum over
+an accepted subset of discrete outcomes" instead of "a single Agility
+target," while still never branching the actual game state — exactly one
+canonical continuation is always chosen, same as today.
+
+**Combined probability formula** (per face probability `p = checkedFaces/6`):
+- **Attacker picks** (attacker has dice advantage, or 1 die): the attacker
+  uses whichever rolled die is best for them, so the block "succeeds" if
+  **any** of the dice show a checked face: `P = 1 - (1 - p)^diceCount`.
+- **Defender picks** (defender has dice advantage): the defender uses
+  whichever die is worst for the attacker, so the block only "succeeds"
+  if **every** die shows a checked face: `P = p^diceCount`.
+- `diceCount` is 1, 2, or 3 per the ST comparison table above.
+
+**Dice-count/picker display**: the UI shows the combined odds only (no
+per-die assignment) — consistent with how the rest of the game never
+shows "which physical die," only the resulting chance.
+
+## Requirements
+
+### Data model (`client/src/types.ts`)
+
+- Add `down: boolean` to `PlayerPiece` and `ScenarioPieceDef` (defaults to
+  `false`). A `down` piece:
+  - stops contributing a tackle zone (affects `dodgeTargetAt`,
+    `pickupTargetAt`, `passTargetAt`, `catchTargetAt`, assist counts, and
+    block dice-count comparisons — all existing tackle-zone-counting call
+    sites must skip `down` pieces),
+  - cannot be selected/activated this turn (or any future turn, until a
+    stand-up mechanic exists — out of scope, so a `down` piece is
+    effectively removed from further play for the puzzle),
+  - is NOT removed from the board — it renders as fallen (visual detail in
+    Rendering section).
+- Add a new `BlockLogEntry` variant to `ActionLogEntry`:
+  ```ts
+  export type BlockOutcomeFace =
+    | 'attacker-down' | 'both-down' | 'push' | 'defender-stumbles' | 'defender-down';
+
+  export type BlockLogEntry = {
+    kind: 'block';
+    isBlitz: boolean;
+    pieceName: string;         // attacker
+    pieceRole: string;
+    receiverName: string;      // defender (reuse receiver* fields for RiskyMove compat)
+    receiverRole: string;
+    from: Position;            // attacker position (post-move, if Blitz)
+    to: Position;               // defender position
+    diceCount: 1 | 2 | 3;
+    picker: 'attacker' | 'defender';
+    outcomeProbs: Record<BlockOutcomeFace, number>; // probability of each face occurring at least/only as required by picker
+    acceptedFaces: BlockOutcomeFace[];  // faces the player checked
+    resolvedFace: BlockOutcomeFace;     // the single face the game continues from
+    actionProb: number;         // combined probability of acceptedFaces per the formula above
+    cumulativeProb: number;
+    dodgeTarget: null;
+    isGfi: false;
+  };
+  ```
+  (Mirrors `HandoffLogEntry`'s trick of carrying dummy `dodgeTarget: null,
+  isGfi: false` fields so it flows through the existing risky-move filter
+  in `App.tsx`'s `summarizeActionLog` unchanged.)
+- Add `blockUsed` tracking to `GameState`: reuse the existing single-flag
+  pattern but scoped correctly per the rules — `blitzUsed: boolean` (one
+  Blitz per team turn, mirrors `passUsed`); ordinary Block has **no** turn
+  limit (any number of eligible, unactivated pieces may each throw one
+  Block this turn) so it needs no flag beyond each piece's own `activated`.
+- Add pending-block state fields (mirroring `pendingHandoff`/
+  `isHandoffTargeting`/`handoffTargets`):
+  ```ts
+  pendingBlock: boolean;         // declared Block/Blitz — move first (Blitz only) then pick target
+  isBlockTargeting: boolean;     // choosing which adjacent opponent to block
+  blockTargets: Set<string>;     // adjacent opposing squares eligible to block
+  blockChoice: {                 // set once a defender is targeted, before resolving
+    defenderId: string;
+    diceCount: 1 | 2 | 3;
+    picker: 'attacker' | 'defender';
+    outcomeProbs: Record<BlockOutcomeFace, number>;
+  } | null;
+  ```
+- Extend `RiskyMove` with the same optional Block fields
+  (`diceCount?`, `picker?`, `acceptedFaces?`, `resolvedFace?`) so
+  leaderboard/score-summary rows can render a Block entry.
+
+### Rules engine (`client/src/bfs.ts`)
+
+- Add `countAdjacentAssists(pos, teamPositions, excludeId)` — flat count of
+  adjacent teammates (per the "flat adjacency count" decision — no
+  exclusion for teammates who are themselves marked, no Guard doubling).
+- Add `blockDiceCount(attackerSt, attackerAssists, defenderSt,
+  defenderAssists): { diceCount: 1|2|3, picker: 'attacker'|'defender' }`
+  implementing the ST comparison table above.
+- Add `blockOutcomeProbabilities(diceCount, picker): Record<BlockOutcomeFace, number>`
+  computing each face's combined probability using the attacker-picks /
+  defender-picks formulas above (a face's own combined probability is
+  computed by treating that single face as "checked" in isolation, so the
+  UI can show all 5 individually **and** let the player sum a custom
+  subset — the entry's stored `actionProb` for multiple checked faces is
+  NOT simply the sum of the individual displayed values, since faces are
+  not mutually exclusive across dice; recompute via the same
+  any-die/all-dice formula against `p = (# checked faces)/6` for the
+  actually-checked set, exactly as specified in the Design section).
+- Update `dodgeTargetAt`, `pickupTargetAt`, `passTargetAt`, `catchTargetAt`,
+  and `neighbours`/tackle-zone helpers to exclude pieces where `down ===
+  true` from tackle-zone counts.
+- Push-back squares: add `pushBackCandidates(attackerPos, defenderPos,
+  allPiecePositions): Position[]` returning the up to 3 on-pitch,
+  unoccupied squares directly away from the attacker (the "away" arc).
+
+### Game state (`client/src/useGameState.ts`)
+
+- `handleBlockAction(pieceId, isBlitz)` — entry point from PieceMenu,
+  mirrors `handleHandoffAction`/`handlePassAction`: validates eligibility
+  (piece not `activated`, not `down`; for Blitz also `!blitzUsed`), selects
+  the piece, sets `pendingBlock: true` (and for Blitz, allows movement via
+  the existing `reachableKeys` machinery already used for normal moves).
+- On ending the (optional, Blitz-only) movement step with `pendingBlock`
+  set: compute `blockTargets` = adjacent opposing, non-`down` pieces from
+  the piece's final position, open `isBlockTargeting`. If zero targets,
+  end the activation with no block thrown (mirrors the existing
+  zero-targets fallback for Handoff/Pass).
+- `handleBlockTarget(col, row)` — called when the player clicks a
+  highlighted defender square during `isBlockTargeting`: computes
+  `diceCount`/`picker`/`outcomeProbs`, populates `blockChoice`, and opens
+  the outcome-checklist UI (no board mutation yet).
+- `handleBlockOutcomeChoice(acceptedFaces: BlockOutcomeFace[],
+  resolvedFace: BlockOutcomeFace)` — called once the player confirms their
+  checklist (and, if >1 face checked, their chosen continuation face):
+  computes `actionProb` per the combined formula, logs the `BlockLogEntry`,
+  applies `resolvedFace`'s board effects:
+  - `attacker-down`: attacker piece → `down: true`; attacker `activated: true`.
+  - `both-down`: both → `down: true` unless each has the `'Block'` skill
+    (checked independently); attacker `activated: true`.
+  - `push`: defender moves to the chosen push-back square (see next
+    bullet for the square-choice sub-step); attacker `activated: true`.
+  - `defender-stumbles`: same as push, then defender additionally
+    → `down: true`, unless defender has `'Dodge'` and attacker lacks
+    `'Tackle'` (downgrade to plain push, no fall).
+  - `defender-down`: same as `defender-stumbles`'s "always falls" case
+    (push + `down: true`), then optionally follow up (see below).
+  - Sets `blitzUsed: true` if this was a Blitz.
+- Push-square + follow-up sub-step (triggered by `push`,
+  `defender-stumbles`-that-falls, or `defender-down`): expose
+  `pushTargetKeys: Set<string>` (from `pushBackCandidates`) and, once the
+  player clicks one, expose a yes/no "Follow up?" choice (only offered on
+  `defender-down`, per the real rules — plain Push/Stumble pushback does
+  not offer follow-up since the attacker didn't cause a fall). Resolve via
+  a `handlePushChoice(col, row, followUp: boolean)` action.
+- Reset `blitzUsed`, `pendingBlock`, `isBlockTargeting`, `blockTargets`,
+  `blockChoice`, `pushTargetKeys` in `advanceTurn`/`clearSelection`
+  wherever the equivalent Handoff/Pass fields are already reset.
+
+### UI (`client/src/PieceMenu.tsx`, `client/src/App.tsx`)
+
+- Add `'block'` and `'blitz'` actions to `PieceMenu`'s checklist, disabled
+  per: Block disabled if piece `activated`/`down` or has zero adjacent
+  opposing targets; Blitz additionally disabled if `blitzUsed`. Block and
+  Blitz are mutually exclusive with each other and with Pass/Handoff
+  (extend `EXCLUSIVE_KEYS`); Blitz implies Move the same way Pass/Handoff
+  do today (movement, if any, happens before the block is thrown).
+- New `BlockOutcomePanel` component (new file, following the existing
+  small-component convention like `PieceMenu`): renders the 5 outcome rows
+  (face name + individual probability), a checkbox per row, and — only
+  when >1 row is checked — a second "continue as" single-select among the
+  checked rows. A Confirm button calls `handleBlockOutcomeChoice`.
+- `Pitch.tsx`: highlight `blockTargets` during targeting (new
+  `square--block-target` class, distinct from existing handoff/pass
+  target highlight colors) and `pushTargetKeys` during the push-square
+  sub-step; render `down` pieces with a distinct rotated/greyed piece
+  style so solvers can see who's out of the play.
+
+### Dice log (`client/src/DiceLog.tsx`)
+
+- Add a `kind === 'block'` branch: label shows `"{attacker} ⚔ {defender}"`,
+  a tag showing `"{diceCount}D {picker === 'attacker' ? 'Att' : 'Def'} pick"`,
+  the resolved face's name, and the combined `actionProb` percentage —
+  following the exact visual pattern already used for the `handoff`/`pass`
+  branches (tag + percentage pill).
+- `cumFraction`'s per-entry fraction math gets a `kind === 'block'` case
+  using the entry's stored `actionProb` directly (already a clean
+  probability in [0,1]; convert to a fraction the same way pickup/dodge
+  entries already do via their target number, or store a precomputed
+  `num`/`den` on the entry to avoid re-deriving a fraction from a
+  non-1-in-6-shaped probability — implementer's choice, whichever keeps
+  `cumFraction` simplest).
+
+## Acceptance Criteria
+
+1. A piece with an adjacent opposing, non-`down` piece can declare Block
+   (no turn limit) or Blitz (once per team turn) from the PieceMenu.
+2. Declaring Blitz allows movement (using the piece's MA) before the block
+   is thrown; declaring plain Block does not move the piece.
+3. Targeting a defender computes and displays all 5 outcome faces with
+   individually correct probabilities, based on the ST/assist comparison
+   (flat adjacency count) and correct attacker-picks/defender-picks dice
+   math.
+4. Checking one outcome and confirming resolves directly to that outcome's
+   board effect (falls / pushes marked correctly, `down` flags set per the
+   Block-skill and Dodge/Tackle interaction rules above) and logs a
+   `BlockLogEntry` whose `actionProb` matches the displayed probability for
+   that single face.
+5. Checking two or more outcomes surfaces a second "continue as" choice;
+   confirming applies only the chosen face's board effect, but the logged
+   `actionProb` reflects the combined chance of "any of the checked faces"
+   (attacker-picks) or "all dice show a checked face" (defender-picks) as
+   appropriate.
+6. A Push, Defender Stumbles (fails Dodge/beaten by Tackle), or Defender
+   Down outcome lets the player choose among the valid push-back squares
+   when more than one is open; Defender Down additionally offers a
+   follow-up choice.
+7. `down` pieces are excluded from all existing tackle-zone-counting logic
+   (dodge/pickup/pass/catch targets and block ST/dice comparisons) and
+   cannot be selected/activated.
+8. The dice log renders a Block entry with the correct dice-count/picker
+   tag, resolved outcome name, and probability, consistent with the visual
+   style of existing Handoff/Pass entries.
+9. `cd client && npm run build`, `npm run lint`, and the existing
+   `useGameState.test.ts` suite all pass with no regressions.
+10. New tests in `useGameState.test.ts` cover: 1-die even match, 2-dice
+    attacker advantage, 2-dice defender advantage, a Both-Down resolution
+    with one side having Block, a Defender-Stumbles downgraded by Dodge,
+    a Defender-Stumbles restored to a fall by Tackle beating Dodge, a
+    multi-face-checked combined probability, and a push-back square
+    choice + follow-up.
+
+## Implementation Approach
+
+1. **Types** (`client/src/types.ts`) — add `down` to `PlayerPiece` /
+   `ScenarioPieceDef`; add `BlockOutcomeFace`, `BlockLogEntry`; extend
+   `ActionLogEntry`, `RiskyMove`; extend `GameState` with `blitzUsed`,
+   `pendingBlock`, `isBlockTargeting`, `blockTargets`, `blockChoice`,
+   `pushTargetKeys`.
+2. **Rules math** (`client/src/bfs.ts`) — `countAdjacentAssists`,
+   `blockDiceCount`, `blockOutcomeProbabilities`, `pushBackCandidates`;
+   update all existing tackle-zone-counting helpers to skip `down` pieces.
+3. **Game state** (`client/src/useGameState.ts`) — `handleBlockAction`,
+   the pending-block branch inside the click-commit handler (mirroring the
+   pendingPass/pendingHandoff branches), `handleBlockTarget`,
+   `handleBlockOutcomeChoice`, `handlePushChoice`; reset new fields in
+   `advanceTurn`/`clearSelection`.
+4. **UI** — extend `PieceMenu.tsx`'s actions/exclusivity; new
+   `BlockOutcomePanel.tsx`; wire both into `App.tsx`'s menu-action handler
+   and square-click routing (same pattern as `isHandoffTargeting`/
+   `isPassTargeting`); extend `Pitch.tsx`/`Pitch.css` for block/push
+   target highlighting and the `down`-piece visual state.
+5. **Dice log** (`client/src/DiceLog.tsx`) — add the `block` entry
+   rendering branch and extend `cumFraction`.
+6. **Tests** (`client/src/useGameState.test.ts`) — add the scenarios listed
+   in Acceptance Criteria #10.
+7. **Verification** — `cd client && npm run lint && npm run build && npm run test`.

@@ -13,6 +13,7 @@ import { ScoreSummary } from './ScoreSummary';
 import { SeriesLeaderboard } from './SeriesLeaderboard';
 import { SeriesScoreSummary } from './SeriesScoreSummary';
 import { ConfirmDialog } from './ConfirmDialog';
+import { BlockOutcomePanel } from './BlockOutcomePanel';
 import { UserMenu } from './UserMenu';
 import { submitScore, fetchLeaderboard, submitSeriesScore, fetchSeriesLeaderboard } from './api';
 import { resolveSeriesScenarios } from './series';
@@ -26,7 +27,7 @@ import type {
   AppMode, PlayerPiece, Scenario, LeaderboardEntry,
   SeriesLeaderboardEntry, SeriesPuzzleResult, RiskyMove, ActionLogEntry,
 } from './types';
-import { key, computeZoomBounds } from './bfs';
+import { key, neighbours, computeZoomBounds } from './bfs';
 import type { ZoomBounds } from './bfs';
 import './App.css';
 
@@ -91,7 +92,7 @@ function summarizeActionLog(actionLog: ActionLogEntry[]) {
     ? actionLog[actionLog.length - 1].cumulativeProb
     : 1;
   const riskyMoves = actionLog.filter(e =>
-    e.kind === 'handoff' || e.kind === 'pass' || e.kind === 'pass-catch' ||
+    e.kind === 'handoff' || e.kind === 'pass' || e.kind === 'pass-catch' || e.kind === 'block' ||
     e.dodgeTarget !== null || e.isGfi || (e.kind === 'move' && !!e.pickupTarget)
   );
   const diceCount = riskyMoves.length;
@@ -122,6 +123,17 @@ function summarizeActionLog(actionLog: ActionLogEntry[]) {
         from: e.from, to: e.to,
         dodgeTarget: null, isGfi: false,
         catchTarget: e.catchTarget,
+        actionProb: e.actionProb, cumulativeProb: e.cumulativeProb,
+      };
+    }
+    if (e.kind === 'block') {
+      return {
+        pieceName: e.pieceName, pieceRole: e.pieceRole,
+        receiverName: e.receiverName, receiverRole: e.receiverRole,
+        from: e.from, to: e.to,
+        dodgeTarget: null, isGfi: false,
+        isBlitz: e.isBlitz, diceCount: e.diceCount, picker: e.picker,
+        acceptedFaces: e.acceptedFaces, resolvedFace: e.resolvedFace,
         actionProb: e.actionProb, cumulativeProb: e.cumulativeProb,
       };
     }
@@ -283,7 +295,8 @@ export default function App() {
   const { state, setState, handleSquareClick: hookSquareClick, handleSquareHover: hookSquareHover,
           handleSquareLeave: hookSquareLeave, handleCancelSelection,
           handleContinue, handleHandoffAction, handleHandoffTarget,
-          handlePassAction, handlePassTarget }
+          handlePassAction, handlePassTarget,
+          handleBlockAction, handleBlockTarget, handleBlockOutcomeChoice, handlePushChoice }
     = useGameState(makeFreePlayState());
 
   const identityName = currentUser?.displayName ?? guestName;
@@ -333,16 +346,31 @@ export default function App() {
     setAppMode('leaderboard');
   }, []);
 
+  // Push-back square choice: if the resolution offers a follow-up (Defender
+  // Down only), remember the chosen square and ask Yes/No before finalizing;
+  // otherwise resolve immediately with followUp: false.
+  const [pendingPushSquare, setPendingPushSquare] = useState<{ col: number; row: number } | null>(null);
+
   // Route square clicks: targeting modes take priority over normal movement
   const handleSquareClick = useCallback((col: number, row: number) => {
     if (state.isHandoffTargeting) {
       handleHandoffTarget(col, row);
     } else if (state.isPassTargeting) {
       handlePassTarget(col, row);
+    } else if (state.isBlockTargeting) {
+      handleBlockTarget(col, row);
+    } else if (state.pendingBlockResolution) {
+      if (!state.pushTargetKeys.has(key({ col, row }))) return;
+      if (state.pendingBlockResolution.offerFollowUp) {
+        setPendingPushSquare({ col, row });
+      } else {
+        handlePushChoice(col, row, false);
+      }
     } else {
       hookSquareClick(col, row);
     }
-  }, [state.isHandoffTargeting, state.isPassTargeting, handleHandoffTarget, handlePassTarget, hookSquareClick]);
+  }, [state.isHandoffTargeting, state.isPassTargeting, state.isBlockTargeting, state.pendingBlockResolution,
+      state.pushTargetKeys, handleHandoffTarget, handlePassTarget, handleBlockTarget, handlePushChoice, hookSquareClick]);
 
   // Escape key
   useEffect(() => {
@@ -379,6 +407,16 @@ export default function App() {
       return;
     }
 
+    // During block targeting, clicking a highlighted defender throws the block
+    if (state.isBlockTargeting) {
+      if (state.blockTargets.has(k)) {
+        handleBlockTarget(col, row);
+      } else {
+        handleCancelSelection();
+      }
+      return;
+    }
+
     // If a piece is already selected and this is a reachable square — treat as a move waypoint
     if (state.selectedPieceId && state.reachableKeys.has(k)) {
       hookSquareClick(col, row);
@@ -401,7 +439,8 @@ export default function App() {
     hookSquareClick(col, row);
   }, [state.pieces, state.selectedPieceId, state.reachableKeys, state.activeTeam,
       state.isHandoffTargeting, state.handoffTargets, state.isPassTargeting, state.passReceiverKeys,
-      hookSquareClick, handleHandoffTarget, handlePassTarget, handleCancelSelection]);
+      state.isBlockTargeting, state.blockTargets,
+      hookSquareClick, handleHandoffTarget, handlePassTarget, handleBlockTarget, handleCancelSelection]);
 
   const handleMenuAction = useCallback((actionKey: string, moveFirst: boolean) => {
     if (!pieceMenu) return;
@@ -418,8 +457,17 @@ export default function App() {
     } else if (actionKey === 'pass') {
       handlePassAction(pieceMenu.piece.id);
       if (!moveFirst) hookSquareClick(col, row);
+    } else if (actionKey === 'block') {
+      // Plain Block never moves — handleBlockAction(pieceId, false) targets
+      // straight from the current square regardless of the Move checkbox.
+      handleBlockAction(pieceMenu.piece.id, false);
+    } else if (actionKey === 'blitz') {
+      handleBlockAction(pieceMenu.piece.id, true);
+      // "Move" wasn't checked — skip movement and target directly, same
+      // pattern as Pass/Hand Off above.
+      if (!moveFirst) hookSquareClick(col, row);
     }
-  }, [pieceMenu, hookSquareClick, handleHandoffAction, handlePassAction]);
+  }, [pieceMenu, hookSquareClick, handleHandoffAction, handlePassAction, handleBlockAction]);
 
   const dismissMenu = useCallback(() => setPieceMenu(null), []);
 
@@ -681,10 +729,18 @@ export default function App() {
     ? 'Select a receiver to hand off to · Esc to cancel'
     : state.isPassTargeting
     ? 'Select a receiver to throw to · Esc to cancel'
+    : state.isBlockTargeting
+    ? 'Select an adjacent opponent to block · Esc to cancel'
+    : state.pendingBlockResolution
+    ? (state.pendingBlockResolution.offerFollowUp
+        ? 'Choose a push-back square (Defender Down allows a follow-up)'
+        : 'Choose a push-back square')
     : state.pendingHandoff
     ? `Hand Off declared — move up to ${state.remainingMa} MA, then click piece to hand off · Esc to cancel`
     : state.pendingPass
     ? `Pass declared — move up to ${state.remainingMa} MA, then click piece to throw · Esc to cancel`
+    : state.pendingBlock
+    ? `${state.pendingBlockIsBlitz ? 'Blitz' : 'Block'} declared — move up to ${state.remainingMa} MA, then click piece to throw the block · Esc to cancel`
     : activePiece?.activated && !state.selectedPieceId
     ? 'Piece activated — end your turn'
     : state.selectedPieceId
@@ -770,6 +826,12 @@ export default function App() {
           <span className="legend__item legend__item--range-long">Long (7–9)</span>
           <span className="legend__item legend__item--range-bomb">Bomb (10–13)</span>
         </>}
+        {state.isBlockTargeting && (
+          <span className="legend__item legend__item--block-target">Block Target</span>
+        )}
+        {state.pendingBlockResolution && (
+          <span className="legend__item legend__item--push-target">Push-Back Square</span>
+        )}
       </div>
 
       <div className="game-area">
@@ -848,10 +910,18 @@ export default function App() {
         // roll), then hand off/pass with the ball it just picked up.
         const canHandoff = (menuPiece.hasBall || state.ballPosition !== null) && !state.passUsed && !menuPiece.activated;
         const canPass    = (menuPiece.hasBall || state.ballPosition !== null) && !state.passUsed && !menuPiece.activated;
+        const adjacentKeys = new Set(neighbours(menuPiece.position).map(key));
+        const hasAdjacentOpponent = state.pieces.some(p =>
+          p.team !== menuPiece.team && !p.down && adjacentKeys.has(key(p.position))
+        );
+        const canBlock = !menuPiece.activated && !menuPiece.down && hasAdjacentOpponent;
+        const canBlitz = canBlock && !state.blitzUsed;
         const menuActions: PieceMenuAction[] = [
           { label: 'Move',     key: 'move' },
           { label: 'Hand Off', key: 'handoff', disabled: !canHandoff },
           { label: 'Pass',     key: 'pass',    disabled: !canPass },
+          { label: 'Block',    key: 'block',   disabled: !canBlock },
+          { label: 'Blitz',    key: 'blitz',   disabled: !canBlitz },
         ];
         return (
           <PieceMenu
@@ -864,6 +934,41 @@ export default function App() {
           />
         );
       })()}
+
+      {/* Block outcome checklist */}
+      {state.blockChoice && state.selectedPieceId && (() => {
+        const attacker = state.pieces.find(p => p.id === state.selectedPieceId)!;
+        const defender = state.pieces.find(p => p.id === state.blockChoice!.defenderId)!;
+        return (
+          <BlockOutcomePanel
+            attackerName={attacker.name}
+            defenderName={defender.name}
+            diceCount={state.blockChoice.diceCount}
+            picker={state.blockChoice.picker}
+            outcomeProbs={state.blockChoice.outcomeProbs}
+            onConfirm={handleBlockOutcomeChoice}
+            onCancel={handleCancelSelection}
+          />
+        );
+      })()}
+
+      {/* Push-back follow-up choice (Defender Down only) */}
+      {pendingPushSquare && (
+        <ConfirmDialog
+          title="Follow up?"
+          message="Move into the square the defender vacated?"
+          confirmLabel="Follow Up"
+          cancelLabel="Stay"
+          onConfirm={() => {
+            handlePushChoice(pendingPushSquare.col, pendingPushSquare.row, true);
+            setPendingPushSquare(null);
+          }}
+          onCancel={() => {
+            handlePushChoice(pendingPushSquare.col, pendingPushSquare.row, false);
+            setPendingPushSquare(null);
+          }}
+        />
+      )}
     </div>
   );
 }

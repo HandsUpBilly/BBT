@@ -316,6 +316,131 @@ export function catchTargetAt(receiverPos: Position, receiverAg: number, opponen
   return Math.min(6, Math.max(2, base + tzCount));
 }
 
+// ── Block / Blitz ─────────────────────────────────────────────────────────────
+
+export type BlockOutcomeFace =
+  | 'attacker-down' | 'both-down' | 'push' | 'defender-stumbles' | 'defender-down';
+
+/** Number of the die's 6 physical faces that produce each outcome (3–4 = Push, 2 faces). */
+const BLOCK_FACE_WEIGHTS: Record<BlockOutcomeFace, number> = {
+  'attacker-down': 1,
+  'both-down': 1,
+  'push': 2,
+  'defender-stumbles': 1,
+  'defender-down': 1,
+};
+
+export const BLOCK_OUTCOME_FACES: BlockOutcomeFace[] = [
+  'attacker-down', 'both-down', 'push', 'defender-stumbles', 'defender-down',
+];
+
+interface AssistCandidate {
+  id: string;
+  position: Position;
+  down?: boolean;
+}
+
+/**
+ * Flat count of adjacent teammates who can assist a block (excludes the
+ * blocking player itself and any teammate who is `down`). No exclusion for
+ * teammates who are themselves in an opponent's tackle zone, and no Guard
+ * doubling — a simplified "flat adjacency count" per this project's scope.
+ */
+export function countAdjacentAssists(pos: Position, teammates: AssistCandidate[], excludeId: string): number {
+  return teammates.filter(t =>
+    t.id !== excludeId && !t.down && neighbours(pos).some(n => n.col === t.position.col && n.row === t.position.row)
+  ).length;
+}
+
+/**
+ * BB2020 block dice count + picker, from effective Strength (own ST + assists):
+ *   attacker ST > 2x defender ST -> 3 dice, attacker picks
+ *   attacker ST > defender ST    -> 2 dice, attacker picks
+ *   attacker ST == defender ST   -> 1 die, no choice
+ *   defender ST > attacker ST    -> 2 dice, defender picks
+ *   defender ST > 2x attacker ST -> 3 dice, defender picks
+ */
+export function blockDiceCount(
+  attackerSt: number,
+  attackerAssists: number,
+  defenderSt: number,
+  defenderAssists: number,
+): { diceCount: 1 | 2 | 3; picker: 'attacker' | 'defender' } {
+  const aSt = attackerSt + attackerAssists;
+  const dSt = defenderSt + defenderAssists;
+  if (aSt > dSt * 2) return { diceCount: 3, picker: 'attacker' };
+  if (dSt > aSt * 2) return { diceCount: 3, picker: 'defender' };
+  if (aSt > dSt) return { diceCount: 2, picker: 'attacker' };
+  if (dSt > aSt) return { diceCount: 2, picker: 'defender' };
+  return { diceCount: 1, picker: 'attacker' };
+}
+
+/**
+ * Combined probability that a block "succeeds" (per the outcome-checklist
+ * model) for an arbitrary accepted subset of outcome faces:
+ *   p = (number of physical die faces in the accepted set) / 6
+ *   attacker picks -> P = 1 - (1 - p)^diceCount   (succeeds if ANY die matches)
+ *   defender picks -> P = p^diceCount             (succeeds only if ALL dice match)
+ */
+export function blockCombinedProbability(
+  acceptedFaces: BlockOutcomeFace[],
+  diceCount: 1 | 2 | 3,
+  picker: 'attacker' | 'defender',
+): number {
+  const weight = acceptedFaces.reduce((sum, f) => sum + BLOCK_FACE_WEIGHTS[f], 0);
+  const p = weight / 6;
+  return picker === 'attacker' ? 1 - Math.pow(1 - p, diceCount) : Math.pow(p, diceCount);
+}
+
+/**
+ * Individual combined probability for each of the 5 outcome faces in
+ * isolation (i.e. as if that were the only face checked), for UI display.
+ */
+export function blockOutcomeProbabilities(
+  diceCount: 1 | 2 | 3,
+  picker: 'attacker' | 'defender',
+): Record<BlockOutcomeFace, number> {
+  const result = {} as Record<BlockOutcomeFace, number>;
+  for (const face of BLOCK_OUTCOME_FACES) {
+    result[face] = blockCombinedProbability([face], diceCount, picker);
+  }
+  return result;
+}
+
+/**
+ * Up to 3 on-pitch, unoccupied squares the defender could be pushed into,
+ * directly away from the attacker (the BB "push chart" arc). Diagonal hits
+ * push along the diagonal plus the two orthogonal flank squares; orthogonal
+ * hits push straight back plus the two diagonal flank squares.
+ */
+export function pushBackCandidates(
+  attackerPos: Position,
+  defenderPos: Position,
+  allPiecePositions: Position[],
+): Position[] {
+  const dx = Math.sign(defenderPos.col - attackerPos.col);
+  const dy = Math.sign(defenderPos.row - attackerPos.row);
+
+  let offsets: [number, number][];
+  if (dx !== 0 && dy !== 0) {
+    offsets = [[dx, dy], [dx, 0], [0, dy]];
+  } else if (dx === 0) {
+    offsets = [[0, dy], [-1, dy], [1, dy]];
+  } else {
+    offsets = [[dx, 0], [dx, -1], [dx, 1]];
+  }
+
+  const blocked = new Set(allPiecePositions.map(key));
+  const result: Position[] = [];
+  for (const [ox, oy] of offsets) {
+    const sq: Position = { col: defenderPos.col + ox, row: defenderPos.row + oy };
+    if (sq.col < 0 || sq.col >= COLS || sq.row < 0 || sq.row >= ROWS) continue;
+    if (blocked.has(key(sq))) continue;
+    result.push(sq);
+  }
+  return result;
+}
+
 /**
  * Find the shortest path (Chebyshev distance) from `origin` to `target`
  * within `ma` steps, avoiding blocked squares.
