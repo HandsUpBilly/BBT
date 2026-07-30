@@ -36,10 +36,11 @@ out clears Google auth if signed in, otherwise clears guest name.
 
 ## Home Screen
 
-`ScenarioSelect.tsx` owns the main Series/Individual switch.
+`ScenarioSelect.tsx` owns the main Series/Single Plays switch and exposes
+Admin Mode as a third tab for allowlisted admins.
 
 - Series tab shows the default series row from `client/src/series/default.json`.
-- Individual tab shows published scenario tiles.
+- Single Plays tab shows published scenario tiles.
 - Do not reintroduce per-screen scenario title override maps. Scenario
   `name`/`description` JSON is the source of truth.
 
@@ -54,10 +55,11 @@ The identity gate and `home` mode use the tabletop-playbook visual shell:
 - `ScenarioSelect.css` supplies the paper play cards, featured playbook,
   folder-style tabs, and landing-scoped button variants. Generic `.btn` base
   rules stay neutral because the puzzle editor also uses them.
-- Individual cards derive their displayed `Play 01`, `Play 02`, etc. labels
+- Single-play cards derive their displayed `Play 01`, `Play 02`, etc. labels
   from the loaded scenario array order. These labels are decorative; scenario
   names and descriptions remain the source of truth.
-- Home artwork is CSS-only. Off-canvas chalk decoration is contained by
+- The home masthead uses `client/src/assets/matchday-clash.webp` behind a
+  responsive contrast overlay. Off-canvas chalk decoration is contained by
   `app--landing` so 320 px and wider viewports do not scroll horizontally.
 
 ## Player-Facing Theme
