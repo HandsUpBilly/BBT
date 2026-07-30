@@ -49,6 +49,7 @@ function makeState(
     blitzUsed: false,
     pendingBlock: false,
     pendingBlockIsBlitz: false,
+    blitzTargetId: null,
     isBlockTargeting: false,
     blockTargets: new Set(),
     blockChoice: null,

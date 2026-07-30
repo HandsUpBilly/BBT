@@ -204,6 +204,7 @@ export interface GameState {
   blitzUsed: boolean;
   pendingBlock: boolean;         // declared Block/Blitz — move first (Blitz only) then pick target
   pendingBlockIsBlitz: boolean;  // whether the current pendingBlock/isBlockTargeting sequence is a Blitz (persists across the movement step, since blockChoice isn't set until a target is picked)
+  blitzTargetId: string | null;  // chosen defender for a Blitz; selected before movement begins
   isBlockTargeting: boolean;     // choosing which adjacent opponent to block
   blockTargets: Set<string>;     // adjacent opposing squares eligible to block
   blockChoice: {                 // set once a defender is targeted, before resolving
@@ -224,6 +225,7 @@ export interface GameState {
     defenderFalls: boolean;    // whether the defender is marked `down` once pushed
     defenderFrom: Position;    // defender's pre-push square (needed for follow-up)
     offerFollowUp: boolean;    // true only for a defender-down resolution
+    isBlitz: boolean;          // resume any remaining movement after resolving the push
   } | null;
 }
 

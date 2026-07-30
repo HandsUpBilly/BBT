@@ -53,8 +53,9 @@ Receiving a pass/handoff should not itself mark the receiver activated.
 ## Block / Blitz Invariants
 
 - A plain Block targets an adjacent standing opponent without movement.
-- A Blitz may move first, then targets an adjacent standing opponent, and is
-  limited to one per team turn. A plain Block remains available after a Blitz.
+- A Blitz chooses a reachable standing opponent first, moves into contact,
+  resolves the block and any follow-up, then may spend its remaining movement.
+  It is limited to one per team turn. A plain Block remains available afterward.
 - Effective Strength includes eligible adjacent assists. Downed players neither
   assist nor exert tackle zones and cannot be selected or targeted.
 - Block dice use 1–3 dice from the effective-Strength comparison. The player
@@ -62,7 +63,10 @@ Receiving a pass/handoff should not itself mark the receiver activated.
   attacker or defender picks the result.
 - Push outcomes require a legal push-back square. Defender Down also offers the
   attacker a follow-up into the vacated square.
-- The Block skill keeps its owner standing on a Both Down result.
+- Attacker Down is displayed but cannot be accepted as a successful outcome.
+  Both Down can only be accepted when the attacker has Block or Wrestle.
+- The Block skill keeps its owner standing on Both Down. Wrestle (when the
+  attacker lacks Block) puts both players down, including a defender with Block.
 - Block and Blitz resolutions are recorded as `block` action-log entries and
   contribute to cumulative probability and dice count.
 

@@ -1,11 +1,13 @@
 import { useState, useMemo } from 'react';
 import type { BlockOutcomeFace } from './types';
 import { BLOCK_OUTCOME_FACES, blockCombinedProbability } from './bfs';
+import { isBlockOutcomeSelectable } from './blockControls';
 import './SubmitModal.css'; // shared modal-backdrop/modal styles
 import './BlockOutcomePanel.css';
 
 interface Props {
   attackerName: string;
+  attackerSkills: string[];
   defenderName: string;
   diceCount: 1 | 2 | 3;
   picker: 'attacker' | 'defender';
@@ -22,12 +24,20 @@ const FACE_LABELS: Record<BlockOutcomeFace, string> = {
   'defender-down': 'Defender Down',
 };
 
+const FACE_ICONS: Record<BlockOutcomeFace, string> = {
+  'attacker-down': '☠',
+  'both-down': '☠☠',
+  'push': '➜',
+  'defender-stumbles': '✦',
+  'defender-down': '✹',
+};
+
 function pct(p: number) {
   return `${Math.round(p * 100)}%`;
 }
 
 export function BlockOutcomePanel({
-  attackerName, defenderName, diceCount, picker, outcomeProbs, onConfirm, onCancel,
+  attackerName, attackerSkills, defenderName, diceCount, picker, outcomeProbs, onConfirm, onCancel,
 }: Props) {
   const [accepted, setAccepted] = useState<Set<BlockOutcomeFace>>(new Set());
   const [continueAs, setContinueAs] = useState<BlockOutcomeFace | null>(null);
@@ -39,6 +49,7 @@ export function BlockOutcomePanel({
   );
 
   const toggle = (face: BlockOutcomeFace) => {
+    if (!isBlockOutcomeSelectable(face, attackerSkills)) return;
     setAccepted(prev => {
       const next = new Set(prev);
       if (next.has(face)) {
@@ -64,17 +75,31 @@ export function BlockOutcomePanel({
         </p>
 
         <div className="block-outcome__rows">
-          {BLOCK_OUTCOME_FACES.map(face => (
-            <label key={face} className="block-outcome__row">
-              <input
-                type="checkbox"
-                checked={accepted.has(face)}
-                onChange={() => toggle(face)}
-              />
-              <span className="block-outcome__row-label">{FACE_LABELS[face]}</span>
-              <span className="block-outcome__row-prob">{pct(outcomeProbs[face])}</span>
-            </label>
-          ))}
+          {BLOCK_OUTCOME_FACES.map(face => {
+            const selectable = isBlockOutcomeSelectable(face, attackerSkills);
+            const disabledReason = face === 'attacker-down'
+              ? 'Attacker Down always ends the play'
+              : 'Both Down requires Block or Wrestle';
+            return (
+              <label
+                key={face}
+                className={`block-outcome__row${selectable ? '' : ' block-outcome__row--disabled'}`}
+                title={selectable ? undefined : disabledReason}
+              >
+                <input
+                  type="checkbox"
+                  checked={accepted.has(face)}
+                  disabled={!selectable}
+                  onChange={() => toggle(face)}
+                />
+                <span className={`block-die block-die--${face}`} aria-hidden="true">
+                  {FACE_ICONS[face]}
+                </span>
+                <span className="block-outcome__row-label">{FACE_LABELS[face]}</span>
+                <span className="block-outcome__row-prob">{pct(outcomeProbs[face])}</span>
+              </label>
+            );
+          })}
         </div>
 
         {acceptedList.length > 1 && (
