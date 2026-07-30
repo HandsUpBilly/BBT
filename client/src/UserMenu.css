@@ -132,3 +132,98 @@
   background: rgba(224, 128, 128, 0.15);
   color: #ff9999;
 }
+
+/* Tabletop treatment is intentionally limited to the landing experience.
+   The game HUD and other non-game screens retain the compact dark menu. */
+.app--landing .user-menu__trigger {
+  min-height: 42px;
+  color: var(--home-ink-950);
+  background: var(--home-paper-100);
+  border-color: #8f8266;
+  border-radius: 3px;
+  box-shadow: 3px 4px 0 rgba(0, 0, 0, 0.24);
+}
+
+.app--landing .user-menu__trigger:hover {
+  color: var(--home-ink-950);
+  background: #fff5da;
+  border-color: var(--home-gold-500);
+}
+
+.app--landing .user-menu__trigger:focus-visible,
+.app--landing .user-menu__item:focus-visible {
+  outline: 3px solid var(--home-gold-500);
+  outline-offset: 3px;
+}
+
+.app--landing .user-menu__avatar--fallback {
+  color: var(--home-chalk-100);
+  background: var(--home-rust-500);
+}
+
+.app--landing .user-menu__name {
+  font-family: 'Courier New', monospace;
+  font-size: 0.75rem;
+  font-weight: 800;
+}
+
+.app--landing .user-menu__caret {
+  color: var(--home-ink-700);
+}
+
+.app--landing .user-menu__dropdown {
+  top: calc(100% + 10px);
+  min-width: 220px;
+  color: var(--home-ink-950);
+  background:
+    repeating-linear-gradient(0deg, transparent 0 27px, rgba(79, 75, 64, 0.09) 28px 29px),
+    var(--home-paper-100);
+  border-color: #8f8266;
+  border-radius: 3px;
+  box-shadow: 7px 10px 0 rgba(0, 0, 0, 0.28);
+}
+
+.app--landing .user-menu__dropdown-header {
+  border-bottom-color: rgba(79, 75, 64, 0.4);
+}
+
+.app--landing .user-menu__dropdown-name {
+  color: var(--home-ink-950);
+}
+
+.app--landing .user-menu__item {
+  color: var(--home-ink-700);
+  border-radius: 2px;
+  font-family: 'Courier New', monospace;
+  font-weight: 700;
+}
+
+.app--landing .user-menu__item:hover:not(:disabled) {
+  color: var(--home-ink-950);
+  background: rgba(215, 166, 59, 0.25);
+}
+
+.app--landing .user-menu__item:disabled {
+  color: rgba(79, 75, 64, 0.55);
+}
+
+.app--landing .user-menu__item--danger {
+  color: #8b382e;
+}
+
+.app--landing .user-menu__item--danger:hover {
+  color: #6d261f;
+  background: rgba(189, 85, 72, 0.16);
+}
+
+@media (max-width: 480px) {
+  .app--landing .user-menu__trigger {
+    min-width: 42px;
+    padding-right: 4px;
+  }
+
+  .app--landing .user-menu__name,
+  .app--landing .user-menu__caret {
+    display: none;
+  }
+}

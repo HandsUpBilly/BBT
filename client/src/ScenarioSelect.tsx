@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { fetchLeaderboard, fetchSeriesLeaderboard } from './api';
 import type { LeaderboardEntry, Scenario, SeriesDefinition, SeriesLeaderboardEntry } from './types';
 import './ScenarioSelect.css';
@@ -27,6 +27,7 @@ interface Props {
   progressRefreshKey: number;
   userId?: string;
   isAdmin: boolean;
+  userMenu: ReactNode;
 }
 
 function pct(value: number): string {
@@ -88,6 +89,7 @@ export function ScenarioSelect({
   progressRefreshKey,
   userId,
   isAdmin,
+  userMenu,
 }: Props) {
   const [playView, setPlayView] = useState<PlayView>('series');
   const [leaderboards, setLeaderboards] = useState<Record<string, LeaderboardEntry[]>>({});
@@ -156,10 +158,19 @@ export function ScenarioSelect({
   return (
     <div className="scenario-select">
       <div className="scenario-select__header">
-        <h1 className="scenario-select__title">BB Tactics</h1>
-        <p className="scenario-select__subtitle">
-          The gauntlet rewards clean routes, controlled risk, and the highest-probability score.
-        </p>
+        <div className="scenario-select__brand">
+          <span className="scenario-select__eyebrow">Coach's playbook · Match day</span>
+          <h1 className="scenario-select__title">BB Tactics</h1>
+          <p className="scenario-select__subtitle">
+            Draw the clean route. Control the risk. Put the Reavers in the end zone.
+          </p>
+        </div>
+        <div className="scenario-select__user">{userMenu}</div>
+        <div className="scenario-select__route" aria-hidden="true">
+          <span />
+          <span />
+          <span />
+        </div>
       </div>
 
       <div className="play-switch" role="tablist" aria-label="Play mode">
@@ -186,8 +197,9 @@ export function ScenarioSelect({
       {playView === 'series' ? (
         <section className="play-section">
           <div className="series-row">
+            <div className="series-row__number" aria-hidden="true">01</div>
             <div className="series-row__body">
-              <span className="series-row__eyebrow">Featured series</span>
+              <span className="series-row__eyebrow">Featured playbook</span>
               <h2 className="series-row__title">{series.name}</h2>
               <p className="series-row__desc">{series.description}</p>
               <div className="series-row__meta">{formatProgress(seriesProgress)}</div>
@@ -213,9 +225,12 @@ export function ScenarioSelect({
           </div>
 
           <div className="challenge-tile-grid">
-            {scenarios.map(s => {
+            {scenarios.map((s, index) => {
               return (
                 <div key={s.id} className="challenge-tile">
+                  <div className="challenge-tile__index" aria-hidden="true">
+                    Play {String(index + 1).padStart(2, '0')}
+                  </div>
                   <div className="challenge-tile__body">
                     <div className="challenge-tile__name">{s.name}</div>
                     <div className="challenge-tile__desc">{s.description}</div>

@@ -184,10 +184,12 @@ function IdentityGate({ authConfigured, onGoogleSignIn, onGuest }: IdentityGateP
   return (
     <div className="identity-gate">
       <div className="identity-gate__panel">
+        <div className="identity-gate__tape" aria-hidden="true" />
         <div className="identity-gate__header">
+          <span className="identity-gate__eyebrow">Coach's playbook</span>
           <h1 className="identity-gate__title">BB Tactics</h1>
           <p className="identity-gate__subtitle">
-            Choose how your leaderboard runs should be identified.
+            Sign the team sheet, then find the cleanest route to the end zone.
           </p>
         </div>
 
@@ -619,7 +621,7 @@ export default function App() {
   // ── Render: non-game screens ─────────────────────────────────────────────
   if (!identityReady) {
     return (
-      <div className="app app--home">
+      <div className="app app--home app--landing">
         <IdentityGate
           authConfigured={authConfigured}
           onGoogleSignIn={signIn}
@@ -631,8 +633,7 @@ export default function App() {
 
   if (effectiveAppMode === 'home') {
     return (
-      <div className="app app--home">
-        <UserMenu name={identityName} avatarUrl={identityAvatarUrl} onSignOut={handleSignOut} />
+      <div className="app app--home app--landing">
         <ScenarioSelect
           scenarios={scenarioData.scenarios}
           series={scenarioData.series}
@@ -644,6 +645,7 @@ export default function App() {
           progressRefreshKey={progressRefreshKey}
           userId={currentUser?.id}
           isAdmin={isAdmin}
+          userMenu={<UserMenu name={identityName} avatarUrl={identityAvatarUrl} onSignOut={handleSignOut} />}
         />
       </div>
     );

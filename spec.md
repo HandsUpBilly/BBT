@@ -2632,3 +2632,311 @@ shows "which physical die," only the resulting chance.
 6. **Tests** (`client/src/useGameState.test.ts`) — add the scenarios listed
    in Acceptance Criteria #10.
 7. **Verification** — `cd client && npm run lint && npm run build && npm run test`.
+
+---
+
+# BB Tactics — Tabletop Playbook Home Redesign
+
+## Status
+
+Implementation-ready specification for the first visual redesign pass.
+
+Decisions supplied by the product owner:
+
+- Visual direction: **tabletop playbook**
+- First-pass scope: **home screen first**
+- Asset strategy: **CSS plus lightweight assets**
+
+## Objective
+
+Replace the current generic dark utility styling on the player-entry experience with a distinctive, tactile fantasy-football coaching-board presentation. The result should feel like a playbook laid on a coach's table: dark pitch felt, warm paper and card surfaces, chalk route marks, stamped labels, and compact tactical notation.
+
+The redesign must improve personality, hierarchy, and perceived polish without changing how users authenticate, choose a mode, view progress, start a scenario or series, open rankings, or enter Admin Mode.
+
+## Scope
+
+### Included
+
+- The identity gate shown before a Google or guest identity is ready.
+- The signed-in home screen rendered by `ScenarioSelect`:
+  - BB Tactics brand/header area.
+  - Series/Individual mode switch.
+  - Featured series presentation.
+  - Individual challenge list/cards.
+  - Progress, best score, rank, and ranked-player metadata.
+  - Play, Start Series, and Rankings actions.
+  - Admin Mode entry when the existing authorization visibility check passes.
+- The `UserMenu` as it appears on the home screen, including its trigger and dropdown.
+- Home-only responsive behavior, interaction states, focus states, and reduced-motion behavior.
+- A small set of original, lightweight decorative assets if CSS alone is insufficient.
+
+### Excluded
+
+- Game HUD, pitch, pieces, movement overlays, dice log, player panel, piece menu, and phase UI.
+- Individual and series leaderboard screens.
+- Score summaries and submission, confirmation, or phase modals.
+- Puzzle editor/Admin Mode content beyond retaining its existing entry button.
+- Scenario names, descriptions, order, puzzle rules, game state, scoring, authentication logic, API calls, leaderboard behavior, or backend changes.
+- A site-wide design-system migration. This pass may establish reusable tokens, but must not visually restyle out-of-scope screens.
+- New character illustrations, stadium paintings, licensed Blood Bowl imagery, or large raster backgrounds.
+- Light mode or a user-selectable theme.
+
+## Experience Principles
+
+1. **A coach's working playbook, not a costume.** Tactical markings and physical materials should support hierarchy and interaction. Avoid excessive torn edges, distressed text, fake stains, or effects that reduce clarity.
+2. **Game information remains primary.** Scenario titles, descriptions, progress, and actions must be easier to scan than the decorative layer.
+3. **One visual language.** Identity gate, Series, Individual, and home user menu should look like parts of the same tabletop kit.
+4. **Original and lightweight.** Use CSS gradients, borders, shadows, pseudo-elements, and small original SVGs. Do not use third-party game art or copy protected brand assets.
+5. **Responsive by composition.** The mobile layout should intentionally reorganize the playbook rather than merely shrink the desktop screen.
+
+## Visual Direction
+
+### Material and atmosphere
+
+- The viewport resembles a dark green-black pitch felt or painted coach's table.
+- Use layered CSS gradients and a very subtle noise/texture asset to prevent a flat digital background. Texture must not impair text contrast or create visible repetition.
+- Main content surfaces resemble warm off-white playbook paper and muted charcoal clipboards, with restrained seams, rules, tape, or pin details.
+- Chalk route lines, arrows, crosses, and formation dots may appear as low-contrast decoration in unused background space. They must be `aria-hidden`, non-interactive, and must not overlap readable content.
+- Team-blue and opposition-rust may appear as secondary markings. A warm amber/gold is the primary action and progress accent.
+
+### Color tokens
+
+Implement home-scoped custom properties using the following target palette. Small adjustments are allowed during implementation to meet contrast requirements.
+
+| Token | Target | Use |
+|---|---:|---|
+| `--home-felt-950` | `#101915` | Viewport base |
+| `--home-felt-900` | `#17251d` | Felt gradient/highlight |
+| `--home-felt-700` | `#2f4a38` | Quiet rules and chalk tint |
+| `--home-ink-950` | `#171713` | Primary ink on paper |
+| `--home-ink-700` | `#4f4b40` | Secondary ink |
+| `--home-paper-100` | `#f1e8cf` | Primary paper surface |
+| `--home-paper-200` | `#dfd2b3` | Paper edge/secondary surface |
+| `--home-charcoal-900` | `#242621` | Dark cards and menu surfaces |
+| `--home-chalk-100` | `#f6f1df` | Text on felt/charcoal |
+| `--home-gold-500` | `#d7a63b` | Primary actions and progress |
+| `--home-gold-600` | `#b88322` | Primary hover/pressed state |
+| `--home-blue-500` | `#477da5` | Human-team tactical marks |
+| `--home-rust-500` | `#a8533e` | Opposition tactical marks |
+| `--home-danger-500` | `#bd5548` | Destructive/error state only |
+
+Do not communicate progress, selection, or button hierarchy through color alone.
+
+### Typography
+
+- Use a sturdy slab-serif/display face for the BB Tactics wordmark and major playbook headings, paired with the existing system sans-serif stack for body copy and controls.
+- Prefer one locally served, open-licensed variable WOFF2 display font plus its license file; target total added font weight under 150 KB. If that cannot be met cleanly, use a robust slab-serif system fallback rather than loading a remote font.
+- Use uppercase condensed/stamped styling only for short labels and eyebrows. Body descriptions stay sentence case.
+- Use tabular numerals for ranks, percentages, and leaderboard-count metadata.
+- Avoid script fonts and heavily distressed fonts.
+
+### Shape, depth, and motion
+
+- Paper/card corners should be subtly imperfect through layered borders, clipped pseudo-elements, or tiny rotations of decorative layers—not by rotating interactive content or text.
+- Use crisp 1–2 px rules, shallow elevation, and a limited shadow scale. Avoid glassmorphism, neon glows, and large soft gradients on cards.
+- Hover may lift a selectable card or button by at most 2 px and strengthen its border/shadow.
+- Pressed state must visibly settle back to the surface.
+- Transitions should be 120–200 ms and limited to transform, color, border, and shadow.
+- Under `prefers-reduced-motion: reduce`, remove transforms and nonessential transitions.
+
+## Information Architecture and Screen Requirements
+
+### Shared home shell
+
+- Add a home-specific visual shell around the identity gate and signed-in home content.
+- The shell owns the felt background, ambient chalk diagram layer, content width, top spacing, and responsive gutters.
+- Decorative layers must not capture pointer events or introduce horizontal scrolling.
+- The shell may be a small React component or scoped wrapper classes in `App.tsx`; it must not alter application routing or state.
+- Desktop content width target: 960–1080 px. Maintain at least 20 px viewport gutter; use 12–16 px on narrow mobile screens.
+
+### Identity gate
+
+- Present the gate as a centered coach's registration card/clipboard on the felt surface.
+- Include the BB Tactics wordmark and a short tactical descriptor such as “Coach's Playbook”; final copy may be refined but must not imply new functionality.
+- Preserve exactly these behaviors:
+  - Google sign-in remains disabled and labelled unavailable when auth is not configured.
+  - The signing-in state continues to prevent duplicate submission.
+  - “Play As Guest” reveals the existing guest-name field.
+  - Guest names remain trimmed, limited to 32 characters, Enter submits, and Continue remains disabled for blank input.
+  - Existing silent/cached Google authentication behavior is unchanged.
+- When guest mode expands, it should appear as a ruled section of the same card rather than a visually unrelated form.
+- On phones, actions stack and all controls are at least 44 px tall.
+- Input and button focus states must be conspicuous against the paper/card surface.
+
+### Signed-in home header
+
+- Replace the plain text heading area with a compact playbook masthead:
+  - BB Tactics is the dominant heading.
+  - Existing explanatory copy remains visible, though it may be lightly edited for tone without changing meaning.
+  - A quiet tactical badge/eyebrow identifies the page as the coach's board or challenge desk.
+- Integrate the home `UserMenu` into the masthead layout on desktop instead of visually floating without context.
+- On mobile, retain easy access to the user menu without allowing it to overlap the title or content. The trigger may show the avatar plus a shortened/hidden name where space requires it.
+- Do not change the `UserMenu` identity, sign-out, or dropdown behavior.
+
+### Series/Individual switch
+
+- Restyle the mode switch as two playbook index tabs or clipboard dividers.
+- Preserve native button semantics plus the current `tablist`, `tab`, and `aria-selected` attributes.
+- Selected, hover, focus-visible, and pressed states must be distinct.
+- The selected state needs a shape or marker in addition to color.
+- Switching tabs must not reset fetched progress or introduce animation that delays content.
+
+### Featured series
+
+- Present the series as the primary “featured playbook” with stronger hierarchy than individual challenge cards.
+- Retain the existing series name and description from runtime/static data as the source of truth.
+- Surface the existing progress summary as a compact stamp or record strip.
+- “Start Series” is the primary action; “Rankings” is secondary.
+- No whole-card click target should be added unless it has a single unambiguous destination. Existing explicit buttons remain the authoritative controls.
+
+### Individual challenges
+
+- Present each scenario as a numbered play card or formation sheet.
+- Scenario order in the loaded `scenarios` array determines any displayed play number; do not persist or infer a separate number.
+- Scenario `name` and `description` remain the only title/copy source. Do not introduce a screen-specific override map.
+- Keep the existing progress states and wording:
+  - Loading/checking history.
+  - Not played, with optional ranked count.
+  - Best percentage and rank for played challenges.
+- “Play” remains primary and “Rankings” secondary on every card.
+- The grid may use two columns at wide widths and one column on narrow widths. Cards in a row should align their action areas without forcing descriptions to truncate.
+- Do not hide progress or descriptions to achieve a denser layout.
+
+### Admin entry
+
+- Preserve the existing `isAdmin` conditional exactly as the visibility authority for the home button.
+- Style Admin Mode as a quiet utility action separated from player actions.
+- Do not add security logic or imply that client-side visibility is an authorization boundary.
+
+### Home user menu
+
+- Align trigger and dropdown surfaces with the tabletop system while maintaining strong contrast.
+- Preserve avatar image behavior, initials fallback, displayed name, dropdown positioning, and sign-out action.
+- The dropdown must remain above decorative and content layers and within the viewport at supported widths.
+- Click, keyboard, focus, and outside-click behavior must remain unchanged.
+
+## Component and Styling Architecture
+
+### React changes
+
+Expected changes are limited to presentational structure and classes in:
+
+- `client/src/App.tsx` for the `IdentityGate` markup and the home-shell/masthead relationship.
+- `client/src/ScenarioSelect.tsx` for playbook-oriented structural wrappers, decorative elements, and stable scenario numbering.
+- `client/src/UserMenu.tsx` only if an additional class or nonsemantic decorative element is required.
+
+Do not change component callbacks, data fetching, state ownership, authentication behavior, or mode transitions.
+
+### CSS changes
+
+- Keep the implementation in existing component stylesheets unless a small `HomeTheme.css` is demonstrably clearer.
+- Scope all new tokens and selectors beneath `.app--home`, `.home-shell`, `.identity-gate`, or `.scenario-select`.
+- Existing generic `.btn` rules currently serve more than the home experience. Do not globally redefine them in a way that restyles gameplay, editor, leaderboards, or modals. Add home-scoped variants/overrides or introduce narrowly named classes.
+- Keep the global box reset and base font/background behavior stable unless a change is proven not to affect excluded screens.
+- Favor CSS pseudo-elements for tape, chalk, pins, rules, and card layering. Decorative pseudo-elements must remain behind content.
+- Avoid CSS features without broad modern browser support unless a readable fallback exists.
+
+### Lightweight assets
+
+Allowed additions:
+
+- Up to three original SVG assets for texture or repeated tactical marks.
+- One locally hosted open-licensed variable display font and its license, subject to the size target above.
+- Total new compressed asset budget: 250 KB, excluding source-map/build output.
+
+Asset requirements:
+
+- Assets live under `client/src/assets/home/` (fonts may use `client/src/assets/fonts/`).
+- SVGs must be optimized, contain no scripts or external references, and use original generic football/tactical motifs.
+- Texture assets should tile cleanly and remain subtle at 1x and 2x device scale.
+- Do not reuse `client/src/assets/hero.png`; it is generic, visually inconsistent with this direction, and not part of the redesign.
+- No remote image or font runtime dependencies.
+
+## Responsive Requirements
+
+Support these layout bands, without hard-coding content to a single device:
+
+- **Wide desktop (≥ 1024 px):** centered playbook workspace, featured series uses available horizontal space, two-column challenge grid, user menu incorporated in masthead.
+- **Tablet/small desktop (641–1023 px):** maintain readable two-column challenges where card width permits; series actions may wrap; no overlap with user menu.
+- **Mobile (≤ 640 px):** single-column cards, stacked identity actions, full-width primary actions where useful, compact masthead, and touch targets at least 44 × 44 px.
+- Verify at approximately 1440 × 900, 1024 × 768, 768 × 1024, 390 × 844, and 320 × 568.
+- No horizontal page scroll at any verification size with typical content and a 32-character guest/user name.
+
+## Accessibility Requirements
+
+- Meet WCAG 2.2 AA contrast: at least 4.5:1 for normal text and 3:1 for large text and meaningful UI boundaries/states.
+- Preserve semantic heading order, labels, button elements, tab roles, and `aria-selected` behavior.
+- Every interactive element must have a visible `:focus-visible` style that does not rely only on color.
+- Touch/click targets should be at least 44 × 44 px on mobile.
+- Decorative graphics must be ignored by assistive technology.
+- Content remains usable at 200% browser zoom and with long scenario descriptions.
+- Reduced-motion users receive no lift/rotation motion.
+- Do not place essential text inside raster or SVG artwork.
+
+## Performance and Compatibility Constraints
+
+- Do not add a component library, CSS framework, icon library, animation library, or runtime theming dependency.
+- Do not add network requests beyond the app's existing authentication, scenarios, and leaderboard calls.
+- Added home assets must obey the 250 KB compressed budget.
+- Avoid large blur filters and continuously animated texture/effect layers.
+- Maintain compatibility with current Vite, React, TypeScript, and ESLint configuration.
+- Do not leave unused imports, variables, props, or assets; TypeScript treats them as build errors.
+
+## Implementation Steps
+
+1. **Establish the scoped home theme.** Add the home-only color, type, spacing, border, and shadow tokens. Build the felt background and non-interactive chalk-diagram layer with CSS and, only if needed, one optimized tiling SVG.
+2. **Refine the home structure.** Add a small home shell/masthead structure in `App.tsx` and `ScenarioSelect.tsx` that can place brand, copy, user menu, switch, and content without changing callbacks or app modes.
+3. **Redesign the identity gate.** Apply the clipboard/registration-card treatment, retain all Google/guest states, and add responsive and focus behavior.
+4. **Redesign scenario selection.** Implement playbook tabs, the featured-series sheet, numbered individual play cards, progress stamps, action hierarchy, and the quiet Admin Mode entry.
+5. **Align the home user menu.** Update home-only trigger/dropdown styling and positioning while preserving behavior and keeping non-home menu usage visually unchanged.
+6. **Add and audit lightweight assets.** Add only the approved original SVG/font assets that materially improve the result, include font licensing, optimize files, and confirm the asset budget.
+7. **Verify behavior and quality.** Exercise identity and guest flows, both selection tabs, every action, progress states, admin visibility, the dropdown, responsive sizes, keyboard focus, reduced motion, zoom, and overflow.
+8. **Run repository checks.** From `client/`, run `npm run test`, `npm run build`, and `npm run lint`. Inspect the final home experience in a real browser at desktop and mobile widths and check for console errors.
+9. **Update durable context after implementation.** Once the redesign ships, record the resulting home-screen structure and visual behavior in `docs/agent-context/frontend-flow.md`; keep this spec as the implementation decision record.
+
+## Verification Scenarios
+
+### Identity
+
+- Google auth configured: Log In With Google is enabled and signing-in protection remains.
+- Google auth unavailable: the unavailable label and disabled state are legible.
+- Guest mode closed and open.
+- Empty, whitespace-only, normal, and 32-character guest names.
+- Enter-key and Continue-button submission.
+
+### Home and data states
+
+- Series tab selected on entry.
+- Individual tab with all currently published scenarios.
+- Progress still loading, no scores, and played/ranked scores.
+- Runtime scenario fetch succeeds and fails back to static scenarios.
+- Admin user and non-admin/guest user.
+- Google avatar and initials fallback; short and long display names.
+
+### Interaction and layout
+
+- Keyboard-only traversal through user menu, tabs, cards, and actions.
+- Hover, focus-visible, pressed, disabled, and selected states.
+- Reduced-motion preference.
+- 200% browser zoom.
+- The five target viewport sizes listed above.
+- No visual changes on at least one gameplay screen and one leaderboard screen, confirming style isolation.
+
+## Success Criteria
+
+The redesign is complete when all of the following are true:
+
+1. The identity gate and signed-in home screen clearly read as a cohesive tabletop playbook/coach's board rather than a generic dark dashboard.
+2. Visual hierarchy makes the brand, mode choice, featured series or challenge title, progress, and primary Play action understandable at a glance.
+3. Identity, authentication, scenario loading, progress fetching, Series/Individual switching, navigation callbacks, user-menu behavior, and Admin visibility behave exactly as before.
+4. Scenario names and descriptions still come directly from loaded scenario data, and the series name/description still come directly from series data.
+5. The redesign is isolated to the identity gate and home experience; gameplay, leaderboards, score UI, and editor content do not acquire accidental home-theme styling.
+6. Desktop, tablet, and mobile layouts meet the responsive requirements with no overlap, clipped controls, unreadable copy, or horizontal scrolling.
+7. Keyboard focus, semantic tabs, labels, reduced motion, contrast, target sizing, and 200% zoom meet the accessibility requirements.
+8. No new runtime dependency or remote asset request is introduced; new assets remain within the 250 KB budget and comply with originality/licensing requirements.
+9. `npm run test`, `npm run build`, and `npm run lint` all pass in `client/`.
+10. Browser inspection at desktop and mobile widths shows no new console errors and confirms all verification scenarios relevant to available local configuration.
+
+## Non-goals and Follow-up
+
+This first pass deliberately proves the visual language on the home experience. A later, separately scoped phase may extend the system to the game HUD/pitch, leaderboards, summaries, dialogs, and editor. That follow-up should reuse only the tokens and motifs that remain legible under dense tactical gameplay; it must not be silently included in this implementation.

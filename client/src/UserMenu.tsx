@@ -45,6 +45,7 @@ export function UserMenu({ name, avatarUrl, onSignOut }: Props) {
         onClick={() => setOpen(o => !o)}
         aria-haspopup="menu"
         aria-expanded={open}
+        aria-label={`Player menu for ${name}`}
         title={name}
       >
         {avatarUrl ? (
