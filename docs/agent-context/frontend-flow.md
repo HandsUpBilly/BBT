@@ -81,6 +81,20 @@ home screen without changing game or leaderboard behavior.
   Dense result tables scroll inside their paper surface so the page itself
   does not overflow horizontally.
 
+### Published roster portraits
+
+The six roles used by the five published scenarios use generated gritty
+medallion portraits in `client/public/*-gritty.webp`:
+
+- Human: thrower, catcher, lineman (blue/ivory armor, bronze frame).
+- Orc: blocker, blitzer, lineman (rust/black armor, iron frame).
+
+`Pitch.tsx` and `PlayerPanel.tsx` maintain matching role-to-asset maps. Keep
+those maps synchronized when replacing or adding portraits. The optimized game
+assets are 512×512 WebP files and are deliberately text-free; role/name labels
+remain live UI text. Other editor-only or unpublished roles continue using the
+existing fallback art until they receive their own gritty portrait.
+
 ## Editor Preview
 
 Puzzle editor uses `onPlay={previewPuzzle}` from `App.tsx`.
