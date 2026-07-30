@@ -190,8 +190,19 @@ export function ScenarioSelect({
           aria-selected={playView === 'individual'}
           onClick={() => setPlayView('individual')}
         >
-          Individual
+          Single Plays
         </button>
+        {isAdmin && (
+          <button
+            className="play-switch__tab"
+            type="button"
+            role="tab"
+            aria-selected="false"
+            onClick={onAdmin}
+          >
+            Admin Mode
+          </button>
+        )}
       </div>
 
       {playView === 'series' ? (
@@ -218,7 +229,7 @@ export function ScenarioSelect({
         <section className="play-section">
           <div className="challenge-section__header">
             <div>
-              <h2 className="challenge-section__title">Individual Challenges</h2>
+              <h2 className="challenge-section__title">Single Plays</h2>
               <p className="challenge-section__subtitle">Choose a ranked board.</p>
             </div>
             <div className="challenge-section__summary">{formatProgress(individualProgress)}</div>
@@ -249,14 +260,6 @@ export function ScenarioSelect({
             })}
           </div>
         </section>
-      )}
-
-      {isAdmin && (
-        <div className="scenario-select__footer">
-          <button className="btn btn--ghost" onClick={onAdmin}>
-            Admin Mode
-          </button>
-        </div>
       )}
     </div>
   );

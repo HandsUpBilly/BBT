@@ -37,11 +37,11 @@ const TURNS_PER_HALF = 8;
 const LOCAL_SCORE_KEY = 'bbt.localScores.v1';
 const GUEST_NAME_KEY = 'bbt.guestName.v1';
 
-// Client-side allowlist controlling whether the "Admin Mode" button is shown at
+// Client-side allowlist controlling whether the "Admin Mode" tab is shown at
 // all — this is a UX nicety only, NOT the security boundary. The actual write
 // endpoints (netlify/functions/editor-*.js, server/editor.js) independently
 // verify the signed-in user's Google identity token against the server-side
-// ADMIN_EMAILS env var, so hiding this button doesn't grant write access and
+// ADMIN_EMAILS env var, so hiding this tab doesn't grant write access and
 // showing it doesn't bypass the server check. Keep the two lists in sync.
 const ADMIN_EMAILS = new Set(
   (import.meta.env.VITE_ADMIN_EMAILS ?? '')
@@ -312,7 +312,7 @@ export default function App() {
   const isAdmin = ADMIN_EMAILS.size === 0
     || Boolean(currentUser?.email && ADMIN_EMAILS.has(currentUser.email.toLowerCase()));
   // Defense in depth: appMode is client-only state with no URL routing, so this
-  // shouldn't be reachable since the Admin Mode button is hidden for non-admins.
+  // shouldn't be reachable since the Admin Mode tab is hidden for non-admins.
   // The real gate is server-side (ADMIN_EMAILS check on the write endpoints).
   // Render 'home' instead of setState-in-effect to avoid an extra render pass.
   const effectiveAppMode = appMode === 'admin' && !isAdmin ? 'home' : appMode;
