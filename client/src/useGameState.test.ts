@@ -46,6 +46,14 @@ function makeState(
     isPassTargeting: false,
     passRangeKeys: new Map(),
     passReceiverKeys: new Set(),
+    blitzUsed: false,
+    pendingBlock: false,
+    pendingBlockIsBlitz: false,
+    isBlockTargeting: false,
+    blockTargets: new Set(),
+    blockChoice: null,
+    pushTargetKeys: new Set(),
+    pendingBlockResolution: null,
   };
 }
 
@@ -60,6 +68,7 @@ function thrower(overrides: Partial<PlayerPiece> = {}): PlayerPiece {
     skills: [],
     activated: false,
     hasBall: true,
+    down: false,
     ...overrides,
   };
 }
@@ -76,6 +85,7 @@ function catcher(overrides: Partial<PlayerPiece> = {}): PlayerPiece {
     skills: ['Catch', 'Dodge'],
     activated: false,
     hasBall: false,
+    down: false,
     ...overrides,
   };
 }
@@ -264,8 +274,8 @@ describe('loose ball pickup', () => {
     const state = makeState(
       [
         thrower({ hasBall: false, position: { col: 7, row: 10 } }),
-        { id: 'opp1', team: 'orc', role: 'blocker', name: 'Grukk', position: { col: 7, row: 11 }, ma: 4, st: 3, ag: 3, pa: 6, av: 9, skills: [], activated: false, hasBall: false },
-        { id: 'opp2', team: 'orc', role: 'blocker', name: 'Muzgash', position: { col: 8, row: 9 }, ma: 4, st: 3, ag: 3, pa: 6, av: 9, skills: [], activated: false, hasBall: false },
+        { id: 'opp1', team: 'orc', role: 'blocker', name: 'Grukk', position: { col: 7, row: 11 }, ma: 4, st: 3, ag: 3, pa: 6, av: 9, skills: [], activated: false, hasBall: false, down: false },
+        { id: 'opp2', team: 'orc', role: 'blocker', name: 'Muzgash', position: { col: 8, row: 9 }, ma: 4, st: 3, ag: 3, pa: 6, av: 9, skills: [], activated: false, hasBall: false, down: false },
       ],
       'human',
       { col: 7, row: 9 },

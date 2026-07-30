@@ -24,6 +24,7 @@ function cumFraction(entries: ActionLogEntry[]): string {
     if (e.kind === 'handoff')    { num *= (7 - e.catchTarget); den *= 6; continue; }
     if (e.kind === 'pass')       { num *= (7 - e.passTarget);  den *= 6; continue; }
     if (e.kind === 'pass-catch') { num *= (7 - e.catchTarget); den *= 6; continue; }
+    if (e.kind === 'block') { num *= Math.round(e.actionProb * 1000); den *= 1000; continue; }
     if (e.isGfi) { num *= 5; den *= 6; }
     if (e.dodgeTarget !== null) { num *= (7 - e.dodgeTarget); den *= 6; }
     if (e.kind === 'move' && e.pickupTarget) { num *= (7 - e.pickupTarget); den *= 6; }
@@ -35,6 +36,13 @@ function cumFraction(entries: ActionLogEntry[]): string {
 const BAND_LABEL: Record<string, string> = {
   quick: 'Quick', short: 'Short', long: 'Long', bomb: 'Bomb',
 };
+const FACE_LABEL: Record<string, string> = {
+  'attacker-down': 'Attacker Down',
+  'both-down': 'Both Down',
+  'push': 'Push Back',
+  'defender-stumbles': 'Defender Stumbles',
+  'defender-down': 'Defender Down',
+};
 function colLabel(col: number) { return String.fromCharCode(65 + col); }
 function posLabel(p: { col: number; row: number }) { return `${colLabel(p.col)}${p.row + 1}`; }
 
@@ -42,6 +50,7 @@ function actionLabel(e: ActionLogEntry): string {
   if (e.kind === 'handoff')    return `Handoff ${e.catchTarget}+`;
   if (e.kind === 'pass')       return `${BAND_LABEL[e.rangeBand]} Pass ${e.passTarget}+`;
   if (e.kind === 'pass-catch') return `Catch ${e.catchTarget}+`;
+  if (e.kind === 'block')      return `${e.isBlitz ? 'Blitz' : 'Block'} → ${FACE_LABEL[e.resolvedFace]}`;
   const pickupSuffix = e.kind === 'move' && e.pickupTarget ? ` · Pickup ${e.pickupTarget}+` : '';
   if (e.isGfi && e.dodgeTarget !== null) return `GFI 2+ · Dodge ${e.dodgeTarget}+${pickupSuffix}`;
   if (e.isGfi) return `Go For It 2+${pickupSuffix}`;
@@ -52,6 +61,7 @@ function actionLabel(e: ActionLogEntry): string {
 function entryPlayerName(e: ActionLogEntry): string {
   if (e.kind === 'handoff') return `${e.pieceName} → ${e.receiverName}`;
   if (e.kind === 'pass')    return `${e.pieceName} → ${e.receiverName}`;
+  if (e.kind === 'block')   return `${e.pieceName} ⚔ ${e.receiverName}`;
   return e.pieceName;
 }
 
@@ -59,6 +69,7 @@ function entryRole(e: ActionLogEntry): string {
   if (e.kind === 'handoff')    return capitalize(e.receiverRole);
   if (e.kind === 'pass')       return capitalize(e.pieceRole);
   if (e.kind === 'pass-catch') return capitalize(e.pieceRole);
+  if (e.kind === 'block')      return capitalize(e.pieceRole);
   return capitalize(e.pieceRole);
 }
 
@@ -70,7 +81,7 @@ export function SubmitModal({ actionLog, onSubmit, onDismiss, seriesMode, contin
   const [name, setName] = useState(defaultName);
 
   const riskyMoves = actionLog.filter(e =>
-    e.kind === 'handoff' || e.kind === 'pass' || e.kind === 'pass-catch' ||
+    e.kind === 'handoff' || e.kind === 'pass' || e.kind === 'pass-catch' || e.kind === 'block' ||
     e.isGfi || e.dodgeTarget !== null || (e.kind === 'move' && !!e.pickupTarget)
   );
   const cumulativeProb = actionLog.length > 0

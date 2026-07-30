@@ -21,6 +21,7 @@ export interface PlayerPiece {
   skills: string[];
   activated: boolean;
   hasBall: boolean;
+  down: boolean; // knocked down by a Block result — no tackle zone, cannot be activated
 }
 
 // ── Scenario ────────────────────────────────────────────────────────────────
@@ -38,6 +39,7 @@ export interface ScenarioPieceDef {
   skills: string[];
   position: Position;
   hasBall: boolean;
+  down?: boolean; // defaults to false — piece starts knocked down
 }
 
 export interface Scenario {
@@ -118,7 +120,31 @@ export type PassCatchLogEntry = {
   isGfi: false;
 };
 
-export type ActionLogEntry = MoveLogEntry | HandoffLogEntry | PassLogEntry | PassCatchLogEntry;
+export type BlockOutcomeFace =
+  | 'attacker-down' | 'both-down' | 'push' | 'defender-stumbles' | 'defender-down';
+
+export type BlockLogEntry = {
+  kind: 'block';
+  isBlitz: boolean;
+  pieceName: string;         // attacker
+  pieceRole: string;
+  receiverName: string;      // defender (reuse receiver* fields for RiskyMove compat)
+  receiverRole: string;
+  from: Position;            // attacker position (post-move, if Blitz)
+  to: Position;               // defender position
+  diceCount: 1 | 2 | 3;
+  picker: 'attacker' | 'defender';
+  outcomeProbs: Record<BlockOutcomeFace, number>; // probability of each face occurring at least/only as required by picker
+  acceptedFaces: BlockOutcomeFace[];  // faces the player checked
+  resolvedFace: BlockOutcomeFace;     // the single face the game continues from
+  actionProb: number;         // combined probability of acceptedFaces per the formula above
+  cumulativeProb: number;
+  // These mirror MoveLogEntry fields so existing risky-move filters work unchanged
+  dodgeTarget: null;
+  isGfi: false;
+};
+
+export type ActionLogEntry = MoveLogEntry | HandoffLogEntry | PassLogEntry | PassCatchLogEntry | BlockLogEntry;
 
 export type GamePhase =
   | 'playing'
@@ -174,6 +200,31 @@ export interface GameState {
   isPassTargeting: boolean;
   passRangeKeys: Map<string, 'quick' | 'short' | 'long' | 'bomb'>;
   passReceiverKeys: Set<string>;
+  // Block / Blitz (one Blitz per team turn; plain Block has no turn limit)
+  blitzUsed: boolean;
+  pendingBlock: boolean;         // declared Block/Blitz — move first (Blitz only) then pick target
+  pendingBlockIsBlitz: boolean;  // whether the current pendingBlock/isBlockTargeting sequence is a Blitz (persists across the movement step, since blockChoice isn't set until a target is picked)
+  isBlockTargeting: boolean;     // choosing which adjacent opponent to block
+  blockTargets: Set<string>;     // adjacent opposing squares eligible to block
+  blockChoice: {                 // set once a defender is targeted, before resolving
+    defenderId: string;
+    isBlitz: boolean;
+    diceCount: 1 | 2 | 3;
+    picker: 'attacker' | 'defender';
+    outcomeProbs: Record<BlockOutcomeFace, number>;
+  } | null;
+  pushTargetKeys: Set<string>;   // candidate push-back squares once an outcome is resolved
+  // Set once the outcome checklist is confirmed, if the resolved face requires
+  // a push-back square choice (push / defender-stumbles-falls / defender-down).
+  // Cleared once the push (and, for defender-down, follow-up) choice is made.
+  pendingBlockResolution: {
+    attackerId: string;
+    defenderId: string;
+    resolvedFace: BlockOutcomeFace;
+    defenderFalls: boolean;    // whether the defender is marked `down` once pushed
+    defenderFrom: Position;    // defender's pre-push square (needed for follow-up)
+    offerFollowUp: boolean;    // true only for a defender-down resolution
+  } | null;
 }
 
 // ── Leaderboard ─────────────────────────────────────────────────────────────
@@ -191,6 +242,11 @@ export interface RiskyMove {
   catchTarget?: number;                               // handoff / pass-catch
   passTarget?: number;                                // pass
   rangeBand?: 'quick' | 'short' | 'long' | 'bomb';  // pass
+  isBlitz?: boolean;                                  // block
+  diceCount?: 1 | 2 | 3;                               // block
+  picker?: 'attacker' | 'defender';                   // block
+  acceptedFaces?: BlockOutcomeFace[];                  // block
+  resolvedFace?: BlockOutcomeFace;                     // block
   actionProb: number;
   cumulativeProb: number;
 }

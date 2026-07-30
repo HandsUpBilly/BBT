@@ -180,7 +180,9 @@ export function Pitch({ state, onSquareClick, onPieceClick, onSquareHover, onSqu
         : 'Move';
 
   const isSelecting = !!state.selectedPieceId;
-  const opponents = state.pieces.filter(p => p.team !== state.activeTeam).map(p => p.position);
+  const opponents = state.pieces
+    .filter(p => p.team !== state.activeTeam && !p.down)
+    .map(p => p.position);
   const tzCounts = new Map<string, number>();
   if (isSelecting) {
     for (const opponent of opponents) {
@@ -235,6 +237,8 @@ export function Pitch({ state, onSquareClick, onPieceClick, onSquareHover, onSqu
       const isHandoffTarget   = state.handoffTargets.has(k);
       const passRangeBand     = state.passRangeKeys.get(k);
       const isPassReceiver    = state.passReceiverKeys.has(k);
+      const isBlockTarget     = state.blockTargets.has(k);
+      const isPushTarget      = state.pushTargetKeys.has(k);
 
       const classes = [
         'square',
@@ -254,6 +258,8 @@ export function Pitch({ state, onSquareClick, onPieceClick, onSquareHover, onSqu
         isHandoffTarget ? 'square--handoff-target' : '',
         passRangeBand  ? `square--range-${passRangeBand}` : '',
         isPassReceiver ? 'square--pass-receiver' : '',
+        isBlockTarget  ? 'square--block-target'  : '',
+        isPushTarget   ? 'square--push-target'   : '',
       ].filter(Boolean).join(' ');
 
       const squaresWalked = selectedPiece ? selectedPiece.ma - state.remainingMa : 0;
@@ -287,6 +293,7 @@ export function Pitch({ state, onSquareClick, onPieceClick, onSquareHover, onSqu
               isSelected      ? 'piece--selected'  : '',
               piece.activated ? 'piece--activated' : '',
               piece.hasBall   ? 'piece--carrier'   : '',
+              piece.down      ? 'piece--down'      : '',
             ].filter(Boolean).join(' ')}>
               <PieceIcon team={piece.team} role={piece.role} />
               {piece.hasBall && <BallIcon />}

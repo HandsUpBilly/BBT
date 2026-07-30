@@ -25,13 +25,16 @@ const ACTIONS: PieceMenuAction[] = [
   { label: 'Move', key: 'move' },
   { label: 'Hand Off', key: 'handoff' },
   { label: 'Pass', key: 'pass' },
+  { label: 'Block', key: 'block' },
+  { label: 'Blitz', key: 'blitz' },
 ];
 
 export { ACTIONS as DEFAULT_ACTIONS };
 
-// A carrier may Move and then either Pass or Hand Off, but never both in the
-// same activation — checking one unchecks the other.
-const EXCLUSIVE_KEYS = ['pass', 'handoff'];
+// A piece may take exactly one of these actions per activation — checking
+// one unchecks the others. (Move stays independent: it combines with any
+// of these, e.g. "Blitz" + "Move" moves before the block is thrown.)
+const EXCLUSIVE_KEYS = ['pass', 'handoff', 'block', 'blitz'];
 
 export function PieceMenu({ piece, x, y, actions, onAction, onDismiss }: Props) {
   const ref = useRef<HTMLDivElement>(null);
@@ -73,15 +76,20 @@ export function PieceMenu({ piece, x, y, actions, onAction, onDismiss }: Props) 
     });
   };
 
-  // Pass/Hand Off imply movement to the target, so either takes priority
-  // over a plain Move when both are selected.
+  // Pass/Hand Off/Block/Blitz imply movement to the target (Blitz uses the
+  // Move checkbox to decide whether to move first), so any of them takes
+  // priority over a plain Move when both are selected.
   const chosenAction = selected.has('pass')
     ? 'pass'
     : selected.has('handoff')
       ? 'handoff'
-      : selected.has('move')
-        ? 'move'
-        : null;
+      : selected.has('blitz')
+        ? 'blitz'
+        : selected.has('block')
+          ? 'block'
+          : selected.has('move')
+            ? 'move'
+            : null;
 
   return (
     <div
