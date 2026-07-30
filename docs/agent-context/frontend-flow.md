@@ -60,6 +60,25 @@ The identity gate and `home` mode use the tabletop-playbook visual shell:
 - Home artwork is CSS-only. Off-canvas chalk decoration is contained by
   `app--landing` so 320 px and wider viewports do not scroll horizontally.
 
+## Player-Facing Theme
+
+`client/src/PlaybookTheme.css` extends the same tabletop language beyond the
+home screen without changing game or leaderboard behavior.
+
+- Player-facing roots use `app--playbook`. Gameplay also uses `app--game`;
+  leaderboard and score-summary screens use `app--archive`.
+- `PlaybookTheme.css` is imported after `App.css` so its scoped overrides win
+  without rewriting the functional component stylesheets.
+- The theme covers the game HUD, legend, pitch frame and colors, player card,
+  action log, piece menu, block choices, shared modals, leaderboards, and score
+  summaries. It uses the same felt, paper, chalk, tape, stamped labels, and
+  amber actions as the landing screen.
+- Admin Mode deliberately does not receive `app--playbook`; keep editor UI
+  dense and isolated unless a later task explicitly redesigns it.
+- On narrow screens, game side panels remain hidden by the existing layout.
+  Dense result tables scroll inside their paper surface so the page itself
+  does not overflow horizontally.
+
 ## Editor Preview
 
 Puzzle editor uses `onPlay={previewPuzzle}` from `App.tsx`.
