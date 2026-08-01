@@ -47,6 +47,13 @@ Required for Netlify Blobs leaderboard storage:
 - `NETLIFY_SITE_ID` or `SITE_ID`
 - `NETLIFY_TOKEN` or `NETLIFY_AUTH_TOKEN`
 
+Required for player-created GitHub issues:
+
+- `GITHUB_ISSUES_TOKEN` — a fine-grained GitHub token scoped only to
+  `HandsUpBilly/BBT`, with **Issues: Read and write** permission. Configure it
+  as a Netlify secret and as a local server environment variable; never expose
+  it as a `VITE_` variable.
+
 Google OAuth must include the deployed Netlify origin.
 
 ## Current Production Capabilities
@@ -57,6 +64,7 @@ Production supports:
 - Google/guest identity,
 - individual leaderboard,
 - series leaderboard.
+- player issue and feature reporting through `/api/reports`.
 
 Production does not yet support persistent puzzle-editor saves.
 
@@ -69,4 +77,3 @@ To support live production editing:
 - check admin allowlist by Google `sub`,
 - store JSON in Netlify Blobs or a database,
 - make public scenario loading read from that production store.
-

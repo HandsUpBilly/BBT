@@ -28,6 +28,15 @@ Guest flow:
 - Guest name persists via `bbt.guestName.v1`.
 - `IdentityGate` in `App.tsx` blocks UI until a Google user or guest name exists.
 
+## Issue and Feature Report Identity
+
+`POST /api/reports` accepts reports from either identified session type. A
+Google ID token is verified with the existing `verifyOptionalGoogleUser` path;
+the server uses its verified display name rather than the browser-supplied
+reporter name. Guest reports require a non-empty reporter name. Neither report
+payloads nor generated GitHub issues include Google IDs, e-mail addresses, or
+tokens.
+
 ## Entry Metadata
 
 `LeaderboardEntry` and `SeriesLeaderboardEntry` can include:
@@ -66,4 +75,3 @@ Production:
 - Netlify Functions.
 - Netlify Blobs for leaderboard storage.
 - Requires Netlify env vars for Blobs and Google auth.
-

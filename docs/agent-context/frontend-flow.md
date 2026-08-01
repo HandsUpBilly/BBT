@@ -81,6 +81,19 @@ home screen without changing game or leaderboard behavior.
   Dense result tables scroll inside their paper surface so the page itself
   does not overflow horizontally.
 
+## Issue and Feature Reporting
+
+Identified players can report an Issue or Feature request through the reusable
+`ReportProblemButton` and `ReportProblemModal`. The floating launcher appears
+on home/archive screens; a compact launcher appears in the game HUD. Admin
+Mode intentionally has no report launcher.
+
+`App.tsx` owns the dialog state and passes the active app/scenario context,
+the identity display name, and optional Google token. The reporter name is
+prefilled but editable; the server uses the verified Google name when present.
+If delivery fails, the dialog retains the text and offers a Markdown download
+for manual filing through Ona or GitHub.
+
 ### Published roster portraits
 
 The six roles used by the five published scenarios use generated gritty
