@@ -2,6 +2,305 @@
 
 ---
 
+## Whole-App Gritty Rulebook Visual Overhaul
+
+### Status and Decisions
+
+This section is implementation-ready and records the visual direction chosen
+for the overhaul:
+
+- **Aesthetic:** Blood Bowl rulebook — aged, battered, practical, and
+  print-driven rather than bright or cute.
+- **Scope:** the whole app, including the identity gate, home and challenge
+  selection, gameplay, shared dialogs and menus, leaderboards and summaries,
+  report flow, and Puzzle Editor/Admin Mode.
+- **Art direction:** preserve the existing gritty artwork and use it as the
+  quality and mood reference. In particular, do not regenerate, brighten, or
+  redraw `client/src/assets/matchday-clash.webp` or the six published
+  `client/public/*-gritty.webp` roster portraits.
+- **Delivery:** perform the implementation on a dedicated
+  `design/gritty-rulebook-ui` branch created from an up-to-date `main`, rather
+  than adding the overhaul to an unrelated feature/fix branch.
+
+Planning this work does not create the implementation branch or modify product
+code. Branch creation is the first implementation step.
+
+This section supersedes the older, historical home-only and player-facing
+visual-extension scopes later in this file wherever they conflict. Those
+sections remain as records of the already-shipped incremental theme work; they
+must not be read as exclusions from this whole-app overhaul.
+
+### Goal
+
+Make every app surface feel like part of the same well-used Blood Bowl
+coach's rulebook as the masthead clash artwork and gritty player medallions.
+The UI should feel physical, competitive, and weathered while remaining easy
+to read and operate. Bright paper-note cards should become aged tactical
+sheets; generic dark application panels should become ink, iron, leather, or
+soot-backed rulebook surfaces; controls should look stamped, tabbed, or
+mechanically labeled rather than soft and modern.
+
+This is a visual-system overhaul, not a game redesign. Navigation, copy, game
+rules, scenario data, editor operations, authentication, leaderboards, and API
+behavior remain unchanged.
+
+### Visual Requirements
+
+#### Mood and hierarchy
+
+- Use the existing clash masthead and player portraits as the tonal anchor:
+  dirty armor, worn paint, smoke, oxidized metal, aged leather, muted team
+  colors, and hard contrast.
+- Retain a rulebook/tabletop metaphor, but remove the cheerful stationery
+  cues. Paper surfaces should be darker and visibly aged, with restrained
+  stains, edge wear, faded ruling, registration marks, stamps, or ink
+  abrasion. Avoid clean cream cards, bright sticky tape, pastel note styling,
+  playful rotations, and soft floating-card shadows.
+- Establish a clear material hierarchy:
+  - soot/felt is the app background and negative space;
+  - iron or blackened leather frames navigation, HUDs, toolbars, and durable
+    controls;
+  - aged parchment carries reading-heavy content and forms;
+  - ink, oxblood/rust, muted Reavers blue, and aged brass communicate status,
+    team, selection, and primary action hierarchy.
+- Decorative grit must be subtle enough that text, pitch state, table rows,
+  inputs, and validation messages remain immediately legible. Texture should
+  come primarily from CSS gradients, borders, shadows, and pseudo-elements;
+  do not place high-contrast noise directly under dense content.
+- Typography should feel printed and utilitarian. Continue using the existing
+  slab-serif display stack and monospaced/stamped label stack, with a highly
+  readable system sans-serif for body copy and dense data. Do not add a remote
+  font dependency.
+- Corners should be tighter and more irregular-looking than the current soft
+  application panels. Use strong keylines, inset wear, offset print/shadow
+  details, and restrained transforms; do not rotate interactive controls or
+  dense data tables enough to affect alignment or hit targets.
+
+#### Color system
+
+- Replace duplicated, screen-specific color literals with one shared family
+  of semantic theme tokens for background, iron, parchment levels, primary
+  and muted ink, chalk, brass/action, rust/danger, Reavers blue, Orc red,
+  borders, focus, shadows, and overlays.
+- Darken and desaturate the current `--home-paper-*`, gold, blue, rust, and
+  felt values to sit naturally beside the preserved artwork. Parchment can be
+  lighter than the shell but must read as stained tan/khaki rather than clean
+  cream.
+- Preserve the established meaning of gameplay colors. Reachability, tackle
+  zones, pass bands, block targets, push targets, Human/Reavers, Orc, success,
+  risk, and error states must remain distinguishable in context and must not
+  depend on color alone.
+- Primary actions use aged brass; destructive/error states use oxblood/rust;
+  Human/Reavers accents use muted, scuffed blue; Orc accents use dark rust-red.
+  Reserve bright values for focus, selected state, and critical feedback.
+
+#### Existing artwork and icons
+
+- Preserve the source files, role-to-asset mappings, proportions, focal
+  composition, and intended team identities of `matchday-clash.webp` and the
+  six 512×512 gritty WebP portraits. Responsive CSS positioning, overlays, and
+  frames may be adjusted only to integrate them into the shared rulebook shell
+  and maintain text contrast.
+- Keep the gritty portraits readable at board-token and player-panel sizes.
+  Frames, rings, selected/activated states, ball markers, and team indicators
+  must not obscure faces or the held ball in the Thrower portrait.
+- Keep `Pitch.tsx` and `PlayerPanel.tsx` role-to-asset mappings synchronized.
+- Existing non-gritty fallback portraits/icons used by editor-only or
+  unpublished roles are not to be regenerated in this change. When displayed,
+  give them the same medallion frame and a restrained darkening/desaturation
+  treatment so they do not break the visual system. Do not globally filter the
+  published gritty assets.
+- Use live text for names, roles, controls, and statuses. Do not bake labels
+  into bitmap artwork, and do not replace semantic controls with decorative
+  images.
+
+### Surface Coverage
+
+The overhaul is incomplete unless all of these surfaces use the shared visual
+language:
+
+1. **Identity gate:** sign-in panel, guest-name field, action buttons, labels,
+   focus/error/disabled states, and background.
+2. **Home and selection:** masthead framing and overlay, user/report controls,
+   version label, Series/Single Plays/Admin tabs, series feature panel,
+   challenge cards, metadata, and all card actions.
+3. **Gameplay shell:** page background, HUD, score/probability/status blocks,
+   back/restart/zoom/end-turn/report/user controls, legend, pitch frame,
+   board overlays, side panels, portraits, stat/skill chips, action log, piece
+   menu, block choices, and every phase/confirm/submit modal.
+4. **Archive surfaces:** individual and series leaderboards, empty/loading/error
+   states, highlighted rows, avatars, reload/back controls, individual score
+   summaries, series summaries, and horizontally scrollable dense data.
+5. **Account and reporting:** user trigger/dropdown in every placement, report
+   launchers, report form, validation, delivery error, download fallback, and
+   success state.
+6. **Puzzle Editor/Admin Mode:** editor page shell, header/actions, puzzle list,
+   metadata form, pitch frame and grid, player/ball markers, palettes, tool
+   panels, series ordering, validation/status messages, publish/save/delete
+   hierarchy, and editor preview transition. The editor remains dense and
+   work-focused but is no longer visually isolated from the player theme.
+7. **Responsive and transient states:** hover, pressed, selected, active,
+   disabled, focus-visible, drag, targeting, loading, empty, success, warning,
+   error, modal backdrop, and reduced-motion behavior.
+
+### Functional and Accessibility Constraints
+
+- Do not change component behavior, app-mode transitions, game-state logic,
+  scenario/series ordering or copy, editor persistence/publish semantics,
+  authentication, report delivery, leaderboard consistency handling, or API
+  contracts.
+- Keep scenario JSON `name` and `description` as the only source of challenge
+  names and descriptions.
+- Keep all controls as semantic HTML controls and preserve current accessible
+  names. Decorative texture and pseudo-elements must use no pointer events and
+  must not enter the accessibility tree.
+- Every keyboard-operable control must have a visible, consistent focus ring
+  that is not clipped by distressed frames. Hover-only affordances require an
+  equivalent focus/selected state.
+- Text and essential icons must meet WCAG 2.2 AA contrast: at least 4.5:1 for
+  normal text and 3:1 for large text and meaningful UI graphics. Disabled
+  controls may be muted but must still be recognizable.
+- Preserve readable zoom behavior and layouts from 320 px wide upward. No page
+  should gain horizontal overflow. Existing intentional inner scrolling for
+  legends, tables, editor regions, or short-screen menus may remain.
+- Preserve the pitch's aspect ratio, square geometry, target/reachability
+  clarity, pointer targets, and mobile zoom/cropping behavior.
+- Preserve or improve minimum touch targets around compact controls; aim for
+  44×44 CSS pixels on narrow screens where layout permits.
+- Respect `prefers-reduced-motion`; physical-looking hover/press movement must
+  be disabled there. Do not add ambient animation, flicker, parallax, or
+  animated grain.
+- Do not add a new runtime dependency, external texture CDN, remote font,
+  generated image set, or additional network request for this overhaul.
+- Avoid broad unscoped selectors that can leak into the board or editor. Theme
+  tokens may be global to the app root, but component rules remain scoped to
+  their existing root classes and mode modifiers.
+
+### Architecture
+
+The implementation should consolidate the theme that currently spans
+`App.css`, `ScenarioSelect.css`, `PlaybookTheme.css`, component-local CSS, and
+an intentionally separate `PuzzleEditor.css`.
+
+| Area | Responsibility |
+| --- | --- |
+| `client/src/App.tsx` | Apply the shared `app--playbook` theme root to every render branch, including Admin Mode; retain `app--landing`, `app--game`, `app--archive`, and add an admin modifier only if mode-specific layout needs it. Do not change render behavior. |
+| `client/src/PlaybookTheme.css` | Become the authoritative visual-system layer: semantic tokens, material recipes, focus treatment, shared control language, mode shells, shared modals, archives, and cross-surface responsive/reduced-motion rules. Update its comment and scope to include Admin Mode. |
+| `client/src/App.css` | Keep reset and structural app/game layout rules. Remove duplicated landing theme tokens and obsolete visual defaults once equivalent shared rules exist; do not alter pitch sizing or gameplay layout behavior. |
+| `client/src/ScenarioSelect.css` | Keep landing layout and masthead composition. Restyle paper cards/tabs/actions using shared tokens and material recipes; preserve responsive card/action layout and the existing hero asset. Move generic `.btn` visual ownership to a genuinely shared layer so the editor and player surfaces use one hierarchy. |
+| `client/src/editor/PuzzleEditor.css` | Retain dense editor grids and responsive breakpoints while adopting shared tokens/materials for panels, forms, tool palettes, pitch framing, actions, validation, and statuses. |
+| Component CSS (`UserMenu.css`, `ReportProblem.css`, `Leaderboard.css`, `ScoreSummary.css`, modal/menu/panel/log/pitch styles) | Remove conflicting bright/soft or generic-dark fallbacks, consume shared semantic tokens, and keep component-specific geometry. Existing base styles can remain where they provide safe behavior before theme overrides. |
+| `client/src/Pitch.tsx` and `client/src/PlayerPanel.tsx` | Preserve and keep synchronized the published gritty role maps. Mark fallback art only if a narrowly scoped class is needed for the legacy-art treatment. |
+| `docs/agent-context/frontend-flow.md` | Replace the obsolete statement that Admin Mode is deliberately excluded and document the shipped whole-app rulebook system, preserved assets, and future extension rules. |
+
+Prefer CSS custom properties and small reusable material recipes over copying
+full declarations among mode selectors. Keep source-order intentional:
+structural/component CSS first and `PlaybookTheme.css` last, as it is today,
+so the theme remains predictable without specificity escalation or
+`!important` rules.
+
+### Implementation Steps
+
+1. Update local `main`, create and switch to
+   `design/gritty-rulebook-ui`, and confirm the worktree contains no unrelated
+   changes before editing. Do not base the visual overhaul on the current
+   `fix/open-issues` branch unless those commits have already reached `main`.
+2. Inventory representative before-state screenshots at desktop and mobile
+   widths for the identity gate, home Series and Single Plays tabs, gameplay,
+   a modal, a leaderboard/summary, the user/report menus, and Admin Mode. Use
+   these as a regression checklist, not as new repository assets unless the
+   project later chooses to keep visual snapshots.
+3. Define the final semantic palette and material/focus primitives once in
+   `PlaybookTheme.css`. Apply the shared theme root to all `App.tsx` branches,
+   including Admin Mode, and remove duplicated theme variables from
+   `App.css`/landing-only scopes.
+4. Consolidate shared controls: buttons, tabs, inputs, select/textarea,
+   dropdowns, chips/stamps, paper sheets, iron panels, modal backdrops,
+   selected/disabled/error/success states, and focus rings. Move the generic
+   `.btn` treatment out of `ScenarioSelect.css` while retaining existing class
+   names and behavior.
+5. Rework the identity and home surfaces toward the darker aged-rulebook
+   direction. Preserve the clash artwork; adjust only its crop/contrast overlay
+   and frame. Replace clean cream/sticky-note cues with stained parchment,
+   worn edges, ink marks, iron framing, and subdued tape/stamp accents.
+6. Reconcile the gameplay styles currently split between component CSS and
+   `PlaybookTheme.css`. Apply the material hierarchy to the HUD, legend, pitch
+   frame, panels, logs, menus, and dialogs while protecting pitch geometry and
+   gameplay-state color meanings. Verify the six gritty portraits at their
+   smallest and largest rendered sizes.
+7. Restyle archives, account controls, and reporting end to end, including all
+   async, validation, highlight, empty, failure, download, and success states.
+   Dense tables/forms prioritize legibility over decorative texture.
+8. Bring Puzzle Editor/Admin Mode into the shared theme without loosening its
+   information density or changing its behavior. Cover desktop three-column,
+   stacked tablet, and narrow mobile layouts, editor pitch state, palette drag
+   affordances, destructive actions, publishing, and status/validation text.
+9. Remove superseded literals and overrides after each surface is covered.
+   Check for duplicated token definitions, stale comments about Admin Mode
+   isolation, unscoped rules, unexpected specificity, unused selectors, and
+   accidental references to non-gritty portrait files in published roles.
+10. Perform the verification matrix below, fix visual/functional regressions,
+    and update `docs/agent-context/frontend-flow.md` with the final durable
+    theme boundaries and asset rules.
+
+### Verification Matrix
+
+- Review at minimum 1440×900, 1024×768, 768×1024, 390×844, and 320×568.
+- At each relevant width, cover identity gate; home Series, Single Plays, and
+  Admin tab; gameplay with a selected player and targeting overlay; player
+  panel and action log where visible; one shared modal; leaderboard and score
+  summary; user dropdown; report form error/success treatment; and Puzzle
+  Editor.
+- Exercise keyboard-only navigation through the identity form, home tabs/cards,
+  gameplay controls/menu/modal, archive controls/rows, account/report flows,
+  and editor fields/actions. Confirm visible focus and usable Escape/dismissal
+  behavior.
+- Inspect normal, hover, active, focus-visible, selected, disabled, loading,
+  empty, success, warning, error, and destructive states where applicable.
+- Check with `prefers-reduced-motion: reduce`, browser zoom at 200%, and narrow
+  viewports for clipped focus rings, obscured controls, illegible texture, and
+  page-level horizontal scrolling.
+- Verify that masthead and published portrait files are unchanged (for example,
+  with `git diff --numstat`/checksums) and that both portrait maps still point
+  to the same six gritty WebPs.
+- Run the repository checks:
+
+  ```bash
+  npm run build
+  cd client && npm run lint
+  cd client && npm test -- --run
+  ```
+
+### Success Criteria
+
+- The masthead art, gritty published portraits, and every surrounding UI
+  surface visibly belong to one dark, battered Blood Bowl rulebook system;
+  no major screen retains the bright/cute paper-note or generic modern-dark
+  appearance.
+- Identity, home, game, archive, reporting/account, transient dialogs, and
+  Admin Mode all use the same semantic palette, typography hierarchy, material
+  recipes, button/input language, focus treatment, and state conventions.
+- The preserved hero and six gritty portrait source files are byte-for-byte
+  unchanged, remain clearly framed/cropped, and are not globally filtered or
+  obscured by UI decoration.
+- Published player roles still resolve to the correct gritty art in both pitch
+  tokens and player panels; legacy fallback art receives a consistent scoped
+  treatment when encountered.
+- All existing flows and interactions behave as before. No game rules, state,
+  navigation, scenario content, API/auth behavior, leaderboard flow, report
+  flow, or editor save/publish behavior changes as part of the redesign.
+- Essential text and meaningful graphics meet the stated contrast targets;
+  keyboard focus is obvious; status is not communicated only by color; and
+  texture never compromises dense data or form readability.
+- All reviewed layouts work from 320 px upward without new page-level
+  horizontal overflow, clipped dialogs/focus rings, blocked touch targets, or
+  changes to pitch geometry and zoom behavior.
+- Reduced-motion behavior is respected, no runtime/external asset dependency
+  is introduced, the frontend context documentation matches the shipped
+  whole-app scope, and build, lint, and tests pass.
+
+---
+
 ## Issue and Feature Request Reporting
 
 ### Goal
@@ -64,9 +363,10 @@ download a ready-to-file Markdown report instead.
   tokens return 401; a guest report is valid only with a non-empty reporter
   name. Rate limiting is out of scope for this first pass, but the route must
   be isolated so it can be added later.
-- Preserve the existing tabletop playbook styling, responsive behavior,
-  reduced-motion behavior, identity flow, leaderboards, game rules, and Admin
-  Mode isolation.
+- Preserve the existing responsive behavior, reduced-motion behavior,
+  identity flow, leaderboards, game rules, and Admin Mode functionality. The
+  newer whole-app visual-overhaul section intentionally supersedes the old
+  requirement to keep Admin Mode visually isolated.
 
 ### Architecture
 
@@ -2778,7 +3078,9 @@ shows "which physical die," only the resulting chance.
 
 ## Status
 
-Implementation-ready specification for the first visual redesign pass.
+Historical specification for the already-shipped first visual redesign pass.
+Its home-only scope and palette are superseded by **Whole-App Gritty Rulebook
+Visual Overhaul** above.
 
 Decisions supplied by the product owner:
 
@@ -3081,6 +3383,9 @@ The redesign is complete when all of the following are true:
 The first pass established the visual language on the home experience. Phase 2 below extends the motifs that remain legible under dense tactical gameplay to the rest of the player-facing game; the editor remains separately scoped.
 
 ## Phase 2 — Player-Facing Visual Extension
+
+This phase records the already-shipped player-facing extension. Its exclusion
+of Admin Mode is superseded by the newer whole-app overhaul above.
 
 The tabletop playbook system is extended through the rest of the player-facing
 game while preserving all rules, data, authentication, and navigation behavior.

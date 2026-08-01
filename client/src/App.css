@@ -23,26 +23,39 @@ body,
   gap: 8px;
 }
 
+/* Shared button structure and safe pre-theme fallbacks. The late-loaded
+   PlaybookTheme.css layer owns the whole-app visual hierarchy. */
+.btn {
+  border: 1px solid transparent;
+  border-radius: 6px;
+  padding: 8px 16px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 150ms, border-color 150ms, color 150ms, opacity 150ms, transform 150ms, box-shadow 150ms;
+  text-align: center;
+  text-decoration: none;
+}
+
+.btn:disabled {
+  cursor: default;
+  opacity: 0.45;
+}
+
+.btn--primary { background: #4a8c2a; color: #fff; }
+.btn--primary:hover:not(:disabled) { background: #5aac34; }
+.btn--secondary { background: #333; color: #ccc; }
+.btn--secondary:hover:not(:disabled) { background: #444; }
+.btn--ghost { background: transparent; color: #666; border-color: #444; }
+.btn--ghost:hover:not(:disabled) { color: #aaa; border-color: #666; }
+
 /* ── Home screen ─────────────────────────────────────────────────────── */
 .app--home {
   overflow-y: auto;
 }
 
 .app--landing {
-  --home-felt-950: #101915;
-  --home-felt-900: #17251d;
-  --home-felt-700: #2f4a38;
-  --home-ink-950: #171713;
-  --home-ink-700: #4f4b40;
-  --home-paper-100: #f1e8cf;
-  --home-paper-200: #dfd2b3;
-  --home-charcoal-900: #242621;
-  --home-chalk-100: #f6f1df;
-  --home-gold-500: #d7a63b;
-  --home-gold-600: #b88322;
-  --home-blue-500: #477da5;
-  --home-rust-500: #a8533e;
-  --home-danger-500: #bd5548;
   position: relative;
   isolation: isolate;
   min-height: 100%;

@@ -1,24 +1,45 @@
-/* Player-facing tabletop playbook theme. All rules are scoped so Admin Mode
-   keeps its dense utility styling. */
+/* Whole-app battered rulebook theme. Structural component styles load first;
+   this late, scoped layer owns the shared visual system for player and admin
+   surfaces without changing their layout or behavior. */
 .app--playbook {
-  --home-felt-950: #101915;
-  --home-felt-900: #17251d;
-  --home-felt-700: #2f4a38;
-  --home-ink-950: #171713;
-  --home-ink-700: #4f4b40;
-  --home-paper-100: #f1e8cf;
-  --home-paper-200: #dfd2b3;
-  --home-charcoal-900: #242621;
-  --home-chalk-100: #f6f1df;
-  --home-gold-500: #d7a63b;
-  --home-gold-600: #b88322;
-  --home-blue-500: #477da5;
-  --home-rust-500: #a8533e;
-  --home-danger-500: #bd5548;
+  --home-felt-950: #0c100d;
+  --home-felt-900: #151b16;
+  --home-felt-700: #2b3a2e;
+  --home-ink-950: #1b1812;
+  --home-ink-700: #514938;
+  --home-paper-100: #c8b98f;
+  --home-paper-200: #ab9a70;
+  --home-paper-300: #8d7b56;
+  --home-charcoal-900: #22231e;
+  --home-charcoal-950: #141612;
+  --home-chalk-100: #e3dcc8;
+  --home-chalk-300: #bdb49d;
+  --home-gold-500: #b58b38;
+  --home-gold-600: #8e6724;
+  --home-blue-500: #3b6179;
+  --home-blue-700: #29475b;
+  --home-rust-500: #873d31;
+  --home-rust-700: #622a23;
+  --home-danger-500: #a9483a;
+  --rulebook-line: rgba(54, 47, 34, 0.24);
+  --rulebook-line-soft: rgba(54, 47, 34, 0.12);
+  --rulebook-edge: #6f6041;
+  --rulebook-shadow: rgba(0, 0, 0, 0.48);
+  --rulebook-focus: #d2aa4c;
+  --rulebook-paper:
+    radial-gradient(circle at 13% 17%, rgba(73, 45, 22, 0.1), transparent 18%),
+    radial-gradient(circle at 88% 82%, rgba(34, 29, 20, 0.12), transparent 22%),
+    repeating-linear-gradient(0deg, transparent 0 27px, var(--rulebook-line-soft) 28px 29px),
+    linear-gradient(105deg, rgba(255, 244, 204, 0.08), transparent 38%, rgba(56, 43, 24, 0.08)),
+    var(--home-paper-100);
+  --rulebook-iron:
+    linear-gradient(112deg, rgba(255, 255, 255, 0.045), transparent 32%, rgba(0, 0, 0, 0.14)),
+    radial-gradient(circle at 18% 20%, rgba(255, 255, 255, 0.035) 0 1px, transparent 1.5px) 0 0 / 9px 9px,
+    var(--home-charcoal-900);
   --playbook-paper-lines: repeating-linear-gradient(
     0deg,
     transparent 0 27px,
-    rgba(79, 75, 64, 0.1) 28px 29px
+    var(--rulebook-line-soft) 28px 29px
   );
 }
 
@@ -780,6 +801,642 @@
 .app--game .user-menu__item:hover:not(:disabled) {
   color: var(--home-ink-950);
   background: rgba(215, 166, 59, 0.25);
+}
+
+/* ── Shared battered-material refinements ─────────────────────────── */
+.app--playbook {
+  color: var(--home-chalk-100);
+  background:
+    radial-gradient(circle at 14% 21%, rgba(255, 255, 255, 0.025) 0 1px, transparent 1.5px) 0 0 / 10px 10px,
+    radial-gradient(circle at 78% 63%, rgba(0, 0, 0, 0.18) 0 1px, transparent 1.5px) 0 0 / 13px 13px,
+    linear-gradient(118deg, transparent 0 47%, rgba(255, 255, 255, 0.012) 49%, transparent 51%),
+    radial-gradient(circle at 50% -30%, var(--home-felt-700), transparent 58%),
+    var(--home-felt-950);
+}
+
+.app--playbook button,
+.app--playbook input,
+.app--playbook select,
+.app--playbook textarea {
+  font: inherit;
+}
+
+.app--playbook button:focus-visible,
+.app--playbook input:focus-visible,
+.app--playbook select:focus-visible,
+.app--playbook textarea:focus-visible,
+.app--playbook [tabindex]:focus-visible,
+.app--playbook label:has(input:focus-visible) {
+  outline: 3px solid var(--rulebook-focus);
+  outline-offset: 3px;
+}
+
+.app--playbook .btn {
+  min-height: 40px;
+  padding: 9px 15px;
+  color: var(--home-chalk-100);
+  background: var(--rulebook-iron);
+  border: 1px solid #090b08;
+  border-radius: 2px;
+  box-shadow: inset 0 0 0 1px rgba(227, 220, 200, 0.12), 2px 3px 0 rgba(0, 0, 0, 0.34);
+  font-family: 'Courier New', monospace;
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.055em;
+  text-transform: uppercase;
+}
+
+.app--playbook .btn:hover:not(:disabled) {
+  color: var(--home-chalk-100);
+  background:
+    linear-gradient(rgba(255, 255, 255, 0.06), transparent),
+    #303129;
+  transform: translateY(-1px);
+}
+
+.app--playbook .btn:active:not(:disabled) {
+  transform: translateY(2px);
+  box-shadow: inset 0 0 0 1px rgba(227, 220, 200, 0.1);
+}
+
+.app--playbook .btn--primary {
+  color: var(--home-ink-950);
+  background:
+    linear-gradient(105deg, rgba(255, 242, 188, 0.12), transparent 45%, rgba(57, 37, 10, 0.12)),
+    var(--home-gold-500);
+  border-color: #594014;
+  box-shadow: inset 0 0 0 1px rgba(255, 228, 157, 0.22), 2px 3px 0 #594014;
+}
+
+.app--playbook .btn--primary:hover:not(:disabled) {
+  color: var(--home-ink-950);
+  background:
+    linear-gradient(105deg, rgba(255, 242, 188, 0.16), transparent 45%, rgba(57, 37, 10, 0.1)),
+    #c39a49;
+}
+
+.app--playbook .btn--secondary {
+  color: var(--home-chalk-100);
+  background: var(--rulebook-iron);
+  border-color: #090b08;
+}
+
+.app--playbook .btn--ghost {
+  color: var(--home-chalk-300);
+  background: rgba(12, 16, 13, 0.42);
+  border-color: rgba(227, 220, 200, 0.27);
+  box-shadow: none;
+}
+
+.app--playbook .btn--ghost:hover:not(:disabled) {
+  color: var(--home-chalk-100);
+  border-color: var(--home-rust-500);
+}
+
+/* Landing: the preserved clash art stays untouched while its frame and all
+   surrounding stationery take on the darker, worn rulebook treatment. */
+.app--landing .scenario-select__header {
+  background:
+    linear-gradient(90deg, rgba(9, 10, 8, 0.98) 0%, rgba(12, 13, 11, 0.9) 38%, rgba(12, 13, 11, 0.38) 73%, rgba(12, 13, 11, 0.22) 100%),
+    linear-gradient(0deg, rgba(10, 10, 8, 0.82), transparent 62%),
+    url('./assets/matchday-clash.webp') center 49% / cover no-repeat,
+    var(--home-charcoal-950);
+  border: 2px solid #080907;
+  border-radius: 2px;
+  box-shadow: inset 0 0 0 1px rgba(227, 220, 200, 0.1), 8px 10px 0 rgba(0, 0, 0, 0.3);
+}
+
+.app--landing .scenario-select__header::before {
+  border-color: rgba(227, 220, 200, 0.14);
+  box-shadow: inset 0 0 24px rgba(0, 0, 0, 0.28);
+}
+
+.app--landing .identity-gate__panel,
+.app--landing .series-row,
+.app--landing .challenge-tile {
+  border-color: var(--rulebook-edge);
+  border-radius: 2px;
+  box-shadow:
+    inset 0 0 28px rgba(61, 42, 22, 0.12),
+    6px 8px 0 rgba(0, 0, 0, 0.3),
+    0 18px 34px rgba(0, 0, 0, 0.24);
+}
+
+.app--landing .identity-gate__panel {
+  background:
+    linear-gradient(90deg, transparent 0 30px, rgba(98, 42, 33, 0.22) 31px 32px, transparent 33px),
+    var(--rulebook-paper);
+  box-shadow:
+    inset 0 0 28px rgba(61, 42, 22, 0.14),
+    0 0 0 8px var(--home-charcoal-900),
+    0 0 0 10px #080907,
+    0 24px 60px rgba(0, 0, 0, 0.54);
+}
+
+.app--landing .identity-gate__tape,
+.app--landing .series-row::before,
+.app--archive .leaderboard::before,
+.app--archive .score-summary::before,
+.app--playbook .modal::before {
+  background:
+    linear-gradient(90deg, rgba(255, 255, 255, 0.07), transparent 30%, rgba(42, 21, 13, 0.14)),
+    #8e6d35;
+  opacity: 0.88;
+  box-shadow: 0 2px 3px rgba(0, 0, 0, 0.28);
+}
+
+.app--landing .series-row {
+  background:
+    linear-gradient(90deg, transparent 0 46px, rgba(135, 61, 49, 0.38) 47px 49px, transparent 50px),
+    var(--rulebook-paper);
+}
+
+.app--landing .challenge-tile {
+  background:
+    linear-gradient(90deg, transparent 0 24px, rgba(59, 97, 121, 0.3) 25px 27px, transparent 28px),
+    var(--rulebook-paper);
+}
+
+.app--landing .challenge-tile:nth-child(4n + 2),
+.app--landing .challenge-tile:nth-child(4n + 3) {
+  background:
+    linear-gradient(90deg, transparent 0 24px, rgba(135, 61, 49, 0.3) 25px 27px, transparent 28px),
+    var(--rulebook-paper);
+}
+
+.app--landing .series-row:hover,
+.app--landing .challenge-tile:hover {
+  border-color: var(--home-gold-600);
+  box-shadow:
+    inset 0 0 28px rgba(61, 42, 22, 0.14),
+    7px 10px 0 rgba(0, 0, 0, 0.36),
+    0 19px 34px rgba(0, 0, 0, 0.28);
+}
+
+.app--landing .play-switch__tab {
+  color: #3f3829;
+  background:
+    linear-gradient(105deg, rgba(255, 245, 205, 0.07), transparent 55%),
+    var(--home-paper-200);
+  border-color: var(--rulebook-edge);
+  border-bottom-color: #766746;
+  border-radius: 2px 2px 0 0;
+  box-shadow: inset 0 1px rgba(255, 244, 205, 0.14), 0 -4px 0 rgba(0, 0, 0, 0.12);
+}
+
+.app--landing .play-switch__tab:hover {
+  color: var(--home-ink-950);
+  background: #b9aa80;
+}
+
+.app--landing .play-switch__tab--active {
+  color: var(--home-ink-950);
+  background: var(--home-paper-100);
+  border-bottom-color: var(--home-paper-100);
+}
+
+.app--landing .scenario-select__subtitle,
+.app--landing .challenge-section__subtitle {
+  color: rgba(227, 220, 200, 0.72);
+}
+
+.app--landing .scenario-select__version {
+  color: rgba(227, 220, 200, 0.62);
+}
+
+.app--landing .series-row__meta,
+.app--landing .challenge-tile__meta,
+.app--landing .challenge-section__summary {
+  color: #644513;
+}
+
+/* Game materials keep tactical geometry and state colors intact. */
+.app--game .hud,
+.app--game .pitch-wrapper {
+  background: var(--rulebook-iron);
+  border-color: #070806;
+  border-radius: 2px;
+  box-shadow: inset 0 0 0 1px rgba(227, 220, 200, 0.09), 5px 6px 0 rgba(0, 0, 0, 0.25);
+}
+
+.app--game .pitch-wrapper::before {
+  border-color: rgba(181, 139, 56, 0.27);
+}
+
+.app--game .square--light { background: #3c6031; }
+.app--game .square--dark { background: #335529; }
+.app--game .square--endzone-left.square--dark { background: #264252; }
+.app--game .square--endzone-left.square--light { background: #2d5063; }
+.app--game .square--endzone-right.square--dark { background: #5d302a; }
+.app--game .square--endzone-right.square--light { background: #6c3931; }
+
+.app--game .panel,
+.app--game .dice-log,
+.app--playbook .piece-menu {
+  background: var(--rulebook-paper);
+  border-color: var(--rulebook-edge);
+  box-shadow: inset 0 0 18px rgba(61, 42, 22, 0.11), 3px 4px 0 rgba(0, 0, 0, 0.32);
+}
+
+.app--game .panel--human {
+  border-color: var(--home-blue-500);
+  box-shadow: inset 4px 0 0 var(--home-blue-500), inset 0 0 18px rgba(61, 42, 22, 0.11), 3px 4px 0 rgba(0, 0, 0, 0.32);
+}
+
+.app--game .panel--orc {
+  border-color: var(--home-rust-500);
+  box-shadow: inset 4px 0 0 var(--home-rust-500), inset 0 0 18px rgba(61, 42, 22, 0.11), 3px 4px 0 rgba(0, 0, 0, 0.32);
+}
+
+.app--game .panel--empty {
+  background: rgba(12, 16, 13, 0.48);
+  border-color: rgba(227, 220, 200, 0.16);
+  box-shadow: inset 0 0 18px rgba(0, 0, 0, 0.28);
+}
+
+.app--game .panel__portrait-wrap {
+  border-bottom: 2px solid var(--rulebook-edge);
+  box-shadow: inset 0 0 18px rgba(0, 0, 0, 0.38);
+}
+
+.app--game .panel__portrait--legacy,
+.app--game .piece__portrait--legacy {
+  filter: saturate(0.58) contrast(1.08) brightness(0.78) sepia(0.12);
+}
+
+.app--game .panel__stat {
+  background: rgba(171, 154, 112, 0.54);
+  border-color: rgba(54, 47, 34, 0.3);
+}
+
+.app--game .panel__skill,
+.app--game .dice-log__entry {
+  background: rgba(200, 185, 143, 0.46);
+}
+
+.app--playbook .piece-menu__item:hover,
+.app--archive .lb-table__row--clickable:hover td {
+  background: rgba(181, 139, 56, 0.22);
+}
+
+.app--playbook .piece-menu__confirm:hover:not(:disabled),
+.app--playbook .modal__roll-btn:hover:not(:disabled) {
+  background: #c39a49;
+}
+
+/* Sheets, archives, menus, and reporting share one aged-paper recipe. */
+.app--playbook .modal,
+.app--archive .leaderboard,
+.app--archive .score-summary,
+.app--playbook .user-menu__dropdown,
+.app--playbook .report-problem-modal {
+  background:
+    linear-gradient(90deg, transparent 0 30px, rgba(135, 61, 49, 0.2) 31px 32px, transparent 33px),
+    var(--rulebook-paper);
+  border-color: var(--rulebook-edge);
+  border-radius: 2px;
+}
+
+.app--playbook .modal,
+.app--archive .leaderboard,
+.app--archive .score-summary {
+  box-shadow:
+    inset 0 0 30px rgba(61, 42, 22, 0.13),
+    0 0 0 8px var(--home-charcoal-900),
+    0 0 0 10px #080907,
+    0 22px 55px rgba(0, 0, 0, 0.52);
+}
+
+.app--archive .lb-table,
+.app--playbook .submit-modal__moves,
+.app--playbook .score-summary__moves,
+.app--playbook .block-outcome__rows {
+  background: rgba(171, 154, 112, 0.28);
+  border-color: rgba(54, 47, 34, 0.34);
+}
+
+.app--archive .lb-table th {
+  background: rgba(141, 123, 86, 0.4);
+}
+
+.app--archive .lb-table__row--highlight td {
+  background: rgba(181, 139, 56, 0.3);
+  box-shadow: inset 4px 0 var(--home-rust-500);
+}
+
+.app--playbook .user-menu__trigger,
+.app--playbook .report-problem-button {
+  color: var(--home-ink-950);
+  background:
+    linear-gradient(105deg, rgba(255, 245, 205, 0.08), transparent 60%),
+    var(--home-paper-100);
+  border-color: var(--rulebook-edge);
+  border-radius: 2px;
+  box-shadow: 2px 3px 0 rgba(0, 0, 0, 0.3);
+}
+
+.app--playbook .user-menu__trigger:hover,
+.app--playbook .report-problem-button:hover {
+  color: var(--home-ink-950);
+  background: #bfae80;
+  border-color: var(--home-gold-600);
+}
+
+.app--playbook .user-menu__dropdown {
+  color: var(--home-ink-950);
+  box-shadow: inset 0 0 20px rgba(61, 42, 22, 0.12), 5px 7px 0 rgba(0, 0, 0, 0.34);
+}
+
+.app--playbook .user-menu__dropdown-header {
+  border-bottom-color: var(--rulebook-line);
+}
+
+.app--playbook .user-menu__avatar--fallback {
+  color: var(--home-chalk-100);
+  background: var(--home-rust-500);
+}
+
+.app--playbook .user-menu__dropdown-name,
+.app--playbook .user-menu__item {
+  color: var(--home-ink-950);
+}
+
+.app--playbook .user-menu__item {
+  border-radius: 1px;
+  font-family: 'Courier New', monospace;
+  font-weight: 700;
+}
+
+.app--playbook .user-menu__item:hover:not(:disabled) {
+  color: var(--home-ink-950);
+  background: rgba(181, 139, 56, 0.24);
+}
+
+.app--playbook .report-problem-button--header,
+.app--playbook .report-problem-button--hud {
+  color: var(--home-chalk-100);
+  background: rgba(12, 16, 13, 0.78);
+  border-color: rgba(227, 220, 200, 0.28);
+  box-shadow: none;
+}
+
+.app--playbook .report-problem-button--header:hover,
+.app--playbook .report-problem-button--hud:hover {
+  color: var(--home-ink-950);
+  background: var(--home-gold-500);
+}
+
+.app--playbook .report-problem-form__field input,
+.app--playbook .report-problem-form__field textarea,
+.app--playbook .submit-modal__input {
+  color: var(--home-ink-950);
+  background: rgba(219, 205, 163, 0.56);
+  border-color: #776745;
+  border-radius: 1px;
+}
+
+.app--playbook .report-problem-form__type {
+  border-color: #776745;
+  border-radius: 1px;
+}
+
+/* ── Admin dossier ───────────────────────────────────────────────── */
+.app--admin {
+  min-height: 100%;
+  height: 100%;
+  padding: 0;
+}
+
+.app--admin .editor {
+  gap: 14px;
+  padding: 22px;
+  color: var(--home-chalk-100);
+}
+
+.app--admin .editor__header {
+  position: relative;
+  padding: 18px 20px;
+  background: var(--rulebook-iron);
+  border: 1px solid #070806;
+  border-radius: 2px;
+  box-shadow: inset 0 0 0 1px rgba(227, 220, 200, 0.1), 5px 6px 0 rgba(0, 0, 0, 0.28);
+}
+
+.app--admin .editor__header::after {
+  content: 'TACTICAL ARCHIVE · AUTHORIZED COACHES';
+  position: absolute;
+  left: 20px;
+  bottom: 5px;
+  color: rgba(227, 220, 200, 0.22);
+  font-family: 'Courier New', monospace;
+  font-size: 0.48rem;
+  font-weight: 900;
+  letter-spacing: 0.11em;
+  pointer-events: none;
+}
+
+.app--admin .editor__title {
+  color: var(--home-chalk-100);
+  font-family: Rockwell, 'Roboto Slab', 'Courier New', serif;
+  font-size: 2rem;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  text-transform: uppercase;
+}
+
+.app--admin .editor__subtitle,
+.app--admin .editor__hint,
+.app--admin .editor__status {
+  color: var(--home-chalk-300);
+}
+
+.app--admin .editor__panel,
+.app--admin .editor__pitch-panel,
+.app--admin .editor-tool {
+  background: var(--rulebook-iron);
+  border: 1px solid #090b08;
+  border-radius: 2px;
+  box-shadow: inset 0 0 0 1px rgba(227, 220, 200, 0.08), 4px 5px 0 rgba(0, 0, 0, 0.24);
+}
+
+.app--admin .editor__panel h2,
+.app--admin .editor-tool h2 {
+  color: var(--home-chalk-100);
+  font-family: Rockwell, 'Roboto Slab', 'Courier New', serif;
+  text-transform: uppercase;
+}
+
+.app--admin .editor-tool h3,
+.app--admin .editor label,
+.app--admin .editor__checkbox {
+  color: var(--home-chalk-300);
+  font-family: 'Courier New', monospace;
+}
+
+.app--admin .editor__puzzle-row,
+.app--admin .palette-piece,
+.app--admin .editor__stats span,
+.app--admin .editor__skills {
+  color: var(--home-chalk-300);
+  background: rgba(12, 16, 13, 0.68);
+  border-color: rgba(227, 220, 200, 0.18);
+  border-radius: 1px;
+}
+
+.app--admin .editor__puzzle-row strong,
+.app--admin .palette-piece,
+.app--admin .editor__stats span,
+.app--admin .editor__skills {
+  color: var(--home-chalk-100);
+}
+
+.app--admin .editor__puzzle-row:hover,
+.app--admin .palette-piece:hover {
+  border-color: var(--home-gold-500);
+  background: rgba(43, 58, 46, 0.72);
+}
+
+.app--admin .editor__puzzle-row--active {
+  color: var(--home-chalk-100);
+  border-color: var(--home-gold-500);
+  box-shadow: inset 4px 0 var(--home-rust-500);
+}
+
+.app--admin .editor input,
+.app--admin .editor select,
+.app--admin .editor textarea {
+  color: var(--home-ink-950);
+  background:
+    linear-gradient(105deg, rgba(255, 245, 205, 0.08), transparent 62%),
+    var(--home-paper-100);
+  border: 1px solid var(--rulebook-edge);
+  border-radius: 1px;
+}
+
+.app--admin .editor input::placeholder,
+.app--admin .editor textarea::placeholder {
+  color: rgba(27, 24, 18, 0.58);
+}
+
+.app--admin .editor-pitch {
+  background: #0d100d;
+  border: 8px solid var(--home-charcoal-950);
+  border-top-color: var(--home-charcoal-950);
+  box-shadow: inset 0 0 0 1px rgba(227, 220, 200, 0.16), 0 0 22px rgba(0, 0, 0, 0.42);
+}
+
+.app--admin .editor-pitch__square--light { background: #3c6031; }
+.app--admin .editor-pitch__square--dark { background: #335529; }
+.app--admin .editor-pitch__square--endzone-top { background: #2d5063; }
+.app--admin .editor-pitch__square--endzone-bottom { background: #6c3931; }
+.app--admin .editor-pitch__square--scrimmage { box-shadow: inset 0 -2px 0 rgba(227, 220, 200, 0.44); }
+.app--admin .editor-pitch__square--selected { outline-color: var(--rulebook-focus); }
+
+.app--admin .editor-piece {
+  border-color: var(--home-paper-200);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.55);
+}
+
+.app--admin .editor-piece--human { background: var(--home-blue-700); }
+.app--admin .editor-piece--orc { background: var(--home-rust-700); }
+.app--admin .palette-piece--human { background: rgba(41, 71, 91, 0.74); }
+.app--admin .palette-piece--orc { background: rgba(98, 42, 35, 0.74); }
+
+.app--admin .editor__errors {
+  color: #e3a399;
+  background: rgba(135, 61, 49, 0.18);
+  border-left: 3px solid var(--home-danger-500);
+  padding-block: 8px;
+}
+
+.app--admin .editor__series-list {
+  color: var(--home-chalk-300);
+}
+
+.app--admin .editor__series-item--active {
+  color: var(--rulebook-focus);
+}
+
+.app--admin .editor-tool .btn--ghost {
+  color: #e3a399;
+  border-color: var(--home-rust-500);
+}
+
+@media (max-width: 680px) {
+  .app--playbook .btn {
+    min-height: 44px;
+  }
+
+  .app--landing .report-problem-button--header {
+    width: 34px;
+    min-width: 34px;
+    min-height: 34px;
+    padding: 6px;
+    gap: 0;
+    overflow: hidden;
+    font-size: 0;
+    white-space: nowrap;
+  }
+
+  .app--landing .report-problem-button--header span {
+    font-size: 0.92rem;
+  }
+
+  .app--game .report-problem-button--hud {
+    width: 34px;
+    min-width: 34px;
+    min-height: 34px;
+    padding: 6px;
+    gap: 0;
+    overflow: hidden;
+    font-size: 0;
+    white-space: nowrap;
+  }
+
+  .app--game .report-problem-button--hud span {
+    font-size: 0.92rem;
+  }
+
+  .app--admin .editor {
+    width: 100%;
+    max-width: 100%;
+    padding: 12px;
+    overflow-x: hidden;
+  }
+
+  .app--admin .editor__header {
+    padding: 16px 16px 28px;
+  }
+
+  .app--admin .editor__layout,
+  .app--admin .editor__panel,
+  .app--admin .editor__pitch-panel,
+  .app--admin .editor-tool {
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .app--admin .editor__pitch-panel {
+    overflow-x: auto;
+  }
+
+  .app--admin .editor-pitch {
+    width: 450px;
+    min-width: 450px;
+  }
+
+  .app--admin > .user-menu .user-menu__trigger {
+    width: 42px;
+    min-width: 42px;
+    min-height: 42px;
+    padding: 5px;
+  }
+
+  .app--admin > .user-menu .user-menu__name,
+  .app--admin > .user-menu .user-menu__caret {
+    display: none;
+  }
 }
 
 /* ── Responsive player surfaces ───────────────────────────────────── */

@@ -724,7 +724,7 @@ export default function App() {
 
   if (effectiveAppMode === 'admin') {
     return (
-      <div className="app app--home">
+      <div className="app app--home app--admin app--playbook">
         <UserMenu name={identityName} avatarUrl={identityAvatarUrl} onSignOut={handleSignOut} />
         <PuzzleEditor
           onBack={() => setAppMode('home')}
