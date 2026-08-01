@@ -808,8 +808,8 @@ export default function App() {
   const lastCommittedProb = state.actionLog.length > 0
     ? state.actionLog[state.actionLog.length - 1].cumulativeProb : 1;
   const liveProbPct = Math.round(lastCommittedProb * state.pendingProb * 100);
-  // Always show in puzzle mode — starts at 100% and decreases as risky moves are added
-  // (showProb removed — always visible)
+  // Only meaningful once a dice roll is actually in play — hide the pointless 100% default.
+  const showSuccessChance = liveProbPct < 100;
 
   return (
     <div className="app app--game app--playbook">
@@ -833,10 +833,14 @@ export default function App() {
                 Puzzle {seriesRun.puzzleIndex + 1} / {seriesScenarios.length} ·{' '}
               </span>
             )}
-            <span className="hud__prob-label">Success chance</span>
-            <span className={`hud__prob-value ${liveProbPct < 50 ? 'hud__prob-value--risky' : ''}`}>
-              {liveProbPct}%
-            </span>
+            {showSuccessChance && (
+              <>
+                <span className="hud__prob-label">Success chance</span>
+                <span className={`hud__prob-value ${liveProbPct < 50 ? 'hud__prob-value--risky' : ''}`}>
+                  {liveProbPct}%
+                </span>
+              </>
+            )}
           </div>
         )}
 
