@@ -62,24 +62,34 @@ The identity gate and `home` mode use the tabletop-playbook visual shell:
   responsive contrast overlay. Off-canvas chalk decoration is contained by
   `app--landing` so 320 px and wider viewports do not scroll horizontally.
 
-## Player-Facing Theme
+## Whole-App Rulebook Theme
 
-`client/src/PlaybookTheme.css` extends the same tabletop language beyond the
-home screen without changing game or leaderboard behavior.
+`client/src/PlaybookTheme.css` is the authoritative late-loaded visual layer
+for the battered Blood Bowl rulebook aesthetic. It changes presentation only;
+game, navigation, editor, auth, report, and leaderboard behavior remain in
+their owning components.
 
-- Player-facing roots use `app--playbook`. Gameplay also uses `app--game`;
-  leaderboard and score-summary screens use `app--archive`.
-- `PlaybookTheme.css` is imported after `App.css` so its scoped overrides win
-  without rewriting the functional component stylesheets.
-- The theme covers the game HUD, legend, pitch frame and colors, player card,
-  action log, piece menu, block choices, shared modals, leaderboards, and score
-  summaries. It uses the same felt, paper, chalk, tape, stamped labels, and
-  amber actions as the landing screen.
-- Admin Mode deliberately does not receive `app--playbook`; keep editor UI
-  dense and isolated unless a later task explicitly redesigns it.
+- Every app root uses `app--playbook`, including Admin Mode. Gameplay also uses
+  `app--game`, leaderboard and score-summary screens use `app--archive`, the
+  identity/home shell uses `app--landing`, and the editor uses `app--admin`.
+- `PlaybookTheme.css` is imported after `App.css` so its scoped theme rules win
+  while the component stylesheets retain geometry and safe base behavior.
+- Shared semantic tokens describe soot/felt, iron, aged parchment, ink/chalk,
+  brass actions, rust/destructive states, and Human/Orc accents. Do not add a
+  second screen-specific palette or duplicate the token block in `App.css`.
+- The theme covers identity, home cards/tabs, game HUD and pitch frame, player
+  cards, logs, menus and modals, archives, account/report controls, and the
+  Puzzle Editor. Editor panels stay dense, with narrow-screen horizontal
+  scrolling contained inside the editor pitch panel.
+- Generic `.btn` markup is shared by the landing and editor. Its visual
+  hierarchy belongs to the `app--playbook` layer; component CSS should own
+  layout rather than reintroducing unrelated button colors.
 - On narrow screens, game side panels remain hidden by the existing layout.
-  Dense result tables scroll inside their paper surface so the page itself
-  does not overflow horizontally.
+  Legends, dense result tables, and the editor pitch scroll inside their own
+  surfaces so the page itself does not overflow horizontally. Header/HUD report
+  controls and the editor account trigger collapse to icon/avatar controls.
+- Decorative textures are CSS-only, ignore pointer events, and respect
+  `prefers-reduced-motion`. Focus-visible uses the shared brass ring.
 
 ## Issue and Feature Reporting
 
@@ -112,7 +122,10 @@ medallion portraits in `client/public/*-gritty.webp`:
 those maps synchronized when replacing or adding portraits. The optimized game
 assets are 512×512 WebP files and are deliberately text-free; role/name labels
 remain live UI text. Other editor-only or unpublished roles continue using the
-existing fallback art until they receive their own gritty portrait.
+existing fallback art until they receive their own gritty portrait. Published
+gritty assets are displayed without a theme filter; fallback sources receive a
+scoped `--legacy` portrait class for restrained darkening/desaturation so they
+do not clash with the medallion set.
 
 ## Editor Preview
 

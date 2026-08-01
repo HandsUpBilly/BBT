@@ -78,13 +78,16 @@ export function PlayerPanel({ piece, side }: Props) {
   const portraitSrc =
     PORTRAITS[piece.team][piece.role ?? DEFAULT_ROLE[piece.team]] ??
     PORTRAITS[piece.team][DEFAULT_ROLE[piece.team]];
+  const portraitClass = portraitSrc.includes('-gritty.')
+    ? 'panel__portrait'
+    : 'panel__portrait panel__portrait--legacy';
 
   return (
     <div className={`panel panel--${side} panel--${piece.team}`}>
       {/* Portrait */}
       <div className="panel__portrait-wrap">
         <img
-          className="panel__portrait"
+          className={portraitClass}
           src={portraitSrc}
           alt={piece.name}
           draggable={false}

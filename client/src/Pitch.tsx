@@ -49,7 +49,10 @@ const DEFAULT_ROLE: Record<Team, string> = {
 function PieceIcon({ team, role }: { team: Team; role?: string }) {
   const map = PORTRAITS[team];
   const src = map[role ?? DEFAULT_ROLE[team]] ?? map[DEFAULT_ROLE[team]];
-  return <img className="piece__portrait" src={src} alt={role ?? team} draggable={false} />;
+  const portraitClass = src.includes('-gritty.')
+    ? 'piece__portrait'
+    : 'piece__portrait piece__portrait--legacy';
+  return <img className={portraitClass} src={src} alt={role ?? team} draggable={false} />;
 }
 
 // Dot positions for each face of a d6 (cx, cy as % of viewBox 0 0 20 20)
