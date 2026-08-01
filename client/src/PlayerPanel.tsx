@@ -72,16 +72,7 @@ function StatBadge({ team, stat, label, value }: StatProps) {
 
 export function PlayerPanel({ piece, side }: Props) {
   if (!piece) {
-    return (
-      <div className={`panel panel--${side} panel--empty`}>
-        <img
-          className="panel__crest panel__crest--empty"
-          src={side === 'left' ? '/human-crest.png' : '/orc-crest.png'}
-          alt="team crest"
-          draggable={false}
-        />
-      </div>
-    );
+    return <div className={`panel panel--${side} panel--empty`} />;
   }
 
   const portraitSrc =
