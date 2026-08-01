@@ -2,6 +2,145 @@
 
 ---
 
+## Issue and Feature Request Reporting
+
+### Goal
+
+Let any player who has passed the existing identity gate report an issue or
+request a feature from the game. A report is submitted as a GitHub issue to
+`HandsUpBilly/BBT`; if that delivery cannot be completed, the player can
+download a ready-to-file Markdown report instead.
+
+### Requirements
+
+- Provide a visible **Report a problem** button on player-facing, non-editor
+  screens. It must be available from the home screen and while playing a
+  puzzle, without obscuring essential game controls.
+- Clicking the button opens an accessible modal dialog that:
+  - requires a category: **Issue** or **Feature request**;
+  - requires a short title and a description;
+  - shows the reporter name prefilled from the current Google display name or
+    guest name, and permits the player to correct it before submission;
+  - exposes a submit button, cancel control, keyboard Escape dismissal, and
+    clear inline validation and request-failure feedback.
+- Submit to `POST /api/reports`. The browser sends only `type`, `title`,
+  `description`, `reporterName`, and the existing Google ID token when
+  available.
+- The server must require an identified reporter. For Google sessions, verify
+  the token and use the verified display name in preference to the supplied
+  name; for guest sessions, require the non-empty supplied name.
+- Create a GitHub issue in `HandsUpBilly/BBT` with a title prefixed by
+  `[Issue]` or `[Feature]`, and a Markdown body containing the category, reporter
+  name, description, submission timestamp, and the application context below.
+- Add non-sensitive context automatically: app version/build identifier when
+  available, current app mode, current scenario/series identifier and name
+  when applicable, and browser user-agent. Do not include access tokens,
+  e-mail addresses, Google subject IDs, localStorage values, or game secrets.
+- On successful creation, show a success state containing the returned GitHub
+  issue number/link and let the player close the dialog.
+- If GitHub is unavailable, returns an error, or the server is not configured,
+  retain the filled form and offer **Download report**. The downloaded UTF-8
+  Markdown must contain the same sanitized issue title and body that would
+  have been sent to GitHub, so it can be supplied to Ona or filed manually.
+- No report history, administrator reporting screen, file attachment, or
+  anonymous submission is in this first release.
+
+### Constraints and Security
+
+- The GitHub credential is server-only. Use a fine-grained token limited to
+  the `HandsUpBilly/BBT` repository with **Issues: Read and write** permission,
+  supplied as `GITHUB_ISSUES_TOKEN` in local development and Netlify.
+- Never ship, log, return, or embed `GITHUB_ISSUES_TOKEN` in the client. A
+  missing token must be treated as a configuration failure, not as permission
+  to call GitHub from the browser.
+- Apply size and content validation before calling GitHub: category enum,
+  trimmed reporter name (1–64 characters), title (1–120 characters), and
+  description (1–4,000 characters). Reject invalid JSON, overlong fields, and
+  methods other than POST with appropriate 4xx responses.
+- Treat all report text and client context as untrusted. Render it only as
+  escaped Markdown/plain text, and do not use it in server logs beyond a
+  concise failure reason.
+- Reuse the established optional Google verification path. Invalid supplied
+  tokens return 401; a guest report is valid only with a non-empty reporter
+  name. Rate limiting is out of scope for this first pass, but the route must
+  be isolated so it can be added later.
+- Preserve the existing tabletop playbook styling, responsive behavior,
+  reduced-motion behavior, identity flow, leaderboards, game rules, and Admin
+  Mode isolation.
+
+### Architecture
+
+| Layer | Responsibility |
+| --- | --- |
+| `client/src/ReportProblemButton.tsx` | Reusable launcher placed in player-facing shells; owns no report state. |
+| `client/src/ReportProblemModal.tsx` | Category, title, description, reporter-name form; validation; submitted/error/download states; accessible focus and keyboard behavior. |
+| `client/src/api.ts` | Typed `submitReport()` request helper, passing the optional Google ID token. |
+| `client/src/App.tsx` | Owns modal visibility and composes app/scenario context plus the current identity name/token. |
+| `client/src/PlaybookTheme.css` | Scoped modal and launcher styling consistent with the player-facing theme. |
+| `server/index.js` | Local `POST /api/reports` implementation. Verifies optional Google identity, validates the payload, calls GitHub's Issues API, and returns `{ number, url }`. |
+| `netlify/functions/reports.js` | Production equivalent using the same validation/body-building behavior and the standard Fetch API. |
+| `netlify.toml` | Routes `/api/reports` to the production function before the SPA fallback. |
+
+The backend should centralize report validation and Markdown generation in a
+small shared server-side module usable by the Express route and Netlify
+function. This prevents the two deployment targets from producing different
+issue bodies or security behavior. The GitHub API request is a server-side
+`POST https://api.github.com/repos/HandsUpBilly/BBT/issues` with the
+repository credential, API version headers, JSON `{ title, body }`, and no
+automatic label creation. Category remains visible through the title prefix
+and Markdown metadata.
+
+### Implementation Steps
+
+1. Add report input/result/context types and `submitReport()` to the client API
+   layer. Define the maximum lengths once and mirror them in the server shared
+   validator.
+2. Build a shared backend report utility for payload validation, identity-name
+   resolution, safe Markdown generation, and GitHub Issues API requests. Add
+   focused unit tests for valid input, invalid input, verified-name precedence,
+   and Markdown escaping.
+3. Register `POST /api/reports` in Express and add the matching Netlify
+   `reports.js` function plus `/api/reports` redirect. Return 201 with the
+   issue number and URL; distinguish invalid input (400), invalid Google token
+   (401), missing server configuration (503), and GitHub/upstream failures
+   (502).
+4. Add the reusable report launcher and modal. Prefill the name from the
+   identity gate, send live context from `App.tsx`, and keep the dialog data on
+   any failed request.
+5. Implement the client-side Markdown-download fallback using the same visible
+   report fields/context. Make it available only after a server delivery
+   failure/configuration failure, with a clear instruction that it can be filed
+   through Ona or GitHub.
+6. Add scoped responsive/focus/reduced-motion styles and verify the dialog on
+   home, gameplay, leaderboard, summary, and mobile layouts. Keep it out of
+   Admin Mode unless deliberately added later.
+7. Document `GITHUB_ISSUES_TOKEN`, its minimum permission, and local/Netlify
+   setup in the deployment context. Update the frontend/auth context docs with
+   the reporting entry point and data boundaries.
+
+### Success Criteria
+
+- An identified Google or guest player can open the dialog, sees their current
+  name prefilled, chooses Issue or Feature request, and cannot submit an incomplete or
+  overlong report.
+- A valid submit creates exactly one issue in `HandsUpBilly/BBT` with the
+  correct category prefix, reporter name, description, and allowed context;
+  the UI displays the new issue link.
+- A verified Google name cannot be spoofed by editing the browser request.
+- A missing/invalid GitHub credential or an upstream error creates no partial
+  client success state, retains the report contents, and produces a usable
+  Markdown download.
+- The token never appears in source, browser bundles, responses, issue bodies,
+  or logs.
+- The dialog is keyboard-operable, has a visible focus state, behaves at
+  320 px+ without horizontal page overflow, and does not regress gameplay or
+  Admin Mode.
+- `cd client && npm run test`, `cd client && npm run build`, and
+  `cd client && npm run lint` pass; backend tests cover the report endpoint's
+  validation, identity, GitHub success, and GitHub failure paths.
+
+---
+
 ## Handoff Action
 
 ### Overview

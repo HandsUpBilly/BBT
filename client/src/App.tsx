@@ -16,6 +16,8 @@ import { ConfirmDialog } from './ConfirmDialog';
 import { BlockOutcomePanel } from './BlockOutcomePanel';
 import { blockActionAvailability } from './blockActionAvailability';
 import { UserMenu } from './UserMenu';
+import { ReportProblemButton } from './ReportProblemButton';
+import { ReportProblemModal } from './ReportProblemModal';
 import { submitScore, fetchLeaderboard, submitSeriesScore, fetchSeriesLeaderboard } from './api';
 import { resolveSeriesScenarios } from './series';
 import { loadScenarioData } from './scenarios/runtime';
@@ -275,6 +277,7 @@ export default function App() {
   const [seriesInitialEntries, setSeriesInitialEntries] = useState<SeriesLeaderboardEntry[] | undefined>();
   const [selectedSeriesEntry, setSelectedSeriesEntry] = useState<SeriesLeaderboardEntry | undefined>();
   const [confirmLeaveSeries, setConfirmLeaveSeries] = useState(false);
+  const [reportOpen, setReportOpen] = useState(false);
 
   // ── Zoom mode ────────────────────────────────────────────────────────────
   // Computed once when play starts (not recalculated as moves are made or
@@ -316,6 +319,28 @@ export default function App() {
   // The real gate is server-side (ADMIN_EMAILS check on the write endpoints).
   // Render 'home' instead of setState-in-effect to avoid an extra render pass.
   const effectiveAppMode = appMode === 'admin' && !isAdmin ? 'home' : appMode;
+  const reportScenario = effectiveAppMode === 'puzzle' || effectiveAppMode === 'series-puzzle' || effectiveAppMode === 'leaderboard'
+    ? activeScenario
+    : null;
+  const reportContext = {
+    mode: effectiveAppMode,
+    ...(reportScenario ? { scenarioId: reportScenario.id, scenarioName: reportScenario.name } : {}),
+    appVersion: import.meta.env.VITE_APP_VERSION as string | undefined,
+    userAgent: navigator.userAgent,
+  };
+  const reportTools = (variant: 'floating' | 'hud') => (
+    <>
+      <ReportProblemButton variant={variant} onClick={() => setReportOpen(true)} />
+      {reportOpen && (
+        <ReportProblemModal
+          defaultReporterName={identityName}
+          context={reportContext}
+          idToken={idToken}
+          onClose={() => setReportOpen(false)}
+        />
+      )}
+    </>
+  );
 
   const handleSignOut = useCallback(() => {
     if (currentUser) {
@@ -378,10 +403,14 @@ export default function App() {
 
   // Escape key
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') handleCancelSelection(); };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') return;
+      if (reportOpen) setReportOpen(false);
+      else handleCancelSelection();
+    };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [handleCancelSelection]);
+  }, [handleCancelSelection, reportOpen]);
 
   // Context menu state
   const [pieceMenu, setPieceMenu] = useState<{ piece: PlayerPiece; x: number; y: number } | null>(null);
@@ -653,6 +682,7 @@ export default function App() {
           isAdmin={isAdmin}
           userMenu={<UserMenu name={identityName} avatarUrl={identityAvatarUrl} onSignOut={handleSignOut} />}
         />
+        {reportTools('floating')}
       </div>
     );
   }
@@ -666,6 +696,7 @@ export default function App() {
             entry={selectedSeriesEntry}
             onBack={() => setSelectedSeriesEntry(undefined)}
           />
+          {reportTools('floating')}
         </div>
       );
     }
@@ -680,6 +711,7 @@ export default function App() {
           onEntriesLoaded={setSeriesInitialEntries}
           onRowClick={setSelectedSeriesEntry}
         />
+        {reportTools('floating')}
       </div>
     );
   }
@@ -707,6 +739,7 @@ export default function App() {
             entry={selectedEntry}
             onBack={() => setSelectedEntry(undefined)}
           />
+          {reportTools('floating')}
         </div>
       );
     }
@@ -722,6 +755,7 @@ export default function App() {
           onEntriesLoaded={setLeaderboardInitialEntries}
           onRowClick={setSelectedEntry}
         />
+        {reportTools('floating')}
       </div>
     );
   }
@@ -826,6 +860,7 @@ export default function App() {
           <button className="hud__restart" onClick={handleRestartTurn}>↺ Restart</button>
         )}
 
+        {reportTools('hud')}
         <UserMenu name={identityName} avatarUrl={identityAvatarUrl} onSignOut={handleSignOut} />
       </header>
 

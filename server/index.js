@@ -5,6 +5,16 @@ import { randomUUID } from 'crypto';
 import { existsSync } from 'fs';
 import { AuthError, entryAuthFields, verifyOptionalGoogleUser } from './auth.js';
 import { registerEditorRoutes } from './editor.js';
+import {
+  ReportConfigurationError,
+  ReportDeliveryError,
+  ReportValidationError,
+  buildIssueDraft,
+  createDownload,
+  createGitHubIssue,
+  resolveReporterName,
+  validateReportPayload,
+} from './reporting.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const app = express();
@@ -104,12 +114,55 @@ app.post('/api/series-leaderboard', async (req, res) => {
   res.status(201).json(entry);
 });
 
+// ── Player issue and feature reports ────────────────────────────────────────
+app.post('/api/reports', async (req, res) => {
+  let user = null;
+  try {
+    user = await verifyOptionalGoogleUser(req);
+  } catch (error) {
+    if (error instanceof AuthError) return res.status(401).json({ error: error.message });
+    throw error;
+  }
+
+  let report;
+  let reporterName;
+  try {
+    report = validateReportPayload(req.body);
+    reporterName = resolveReporterName(report, user);
+  } catch (error) {
+    if (error instanceof ReportValidationError) return res.status(400).json({ error: error.message });
+    throw error;
+  }
+
+  const draft = buildIssueDraft(report, reporterName);
+  const download = createDownload(report, reporterName);
+  try {
+    const issue = await createGitHubIssue(draft);
+    return res.status(201).json(issue);
+  } catch (error) {
+    if (error instanceof ReportConfigurationError) {
+      return res.status(503).json({ error: error.message, download });
+    }
+    if (error instanceof ReportDeliveryError) {
+      return res.status(502).json({ error: error.message, download });
+    }
+    throw error;
+  }
+});
+
 // SPA fallback — production only
 if (isProd) {
   app.get('*', (_req, res) =>
     res.sendFile(join(distPath, 'index.html'))
   );
 }
+
+app.use((error, _req, res, next) => {
+  if (error instanceof SyntaxError && 'body' in error) {
+    return res.status(400).json({ error: 'Invalid JSON' });
+  }
+  return next(error);
+});
 
 app.listen(PORT, () =>
   console.log(`Server on http://localhost:${PORT} (${isProd ? 'production' : 'dev API only'})`)
