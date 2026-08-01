@@ -56,7 +56,10 @@ Receiving a pass/handoff should not itself mark the receiver activated.
 - A Blitz chooses a reachable standing opponent first, moves into contact,
   resolves the block and any follow-up, then may spend its remaining movement.
   It is limited to one per team turn and is unavailable when no standing
-  opponent exists. A plain Block remains available afterward.
+  opponent is reachable by the attacker's movement (`blockActionAvailability`
+  runs the same `computeReachable` contact check as `handleBlockAction`, not
+  just "does a standing opponent exist anywhere on the pitch"). A plain Block
+  remains available afterward.
 - Effective Strength includes eligible adjacent assists. Downed players neither
   assist nor exert tackle zones and cannot be selected or targeted.
 - Block dice use 1–3 dice from the effective-Strength comparison. The player

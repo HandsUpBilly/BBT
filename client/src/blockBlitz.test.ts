@@ -105,6 +105,16 @@ describe('Block and Blitz menu availability', () => {
     });
   });
 
+  it('disables Blitz when the only standing opponent is out of movement range', () => {
+    const attacker = blocker({ position: { col: 7, row: 20 }, ma: 6 });
+    const farOpponent = orc({ position: { col: 7, row: 0 } });
+
+    expect(blockActionAvailability(attacker, [attacker, farOpponent], false)).toEqual({
+      canBlock: false,
+      canBlitz: false,
+    });
+  });
+
   it('allows Block when a standing opponent is adjacent', () => {
     const attacker = blocker();
 
