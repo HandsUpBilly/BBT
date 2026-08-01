@@ -284,6 +284,14 @@
   box-shadow: inset 4px 0 0 var(--home-rust-500), 3px 4px 0 rgba(0, 0, 0, 0.28);
 }
 
+/* Unpopulated side panel (no piece hovered/selected): stay felt-toned instead
+   of the paper texture, which reads as a stray white block on the board. */
+.app--game .panel--empty {
+  background: rgba(16, 25, 21, 0.35);
+  border-color: rgba(246, 241, 223, 0.18);
+  box-shadow: none;
+}
+
 .app--game .panel__name {
   color: var(--home-ink-950);
   font-family: Rockwell, 'Roboto Slab', 'Courier New', serif;
