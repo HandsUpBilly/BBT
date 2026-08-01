@@ -1,9 +1,13 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
+import { version } from '../package.json'
 
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react()],
+  define: {
+    __BBT_VERSION__: JSON.stringify(process.env.VITE_APP_VERSION ?? version),
+  },
   server: {
     allowedHosts: 
     ['5173--019dea7a-db9d-733d-b843-669e32bef1eb.eu-central-1-01.gitpod.dev',

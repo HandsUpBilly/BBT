@@ -325,23 +325,20 @@ export default function App() {
   const reportContext = {
     mode: effectiveAppMode,
     ...(reportScenario ? { scenarioId: reportScenario.id, scenarioName: reportScenario.name } : {}),
-    appVersion: import.meta.env.VITE_APP_VERSION as string | undefined,
+    appVersion: __BBT_VERSION__,
     userAgent: navigator.userAgent,
   };
-  const reportTools = (variant: 'floating' | 'hud') => (
-    <>
-      <ReportProblemButton variant={variant} onClick={() => setReportOpen(true)} />
-      {reportOpen && (
-        <ReportProblemModal
-          defaultReporterName={identityName}
-          context={reportContext}
-          idToken={idToken}
-          onClose={() => setReportOpen(false)}
-        />
-      )}
-    </>
+  const reportButton = (variant: 'header' | 'hud') => (
+    <ReportProblemButton variant={variant} onClick={() => setReportOpen(true)} />
   );
-
+  const reportModal = reportOpen && (
+    <ReportProblemModal
+      defaultReporterName={identityName}
+      context={reportContext}
+      idToken={idToken}
+      onClose={() => setReportOpen(false)}
+    />
+  );
   const handleSignOut = useCallback(() => {
     if (currentUser) {
       signOut();
@@ -350,6 +347,13 @@ export default function App() {
     }
     setAppMode('home');
   }, [currentUser, signOut, setGuestName]);
+
+  const archiveControls = (
+    <div className="app__account-controls">
+      {reportButton('header')}
+      <UserMenu name={identityName} avatarUrl={identityAvatarUrl} onSignOut={handleSignOut} />
+    </div>
+  );
 
   const startPuzzle = useCallback((scenario: Scenario) => {
     setEditorPreviewScenario(null);
@@ -681,8 +685,10 @@ export default function App() {
           userId={currentUser?.id}
           isAdmin={isAdmin}
           userMenu={<UserMenu name={identityName} avatarUrl={identityAvatarUrl} onSignOut={handleSignOut} />}
+          reportButton={reportButton('header')}
+          version={__BBT_VERSION__}
         />
-        {reportTools('floating')}
+        {reportModal}
       </div>
     );
   }
@@ -691,18 +697,18 @@ export default function App() {
     if (selectedSeriesEntry) {
       return (
         <div className="app app--home app--archive app--playbook">
-          <UserMenu name={identityName} avatarUrl={identityAvatarUrl} onSignOut={handleSignOut} />
+          {archiveControls}
           <SeriesScoreSummary
             entry={selectedSeriesEntry}
             onBack={() => setSelectedSeriesEntry(undefined)}
           />
-          {reportTools('floating')}
+          {reportModal}
         </div>
       );
     }
     return (
       <div className="app app--home app--archive app--playbook">
-        <UserMenu name={identityName} avatarUrl={identityAvatarUrl} onSignOut={handleSignOut} />
+        {archiveControls}
         <SeriesLeaderboard
           key={seriesRefreshKey}
           onBack={() => { setSeriesInitialEntries(undefined); setAppMode('home'); }}
@@ -711,7 +717,7 @@ export default function App() {
           onEntriesLoaded={setSeriesInitialEntries}
           onRowClick={setSelectedSeriesEntry}
         />
-        {reportTools('floating')}
+        {reportModal}
       </div>
     );
   }
@@ -734,18 +740,18 @@ export default function App() {
     if (selectedEntry) {
       return (
         <div className="app app--home app--archive app--playbook">
-          <UserMenu name={identityName} avatarUrl={identityAvatarUrl} onSignOut={handleSignOut} />
+          {archiveControls}
           <ScoreSummary
             entry={selectedEntry}
             onBack={() => setSelectedEntry(undefined)}
           />
-          {reportTools('floating')}
+          {reportModal}
         </div>
       );
     }
     return (
       <div className="app app--home app--archive app--playbook">
-        <UserMenu name={identityName} avatarUrl={identityAvatarUrl} onSignOut={handleSignOut} />
+        {archiveControls}
         <Leaderboard
           key={leaderboardRefreshKey}
           scenario={activeScenario}
@@ -755,7 +761,7 @@ export default function App() {
           onEntriesLoaded={setLeaderboardInitialEntries}
           onRowClick={setSelectedEntry}
         />
-        {reportTools('floating')}
+        {reportModal}
       </div>
     );
   }
@@ -860,7 +866,7 @@ export default function App() {
           <button className="hud__restart" onClick={handleRestartTurn}>↺ Restart</button>
         )}
 
-        {reportTools('hud')}
+        {reportButton('hud')}
         <UserMenu name={identityName} avatarUrl={identityAvatarUrl} onSignOut={handleSignOut} />
       </header>
 
@@ -1018,6 +1024,7 @@ export default function App() {
           }}
         />
       )}
+      {reportModal}
     </div>
   );
 }

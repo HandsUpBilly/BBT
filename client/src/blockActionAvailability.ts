@@ -13,10 +13,13 @@ export function blockActionAvailability(
       && !piece.down
       && adjacentKeys.has(key(piece.position))
   );
+  const hasStandingOpponent = pieces.some(piece =>
+    piece.team !== attacker.team && !piece.down
+  );
 
   return {
     canBlock: canAct && hasAdjacentOpponent,
     // Unlike a plain Block, a Blitz may move before choosing its target.
-    canBlitz: canAct && !blitzUsed,
+    canBlitz: canAct && !blitzUsed && hasStandingOpponent,
   };
 }

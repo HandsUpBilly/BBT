@@ -55,7 +55,8 @@ Receiving a pass/handoff should not itself mark the receiver activated.
 - A plain Block targets an adjacent standing opponent without movement.
 - A Blitz chooses a reachable standing opponent first, moves into contact,
   resolves the block and any follow-up, then may spend its remaining movement.
-  It is limited to one per team turn. A plain Block remains available afterward.
+  It is limited to one per team turn and is unavailable when no standing
+  opponent exists. A plain Block remains available afterward.
 - Effective Strength includes eligible adjacent assists. Downed players neither
   assist nor exert tackle zones and cannot be selected or targeted.
 - Block dice use 1–3 dice from the effective-Strength comparison. The player

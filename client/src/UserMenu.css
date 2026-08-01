@@ -13,6 +13,16 @@
   z-index: 40;
 }
 
+.app--archive > .app__account-controls {
+  position: fixed;
+  top: 12px;
+  right: 14px;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
 .user-menu__trigger {
   display: flex;
   align-items: center;
@@ -136,12 +146,12 @@
 /* Tabletop treatment is intentionally limited to the landing experience.
    The game HUD and other non-game screens retain the compact dark menu. */
 .app--landing .user-menu__trigger {
-  min-height: 42px;
+  min-height: 34px;
   color: var(--home-ink-950);
   background: var(--home-paper-100);
   border-color: #8f8266;
   border-radius: 3px;
-  box-shadow: 3px 4px 0 rgba(0, 0, 0, 0.24);
+  box-shadow: 2px 3px 0 rgba(0, 0, 0, 0.24);
 }
 
 .app--landing .user-menu__trigger:hover {
@@ -161,10 +171,21 @@
   background: var(--home-rust-500);
 }
 
+.app--landing .scenario-select__user .user-menu__avatar {
+  width: 22px;
+  height: 22px;
+  font-size: 0.62rem;
+}
+
 .app--landing .user-menu__name {
   font-family: 'Courier New', monospace;
   font-size: 0.75rem;
   font-weight: 800;
+}
+
+.app--landing .scenario-select__user .user-menu__name {
+  max-width: 100px;
+  font-size: 0.67rem;
 }
 
 .app--landing .user-menu__caret {

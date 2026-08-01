@@ -2,10 +2,10 @@ import './ReportProblem.css';
 
 interface Props {
   onClick: () => void;
-  variant?: 'floating' | 'hud';
+  variant?: 'floating' | 'header' | 'hud';
 }
 
-export function ReportProblemButton({ onClick, variant = 'floating' }: Props) {
+export function ReportProblemButton({ onClick, variant = 'header' }: Props) {
   return (
     <button
       className={`report-problem-button report-problem-button--${variant}`}
