@@ -722,7 +722,7 @@
   background: var(--home-rust-500);
 }
 
-.app--archive > .user-menu .user-menu__trigger,
+.app--archive .app__account-controls .user-menu__trigger,
 .app--game .user-menu__trigger {
   color: var(--home-ink-950);
   background: var(--home-paper-100);
@@ -730,24 +730,24 @@
   border-radius: 3px;
 }
 
-.app--archive > .user-menu .user-menu__trigger:hover,
+.app--archive .app__account-controls .user-menu__trigger:hover,
 .app--game .user-menu__trigger:hover {
   color: var(--home-ink-950);
   background: #fff5da;
   border-color: var(--home-gold-500);
 }
 
-.app--archive > .user-menu .user-menu__avatar--fallback,
+.app--archive .app__account-controls .user-menu__avatar--fallback,
 .app--game .user-menu__avatar--fallback {
   background: var(--home-rust-500);
 }
 
-.app--archive > .user-menu .user-menu__caret,
+.app--archive .app__account-controls .user-menu__caret,
 .app--game .user-menu__caret {
   color: var(--home-ink-700);
 }
 
-.app--archive > .user-menu .user-menu__dropdown,
+.app--archive .app__account-controls .user-menu__dropdown,
 .app--game .user-menu__dropdown {
   color: var(--home-ink-950);
   background:
@@ -758,17 +758,17 @@
   box-shadow: 6px 8px 0 rgba(0, 0, 0, 0.3);
 }
 
-.app--archive > .user-menu .user-menu__dropdown-name,
+.app--archive .app__account-controls .user-menu__dropdown-name,
 .app--game .user-menu__dropdown-name {
   color: var(--home-ink-950);
 }
 
-.app--archive > .user-menu .user-menu__item,
+.app--archive .app__account-controls .user-menu__item,
 .app--game .user-menu__item {
   color: var(--home-ink-700);
 }
 
-.app--archive > .user-menu .user-menu__item:hover:not(:disabled),
+.app--archive .app__account-controls .user-menu__item:hover:not(:disabled),
 .app--game .user-menu__item:hover:not(:disabled) {
   color: var(--home-ink-950);
   background: rgba(215, 166, 59, 0.25);

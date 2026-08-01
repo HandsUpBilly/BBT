@@ -85,6 +85,25 @@
 
 .scenario-select__user {
   justify-self: end;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 5px;
+}
+
+.scenario-select__controls {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.scenario-select__version {
+  color: rgba(246, 241, 223, 0.52);
+  font-family: 'Courier New', monospace;
+  font-size: 0.58rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 
 .scenario-select__route {

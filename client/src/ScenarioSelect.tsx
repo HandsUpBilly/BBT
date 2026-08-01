@@ -28,6 +28,8 @@ interface Props {
   userId?: string;
   isAdmin: boolean;
   userMenu: ReactNode;
+  reportButton: ReactNode;
+  version: string;
 }
 
 function pct(value: number): string {
@@ -90,6 +92,8 @@ export function ScenarioSelect({
   userId,
   isAdmin,
   userMenu,
+  reportButton,
+  version,
 }: Props) {
   const [playView, setPlayView] = useState<PlayView>('series');
   const [leaderboards, setLeaderboards] = useState<Record<string, LeaderboardEntry[]>>({});
@@ -165,7 +169,13 @@ export function ScenarioSelect({
             Draw the clean route. Control the risk. Put the Reavers in the end zone.
           </p>
         </div>
-        <div className="scenario-select__user">{userMenu}</div>
+        <div className="scenario-select__user">
+          <div className="scenario-select__controls">
+            {reportButton}
+            {userMenu}
+          </div>
+          <span className="scenario-select__version">Version {version}</span>
+        </div>
         <div className="scenario-select__route" aria-hidden="true">
           <span />
           <span />
