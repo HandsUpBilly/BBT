@@ -185,6 +185,28 @@
   scrollbar-width: thin;
 }
 
+.app--game .legend--skill-key {
+  min-height: 24px;
+  background: rgba(12, 16, 13, 0.44);
+  border: 1px solid rgba(227, 220, 200, 0.12);
+}
+
+.app--game .legend__key-title {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  align-self: stretch;
+  display: inline-flex;
+  align-items: center;
+  padding: 0 7px;
+  color: var(--home-chalk-100);
+  background: var(--home-charcoal-900);
+  border-right: 1px solid rgba(227, 220, 200, 0.18);
+  font-family: 'Courier New', monospace;
+  font-size: 0.58rem;
+  letter-spacing: 0.04em;
+}
+
 .app--game .legend__item {
   flex-shrink: 0;
   padding: 3px 8px;
@@ -197,6 +219,11 @@
   font-weight: 800;
   letter-spacing: 0.025em;
   text-transform: uppercase;
+}
+
+.app--game .legend__item--skill {
+  padding: 2px 6px;
+  text-transform: none;
 }
 
 .app--game .legend__item--tz,

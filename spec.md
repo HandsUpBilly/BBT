@@ -9,6 +9,7 @@ carries a **Status** line — read it before treating a section as work to do.
 
 | Section | Status |
 | --- | --- |
+| Skill-Group Player Icon Bands | Shipped |
 | Whole-App Gritty Rulebook Visual Overhaul | Shipped |
 | Issue and Feature Request Reporting | Shipped |
 | Handoff Action | Shipped |
@@ -31,6 +32,367 @@ Durable behavior that has already shipped belongs in `docs/agent-context/`, not
 here. When a plan below ships, move the facts worth keeping into the matching
 context doc and mark the section Shipped rather than deleting it — the rationale
 is often still useful.
+
+---
+
+# Skill-Group Player Icon Bands
+
+**Status:** Shipped. Implemented as concentric skill-group rings, portrait team tinting, and canonical FUMBBL-style skill badges.
+
+### Status and Decisions
+
+This section is implementation-ready and defines the replacement for the
+team-colored rings currently drawn around gameplay player tokens.
+
+- **Band meaning:** colored rings identify the Blood Bowl skill groups
+  represented by a player's `skills` array; they no longer identify the team.
+- **Reference system:** use the category colors and skill assignments from the
+  [Charlie Victor MK.III 32mm Skill Bands (Season 3)](https://www.charlievictorproducts.com/collections/skill-bands-mk-iii/products/mk-iii-32mm-skill-bands)
+  linked in the request.
+- **Multiple groups:** render one full concentric ring for each distinct skill
+  group. Multiple skills in the same group still produce only one ring.
+- **No categorized skill:** render no skill ring. This applies to players with
+  an empty `skills` array, traits such as `Animosity`, and unknown/unmapped
+  values.
+- **Team identity:** tint only the circular portrait area with a subtle blue
+  wash for Humans or red wash for Orcs. The tint must not affect the skill
+  rings, selection/carrier indicators, ball marker, or other state UI.
+- **Exact-skill markers:** overlay separate FUMBBL-style letter badges for the
+  canonical seven commonly marked skills: Block, Dodge, Guard, Tackle,
+  Wrestle, Mighty Blow, and Leader. Other skills do not receive a letter.
+- **Scope:** gameplay pitch tokens, including movement-preview ghost tokens,
+  plus the minimum legend/panel treatment needed to explain the bands and
+  badges. This is not a scenario-data, rules-engine, portrait-art,
+  editor-token, or broad theme redesign.
+
+The implementation preserves application behavior and portrait/scenario assets. The
+existing specification sections below remain unchanged and independent.
+
+### Goal
+
+Make pitch tokens use the tabletop convention of colored skill bands while
+keeping the Human/Orc distinction immediately visible. A player should be able
+to recognize represented skill groups at a glance, inspect the player to see
+the exact skill names, spot the most tactically important individual skills,
+and continue to distinguish team and gameplay state without one color carrying
+multiple meanings.
+
+### Functional Requirements
+
+#### Skill classification
+
+- Derive band groups at render time from the existing `skills: string[]` on
+  `PlayerPiece`/`ScenarioPieceDef`. Do not add a required field to scenario
+  JSON and do not rewrite published scenarios merely to support the visual.
+- Define the six MK.III Season 3 groups as a closed TypeScript union:
+  `agility`, `devious`, `general`, `mutation`, `passing`, and `strength`.
+- Maintain a centralized, case-sensitive skill-name-to-group map. The initial
+  map must cover the complete skill catalogue represented on the linked
+  MK.III product, not only the four skill names in today's published puzzles:
+
+  | Group | Skills |
+  | --- | --- |
+  | Agility | Catch, Defensive, Diving Catch, Diving Tackle, Dodge, Hit and Run, Jump Up, Leap, Safe Hands, Sidestep, Sprint, Sure Feet |
+  | Devious | Dirty Player, Eye Gouge, Fumblerooski, Lethal Flight, Lone Fouler, Pile Driver, Put the Boot In, Quick Foul, Saboteur, Shadowing, Sneaky Git, Violent Innovator |
+  | General | Block, Dauntless, Fend, Frenzy, Kick, Pro, Steady Footing, Strip Ball, Sure Hands, Tackle, Taunt, Wrestle |
+  | Mutation | Big Hand, Claws, Disturbing Presence, Extra Arms, Foul Appearance, Horns, Iron Hard Skin, Monstrous Mouth, Prehensile Tail, Tentacles, Two Heads, Very Long Legs |
+  | Passing | Accurate, Cannoneer, Cloud Burster, Dump-Off, Give and Go, Hail Mary Pass, Leader, Nerves of Steel, On the Ball, Pass, Punt, Safe Pass |
+  | Strength | Arm Bar, Brawler, Break Tackle, Bullseye, Grab, Guard, Juggernaut, Mighty Blow, Multiple Block, Stand Firm, Strong Arm, Thick Skull |
+
+- `Animosity` remains visible in the existing player skill list but is treated
+  as a trait, not assigned a skill-group color, and does not create a ring.
+- Unknown skill strings must fail soft: preserve their existing text display,
+  omit a band for them, and do not throw, block scenario loading, or silently
+  assign a misleading fallback category.
+- Deduplicate by group, then sort groups in one documented canonical order:
+  Agility, Devious, General, Mutation, Passing, Strength. Use that order from
+  outermost to innermost whenever a player has multiple groups so rings do not
+  reorder as scenario skill arrays change.
+
+#### Band colors and rendering
+
+- Define semantic CSS custom properties for the six band colors in one place.
+  Use the linked MK.III category palette as the visual source of truth:
+
+  | Group | Required visual color | Initial CSS target |
+  | --- | --- | --- |
+  | Agility | warm beige/tan | `#dcc49d` |
+  | Devious | deep purple | `#522a83` |
+  | General | deep blue | `#214f91` |
+  | Mutation | vivid pink/magenta | `#cc4397` |
+  | Passing | bright yellow | `#f5e600` |
+  | Strength | light cyan | `#52bdd4` |
+
+  The implementation may make small adjustments after in-app contrast review,
+  but must preserve these recognizable category hues and document any final
+  values next to the tokens.
+- Render one continuous circular band per unique group. Bands are nested and
+  concentric; do not use segmented arcs, a single priority band, duplicate
+  rings for two skills in the same group, or team-colored fallback bands.
+- Keep every ring visible at normal and zoomed pitch sizes. Ring thickness and
+  inter-ring keylines may scale with token size, but the portrait must remain
+  recognizable with all six groups present. Cap decorative gaps/shadows rather
+  than allowing the token to overflow its pitch square.
+- A player with no categorized group has no colored outer skill band. A thin
+  structural edge around the portrait is acceptable only if it reads as the
+  portrait frame rather than a neutral or team-colored skill band.
+- Skill-ring colors remain unchanged by Human/Orc tinting and by activated,
+  downed, selected, carrier, or ghost state treatments.
+
+#### FUMBBL-style exact-skill badges
+
+- In addition to category rings, render one separate compact letter badge on
+  the portrait for each of these seven exact skills. Use the established
+  FUMBBL-style letter/color pairing rather than deriving a first initial for
+  every skill:
+
+  | Skill | Badge | Badge color | Initial CSS target |
+  | --- | --- | --- | --- |
+  | Block | `B` | blue | `#2864c7` |
+  | Dodge | `D` | yellow | `#e4ca22` |
+  | Guard | `G` | green | `#2f9b50` |
+  | Tackle | `T` | orange | `#df8126` |
+  | Wrestle | `W` | white | `#f1efe5` |
+  | Mighty Blow | `M` | red | `#c83d38` |
+  | Leader | `L` | purple | `#7443a6` |
+
+  The marker convention follows documented
+  [FUMBBL community usage](https://fumbbl.com/index.php?name=PNphpBB2&file=viewtopic&t=30986),
+  where skill markers use compact characters such as `G` for Guard and
+  distinct colors for the commonly marked skills. These badge colors identify
+  exact skills and are a separate visual vocabulary from the MK.III ring
+  colors, which identify skill groups.
+- Match skill names exactly against the existing `skills` array. Do not show a
+  badge for `Catch`, `Animosity`, another non-canonical skill, or an unknown
+  string, even though a non-canonical skill may still contribute a category
+  ring.
+- Render at most one badge per canonical skill. Duplicate strings in malformed
+  input must not create duplicate badges.
+- When several canonical skills are present, show separate badges rather than
+  a combined character row. Sort them in this stable order: Block, Dodge,
+  Guard, Tackle, Wrestle, Mighty Blow, Leader. Do not depend on scenario-array
+  order.
+- Place the badge cluster inside the circular portrait boundary and above the
+  portrait image/team tint. Use a compact flex/wrap or equivalent layout near
+  the portrait perimeter so the markers read as part of the player icon, not
+  as another outer ring. Keep each letter upright when the token is standing.
+- Size badges responsively and permit a second compact row when necessary. All
+  seven must fit without enlarging the pitch token, overflowing its square, or
+  hiding the entire portrait. The all-seven case is a robustness fixture; the
+  normal published scenarios use far fewer markers.
+- Badge foreground color, outline, and shadow must keep the character legible
+  on its assigned background and over both Human and Orc portraits. In
+  particular, use dark text/outline for the white Wrestle and yellow Dodge
+  badges where needed; do not assume one foreground color fits all seven.
+- Badges remain visible through the Human/Orc portrait wash and retain their
+  own colors in activated, selected, carrier, downed, and ghost states. Downed
+  rotation applies to the complete token, including badges. Ghost opacity may
+  fade the complete token uniformly but must preserve relative badge contrast.
+- Coordinate badge placement with the centered ball marker and bottom-right
+  action label. The ball and live action/state UI take precedence, but the
+  implementation must avoid routine overlap rather than simply hiding skill
+  badges on carriers or selected players.
+
+#### Team tint and gameplay states
+
+- Place the team wash in a dedicated circular portrait layer beneath the
+  exact-skill badges and any live ball marker, and inside all skill rings:
+  - Human: subtle blue wash.
+  - Orc: subtle red wash.
+- Tune opacity/blending so the team reads at token size without obscuring faces
+  or flattening the existing gritty portrait artwork. Do not edit, regenerate,
+  duplicate, or globally filter the portrait source files.
+- Keep the tint on the portrait only. It must not color the ring wrappers,
+  exact-skill badges, selection halo, carrier halo, action label, or pitch
+  square.
+- Refactor the existing state styles so they coexist with category rings:
+  - selection remains a clearly visible white external halo and scale change;
+  - ball carrier remains a clearly visible gold external halo and ball marker;
+  - activated and downed states remain recognizable without changing the
+    category identity of their rings;
+  - downed rotation applies to the complete token as it does now;
+  - ghost tokens reproduce the selected player's skill rings and team tint,
+    then apply the existing ghost opacity/dashed or equivalent preview cue.
+- Do not use the old blue Human/red Orc outer borders after the change. Team
+  color belongs to the portrait wash; skill color belongs to the rings; game
+  state belongs to external halos/overlays.
+
+#### Explanation and accessibility
+
+- Add a compact, named skill-band key in or adjacent to the existing gameplay
+  legend. It must show all six group names with their corresponding swatches,
+  remain usable in the legend's existing inner-scroll behavior, and not cause
+  page-level horizontal overflow on narrow screens.
+- Add a distinct **Skill markers** row/key for the canonical seven badges,
+  showing each badge beside its full skill name. Do not combine this with the
+  six group-color key in a way that implies their color systems are the same.
+- Preserve the exact skill names in `PlayerPanel`. The panel may add the
+  matching group color to known skill chips to reinforce the legend, but must
+  keep unknown skills and traits legible with a neutral treatment.
+- Give each rendered token an accessible description containing the player's
+  name, team, represented skill-group names, and full names of any canonical
+  marked skills. Do not make assistive-technology users infer meaning from a
+  badge letter, color, or portrait image filename.
+- The token decoration system must not reduce token click/touch targets.
+  Decorative ring and tint layers and visual badge spans ignore pointer events
+  and do not create separate focus targets. Badge meaning is exposed through
+  the token's combined accessible description rather than seven repetitive
+  child nodes.
+- Verify that adjacent category colors and the tint remain distinguishable in
+  grayscale/color-vision simulations. The text legend and inspected player
+  details are the non-color equivalents; do not encode exact skills only in
+  rings.
+
+### Constraints and Non-Goals
+
+- Preserve game rules, pathfinding, action availability, probability math,
+  score calculation, scenario loading, and all state transitions.
+- Preserve the existing `skills: string[]` API and scenario JSON format. This
+  change classifies skill strings and derives the curated marker set for
+  presentation only.
+- Do not change the meaning or behavior of `Block`, `Dodge`, `Catch`,
+  `Animosity`, or any other skill/trait in the rules engine.
+- Do not modify published portrait assets or the synchronized role-to-asset
+  mappings in `Pitch.tsx` and `PlayerPanel.tsx` except as needed to consume a
+  shared presentation component/helper without changing resolved files.
+- Do not replace the player portraits, add bitmap ring assets, fetch the
+  product page at runtime, add remote assets/fonts, or introduce a new runtime
+  dependency. Bands, tint, and letter badges are live HTML/CSS presentation;
+  do not bake the letters into portrait bitmaps.
+- Do not redesign the square editor markers in this change. Editor preview
+  enters the normal gameplay renderer and therefore receives the new bands;
+  the editor's own drag/drop markers remain team-colored and unchanged.
+- Do not remove the team styling from the side player panel, team crests, HUD,
+  or other non-token UI. Only the gameplay token's rings, portrait tint, and
+  exact-skill badges change in this scope.
+- Avoid `!important`-based state collisions. Separate the structural token,
+  skill bands, portrait/tint, exact-skill badges, and external state halo
+  layers so each concern can be styled independently.
+
+### Architecture
+
+| Area | Responsibility |
+| --- | --- |
+| New `client/src/skillPresentation.ts` | Own `SkillGroup`, canonical group order/labels, the complete skill-to-group map, the canonical seven badge definitions/order, and pure helpers that return deduplicated ordered groups and marked skills from `skills: string[]`. It must not import React or game-state logic. |
+| `client/src/Pitch.tsx` | Pass each actual or ghost player's `team`, `role`, `name`, and `skills` to the token portrait renderer. Replace the current team-border-only `PieceIcon` markup with explicit nested skill-band, portrait-frame, tint, image, and exact-skill badge layers while retaining the synchronized portrait map and ball/state markup. |
+| `client/src/Pitch.css` | Define the token layer geometry, six semantic band variables/classes, seven exact-skill badge recipes, concentric sizing, portrait-only team tint, badge wrapping/contrast, and independent selected/carrier/activated/down/ghost treatments. Remove the old Human/Orc outer-ring colors. |
+| `client/src/App.tsx` and existing legend CSS | Add separate six-item skill-group and seven-item exact-skill-marker keys alongside the current contextual movement/pass/block legend without altering existing conditional entries. Keep responsive overflow contained. |
+| `client/src/PlayerPanel.tsx` / `.css` | Continue listing exact skills. Optionally consume the same classification helper for colored known-skill chips and neutral trait/unknown chips; do not duplicate the mapping. Existing panel team framing remains. |
+| `client/src/skillPresentation.test.ts` | Unit-test group classification plus canonical badge inclusion, exclusion, deduplication, and ordering for empty, malformed, mixed, and all-seven skill lists. |
+| `docs/agent-context/frontend-flow.md` | Record the shipped token semantics, ring and badge palette sources, canonical marker whitelist/order, team-tint boundary, unknown/trait fallback, and the rule that presentation mappings stay centralized. |
+
+The token DOM should conceptually separate these layers:
+
+```text
+external state halo (selected / carrier / ghost cue)
+└─ zero or more concentric skill-group rings
+   └─ portrait frame
+      ├─ portrait image
+      └─ portrait-only Human/Orc tint
+         ├─ zero or more FUMBBL-style exact-skill badges
+         └─ live ball marker and action/state overlays above them
+```
+
+The exact component name is an implementation detail. Prefer keeping a small
+local renderer in `Pitch.tsx` unless sharing it with `PlayerPanel` removes real
+duplication; do not broaden this into a portrait-system rewrite.
+
+### Implementation Steps
+
+1. Add `skillPresentation.ts` with the closed group type, canonical
+   outer-to-inner order, labels, full MK.III Season 3 mapping, canonical seven
+   badge definitions/order, and pure group/marker helpers. Add focused unit
+   tests before changing rendering.
+2. Restructure the pitch token markup into independent state-halo, band,
+   portrait-frame, portrait-image, team-tint, and exact-skill badge layers.
+   Pass the real player's skills/name/team to both normal tokens and
+   movement-preview ghosts.
+3. Replace `.piece--human`/`.piece--orc` outer border colors with portrait-only
+   tint classes. Implement nested, deduplicated group rings using semantic CSS
+   variables and stable canonical order.
+4. Move selected and carrier emphasis to external halos so neither overwrites
+   skill colors. Reconcile activated, downed, ghost, action-label, and ball
+   layering, including combined states such as selected carrier and downed
+   skilled player.
+5. Render separate canonical badges inside the portrait using their stable
+   order and FUMBBL-style letter/color recipes. Tune the one-, multi-, and
+   all-seven layouts against portrait, ball, and action-label visibility.
+6. Add separate six-group and seven-marker text/swatches to the gameplay
+   legend and, if used, color known `PlayerPanel` skill chips through the
+   shared helper while leaving traits/unknowns neutral.
+7. Update the frontend context documentation with the durable classification
+   and rendering rules. Check for stale comments that describe the outer ring
+   as the team identifier.
+8. Run automated and visual verification, fix regressions, and confirm no
+   portrait/scenario asset changed.
+
+### Verification
+
+- Unit tests cover:
+  - `Block` → General, `Catch`/`Dodge` → one Agility group, and representative
+    skills from Devious, Mutation, Passing, and Strength;
+  - same-group deduplication;
+  - deterministic canonical ordering independent of input array order;
+  - mixed-group input producing multiple ordered groups;
+  - `[]`, `Animosity`, and unknown strings producing no groups without errors;
+  - mixed known/unknown input retaining only the known groups;
+  - each canonical badge maps to the required letter/color definition;
+  - non-canonical skills produce no badge, including categorized `Catch`;
+  - duplicate canonical skills produce one badge each and shuffled input
+    returns the stable `B`, `D`, `G`, `T`, `W`, `M`, `L` order.
+- In each of the five published scenarios, visually confirm Human and Orc
+  portrait tints, General bands on `Block`, one Agility band on players with
+  both `Catch` and `Dodge`, no band on `Animosity`-only/unskilled players,
+  `B` badges for Block, `D` badges for Dodge, and no `C`/`A` badge for Catch or
+  Animosity.
+- Create or use an in-memory/test fixture covering two, three, and all six
+  groups and zero, one, several, and all seven badges to verify concentric
+  order, badge order/wrapping, portrait legibility, and containment. Do not add
+  a published scenario solely for this fixture.
+- Check normal, selected, carrier, selected-carrier, activated, downed, ghost,
+  and legacy-portrait tokens. Confirm rings retain their colors in every state
+  and badges retain their letters/colors, while the ball/action labels remain
+  visible.
+- Review normal and zoomed gameplay at 1440×900, 768×1024, 390×844, and
+  320×568. Confirm token targets and pitch geometry are unchanged, the legend
+  scrolls internally if necessary, and no page-level overflow is introduced.
+- Inspect keyboard/screen-reader output for the token description and named
+  legends. Check grayscale and common color-vision simulations; exact groups
+  and marked skills must remain discoverable through text even when hues are
+  ambiguous.
+- Verify published portrait files and scenario JSON are unchanged with the
+  final diff.
+- Run:
+
+  ```bash
+  npm run build
+  cd client && npm run lint
+  cd client && npm test -- --run
+  ```
+
+### Success Criteria
+
+- Gameplay tokens no longer use blue/red outer rings to mean Human/Orc.
+- Every known skill produces its MK.III Season 3 group color; same-group skills
+  produce one ring, mixed groups produce stable concentric rings, and traits,
+  unknowns, and skillless players produce no skill ring.
+- The canonical seven exact skills render separate, stable FUMBBL-style badges
+  (`B`, `D`, `G`, `T`, `W`, `M`, `L`) with their specified colors; all other
+  skills render no letter badge.
+- Humans remain recognizable through a subtle blue portrait tint and Orcs
+  through a subtle red portrait tint, with portrait detail still clear and all
+  band colors unchanged.
+- Selection, ball carrier, activation, downed, and ghost treatments coexist
+  with the bands and badges and remain at least as clear as before.
+- The gameplay legend separately names all six groups and all seven exact-skill
+  markers, the inspected player still exposes exact skill text, and assistive
+  text communicates player/team/group/marker meaning without relying on color
+  or single-letter codes alone.
+- Portrait assets, scenario schema/content, editor markers, gameplay behavior,
+  and pitch geometry are unchanged; no dependency or runtime network request
+  is added.
+- The centralized mapping/tests make later skill additions explicit, and build,
+  lint, and the full test suite pass.
 
 ---
 

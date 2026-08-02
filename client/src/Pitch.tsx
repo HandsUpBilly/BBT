@@ -2,6 +2,7 @@ import { memo, useCallback, useMemo } from 'react';
 import type { GameState, Team } from './types';
 import { key, neighbours } from './bfs';
 import type { ZoomBounds } from './bfs';
+import { skillGroupsFor, skillMarkersFor } from './skillPresentation';
 import './Pitch.css';
 
 function BallIcon({ ghost, loose }: { ghost?: boolean; loose?: boolean }) {
@@ -52,14 +53,48 @@ const DEFAULT_ROLE: Record<Team, string> = {
   orc:   'blocker',
 };
 
-function PieceIcon({ team, role }: { team: Team; role?: string }) {
+const EMPTY_SKILLS: readonly string[] = [];
+
+function PieceIcon({ team, role, skills }: { team: Team; role?: string; skills: readonly string[] }) {
   const map = PORTRAITS[team];
   const src = map[role ?? DEFAULT_ROLE[team]] ?? map[DEFAULT_ROLE[team]];
   const portraitClass = src.includes('-gritty.')
     ? 'piece__portrait'
     : 'piece__portrait piece__portrait--legacy';
-  // Decorative: the square's aria-label already names the player and role.
-  return <img className={portraitClass} src={src} alt="" draggable={false} />;
+  const groups = skillGroupsFor(skills);
+  const markers = skillMarkersFor(skills);
+
+  let portrait = (
+    <div className="piece__portrait-frame">
+      <img className={portraitClass} src={src} alt="" draggable={false} />
+      <span className="piece__team-tint" />
+      <span className="piece__state-overlay" />
+      {markers.length > 0 && (
+        <span className="piece__skill-markers">
+          {markers.map(marker => (
+            <span
+              key={marker.skill}
+              className={`piece__skill-marker piece__skill-marker--${marker.className}`}
+            >
+              {marker.letter}
+            </span>
+          ))}
+        </span>
+      )}
+    </div>
+  );
+
+  for (let index = groups.length - 1; index >= 0; index -= 1) {
+    const group = groups[index];
+    portrait = (
+      <div className={`piece__skill-ring piece__skill-ring--${group.id}`}>
+        {portrait}
+      </div>
+    );
+  }
+
+  // Decorative: the square's aria-label names the player, groups, and markers.
+  return <div className="piece__visual" aria-hidden="true">{portrait}</div>;
 }
 
 // Dot positions for each face of a d6 (cx, cy as % of viewBox 0 0 20 20)
@@ -136,6 +171,7 @@ interface SquareProps {
   label: string;
   pieceTeam: Team | null;
   pieceRole: string | undefined;
+  pieceSkills: readonly string[];
   pieceClasses: string;
   pieceHasBall: boolean;
   looseBall: boolean;
@@ -144,7 +180,7 @@ interface SquareProps {
   displayStep: number | null;
   stepIsPreview: boolean;
   dice: DiceInfo | null;
-  ghost: { team: Team; role?: string; hasBall: boolean } | null;
+  ghost: { team: Team; role?: string; skills: readonly string[]; hasBall: boolean } | null;
   focusable: boolean;
   onSquareClick: (col: number, row: number) => void;
   onPieceClick: (col: number, row: number, x: number, y: number) => void;
@@ -160,7 +196,7 @@ interface SquareProps {
  * primitives or stable callbacks so the shallow comparison is meaningful.
  */
 const Square = memo(function Square({
-  pCol, pRow, lCol, lRow, classes, label, pieceTeam, pieceRole, pieceClasses, pieceHasBall,
+  pCol, pRow, lCol, lRow, classes, label, pieceTeam, pieceRole, pieceSkills, pieceClasses, pieceHasBall,
   looseBall, inTackleZone, actionLabel, displayStep, stepIsPreview, dice, ghost, focusable,
   onSquareClick, onPieceClick, onSquareHover, onSquareLeave,
 }: SquareProps) {
@@ -201,7 +237,7 @@ const Square = memo(function Square({
       {inTackleZone && <div className="square__tz-overlay" />}
       {pieceTeam && (
         <div className={pieceClasses}>
-          <PieceIcon team={pieceTeam} role={pieceRole} />
+          <PieceIcon team={pieceTeam} role={pieceRole} skills={pieceSkills} />
           {pieceHasBall && <BallIcon />}
         </div>
       )}
@@ -223,7 +259,7 @@ const Square = memo(function Square({
 
       {ghost && (
         <div className={`piece piece--${ghost.team} piece--ghost`}>
-          <PieceIcon team={ghost.team} role={ghost.role} />
+          <PieceIcon team={ghost.team} role={ghost.role} skills={ghost.skills} />
           {ghost.hasBall && <BallIcon ghost />}
         </div>
       )}
@@ -334,13 +370,18 @@ export function Pitch({ state, onSquareClick, onPieceClick, onSquareHover, onSqu
   function describeSquare(
     lCol: number, lRow: number,
     pieceName: string | null, pieceTeam: Team | null, pieceRole: string | undefined,
+    pieceSkills: readonly string[], pieceIsPreview: boolean,
     pieceDown: boolean, pieceHasBall: boolean, pieceActivated: boolean,
     reachable: boolean, dodge: number | null, gfi: boolean, pickup: number | null,
     looseBall: boolean, isTarget: string | null,
   ): string {
     const parts = [`${colLabel(lCol)}${rowLabel(lRow)}`];
     if (pieceName) {
-      parts.push(`${pieceName}, ${pieceTeam} ${pieceRole ?? ''}`.trim());
+      parts.push(`${pieceIsPreview ? 'movement preview for ' : ''}${pieceName}, ${pieceTeam} ${pieceRole ?? ''}`.trim());
+      const groups = skillGroupsFor(pieceSkills);
+      const markers = skillMarkersFor(pieceSkills);
+      if (groups.length > 0) parts.push(`skill groups ${groups.map(group => group.label).join(', ')}`);
+      if (markers.length > 0) parts.push(`marked skills ${markers.map(marker => marker.skill).join(', ')}`);
       if (pieceHasBall) parts.push('carrying the ball');
       if (pieceDown) parts.push('knocked down');
       else if (pieceActivated) parts.push('already acted');
@@ -443,6 +484,7 @@ export function Pitch({ state, onSquareClick, onPieceClick, onSquareHover, onSqu
 
       // Ghost piece — suppress when the destination square has rolls (dice take priority)
       const showGhost = isGhost && selectedPiece && !previewStep?.isGfi && !previewStep?.requiresDodge;
+      const describedPiece = piece ?? (showGhost ? selectedPiece : null);
 
       squares.push(
         <Square
@@ -454,14 +496,16 @@ export function Pitch({ state, onSquareClick, onPieceClick, onSquareHover, onSqu
           classes={classes}
           label={describeSquare(
             lCol, lRow,
-            piece?.name ?? null, piece?.team ?? null, piece?.role,
-            piece?.down ?? false, piece?.hasBall ?? false, piece?.activated ?? false,
+            describedPiece?.name ?? null, describedPiece?.team ?? null, describedPiece?.role,
+            describedPiece?.skills ?? EMPTY_SKILLS, !piece && !!showGhost,
+            describedPiece?.down ?? false, describedPiece?.hasBall ?? false, describedPiece?.activated ?? false,
             isReachable, previewStep?.requiresDodge ? previewStep.dodgeTarget : null,
             previewStep?.isGfi ?? false, previewStep?.pickupTarget ?? null,
             isLooseBall, targetDescription,
           )}
           pieceTeam={piece?.team ?? null}
           pieceRole={piece?.role}
+          pieceSkills={piece?.skills ?? EMPTY_SKILLS}
           pieceClasses={piece ? [
             'piece',
             `piece--${piece.team}`,
@@ -478,7 +522,12 @@ export function Pitch({ state, onSquareClick, onPieceClick, onSquareHover, onSqu
           stepIsPreview={!!previewStep}
           dice={previewDice ?? committedDice}
           ghost={showGhost && selectedPiece
-            ? { team: state.activeTeam, role: selectedPiece.role, hasBall: ghostHasBall }
+            ? {
+                team: selectedPiece.team,
+                role: selectedPiece.role,
+                skills: selectedPiece.skills,
+                hasBall: ghostHasBall,
+              }
             : null}
           // Focusable when the square is actionable, so Tab walks the legal
           // moves rather than every cell on the pitch.

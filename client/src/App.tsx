@@ -32,6 +32,7 @@ import type {
 } from './types';
 import { key, computeZoomBounds } from './bfs';
 import type { ZoomBounds } from './bfs';
+import { SKILL_GROUPS, SKILL_MARKERS } from './skillPresentation';
 import './App.css';
 import './PlaybookTheme.css';
 
@@ -926,23 +927,49 @@ export default function App() {
         <UserMenu name={identityName} avatarUrl={identityAvatarUrl} onSignOut={handleSignOut} />
       </header>
 
-      <div className="legend">
-        <span className="legend__item legend__item--tz">Tackle Zone</span>
-        <span className="legend__item legend__item--free">Free Move</span>
-        <span className="legend__item legend__item--gfi">Go For It</span>
-        <span className="legend__item legend__item--dodge">Dodge Required</span>
-        {state.isPassTargeting && <>
-          <span className="legend__item legend__item--range-quick">Quick (0–3)</span>
-          <span className="legend__item legend__item--range-short">Short (4–6)</span>
-          <span className="legend__item legend__item--range-long">Long (7–9)</span>
-          <span className="legend__item legend__item--range-bomb">Bomb (10–13)</span>
-        </>}
-        {state.isBlockTargeting && (
-          <span className="legend__item legend__item--block-target">Block Target</span>
-        )}
-        {state.pendingBlockResolution && (
-          <span className="legend__item legend__item--push-target">Push-Back Square</span>
-        )}
+      <div className="game-legends">
+        <div className="legend" role="list" aria-label="Pitch state legend">
+          <span className="legend__item legend__item--tz" role="listitem">Tackle Zone</span>
+          <span className="legend__item legend__item--free" role="listitem">Free Move</span>
+          <span className="legend__item legend__item--gfi" role="listitem">Go For It</span>
+          <span className="legend__item legend__item--dodge" role="listitem">Dodge Required</span>
+          {state.isPassTargeting && <>
+            <span className="legend__item legend__item--range-quick" role="listitem">Quick (0–3)</span>
+            <span className="legend__item legend__item--range-short" role="listitem">Short (4–6)</span>
+            <span className="legend__item legend__item--range-long" role="listitem">Long (7–9)</span>
+            <span className="legend__item legend__item--range-bomb" role="listitem">Bomb (10–13)</span>
+          </>}
+          {state.isBlockTargeting && (
+            <span className="legend__item legend__item--block-target" role="listitem">Block Target</span>
+          )}
+          {state.pendingBlockResolution && (
+            <span className="legend__item legend__item--push-target" role="listitem">Push-Back Square</span>
+          )}
+        </div>
+
+        <div className="skill-keys">
+          <div className="legend legend--skill-key" role="list" aria-label="Skill group color key">
+            <span className="legend__key-title" aria-hidden="true">Skill groups</span>
+            {SKILL_GROUPS.map(group => (
+              <span className="legend__item legend__item--skill" role="listitem" key={group.id}>
+                <span className={`legend__skill-swatch legend__skill-swatch--${group.id}`} aria-hidden="true" />
+                {group.label}
+              </span>
+            ))}
+          </div>
+
+          <div className="legend legend--skill-key" role="list" aria-label="Exact skill marker key">
+            <span className="legend__key-title" aria-hidden="true">Skill markers</span>
+            {SKILL_MARKERS.map(marker => (
+              <span className="legend__item legend__item--skill" role="listitem" key={marker.skill}>
+                <span className={`legend__skill-marker legend__skill-marker--${marker.className}`} aria-hidden="true">
+                  {marker.letter}
+                </span>
+                {marker.skill}
+              </span>
+            ))}
+          </div>
+        </div>
       </div>
 
       <div className="game-area">
