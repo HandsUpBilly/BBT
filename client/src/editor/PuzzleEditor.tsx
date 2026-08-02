@@ -1,13 +1,19 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { DragEvent } from 'react';
 import type { Scenario, ScenarioPieceDef, SeriesDefinition, Team } from '../types';
+import { ConfirmDialog } from '../ConfirmDialog';
 import { createScenario, deleteScenario, fetchEditorData, publishEditorData, updateDefaultSeries, updateScenario } from './editorApi';
-import { nextScenarioId, validateScenarioDraft } from './editorValidation';
+import { missingSeriesScenarioIds, nextScenarioId, validateScenarioDraft } from './editorValidation';
 import { PLAYER_TEMPLATES, generatedPlayerName, templateToPiece } from './playerTemplates';
+import { STAT_KEYS, STAT_RANGE, PITCH } from '../../../shared/scenarioValidation.js';
 import './PuzzleEditor.css';
 
-const COLS = 15;
-const ROWS = 26;
+const COLS = PITCH.maxCol + 1;
+const ROWS = PITCH.maxRow + 1;
+const ROLES: Record<Team, string[]> = {
+  human: ['thrower', 'catcher', 'lineman', 'blocker', 'guard', 'tackle'],
+  orc: ['thrower', 'catcher', 'lineman', 'blocker', 'blitzer', 'black-orc', 'big-un'],
+};
 const EMPTY_SERIES: SeriesDefinition = {
   id: 'default',
   name: 'Humans vs Orcs: Touchdown or Bust',
@@ -15,8 +21,12 @@ const EMPTY_SERIES: SeriesDefinition = {
   scenarioIds: [],
 };
 
+const STAT_LABELS: Record<string, string> = {
+  ma: 'MA', st: 'ST', ag: 'AG', pa: 'PA', av: 'AV',
+};
+
 function cloneScenario(scenario: Scenario): Scenario {
-  return JSON.parse(JSON.stringify(scenario)) as Scenario;
+  return structuredClone(scenario);
 }
 
 function emptyScenario(existingIds: string[]): Scenario {
@@ -51,6 +61,11 @@ function groupTemplates(team: Team) {
   return PLAYER_TEMPLATES.filter(template => template.team === team);
 }
 
+/** Structural comparison used to detect unsaved edits. */
+function sameScenario(a: Scenario, b: Scenario): boolean {
+  return JSON.stringify(a) === JSON.stringify(b);
+}
+
 interface Props {
   onBack: () => void;
   onPlay: (scenario: Scenario) => void;
@@ -62,28 +77,39 @@ export function PuzzleEditor({ onBack, onPlay, previewScenario, idToken }: Props
   const [scenarios, setScenarios] = useState<Scenario[]>([]);
   const [series, setSeries] = useState<SeriesDefinition>(EMPTY_SERIES);
   const [draft, setDraft] = useState<Scenario>(() => emptyScenario([]));
+  // The last-saved shape of the current draft, so we can tell whether the
+  // editor holds unsaved work before discarding it.
+  const [savedDraft, setSavedDraft] = useState<Scenario | null>(null);
   const [originalId, setOriginalId] = useState<string | undefined>();
   const [selectedPieceId, setSelectedPieceId] = useState<string | null>(null);
   const [ballTool, setBallTool] = useState(false);
   const [status, setStatus] = useState('Loading editor data...');
   const [saving, setSaving] = useState(false);
   const [publishing, setPublishing] = useState(false);
+  // Pending confirmation, if any: the action to run once the player confirms.
+  const [confirm, setConfirm] = useState<{
+    title: string; message: string; confirmLabel: string; destructive?: boolean; run: () => void;
+  } | null>(null);
 
   const load = useCallback(async () => {
     try {
-      const data = await fetchEditorData();
+      const data = await fetchEditorData(idToken);
       setScenarios(data.scenarios);
       setSeries(data.series);
       const first = previewScenario ?? data.scenarios[0] ?? emptyScenario([]);
-      setDraft(cloneScenario(first));
+      const clone = cloneScenario(first);
+      setDraft(clone);
+      setSavedDraft(data.scenarios.some(scenario => scenario.id === first.id) ? cloneScenario(first) : null);
       setOriginalId(data.scenarios.some(scenario => scenario.id === first.id) ? first.id : undefined);
       setSelectedPieceId(null);
       setStatus('Loaded editor data.');
     } catch (error) {
       setStatus(error instanceof Error ? error.message : 'Failed to load editor data.');
     }
-  }, [previewScenario]);
+  }, [previewScenario, idToken]);
 
+  // Deferred to a macrotask so React 19 StrictMode's double-invoked effect
+  // doesn't fire two concurrent loads on mount.
   useEffect(() => {
     const timer = window.setTimeout(() => { void load(); }, 0);
     return () => window.clearTimeout(timer);
@@ -94,31 +120,71 @@ export function PuzzleEditor({ onBack, onPlay, previewScenario, idToken }: Props
     () => validateScenarioDraft(draft, existingIds, originalId),
     [draft, existingIds, originalId],
   );
+  // Series entries pointing at scenarios that no longer exist would silently
+  // shorten a series run, so surface them here rather than dropping them.
+  const missingSeriesIds = useMemo(
+    () => missingSeriesScenarioIds(series, scenarios),
+    [series, scenarios],
+  );
+  const hasUnsavedChanges = savedDraft === null
+    ? draft.pieces.length > 0 || draft.name !== 'New Puzzle'
+    : !sameScenario(draft, savedDraft);
+
+  // Warn on tab close/reload while edits are pending. Re-registering the
+  // listener when the flag flips keeps it out of a ref written during render.
+  useEffect(() => {
+    if (!hasUnsavedChanges) return;
+    const onBeforeUnload = (event: BeforeUnloadEvent) => event.preventDefault();
+    window.addEventListener('beforeunload', onBeforeUnload);
+    return () => window.removeEventListener('beforeunload', onBeforeUnload);
+  }, [hasUnsavedChanges]);
+
   const selectedPiece = selectedPieceId
     ? draft.pieces.find(piece => piece.id === selectedPieceId)
     : undefined;
   const seriesIndex = series.scenarioIds.indexOf(draft.id);
   const inSeries = seriesIndex >= 0;
 
+  /** Runs `action`, first asking to confirm if the draft has unsaved edits. */
+  function guardUnsaved(action: () => void, what: string) {
+    if (!hasUnsavedChanges) {
+      action();
+      return;
+    }
+    setConfirm({
+      title: 'Discard unsaved changes?',
+      message: `${what} will lose the edits you've made to "${draft.name}".`,
+      confirmLabel: 'Discard',
+      destructive: true,
+      run: action,
+    });
+  }
+
   function updateDraft(updater: (scenario: Scenario) => Scenario) {
     setDraft(current => updater(cloneScenario(current)));
   }
 
   function selectScenario(scenario: Scenario) {
-    setDraft(cloneScenario(scenario));
-    setOriginalId(scenario.id);
-    setSelectedPieceId(null);
-    setBallTool(false);
-    setStatus(`Editing ${scenario.id}.`);
+    guardUnsaved(() => {
+      setDraft(cloneScenario(scenario));
+      setSavedDraft(cloneScenario(scenario));
+      setOriginalId(scenario.id);
+      setSelectedPieceId(null);
+      setBallTool(false);
+      setStatus(`Editing ${scenario.id}.`);
+    }, 'Opening another puzzle');
   }
 
   function createNew() {
-    const scenario = emptyScenario(existingIds);
-    setDraft(scenario);
-    setOriginalId(undefined);
-    setSelectedPieceId(null);
-    setBallTool(false);
-    setStatus('Created an unsaved puzzle draft.');
+    guardUnsaved(() => {
+      const scenario = emptyScenario(existingIds);
+      setDraft(scenario);
+      setSavedDraft(null);
+      setOriginalId(undefined);
+      setSelectedPieceId(null);
+      setBallTool(false);
+      setStatus('Created an unsaved puzzle draft.');
+    }, 'Starting a new puzzle');
   }
 
   function duplicateCurrent() {
@@ -129,9 +195,10 @@ export function PuzzleEditor({ onBack, onPlay, previewScenario, idToken }: Props
       name: `${draft.name} Copy`,
       published: false,
     });
+    setSavedDraft(null);
     setOriginalId(undefined);
     setSelectedPieceId(null);
-    setStatus(`Duplicated as ${nextId}.`);
+    setStatus(`Duplicated as ${nextId}. Save As New to keep it.`);
   }
 
   function setMetadata<K extends keyof Scenario>(keyName: K, value: Scenario[K]) {
@@ -143,6 +210,22 @@ export function PuzzleEditor({ onBack, onPlay, previewScenario, idToken }: Props
       ...scenario,
       pieces: scenario.pieces.map(piece => piece.id === pieceId ? { ...piece, ...patch } : piece),
     }));
+  }
+
+  /**
+   * Piece ids are rewritten on blur rather than per keystroke — editing them
+   * live meant every intermediate value (including the empty string) briefly
+   * became the piece's real id, and could collide with another piece.
+   */
+  function commitPieceId(pieceId: string, rawNextId: string) {
+    const nextId = rawNextId.trim();
+    if (!nextId || nextId === pieceId) return;
+    if (draft.pieces.some(piece => piece.id === nextId)) {
+      setStatus(`Player id "${nextId}" is already used.`);
+      return;
+    }
+    updatePiece(pieceId, { id: nextId });
+    setSelectedPieceId(nextId);
   }
 
   function deleteSelectedPiece() {
@@ -230,8 +313,9 @@ export function PuzzleEditor({ onBack, onPlay, previewScenario, idToken }: Props
       const sorted = [...next, saved].sort((a, b) => a.id.localeCompare(b.id));
       setScenarios(sorted);
       setDraft(cloneScenario(saved));
+      setSavedDraft(cloneScenario(saved));
       setOriginalId(saved.id);
-      setStatus(`Saved ${saved.id}. Reload the dev server page if this is a new file.`);
+      setStatus(`Saved ${saved.id} as a draft. Click Publish Drafts to make it live for players.`);
     } catch (error) {
       setStatus(error instanceof Error ? error.message : 'Failed to save puzzle.');
     } finally {
@@ -252,6 +336,15 @@ export function PuzzleEditor({ onBack, onPlay, previewScenario, idToken }: Props
     }
   }
 
+  function requestPublish() {
+    setConfirm({
+      title: 'Publish drafts to players?',
+      message: 'Every saved draft change — new puzzles, edits, deletions, and enable/disable flags — becomes live for players immediately.',
+      confirmLabel: 'Publish',
+      run: () => { void publish(); },
+    });
+  }
+
   async function publish() {
     setPublishing(true);
     try {
@@ -264,22 +357,32 @@ export function PuzzleEditor({ onBack, onPlay, previewScenario, idToken }: Props
     }
   }
 
-  async function deleteCurrentScenario() {
+  function requestDelete() {
     if (!originalId) {
       setStatus('Unsaved drafts can be cleared with New or Reload.');
       return;
     }
-    const confirmed = window.confirm(`Delete ${draft.name}? This removes it from drafts and the current series.`);
-    if (!confirmed) return;
+    setConfirm({
+      title: `Delete ${draft.name}?`,
+      message: 'This removes the puzzle from drafts and from the current series. Publish afterwards to apply it for players.',
+      confirmLabel: 'Delete',
+      destructive: true,
+      run: () => { void deleteCurrentScenario(); },
+    });
+  }
 
+  async function deleteCurrentScenario() {
+    if (!originalId) return;
     setSaving(true);
     try {
       const data = await deleteScenario(originalId, idToken);
       setScenarios(data.scenarios);
       setSeries(data.series);
       const nextDraft = data.scenarios[0] ?? emptyScenario([]);
+      const isSaved = data.scenarios.some(scenario => scenario.id === nextDraft.id);
       setDraft(cloneScenario(nextDraft));
-      setOriginalId(data.scenarios.some(scenario => scenario.id === nextDraft.id) ? nextDraft.id : undefined);
+      setSavedDraft(isSaved ? cloneScenario(nextDraft) : null);
+      setOriginalId(isSaved ? nextDraft.id : undefined);
       setSelectedPieceId(null);
       setBallTool(false);
       setStatus(`Deleted ${originalId}. Click Publish Drafts to update players.`);
@@ -306,6 +409,13 @@ export function PuzzleEditor({ onBack, onPlay, previewScenario, idToken }: Props
     void saveSeries({ ...series, scenarioIds: next });
   }
 
+  function removeMissingSeriesIds() {
+    void saveSeries({
+      ...series,
+      scenarioIds: series.scenarioIds.filter(id => !missingSeriesIds.includes(id)),
+    });
+  }
+
   return (
     <div className="editor">
       <header className="editor__header">
@@ -316,11 +426,12 @@ export function PuzzleEditor({ onBack, onPlay, previewScenario, idToken }: Props
           </p>
         </div>
         <div className="editor__header-actions">
-          <button className="btn btn--secondary" onClick={onBack}>Back</button>
+          {hasUnsavedChanges && <span className="editor__unsaved">Unsaved changes</span>}
+          <button className="btn btn--secondary" onClick={() => guardUnsaved(onBack, 'Leaving the editor')}>Back</button>
           <button className="btn btn--primary" onClick={() => onPlay(draft)} disabled={validationErrors.length > 0}>
             Play Draft
           </button>
-          <button className="btn btn--primary" disabled={publishing} onClick={() => { void publish(); }}>
+          <button className="btn btn--primary" disabled={publishing} onClick={requestPublish}>
             {publishing ? 'Publishing…' : 'Publish Drafts'}
           </button>
         </div>
@@ -333,17 +444,28 @@ export function PuzzleEditor({ onBack, onPlay, previewScenario, idToken }: Props
             <button className="btn btn--secondary" onClick={createNew}>New</button>
           </div>
           <div className="editor__puzzle-list">
-            {scenarios.map(scenario => (
-              <button
-                key={scenario.id}
-                className={`editor__puzzle-row${draft.id === scenario.id ? ' editor__puzzle-row--active' : ''}`}
-                onClick={() => selectScenario(scenario)}
-              >
-                <strong>{scenario.name}</strong>
-                <span>{scenario.id}</span>
-                <span>{scenario.published === false ? 'Disabled' : 'Enabled'} · {scenario.pieces.length} players</span>
-              </button>
-            ))}
+            {scenarios.map(scenario => {
+              const position = series.scenarioIds.indexOf(scenario.id);
+              return (
+                <button
+                  key={scenario.id}
+                  className={`editor__puzzle-row${draft.id === scenario.id ? ' editor__puzzle-row--active' : ''}`}
+                  onClick={() => selectScenario(scenario)}
+                >
+                  <strong>{scenario.name}</strong>
+                  <span>{scenario.id}</span>
+                  <span className="editor__puzzle-desc">{scenario.description}</span>
+                  <span>
+                    {scenario.activeTeam === 'orc' ? 'Orcs' : 'Humans'} active ·{' '}
+                    {scenario.pieces.length} player{scenario.pieces.length === 1 ? '' : 's'} ·{' '}
+                    {scenario.published === false ? 'Disabled' : 'Enabled'}
+                  </span>
+                  <span className={position >= 0 ? 'editor__puzzle-series' : 'editor__puzzle-series editor__puzzle-series--out'}>
+                    {position >= 0 ? `Series #${position + 1}` : 'Not in series'}
+                  </span>
+                </button>
+              );
+            })}
           </div>
           <button className="btn btn--secondary" onClick={duplicateCurrent}>Duplicate Current</button>
         </aside>
@@ -384,6 +506,7 @@ export function PuzzleEditor({ onBack, onPlay, previewScenario, idToken }: Props
               Array.from({ length: COLS }).map((__, col) => {
                 const piece = pieceAt(draft, col, row);
                 const looseBall = draft.ballPosition?.col === col && draft.ballPosition.row === row;
+                const squareLabel = `Column ${col}, row ${row}`;
                 return (
                   <button
                     key={`${col},${row}`}
@@ -391,10 +514,13 @@ export function PuzzleEditor({ onBack, onPlay, previewScenario, idToken }: Props
                       'editor-pitch__square',
                       (col + row) % 2 === 0 ? 'editor-pitch__square--light' : 'editor-pitch__square--dark',
                       row === 0 ? 'editor-pitch__square--endzone-top' : '',
-                      row === 25 ? 'editor-pitch__square--endzone-bottom' : '',
+                      row === ROWS - 1 ? 'editor-pitch__square--endzone-bottom' : '',
                       row === 13 ? 'editor-pitch__square--scrimmage' : '',
                       piece?.id === selectedPieceId ? 'editor-pitch__square--selected' : '',
                     ].filter(Boolean).join(' ')}
+                    aria-label={piece
+                      ? `${squareLabel}: ${piece.name}, ${piece.team} ${piece.role ?? ''}${piece.hasBall ? ', carrying the ball' : ''}`
+                      : looseBall ? `${squareLabel}: loose ball` : `${squareLabel}: empty`}
                     onClick={() => handleSquareClick(col, row)}
                     onDragOver={event => event.preventDefault()}
                     onDrop={event => handleDrop(col, row, event)}
@@ -441,6 +567,7 @@ export function PuzzleEditor({ onBack, onPlay, previewScenario, idToken }: Props
             <button
               className={`btn ${ballTool ? 'btn--primary' : 'btn--secondary'}`}
               onClick={() => setBallTool(active => !active)}
+              aria-pressed={ballTool}
             >
               Ball Tool
             </button>
@@ -457,37 +584,100 @@ export function PuzzleEditor({ onBack, onPlay, previewScenario, idToken }: Props
                 </label>
                 <label>
                   ID
-                  <input value={selectedPiece.id} onChange={event => {
-                    const nextId = event.target.value;
-                    updatePiece(selectedPiece.id, { id: nextId });
-                    setSelectedPieceId(nextId);
-                  }} />
+                  <input
+                    // Uncontrolled-ish: keyed by piece id so switching selection
+                    // resets it, but the draft is only touched on blur/Enter.
+                    key={selectedPiece.id}
+                    defaultValue={selectedPiece.id}
+                    onBlur={event => commitPieceId(selectedPiece.id, event.target.value)}
+                    onKeyDown={event => {
+                      if (event.key === 'Enter') event.currentTarget.blur();
+                    }}
+                  />
                 </label>
+                <label>
+                  Team
+                  <select
+                    value={selectedPiece.team}
+                    onChange={event => {
+                      const team = event.target.value as Team;
+                      // Keep the role valid for the new team.
+                      const role = ROLES[team].includes(selectedPiece.role ?? '')
+                        ? selectedPiece.role
+                        : ROLES[team][0];
+                      updatePiece(selectedPiece.id, { team, role });
+                    }}
+                  >
+                    <option value="human">Human</option>
+                    <option value="orc">Orc</option>
+                  </select>
+                </label>
+                <label>
+                  Role
+                  <select
+                    value={selectedPiece.role ?? ROLES[selectedPiece.team][0]}
+                    onChange={event => updatePiece(selectedPiece.id, { role: event.target.value })}
+                  >
+                    {ROLES[selectedPiece.team].map(role => (
+                      <option key={role} value={role}>{role}</option>
+                    ))}
+                  </select>
+                </label>
+                <div className="editor__stat-inputs">
+                  {STAT_KEYS.map(stat => (
+                    <label key={stat} className="editor__stat-input">
+                      {STAT_LABELS[stat]}
+                      <input
+                        type="number"
+                        min={STAT_RANGE.min}
+                        max={STAT_RANGE.max}
+                        value={selectedPiece[stat]}
+                        onChange={event => {
+                          const value = Number(event.target.value);
+                          if (!Number.isFinite(value)) return;
+                          updatePiece(selectedPiece.id, { [stat]: value } as Partial<ScenarioPieceDef>);
+                        }}
+                      />
+                    </label>
+                  ))}
+                </div>
+                <label>
+                  Skills
+                  <input
+                    value={selectedPiece.skills.join(', ')}
+                    placeholder="Block, Dodge"
+                    onChange={event => updatePiece(selectedPiece.id, {
+                      skills: event.target.value.split(',').map(skill => skill.trim()).filter(Boolean),
+                    })}
+                  />
+                </label>
+                <p className="editor__hint">Comma-separated. Block, Wrestle, Dodge, and Tackle affect block resolution.</p>
                 <label className="editor__checkbox">
                   <input type="checkbox" checked={selectedPiece.hasBall} onChange={() => assignBallToPiece(selectedPiece.id)} />
                   Has ball
                 </label>
-                <div className="editor__stats">
-                  <span>MA {selectedPiece.ma}</span>
-                  <span>ST {selectedPiece.st}</span>
-                  <span>AG {selectedPiece.ag}</span>
-                  <span>PA {selectedPiece.pa}</span>
-                  <span>AV {selectedPiece.av}</span>
-                </div>
-                <div className="editor__skills">{selectedPiece.skills.length ? selectedPiece.skills.join(', ') : 'No skills'}</div>
                 <button className="btn btn--ghost" onClick={deleteSelectedPiece}>Delete Player</button>
               </>
             ) : (
-              <p className="editor__hint">Select a placed player to rename, assign the ball, or delete it.</p>
+              <p className="editor__hint">Select a placed player to edit its stats, skills, and role, assign the ball, or delete it. Drag a player to move it.</p>
             )}
           </section>
 
           <section className="editor-tool">
             <h2>Series</h2>
             <p className="editor__hint">{series.name}</p>
-            <button className="btn btn--secondary" onClick={toggleSeriesAssignment}>
+            {missingSeriesIds.length > 0 && (
+              <div className="editor__errors" role="alert">
+                <p>Series references missing puzzles: {missingSeriesIds.join(', ')}</p>
+                <button className="btn btn--secondary" onClick={removeMissingSeriesIds}>
+                  Remove Missing Entries
+                </button>
+              </div>
+            )}
+            <button className="btn btn--secondary" onClick={toggleSeriesAssignment} disabled={!originalId}>
               {inSeries ? 'Remove From Series' : 'Add To Series'}
             </button>
+            {!originalId && <p className="editor__hint">Save the puzzle before adding it to the series.</p>}
             <div className="editor__series-actions">
               <button className="btn btn--secondary" disabled={!inSeries || seriesIndex === 0} onClick={() => moveSeries(-1)}>Move Up</button>
               <button className="btn btn--secondary" disabled={!inSeries || seriesIndex === series.scenarioIds.length - 1} onClick={() => moveSeries(1)}>Move Down</button>
@@ -512,14 +702,26 @@ export function PuzzleEditor({ onBack, onPlay, previewScenario, idToken }: Props
             <button className="btn btn--secondary" disabled={saving || validationErrors.length > 0} onClick={() => { void saveScenario(false); }}>
               Save As New
             </button>
-            <button className="btn btn--ghost" disabled={saving || !originalId} onClick={() => { void deleteCurrentScenario(); }}>
+            <button className="btn btn--ghost" disabled={saving || !originalId} onClick={requestDelete}>
               Delete Puzzle
             </button>
-            <button className="btn btn--secondary" onClick={() => { void load(); }}>Reload</button>
-            <p className="editor__status">{status}</p>
+            <button className="btn btn--secondary" onClick={() => guardUnsaved(() => { void load(); }, 'Reloading')}>Reload</button>
+            <p className="editor__status" role="status">{status}</p>
           </section>
         </aside>
       </div>
+
+      {confirm && (
+        <ConfirmDialog
+          title={confirm.title}
+          message={confirm.message}
+          confirmLabel={confirm.confirmLabel}
+          cancelLabel="Keep Editing"
+          destructive={confirm.destructive}
+          onConfirm={() => { const run = confirm.run; setConfirm(null); run(); }}
+          onCancel={() => setConfirm(null)}
+        />
+      )}
     </div>
   );
 }

@@ -4,17 +4,27 @@ import { dirname, join } from 'path';
 import { randomUUID } from 'crypto';
 import { existsSync } from 'fs';
 import { AuthError, entryAuthFields, verifyOptionalGoogleUser } from './auth.js';
-import { registerEditorRoutes } from './editor.js';
+import { registerEditorRoutes, readPublicScenarios } from './editor.js';
 import {
-  ReportConfigurationError,
-  ReportDeliveryError,
   ReportValidationError,
   buildIssueDraft,
   createDownload,
-  createGitHubIssue,
   resolveReporterName,
   validateReportPayload,
-} from './reporting.js';
+} from '../shared/reporting.js';
+import {
+  ReportConfigurationError,
+  ReportDeliveryError,
+  createGitHubIssue,
+} from '../shared/githubIssues.js';
+import {
+  ScoreValidationError,
+  sortEntries,
+  upsertPersonalBest,
+  validateScoreSubmission,
+  validateSeriesSubmission,
+} from '../shared/scoreValidation.js';
+import { REPORT_RATE_LIMIT, createRateLimiter } from '../shared/rateLimit.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const app = express();
@@ -22,12 +32,30 @@ const PORT = process.env.PORT || 3001;
 const distPath = join(__dirname, '../client/dist');
 const isProd = existsSync(distPath);
 
-app.use(express.json());
+// Leaderboards return at most this many rows. The full list is retained in the
+// store — only the read is truncated — so a player who drops out of the visible
+// table still has their personal best on record.
+const TOP_N = 20;
+
+app.use(express.json({ limit: '256kb' }));
 registerEditorRoutes(app);
 
 // Serve built client in production only
 if (isProd) {
   app.use(express.static(distPath));
+}
+
+/** Shared 401/400 handling for the identity + payload validation steps. */
+async function identify(req, res) {
+  try {
+    return { user: await verifyOptionalGoogleUser(req) };
+  } catch (error) {
+    if (error instanceof AuthError) {
+      res.status(401).json({ error: error.message });
+      return { failed: true };
+    }
+    throw error;
+  }
 }
 
 // ── In-memory leaderboard ────────────────────────────────────────────────────
@@ -39,90 +67,105 @@ function getBoard(scenarioId) {
 }
 
 app.get('/api/leaderboard/:scenarioId', (req, res) => {
-  const top20 = [...getBoard(req.params.scenarioId)]
-    .sort((a, b) => b.probability - a.probability || a.diceCount - b.diceCount)
-    .slice(0, 20);
-  res.json(top20);
+  res.json(sortEntries(getBoard(req.params.scenarioId)).slice(0, TOP_N));
 });
 
 app.post('/api/leaderboard/:scenarioId', async (req, res) => {
-  let user = null;
+  const { user, failed } = await identify(req, res);
+  if (failed) return;
+
+  let score;
   try {
-    user = await verifyOptionalGoogleUser(req);
+    score = validateScoreSubmission(req.body, user);
   } catch (error) {
-    if (error instanceof AuthError) return res.status(401).json({ error: error.message });
+    if (error instanceof ScoreValidationError) return res.status(400).json({ error: error.message });
     throw error;
   }
 
-  const { name, probability, diceCount } = req.body;
-  if ((!name && !user) || probability == null || diceCount == null)
-    return res.status(400).json({ error: 'name, probability and diceCount are required' });
   const entry = {
     id: randomUUID(),
     scenarioId: req.params.scenarioId,
-    name: String(user?.name ?? name).slice(0, 32),
-    probability: Number(probability),
-    diceCount: Number(diceCount),
+    name: score.name,
+    probability: score.probability,
+    diceCount: score.diceCount,
     date: new Date().toISOString(),
+    moves: score.moves,
     ...entryAuthFields(user),
   };
+
   const board = getBoard(req.params.scenarioId);
-  const idx = user
-    ? board.findIndex(e => e.userId === user.providerUserId)
-    : -1;
-  if (idx >= 0) board[idx] = entry;
-  else board.push(entry);
-  res.status(201).json(entry);
+  const updated = upsertPersonalBest(board, entry, existing =>
+    user ? existing.userId === user.providerUserId : !existing.userId && existing.name === entry.name,
+  );
+  store.set(req.params.scenarioId, updated);
+
+  // Report the entry actually on the board: an unbeaten personal best is kept,
+  // so the client highlights the right row instead of one that was discarded.
+  const persisted = updated.find(e => e.id === entry.id) ?? updated.find(e =>
+    user ? e.userId === user.providerUserId : !e.userId && e.name === entry.name,
+  );
+  res.status(201).json(persisted ?? entry);
 });
 
 // ── In-memory series leaderboard ────────────────────────────────────────────
-const seriesBoard = [];
+let seriesBoard = [];
 
 app.get('/api/series-leaderboard', (_req, res) => {
-  const top20 = [...seriesBoard]
-    .sort((a, b) => b.probability - a.probability || a.diceCount - b.diceCount)
-    .slice(0, 20);
-  res.json(top20);
+  res.json(sortEntries(seriesBoard).slice(0, TOP_N));
 });
 
 app.post('/api/series-leaderboard', async (req, res) => {
-  let user = null;
+  const { user, failed } = await identify(req, res);
+  if (failed) return;
+
+  let score;
   try {
-    user = await verifyOptionalGoogleUser(req);
+    score = validateSeriesSubmission(req.body, user);
   } catch (error) {
-    if (error instanceof AuthError) return res.status(401).json({ error: error.message });
+    if (error instanceof ScoreValidationError) return res.status(400).json({ error: error.message });
     throw error;
   }
 
-  const { name, probability, diceCount, puzzles } = req.body;
-  if ((!name && !user) || probability == null || diceCount == null)
-    return res.status(400).json({ error: 'name, probability and diceCount are required' });
   const entry = {
     id: randomUUID(),
-    name: String(user?.name ?? name).slice(0, 32),
-    probability: Number(probability),
-    diceCount: Number(diceCount),
+    name: score.name,
+    probability: score.probability,
+    diceCount: score.diceCount,
     date: new Date().toISOString(),
-    puzzles: Array.isArray(puzzles) ? puzzles : [],
+    puzzles: score.puzzles,
     ...entryAuthFields(user),
   };
-  const idx = user
-    ? seriesBoard.findIndex(e => e.userId === user.providerUserId)
-    : seriesBoard.findIndex(e => e.name === entry.name);
-  if (idx >= 0) seriesBoard[idx] = entry;
-  else seriesBoard.push(entry);
-  res.status(201).json(entry);
+
+  seriesBoard = upsertPersonalBest(seriesBoard, entry, existing =>
+    user ? existing.userId === user.providerUserId : !existing.userId && existing.name === entry.name,
+  );
+
+  const persisted = seriesBoard.find(e => e.id === entry.id) ?? seriesBoard.find(e =>
+    user ? e.userId === user.providerUserId : !e.userId && e.name === entry.name,
+  );
+  res.status(201).json(persisted ?? entry);
+});
+
+// ── Combined home-screen progress ───────────────────────────────────────────
+// One request instead of one-per-scenario plus the series board. Mirrors
+// netlify/functions/progress.js.
+app.get('/api/progress', async (_req, res) => {
+  const { scenarios } = await readPublicScenarios();
+  const boards = Object.fromEntries(
+    scenarios.map(scenario => [
+      scenario.id,
+      sortEntries(getBoard(scenario.id)).slice(0, TOP_N),
+    ]),
+  );
+  res.json({ scenarios: boards, series: sortEntries(seriesBoard).slice(0, TOP_N) });
 });
 
 // ── Player issue and feature reports ────────────────────────────────────────
+const takeReportToken = createRateLimiter(REPORT_RATE_LIMIT);
+
 app.post('/api/reports', async (req, res) => {
-  let user = null;
-  try {
-    user = await verifyOptionalGoogleUser(req);
-  } catch (error) {
-    if (error instanceof AuthError) return res.status(401).json({ error: error.message });
-    throw error;
-  }
+  const { user, failed } = await identify(req, res);
+  if (failed) return;
 
   let report;
   let reporterName;
@@ -136,6 +179,20 @@ app.post('/api/reports', async (req, res) => {
 
   const draft = buildIssueDraft(report, reporterName);
   const download = createDownload(report, reporterName);
+
+  // Rate-limit after validation so a malformed flood can't consume a bucket,
+  // and key on the verified user when we have one so a shared IP doesn't
+  // penalize everyone behind it.
+  const bucket = user?.providerUserId ?? req.ip ?? 'unknown';
+  const { allowed, retryAfterSeconds } = takeReportToken(bucket);
+  if (!allowed) {
+    res.set('Retry-After', String(retryAfterSeconds));
+    return res.status(429).json({
+      error: 'Too many reports from this session. Try again later, or download the report below.',
+      download,
+    });
+  }
+
   try {
     const issue = await createGitHubIssue(draft);
     return res.status(201).json(issue);
@@ -161,7 +218,10 @@ app.use((error, _req, res, next) => {
   if (error instanceof SyntaxError && 'body' in error) {
     return res.status(400).json({ error: 'Invalid JSON' });
   }
-  return next(error);
+  if (res.headersSent) return next(error);
+  // Never leak internals to the client; the stack still reaches the dev console.
+  console.error('Unhandled API error:', error);
+  return res.status(500).json({ error: 'Internal server error' });
 });
 
 app.listen(PORT, () =>

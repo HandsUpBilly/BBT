@@ -14,11 +14,20 @@ interface Props {
   continueLabel?: string;
   defaultName?: string;
   signedInName?: string;
+  /** Submission failure — keeps the dialog open so the player can retry. */
+  error?: string;
 }
 
 function pct(p: number) { return `${(p * 100).toFixed(1)}%`; }
 function gcd(a: number, b: number): number { return b === 0 ? a : gcd(b, a % b); }
-function cumFraction(entries: ActionLogEntry[]): string {
+
+/**
+ * Exact odds as a fraction, e.g. "5/12". Returns null when the numbers grow
+ * past exact integer arithmetic — block outcomes contribute an awkward
+ * denominator, and a handful of them used to silently overflow into Infinity
+ * and render "NaN/NaN". The caller falls back to the percentage alone.
+ */
+function cumFraction(entries: ActionLogEntry[]): string | null {
   let num = 1, den = 1;
   for (const e of entries) {
     if (e.kind === 'handoff')    { num *= (7 - e.catchTarget); den *= 6; continue; }
@@ -28,6 +37,7 @@ function cumFraction(entries: ActionLogEntry[]): string {
     if (e.isGfi) { num *= 5; den *= 6; }
     if (e.dodgeTarget !== null) { num *= (7 - e.dodgeTarget); den *= 6; }
     if (e.kind === 'move' && e.pickupTarget) { num *= (7 - e.pickupTarget); den *= 6; }
+    if (!Number.isSafeInteger(num) || !Number.isSafeInteger(den)) return null;
   }
   const g = gcd(num, den);
   return `${num / g}/${den / g}`;
@@ -77,8 +87,17 @@ function capitalize(s: string): string {
   return s.charAt(0).toUpperCase() + s.slice(1);
 }
 
-export function SubmitModal({ actionLog, onSubmit, onDismiss, seriesMode, continueLabel, defaultName = '', signedInName }: Props) {
+export function SubmitModal({ actionLog, onSubmit, onDismiss, seriesMode, continueLabel, defaultName = '', signedInName, error }: Props) {
   const [name, setName] = useState(defaultName);
+  const [submitting, setSubmitting] = useState(false);
+
+  // onSubmit may be async (it hits the network). Track it so the button can't
+  // be double-fired, and clear the flag when a failure comes back so the
+  // player can retry.
+  const runSubmit = (value: string) => {
+    setSubmitting(true);
+    void Promise.resolve(onSubmit(value)).finally(() => setSubmitting(false));
+  };
 
   const riskyMoves = actionLog.filter(e =>
     e.kind === 'handoff' || e.kind === 'pass' || e.kind === 'pass-catch' || e.kind === 'block' ||
@@ -114,7 +133,12 @@ export function SubmitModal({ actionLog, onSubmit, onDismiss, seriesMode, contin
             <div className="submit-modal__cum-row">
               <span className="submit-modal__cum-label">Cumulative probability</span>
               <span className={`submit-modal__cum-value${cumulativeProb < 0.5 ? ' submit-modal__cum-value--risky' : ''}`}>
-                {cumFraction(riskyMoves)} <span className="submit-modal__cum-pct">({pct(cumulativeProb)})</span>
+                {(() => {
+                  const fraction = cumFraction(riskyMoves);
+                  return fraction
+                    ? <>{fraction} <span className="submit-modal__cum-pct">({pct(cumulativeProb)})</span></>
+                    : pct(cumulativeProb);
+                })()}
               </span>
             </div>
           </div>
@@ -122,10 +146,14 @@ export function SubmitModal({ actionLog, onSubmit, onDismiss, seriesMode, contin
           <p className="submit-modal__no-risk">Clean run — no rolls needed!</p>
         )}
 
+        {error && (
+          <p className="submit-modal__error" role="alert">{error}</p>
+        )}
+
         {seriesMode ? (
           <div className="submit-modal__actions">
-            <button className="modal__roll-btn" onClick={() => onSubmit('')}>
-              {continueLabel ?? 'Continue'}
+            <button className="modal__roll-btn" disabled={submitting} onClick={() => runSubmit('')}>
+              {submitting ? 'Saving…' : error ? 'Try Again' : continueLabel ?? 'Continue'}
             </button>
           </div>
         ) : (
@@ -142,7 +170,7 @@ export function SubmitModal({ actionLog, onSubmit, onDismiss, seriesMode, contin
                   placeholder="Your name"
                   value={name}
                   onChange={e => setName(e.target.value)}
-                  onKeyDown={e => e.key === 'Enter' && name.trim() && onSubmit(name.trim())}
+                  onKeyDown={e => e.key === 'Enter' && name.trim() && !submitting && runSubmit(name.trim())}
                   autoFocus
                 />
               </>
@@ -150,12 +178,12 @@ export function SubmitModal({ actionLog, onSubmit, onDismiss, seriesMode, contin
             <div className="submit-modal__actions">
               <button
                 className="modal__roll-btn"
-                disabled={!name.trim()}
-                onClick={() => onSubmit(name.trim())}
+                disabled={!name.trim() || submitting}
+                onClick={() => runSubmit(name.trim())}
               >
-                Submit Score
+                {submitting ? 'Saving…' : error ? 'Try Again' : 'Submit Score'}
               </button>
-              <button className="modal__continue-btn" onClick={onDismiss}>
+              <button className="modal__continue-btn" disabled={submitting} onClick={onDismiss}>
                 Skip
               </button>
             </div>

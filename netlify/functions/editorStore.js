@@ -1,16 +1,14 @@
 import { getStore } from '@netlify/blobs';
 
-// Statically imported so esbuild bundles them into the function — these are
-// the seed values used the first time the Blobs draft store is read. New
-// scenario JSON files must be added here manually (esbuild can't glob).
-import scenario001 from '../../client/src/scenarios/scenario-001.json' with { type: 'json' };
-import scenario002 from '../../client/src/scenarios/scenario-002.json' with { type: 'json' };
-import scenario003 from '../../client/src/scenarios/scenario-003.json' with { type: 'json' };
-import scenario004 from '../../client/src/scenarios/scenario-004.json' with { type: 'json' };
-import scenario005 from '../../client/src/scenarios/scenario-005.json' with { type: 'json' };
-import defaultSeries from '../../client/src/series/default.json' with { type: 'json' };
+// Seed data for the first read of each Blobs key.
+//
+// esbuild cannot glob, so this list is generated at build time from
+// client/src/scenarios/*.json by scripts/generate-scenario-seed.mjs (wired into
+// the Netlify build command). Do NOT hand-edit scenarioSeed.js — adding a
+// scenario JSON file is all that is required, matching the client's
+// import.meta.glob behavior.
+import { STATIC_SCENARIOS, STATIC_SERIES } from './scenarioSeed.js';
 
-const STATIC_SCENARIOS = [scenario001, scenario002, scenario003, scenario004, scenario005];
 const SCENARIOS_KEY = 'scenarios';
 const SERIES_KEY = 'series-default';
 const PUBLISHED_SCENARIOS_KEY = 'published-scenarios';
@@ -24,9 +22,9 @@ export function editorStore() {
   });
 }
 
-/** Reads the draft scenario list, seeding from the static bundle on first read. */
-export async function readDraftScenarios(store) {
-  const raw = await store.get(SCENARIOS_KEY, { type: 'text' });
+/** Reads a key, seeding it from the static bundle on first read or corrupt data. */
+async function readSeeded(store, key, seed) {
+  const raw = await store.get(key, { type: 'text' });
   if (raw) {
     try {
       return JSON.parse(raw);
@@ -34,69 +32,44 @@ export async function readDraftScenarios(store) {
       // fall through to reseed on corrupt data
     }
   }
-  await store.set(SCENARIOS_KEY, JSON.stringify(STATIC_SCENARIOS));
-  return STATIC_SCENARIOS;
+  await store.set(key, JSON.stringify(seed));
+  return seed;
 }
 
-export async function writeDraftScenarios(store, scenarios) {
-  await store.set(SCENARIOS_KEY, JSON.stringify(scenarios));
-}
+export const readDraftScenarios = store => readSeeded(store, SCENARIOS_KEY, STATIC_SCENARIOS);
+export const readDraftSeries = store => readSeeded(store, SERIES_KEY, STATIC_SERIES);
 
-/** Reads the draft default series, seeding from the static bundle on first read. */
-export async function readDraftSeries(store) {
-  const raw = await store.get(SERIES_KEY, { type: 'text' });
-  if (raw) {
-    try {
-      return JSON.parse(raw);
-    } catch {
-      // fall through to reseed on corrupt data
-    }
-  }
-  await store.set(SERIES_KEY, JSON.stringify(defaultSeries));
-  return defaultSeries;
-}
-
-export async function writeDraftSeries(store, series) {
-  await store.set(SERIES_KEY, JSON.stringify(series));
-}
+export const writeDraftScenarios = (store, scenarios) =>
+  store.set(SCENARIOS_KEY, JSON.stringify(scenarios));
+export const writeDraftSeries = (store, series) =>
+  store.set(SERIES_KEY, JSON.stringify(series));
 
 /**
- * Published state is what the public scenarios endpoint (netlify/functions/scenarios.js)
- * serves to players. It's a separate Blobs key from the draft state above — publishing
- * is an explicit copy-draft-to-published action (see editor-publish.js), not automatic
- * on every draft save, so an admin can stage several edits before making them live.
- * Seeds from the static bundle on first read, same as the draft keys.
+ * Published state is what the public scenarios endpoint serves to players. It's
+ * a separate Blobs key from the draft state above — publishing is an explicit
+ * copy-draft-to-published action (see editor-publish.js), not automatic on
+ * every draft save, so an admin can stage several edits before making them live.
  */
-export async function readPublishedScenarios(store) {
-  const raw = await store.get(PUBLISHED_SCENARIOS_KEY, { type: 'text' });
-  if (raw) {
-    try {
-      return JSON.parse(raw);
-    } catch {
-      // fall through to reseed on corrupt data
-    }
-  }
-  await store.set(PUBLISHED_SCENARIOS_KEY, JSON.stringify(STATIC_SCENARIOS));
-  return STATIC_SCENARIOS;
-}
+export const readPublishedScenarios = store =>
+  readSeeded(store, PUBLISHED_SCENARIOS_KEY, STATIC_SCENARIOS);
+export const readPublishedSeries = store =>
+  readSeeded(store, PUBLISHED_SERIES_KEY, STATIC_SERIES);
 
-export async function writePublishedScenarios(store, scenarios) {
-  await store.set(PUBLISHED_SCENARIOS_KEY, JSON.stringify(scenarios));
-}
+export const writePublishedScenarios = (store, scenarios) =>
+  store.set(PUBLISHED_SCENARIOS_KEY, JSON.stringify(scenarios));
+export const writePublishedSeries = (store, series) =>
+  store.set(PUBLISHED_SERIES_KEY, JSON.stringify(series));
 
-export async function readPublishedSeries(store) {
-  const raw = await store.get(PUBLISHED_SERIES_KEY, { type: 'text' });
-  if (raw) {
-    try {
-      return JSON.parse(raw);
-    } catch {
-      // fall through to reseed on corrupt data
-    }
-  }
-  await store.set(PUBLISHED_SERIES_KEY, JSON.stringify(defaultSeries));
-  return defaultSeries;
-}
-
-export async function writePublishedSeries(store, series) {
-  await store.set(PUBLISHED_SERIES_KEY, JSON.stringify(series));
+/**
+ * The player-facing view: published scenarios only, with series ids narrowed to
+ * scenarios that survive that filter. Without the narrowing, disabling a puzzle
+ * that is still listed in the series silently shortened Series Play mid-run.
+ */
+export function toPublicView(scenarios, series) {
+  const published = scenarios.filter(scenario => scenario.published !== false);
+  const publishedIds = new Set(published.map(scenario => scenario.id));
+  return {
+    scenarios: published,
+    series: { ...series, scenarioIds: (series?.scenarioIds ?? []).filter(id => publishedIds.has(id)) },
+  };
 }

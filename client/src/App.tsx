@@ -1,11 +1,10 @@
 import { useState, useCallback, useEffect } from 'react';
-import { useGameState, makeFreePlayState, makeScenarioState } from './useGameState';
+import { useGameState, makeEmptyState, makeScenarioState } from './useGameState';
 import { Pitch } from './Pitch';
 import { PieceMenu } from './PieceMenu';
 import type { PieceMenuAction } from './PieceMenu';
 import { PlayerPanel } from './PlayerPanel';
 import { DiceLog } from './DiceLog';
-import { PhaseModal } from './PhaseModal';
 import { ScenarioSelect } from './ScenarioSelect';
 import { SubmitModal } from './SubmitModal';
 import { Leaderboard } from './Leaderboard';
@@ -18,7 +17,8 @@ import { blockActionAvailability } from './blockActionAvailability';
 import { UserMenu } from './UserMenu';
 import { ReportProblemButton } from './ReportProblemButton';
 import { ReportProblemModal } from './ReportProblemModal';
-import { submitScore, fetchLeaderboard, submitSeriesScore, fetchSeriesLeaderboard } from './api';
+import { submitScore, fetchLeaderboard, submitSeriesScore, fetchSeriesLeaderboard, fetchProgress, ApiError } from './api';
+import type { ProgressData } from './api';
 import { resolveSeriesScenarios } from './series';
 import { loadScenarioData } from './scenarios/runtime';
 import type { ScenarioData } from './scenarios/runtime';
@@ -35,7 +35,6 @@ import type { ZoomBounds } from './bfs';
 import './App.css';
 import './PlaybookTheme.css';
 
-const TURNS_PER_HALF = 8;
 const LOCAL_SCORE_KEY = 'bbt.localScores.v1';
 const GUEST_NAME_KEY = 'bbt.guestName.v1';
 
@@ -82,12 +81,18 @@ function readLocalScores(): LocalScoreMap {
 }
 
 function rememberLocalScore(scenarioId: string, entryId: string): void {
-  const scores = readLocalScores();
-  const scenarioScores = scores[scenarioId] ?? [];
-  scores[scenarioId] = scenarioScores.includes(entryId)
-    ? scenarioScores
-    : [...scenarioScores, entryId];
-  window.localStorage.setItem(LOCAL_SCORE_KEY, JSON.stringify(scores));
+  try {
+    const scores = readLocalScores();
+    const scenarioScores = scores[scenarioId] ?? [];
+    scores[scenarioId] = scenarioScores.includes(entryId)
+      ? scenarioScores
+      : [...scenarioScores, entryId];
+    window.localStorage.setItem(LOCAL_SCORE_KEY, JSON.stringify(scores));
+  } catch {
+    // Storage unavailable (private browsing, quota). The score is already on
+    // the server — only the local "you played this" marker is lost, and this
+    // must not abort the submit flow around it.
+  }
 }
 
 /** Build the risky-moves list + summary stats from a completed puzzle's action log. */
@@ -150,6 +155,24 @@ function summarizeActionLog(actionLog: ActionLogEntry[]) {
     };
   });
   return { cumulativeProb, diceCount, moves };
+}
+
+/**
+ * Netlify Blobs is not immediately read-consistent after a write, so the
+ * leaderboard is refetched only after this delay. See AGENTS.md.
+ */
+const LEADERBOARD_CONSISTENCY_DELAY_MS = 3000;
+
+/** Turns a thrown submit failure into something worth showing a player. */
+function describeSubmitError(error: unknown): string {
+  if (error instanceof ApiError) {
+    if (error.status === 401) return 'Your sign-in expired. Sign in again and resubmit.';
+    if (error.status === 400) return error.message;
+    if (error.status === 429) return 'Too many submissions just now — wait a moment and try again.';
+    if (error.status >= 500) return 'The leaderboard is unavailable right now. Try again shortly.';
+    return error.message;
+  }
+  return 'Could not reach the leaderboard. Check your connection and try again.';
 }
 
 interface SeriesRunState {
@@ -236,7 +259,7 @@ function IdentityGate({ authConfigured, onGoogleSignIn, onGuest }: IdentityGateP
 }
 
 export default function App() {
-  const { currentUser, idToken, isConfigured: authConfigured, signIn, signOut } = useAuth();
+  const { currentUser, idToken, sessionExpired, isConfigured: authConfigured, signIn, signOut } = useAuth();
   // Scenario/series data starts as the build-time static bundle (immediate,
   // no loading flash) and is replaced by the currently published set fetched
   // from /api/scenarios once that resolves — see scenarios/runtime.ts.
@@ -270,6 +293,18 @@ export default function App() {
   const [progressRefreshKey, setProgressRefreshKey] = useState(0);
   const [editorPreviewScenario, setEditorPreviewScenario] = useState<Scenario | null>(null);
 
+  // Every scenario leaderboard plus the series board in one request. Fetched
+  // here rather than inside ScenarioSelect so it doesn't re-run when the
+  // scenario array identity changes as loadScenarioData() resolves — that used
+  // to double an already N+1 fan-out on every visit to the home screen.
+  const [progress, setProgress] = useState<ProgressData | undefined>();
+  useEffect(() => {
+    if (appMode !== 'home') return;
+    let cancelled = false;
+    void fetchProgress().then(data => { if (!cancelled) setProgress(data); });
+    return () => { cancelled = true; };
+  }, [appMode, progressRefreshKey]);
+
   // ── Series mode state ──────────────────────────────────────────────────
   const [seriesRun, setSeriesRun] = useState<SeriesRunState | null>(null);
   const [seriesHighlight, setSeriesHighlight] = useState<string | undefined>();
@@ -278,6 +313,11 @@ export default function App() {
   const [selectedSeriesEntry, setSelectedSeriesEntry] = useState<SeriesLeaderboardEntry | undefined>();
   const [confirmLeaveSeries, setConfirmLeaveSeries] = useState(false);
   const [reportOpen, setReportOpen] = useState(false);
+  // Blocking failure on the touchdown submit — keeps the SubmitModal open so
+  // the player can retry rather than silently losing the run.
+  const [submitError, setSubmitError] = useState<string | undefined>();
+  // Non-blocking notice (e.g. a best-effort individual submit failed mid-series).
+  const [submitNotice, setSubmitNotice] = useState<string | undefined>();
 
   // ── Zoom mode ────────────────────────────────────────────────────────────
   // Computed once when play starts (not recalculated as moves are made or
@@ -301,10 +341,10 @@ export default function App() {
   // Game state — reinitialised when mode/scenario changes
   const { state, setState, handleSquareClick: hookSquareClick, handleSquareHover: hookSquareHover,
           handleSquareLeave: hookSquareLeave, handleCancelSelection,
-          handleContinue, handleHandoffAction, handleHandoffTarget,
+          handleHandoffAction, handleHandoffTarget,
           handlePassAction, handlePassTarget,
           handleBlockAction, handleBlockTarget, handleBlockOutcomeChoice, handlePushChoice }
-    = useGameState(makeFreePlayState());
+    = useGameState(makeEmptyState());
 
   const identityName = currentUser?.displayName ?? guestName;
   const identityReady = Boolean(identityName.trim());
@@ -330,6 +370,27 @@ export default function App() {
   };
   const reportButton = (variant: 'header' | 'hud') => (
     <ReportProblemButton variant={variant} onClick={() => setReportOpen(true)} />
+  );
+  // A lapsed Google session still shows the player as signed in, but writes
+  // would 401. Offer the fix before they lose a run to it.
+  const expiredBanner = sessionExpired && (
+    <div className="app__notice app__notice--warning" role="status">
+      <span>Your Google sign-in has expired — scores won't save until you sign in again.</span>
+      <button type="button" className="app__notice-action" onClick={() => { void signIn(); }}>
+        Sign in again
+      </button>
+    </div>
+  );
+  const notice = (
+    <>
+      {expiredBanner}
+      {submitNotice && (
+        <div className="app__notice" role="status">
+          <span>{submitNotice}</span>
+          <button type="button" onClick={() => setSubmitNotice(undefined)} aria-label="Dismiss">×</button>
+        </div>
+      )}
+    </>
   );
   const reportModal = reportOpen && (
     <ReportProblemModal
@@ -405,16 +466,16 @@ export default function App() {
   }, [state.isHandoffTargeting, state.isPassTargeting, state.isBlockTargeting, state.pendingBlockResolution,
       state.pushTargetKeys, handleHandoffTarget, handlePassTarget, handleBlockTarget, handlePushChoice, hookSquareClick]);
 
-  // Escape key
+  // Escape cancels the current activation. Dialogs handle their own Escape via
+  // useModalFocus and stop propagation, so this only fires on the board.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key !== 'Escape') return;
-      if (reportOpen) setReportOpen(false);
-      else handleCancelSelection();
+      handleCancelSelection();
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [handleCancelSelection, reportOpen]);
+  }, [handleCancelSelection]);
 
   // Context menu state
   const [pieceMenu, setPieceMenu] = useState<{ piece: PlayerPiece; x: number; y: number } | null>(null);
@@ -531,6 +592,7 @@ export default function App() {
   const handleSubmit = useCallback(async (name: string) => {
     if (!activeScenario) return;
     const { cumulativeProb, diceCount, moves } = summarizeActionLog(state.actionLog);
+    setSubmitError(undefined);
     try {
       const entry = await submitScore(activeScenario.id, name, cumulativeProb, diceCount, moves, idToken);
       rememberLocalScore(activeScenario.id, entry.id);
@@ -538,13 +600,17 @@ export default function App() {
       setProgressRefreshKey(k => k + 1);
       setState(s => ({ ...s, phase: 'playing' }));
       setAppMode('leaderboard');
-      await new Promise(res => setTimeout(res, 3000));
+      // Netlify Blobs is not immediately read-consistent after a write, so give
+      // it a moment before refetching. See AGENTS.md for the shared pattern.
+      await new Promise(res => setTimeout(res, LEADERBOARD_CONSISTENCY_DELAY_MS));
       const entries = await fetchLeaderboard(activeScenario.id);
       setLeaderboardInitialEntries(entries);
       setLeaderboardRefreshKey(k => k + 1);
-    } catch {
-      setState(s => ({ ...s, phase: 'playing' }));
-      setAppMode('leaderboard');
+    } catch (error) {
+      // A silently swallowed failure here used to look exactly like success:
+      // the player landed on the leaderboard with their score missing and no
+      // explanation. Say what happened and let them retry.
+      setSubmitError(describeSubmitError(error));
     }
   }, [activeScenario, state.actionLog, setState, idToken]);
 
@@ -579,13 +645,15 @@ export default function App() {
   const handleSeriesContinue = useCallback(async () => {
     if (!activeScenario || !seriesRun) return;
     const { cumulativeProb, diceCount, moves } = summarizeActionLog(state.actionLog);
+    setSubmitError(undefined);
 
-    // Submit to the puzzle's own leaderboard too (best-effort — series flow
-    // continues even if this fails).
+    // Submit to the puzzle's own leaderboard too (best-effort — the series run
+    // is the thing being scored, so a failure here must not cost the player
+    // their progress. It is surfaced as a non-blocking notice instead).
     try {
       await submitScore(activeScenario.id, seriesRun.playerName, cumulativeProb, diceCount, moves, idToken);
-    } catch {
-      // Individual leaderboard submission is best-effort in series mode.
+    } catch (error) {
+      setSubmitNotice(`This puzzle's individual score wasn't saved (${describeSubmitError(error)}). Your series run continues.`);
     }
 
     const result: SeriesPuzzleResult = {
@@ -621,15 +689,14 @@ export default function App() {
       setAppMode('series-leaderboard');
       // The backing store can take a moment to become read-consistent after a
       // write, so wait before re-fetching (mirrors the individual leaderboard).
-      await new Promise(res => setTimeout(res, 3000));
+      await new Promise(res => setTimeout(res, LEADERBOARD_CONSISTENCY_DELAY_MS));
       const entries = await fetchSeriesLeaderboard();
       setSeriesInitialEntries(entries);
       setSeriesRefreshKey(k => k + 1);
-    } catch {
-      setSeriesHighlight(undefined);
-      setState(s => ({ ...s, phase: 'playing' }));
-      setSeriesRun(null);
-      setAppMode('series-leaderboard');
+    } catch (error) {
+      // Keep the run intact so the player can retry the final submit rather
+      // than losing every puzzle they just played.
+      setSubmitError(describeSubmitError(error));
     }
   }, [activeScenario, seriesRun, seriesScenarios, state.actionLog, setState, idToken, computeStartOfPlayZoom]);
 
@@ -681,13 +748,14 @@ export default function App() {
           onStartSeries={startSeries}
           onSeriesLeaderboard={() => { setSeriesHighlight(undefined); setSeriesInitialEntries(undefined); setAppMode('series-leaderboard'); }}
           onAdmin={() => setAppMode('admin')}
-          progressRefreshKey={progressRefreshKey}
+          progress={progress}
           userId={currentUser?.id}
           isAdmin={isAdmin}
           userMenu={<UserMenu name={identityName} avatarUrl={identityAvatarUrl} onSignOut={handleSignOut} />}
           reportButton={reportButton('header')}
           version={__BBT_VERSION__}
         />
+        {notice}
         {reportModal}
       </div>
     );
@@ -702,7 +770,8 @@ export default function App() {
             entry={selectedSeriesEntry}
             onBack={() => setSelectedSeriesEntry(undefined)}
           />
-          {reportModal}
+          {notice}
+        {reportModal}
         </div>
       );
     }
@@ -717,6 +786,7 @@ export default function App() {
           onEntriesLoaded={setSeriesInitialEntries}
           onRowClick={setSelectedSeriesEntry}
         />
+        {notice}
         {reportModal}
       </div>
     );
@@ -745,7 +815,8 @@ export default function App() {
             entry={selectedEntry}
             onBack={() => setSelectedEntry(undefined)}
           />
-          {reportModal}
+          {notice}
+        {reportModal}
         </div>
       );
     }
@@ -761,19 +832,24 @@ export default function App() {
           onEntriesLoaded={setLeaderboardInitialEntries}
           onRowClick={setSelectedEntry}
         />
+        {notice}
         {reportModal}
       </div>
     );
   }
 
-  // ── Game screen (freeplay or puzzle) ─────────────────────────────────────
+  // ── Game screen ──────────────────────────────────────────────────────────
   const selectedPiece = state.selectedPieceId
     ? state.pieces.find(p => p.id === state.selectedPieceId) ?? null
     : null;
   const inspectedPiece = hoveredPiece ?? selectedPiece;
 
   const teamLabel = state.activeTeam === 'human' ? 'Human' : 'Orc';
-  const activePiece = state.pieces.find(p => p.team === state.activeTeam);
+  // Every piece on the active team has had its go. (This used to inspect only
+  // the *first* piece on the team, so the status line was wrong the moment a
+  // scenario had more than one.)
+  const ownPieces = state.pieces.filter(p => p.team === state.activeTeam);
+  const allActivated = ownPieces.length > 0 && ownPieces.every(p => p.activated || p.down);
   const blitzTarget = state.blitzTargetId
     ? state.pieces.find(piece => piece.id === state.blitzTargetId) ?? null
     : null;
@@ -795,16 +871,13 @@ export default function App() {
     ? `Pass declared — move up to ${state.remainingMa} MA, then click piece to throw · Esc to cancel`
     : state.pendingBlock
     ? `Blitz ${blitzTarget?.name ?? 'target'} — move into contact, then click the target to block · ${state.remainingMa} MA left`
-    : activePiece?.activated && !state.selectedPieceId
-    ? 'Piece activated — end your turn'
+    : allActivated && !state.selectedPieceId
+    ? 'Every player has acted — Restart to try a different line'
     : state.selectedPieceId
     ? `Planning — ${state.remainingMa} MA left · Esc to cancel`
     : 'Select your piece to move';
 
-  const currentTurn = state.activeTeam === 'human' ? state.humanTurn : state.orcTurn;
-  const displayTurn = Math.min(currentTurn, TURNS_PER_HALF);
-
-  // Live probability: committed actions × pending dodges not yet committed
+  // Live probability: committed actions × pending rolls not yet committed
   const lastCommittedProb = state.actionLog.length > 0
     ? state.actionLog[state.actionLog.length - 1].cumulativeProb : 1;
   const liveProbPct = Math.round(lastCommittedProb * state.pendingProb * 100);
@@ -816,40 +889,21 @@ export default function App() {
       <header className="hud">
         <button className="hud__back" onClick={handleBackClick}>{editorPreviewScenario ? '← Designer' : '← Menu'}</button>
 
-        {!state.isPuzzleMode && (
-          <div className="hud__score">
-            <span className="hud__score-label hud__score-label--human">Human</span>
-            <span className="hud__score-value">{state.score.human}</span>
-            <span className="hud__score-sep">–</span>
-            <span className="hud__score-value">{state.score.orc}</span>
-            <span className="hud__score-label hud__score-label--orc">Orc</span>
-          </div>
-        )}
-
-        {state.isPuzzleMode && (
-          <div className="hud__prob">
-            {seriesRun && (
-              <span className="hud__prob-label">
-                Puzzle {seriesRun.puzzleIndex + 1} / {seriesScenarios.length} ·{' '}
+        <div className="hud__prob">
+          {seriesRun && (
+            <span className="hud__prob-label">
+              Puzzle {seriesRun.puzzleIndex + 1} / {seriesScenarios.length} ·{' '}
+            </span>
+          )}
+          {showSuccessChance && (
+            <>
+              <span className="hud__prob-label">Success chance</span>
+              <span className={`hud__prob-value ${liveProbPct < 50 ? 'hud__prob-value--risky' : ''}`}>
+                {liveProbPct}%
               </span>
-            )}
-            {showSuccessChance && (
-              <>
-                <span className="hud__prob-label">Success chance</span>
-                <span className={`hud__prob-value ${liveProbPct < 50 ? 'hud__prob-value--risky' : ''}`}>
-                  {liveProbPct}%
-                </span>
-              </>
-            )}
-          </div>
-        )}
-
-        {!state.isPuzzleMode && (
-          <div className="hud__meta">
-            <span className="hud__half">Half {state.half}</span>
-            <span className="hud__turn">Turn {displayTurn} / {TURNS_PER_HALF}</span>
-          </div>
-        )}
+            </>
+          )}
+        </div>
 
         <div className="hud__team">
           <span className={`hud__dot hud__dot--${state.activeTeam}`} />
@@ -866,9 +920,7 @@ export default function App() {
           {zoomEnabled ? '🔍 Zoom On' : '🔍 Zoom'}
         </button>
 
-        {state.isPuzzleMode && (
-          <button className="hud__restart" onClick={handleRestartTurn}>↺ Restart</button>
-        )}
+        <button className="hud__restart" onClick={handleRestartTurn}>↺ Restart</button>
 
         {reportButton('hud')}
         <UserMenu name={identityName} avatarUrl={identityAvatarUrl} onSignOut={handleSignOut} />
@@ -919,18 +971,14 @@ export default function App() {
         </div>
       </div>
 
-      {/* Free-play half/game over */}
-      {(state.phase === 'half_over' || state.phase === 'game_over') && (
-        <PhaseModal state={state} onContinue={handleContinue} />
-      )}
-
       {/* Touchdown — show summary and submit score */}
-      {state.phase === 'touchdown' && appMode === 'series-puzzle' && seriesRun && (
+      {state.phase === 'touchdown' && effectiveAppMode === 'series-puzzle' && seriesRun && (
         <SubmitModal
           actionLog={state.actionLog}
           onSubmit={handleSeriesContinue}
           onDismiss={handleSeriesContinue}
           seriesMode
+          error={submitError}
           continueLabel={
             seriesRun.puzzleIndex + 1 < seriesScenarios.length
               ? `Continue to Puzzle ${seriesRun.puzzleIndex + 2}`
@@ -938,13 +986,14 @@ export default function App() {
           }
         />
       )}
-      {state.phase === 'touchdown' && appMode === 'puzzle' && (
+      {state.phase === 'touchdown' && effectiveAppMode === 'puzzle' && (
         <SubmitModal
           actionLog={state.actionLog}
           onSubmit={handleSubmit}
           onDismiss={handleSkipSubmit}
           defaultName={identityName}
           signedInName={identityName}
+          error={submitError}
         />
       )}
 
@@ -969,11 +1018,7 @@ export default function App() {
         // roll), then hand off/pass with the ball it just picked up.
         const canHandoff = (menuPiece.hasBall || state.ballPosition !== null) && !state.passUsed && !menuPiece.activated;
         const canPass    = (menuPiece.hasBall || state.ballPosition !== null) && !state.passUsed && !menuPiece.activated;
-        const { canBlock, canBlitz } = blockActionAvailability(
-          menuPiece,
-          state.pieces,
-          state.blitzUsed,
-        );
+        const { canBlock, canBlitz } = blockActionAvailability(menuPiece, state);
         const menuActions: PieceMenuAction[] = [
           { label: 'Move',     key: 'move' },
           { label: 'Hand Off', key: 'handoff', disabled: !canHandoff },
@@ -995,16 +1040,18 @@ export default function App() {
 
       {/* Block outcome checklist */}
       {state.blockChoice && state.selectedPieceId && (() => {
-        const attacker = state.pieces.find(p => p.id === state.selectedPieceId)!;
-        const defender = state.pieces.find(p => p.id === state.blockChoice!.defenderId)!;
+        const { blockChoice } = state;
+        const attacker = state.pieces.find(p => p.id === state.selectedPieceId);
+        const defender = state.pieces.find(p => p.id === blockChoice.defenderId);
+        if (!attacker || !defender) return null;
         return (
           <BlockOutcomePanel
             attackerName={attacker.name}
             attackerSkills={attacker.skills}
             defenderName={defender.name}
-            diceCount={state.blockChoice.diceCount}
-            picker={state.blockChoice.picker}
-            outcomeProbs={state.blockChoice.outcomeProbs}
+            diceCount={blockChoice.diceCount}
+            picker={blockChoice.picker}
+            outcomeProbs={blockChoice.outcomeProbs}
             onConfirm={handleBlockOutcomeChoice}
             onCancel={handleCancelSelection}
           />
@@ -1028,7 +1075,8 @@ export default function App() {
           }}
         />
       )}
-      {reportModal}
+      {notice}
+        {reportModal}
     </div>
   );
 }

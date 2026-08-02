@@ -383,55 +383,12 @@ body,
 }
 .hud__prob-value--risky { color: #ff9800; }
 
-/* Score block */
-.hud__score {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 1.2rem;
-  font-weight: 700;
-}
-
-.hud__score-label {
-  font-size: 0.8rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-}
-
-.hud__score-label--human { color: #5a9fe0; }
-.hud__score-label--orc   { color: #e07060; }
-
-.hud__score-value {
-  font-size: 1.5rem;
-  min-width: 1.2ch;
-  text-align: center;
-}
-
-.hud__score-sep {
-  color: #666;
-  font-size: 1.2rem;
-}
-
 /* Divider */
 .hud__divider {
   width: 1px;
   height: 28px;
   background: #444;
 }
-
-/* Half + Turn */
-.hud__meta {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  font-size: 0.8rem;
-  color: #aaa;
-  line-height: 1.2;
-}
-
-.hud__half { font-weight: 600; color: #ccc; }
-.hud__turn { color: #999; }
 
 /* Active team */
 .hud__team {
@@ -461,24 +418,58 @@ body,
   min-width: 0;
 }
 
-/* End Turn button */
-.hud__end-turn {
-  background: #4a8c2a;
-  color: #fff;
-  border: none;
-  border-radius: 6px;
-  padding: 7px 16px;
-  font-size: 0.9rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background 0.15s;
-  white-space: nowrap;
-  flex-shrink: 0;
+/* ── Inline notices ──────────────────────────────────────────────────────
+   Non-blocking status messages (a best-effort submit failed, the Google
+   session lapsed). Fixed to the top so they're visible from any screen. */
+.app__notice {
+  position: fixed;
+  top: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  max-width: min(680px, calc(100vw - 32px));
+  padding: 10px 14px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: rgba(24, 28, 34, 0.96);
+  color: #f0ece4;
+  font-size: 0.88rem;
+  line-height: 1.35;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35);
 }
 
-.hud__end-turn:hover:not(:disabled) { background: #5aac34; }
-.hud__end-turn:active:not(:disabled) { background: #3a7020; }
-.hud__end-turn:disabled { opacity: 0.4; cursor: default; }
+.app__notice--warning {
+  border-color: rgba(255, 176, 32, 0.6);
+  background: rgba(60, 40, 8, 0.97);
+}
+
+.app__notice button {
+  flex-shrink: 0;
+  border: none;
+  background: transparent;
+  color: inherit;
+  font-size: 1.1rem;
+  line-height: 1;
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.app__notice button:hover { background: rgba(255, 255, 255, 0.12); }
+
+.app__notice-action {
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-decoration: underline;
+  white-space: nowrap;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .app__notice { transition: none; }
+}
 
 /* ── Legend ──────────────────────────────────────────────────────────── */
 .legend {

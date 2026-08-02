@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
-import { AuthContext, type AuthContextValue, type AuthUser } from './auth';
+import { AuthContext, decodeJwtPayload, isTokenExpired, type AuthContextValue, type AuthUser } from './auth';
 
 const GOOGLE_SCRIPT_SRC = 'https://accounts.google.com/gsi/client';
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID as string | undefined;
@@ -38,15 +38,13 @@ function clearStoredAuth(): void {
   }
 }
 
-interface GoogleCredentialPayload {
-  sub?: string;
-  name?: string;
-  email?: string;
-  picture?: string;
-}
-
 interface GoogleCredentialResponse {
   credential?: string;
+}
+
+interface GooglePromptNotification {
+  isNotDisplayed?: () => boolean;
+  isSkippedMoment?: () => boolean;
 }
 
 interface GoogleAccountsId {
@@ -56,7 +54,7 @@ interface GoogleAccountsId {
     auto_select?: boolean;
     cancel_on_tap_outside?: boolean;
   }): void;
-  prompt(): void;
+  prompt(listener?: (notification: GooglePromptNotification) => void): void;
   disableAutoSelect(): void;
 }
 
@@ -96,14 +94,6 @@ function loadGoogleScript(): Promise<void> {
   return scriptPromise;
 }
 
-function decodeJwtPayload(token: string): GoogleCredentialPayload {
-  const [, payload] = token.split('.');
-  if (!payload) return {};
-  const normalized = payload.replace(/-/g, '+').replace(/_/g, '/');
-  const json = window.atob(normalized.padEnd(Math.ceil(normalized.length / 4) * 4, '='));
-  return JSON.parse(json) as GoogleCredentialPayload;
-}
-
 function userFromCredential(credential: string): AuthUser | null {
   try {
     const payload = decodeJwtPayload(credential);
@@ -123,7 +113,13 @@ function userFromCredential(credential: string): AuthUser | null {
 export function AuthProvider({ children }: { children: ReactNode }) {
   const stored = useMemo(() => loadStoredAuth(), []);
   const [currentUser, setCurrentUser] = useState<AuthUser | null>(stored?.user ?? null);
-  const [idToken, setIdToken] = useState<string | null>(stored?.idToken ?? null);
+  // Keep the cached user (so the identity gate stays satisfied and the player
+  // isn't kicked back to the login screen) but drop an expired token, since
+  // sending it would 401 every write. The silent re-auth below usually
+  // replaces it within a moment.
+  const [idToken, setIdToken] = useState<string | null>(
+    stored && !isTokenExpired(stored.idToken) ? stored.idToken : null,
+  );
 
   const applyCredential = useCallback((credential: string | undefined) => {
     if (!credential) return;
@@ -140,11 +136,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const googleId = window.google?.accounts?.id;
     if (!googleId) return;
 
-    googleId.initialize({
-      client_id: GOOGLE_CLIENT_ID,
-      callback: response => applyCredential(response.credential),
+    // Resolve when the credential actually arrives (or the prompt is
+    // dismissed), so callers can keep a "signing in…" state up for the real
+    // duration instead of clearing it the instant prompt() returns.
+    await new Promise<void>(resolve => {
+      let settled = false;
+      const finish = () => {
+        if (settled) return;
+        settled = true;
+        resolve();
+      };
+      googleId.initialize({
+        client_id: GOOGLE_CLIENT_ID,
+        callback: response => {
+          applyCredential(response.credential);
+          finish();
+        },
+      });
+      googleId.prompt(notification => {
+        // One Tap can be suppressed (cooldown, blocked third-party cookies).
+        // Stop waiting rather than leaving the button spinning forever.
+        if (notification?.isNotDisplayed?.() || notification?.isSkippedMoment?.()) finish();
+      });
     });
-    googleId.prompt();
   }, [applyCredential]);
 
   const signOut = useCallback(() => {
@@ -183,13 +197,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Re-check on every render rather than caching: a tab can sit open past the
+  // token's lifetime without any state change to trigger a recompute.
+  const tokenExpired = currentUser !== null && isTokenExpired(idToken);
+
   const value = useMemo<AuthContextValue>(() => ({
     currentUser,
-    idToken,
+    idToken: tokenExpired ? null : idToken,
+    sessionExpired: tokenExpired,
     isConfigured: Boolean(GOOGLE_CLIENT_ID),
     signIn,
     signOut,
-  }), [currentUser, idToken, signIn, signOut]);
+  }), [currentUser, idToken, tokenExpired, signIn, signOut]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

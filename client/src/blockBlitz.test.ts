@@ -1,95 +1,16 @@
 import { describe, it, expect } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import { useGameState } from './useGameState';
-import type { GameState, PlayerPiece } from './types';
 import { blockOutcomeProbabilities, blockCombinedProbability } from './bfs';
 import { blockActionAvailability } from './blockActionAvailability';
-
-function makeState(
-  pieces: PlayerPiece[],
-  activeTeam: GameState['activeTeam'] = 'human',
-): GameState {
-  return {
-    pieces,
-    activeTeam,
-    selectedPieceId: null,
-    reachableKeys: new Set(),
-    originPos: null,
-    committedPath: [],
-    walkedSquares: [],
-    pathPreview: [],
-    remainingMa: 0,
-    remainingGfi: 0,
-    pendingDodgeTargets: [],
-    humanTurn: 1,
-    orcTurn: 1,
-    half: 1,
-    score: { human: 0, orc: 0 },
-    phase: 'playing',
-    activationLogStart: 0,
-    pendingProb: 1,
-    actionLog: [],
-    isPuzzleMode: false,
-    scenarioId: null,
-    ballPosition: null,
-    passUsed: false,
-    pendingHandoff: false,
-    isHandoffTargeting: false,
-    handoffTargets: new Set(),
-    pendingPass: false,
-    isPassTargeting: false,
-    passRangeKeys: new Map(),
-    passReceiverKeys: new Set(),
-    blitzUsed: false,
-    pendingBlock: false,
-    pendingBlockIsBlitz: false,
-    blitzTargetId: null,
-    isBlockTargeting: false,
-    blockTargets: new Set(),
-    blockChoice: null,
-    pushTargetKeys: new Set(),
-    pendingBlockResolution: null,
-  };
-}
-
-function blocker(overrides: Partial<PlayerPiece> = {}): PlayerPiece {
-  return {
-    id: 'human1',
-    team: 'human',
-    role: 'blocker',
-    name: 'Aldric Swiftfoot',
-    position: { col: 7, row: 10 },
-    ma: 6, st: 3, ag: 3, pa: 3, av: 8,
-    skills: [],
-    activated: false,
-    hasBall: false,
-    down: false,
-    ...overrides,
-  };
-}
-
-function orc(overrides: Partial<PlayerPiece> = {}): PlayerPiece {
-  return {
-    id: 'orc1',
-    team: 'orc',
-    role: 'blocker',
-    name: 'Grukk Ironjaw',
-    position: { col: 7, row: 9 },
-    ma: 4, st: 3, ag: 3, pa: 6, av: 9,
-    skills: [],
-    activated: false,
-    hasBall: false,
-    down: false,
-    ...overrides,
-  };
-}
+import { makeState, humanBlocker as blocker, orcBlocker as orc } from './test/gameState';
 
 describe('Block and Blitz menu availability', () => {
   it('allows Blitz before the attacker is adjacent to an opponent', () => {
     const attacker = blocker({ position: { col: 7, row: 12 } });
-    const pieces = [attacker, orc({ position: { col: 7, row: 9 } })];
+    const state = makeState([attacker, orc({ position: { col: 7, row: 9 } })]);
 
-    expect(blockActionAvailability(attacker, pieces, false)).toEqual({
+    expect(blockActionAvailability(attacker, state)).toEqual({
       canBlock: false,
       canBlitz: true,
     });
@@ -99,17 +20,19 @@ describe('Block and Blitz menu availability', () => {
     const attacker = blocker({ position: { col: 7, row: 12 } });
     const downedOpponent = orc({ position: { col: 7, row: 9 }, down: true });
 
-    expect(blockActionAvailability(attacker, [attacker, downedOpponent], false)).toEqual({
+    expect(blockActionAvailability(attacker, makeState([attacker, downedOpponent]))).toEqual({
       canBlock: false,
       canBlitz: false,
     });
   });
 
   it('disables Blitz when the only standing opponent is out of movement range', () => {
+    // MA 6 + 2 GFI cannot bridge 20 squares, so offering Blitz here would be a
+    // button that silently does nothing.
     const attacker = blocker({ position: { col: 7, row: 20 }, ma: 6 });
     const farOpponent = orc({ position: { col: 7, row: 0 } });
 
-    expect(blockActionAvailability(attacker, [attacker, farOpponent], false)).toEqual({
+    expect(blockActionAvailability(attacker, makeState([attacker, farOpponent]))).toEqual({
       canBlock: false,
       canBlitz: false,
     });
@@ -118,7 +41,7 @@ describe('Block and Blitz menu availability', () => {
   it('allows Block when a standing opponent is adjacent', () => {
     const attacker = blocker();
 
-    expect(blockActionAvailability(attacker, [attacker, orc()], false)).toEqual({
+    expect(blockActionAvailability(attacker, makeState([attacker, orc()]))).toEqual({
       canBlock: true,
       canBlitz: true,
     });
@@ -126,13 +49,14 @@ describe('Block and Blitz menu availability', () => {
 
   it('disables Blitz after it is spent and disables both actions for an activated player', () => {
     const attacker = blocker();
-    const pieces = [attacker, orc()];
+    const state = makeState([attacker, orc()]);
 
-    expect(blockActionAvailability(attacker, pieces, true)).toEqual({
+    expect(blockActionAvailability(attacker, { ...state, blitzUsed: true })).toEqual({
       canBlock: true,
       canBlitz: false,
     });
-    expect(blockActionAvailability({ ...attacker, activated: true }, pieces, false)).toEqual({
+    const activated = { ...attacker, activated: true };
+    expect(blockActionAvailability(activated, makeState([activated, orc()]))).toEqual({
       canBlock: false,
       canBlitz: false,
     });
@@ -394,14 +318,15 @@ describe('Blitz', () => {
 
     expect(result.current.state.pieces.find(p => p.id === 'human1')!.position).toEqual({ col: 7, row: 10 });
     expect(result.current.state.blockChoice?.defenderId).toBe('orc1');
-    expect(result.current.state.remainingMa).toBe(4);
+    // MA 6, two squares walked, and the block itself costs one more (BB2020).
+    expect(result.current.state.remainingMa).toBe(3);
 
     act(() => result.current.handleBlockOutcomeChoice(['defender-down'], 'defender-down'));
     act(() => result.current.handlePushChoice(7, 8, true));
 
     expect(result.current.state.blitzUsed).toBe(true);
     expect(result.current.state.selectedPieceId).toBe('human1');
-    expect(result.current.state.remainingMa).toBe(4);
+    expect(result.current.state.remainingMa).toBe(3);
     expect(result.current.state.reachableKeys.size).toBeGreaterThan(0);
     expect(result.current.state.pieces.find(p => p.id === 'human1')!.activated).toBe(false);
     expect(result.current.state.pieces.find(p => p.id === 'human1')!.position).toEqual({ col: 7, row: 9 });

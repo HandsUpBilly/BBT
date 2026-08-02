@@ -1,27 +1,25 @@
-import { getStore } from '@netlify/blobs';
 import { randomUUID } from 'crypto';
 import { AuthError, authErrorResponse, entryAuthFields, verifyOptionalGoogleUser } from './auth.js';
+import { leaderboardStore, readEntries, updateEntries } from './blobEntries.js';
+import { SCENARIO_ID_RE } from '../../shared/scenarioValidation.js';
+import {
+  ScoreValidationError,
+  sortEntries,
+  upsertPersonalBest,
+  validateScoreSubmission,
+} from '../../shared/scoreValidation.js';
 
+// Rows returned to the client. The stored list is NOT trimmed — truncating the
+// store used to delete a player's personal best the moment they fell out of the
+// visible table, which then broke the by-userId upsert and the home screen's
+// "Best / Rank" display.
 const TOP_N = 10;
 
-function sortEntries(entries) {
-  return entries.sort(
-    (a, b) => b.probability - a.probability || a.diceCount - b.diceCount
-  );
-}
-
-async function readEntries(store, scenarioId) {
-  try {
-    const raw = await store.get(scenarioId, { type: 'text' });
-    if (!raw) return [];
-    return JSON.parse(raw);
-  } catch {
-    return [];
-  }
-}
-
-async function writeEntries(store, scenarioId, entries) {
-  await store.set(scenarioId, JSON.stringify(entries));
+function json(body, status, headers = {}) {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { 'Content-Type': 'application/json', ...headers },
+  });
 }
 
 export default async function handler(req) {
@@ -32,26 +30,19 @@ export default async function handler(req) {
     url.pathname.split('/').filter(Boolean).pop() ||
     null;
 
-  if (!scenarioId) {
-    return new Response(JSON.stringify({ error: 'scenarioId required' }), {
-      status: 400,
-      headers: { 'Content-Type': 'application/json' },
-    });
+  // The id becomes a Blobs key, so reject anything that isn't a real scenario
+  // id rather than letting arbitrary requests create unbounded blobs.
+  if (!scenarioId || !SCENARIO_ID_RE.test(scenarioId)) {
+    return json({ error: 'A valid scenarioId is required' }, 400);
   }
 
-  const store = getStore({
-    name: 'leaderboard',
-    siteID: process.env.NETLIFY_SITE_ID ?? process.env.SITE_ID,
-    token: process.env.NETLIFY_TOKEN ?? process.env.NETLIFY_AUTH_TOKEN,
-  });
+  const store = leaderboardStore('leaderboard');
 
   // ── GET ──────────────────────────────────────────────────────────────────
   if (req.method === 'GET') {
-    const entries = await readEntries(store, scenarioId);
-    const top = sortEntries(entries).slice(0, TOP_N);
-    return new Response(JSON.stringify(top), {
-      status: 200,
-      headers: { 'Content-Type': 'application/json' },
+    const { entries } = await readEntries(store, scenarioId);
+    return json(sortEntries(entries).slice(0, TOP_N), 200, {
+      'Cache-Control': 'public, max-age=15',
     });
   }
 
@@ -69,54 +60,45 @@ export default async function handler(req) {
     try {
       body = await req.json();
     } catch {
-      return new Response(JSON.stringify({ error: 'Invalid JSON' }), {
-        status: 400,
-        headers: { 'Content-Type': 'application/json' },
-      });
+      return json({ error: 'Invalid JSON' }, 400);
     }
 
-    const { name, probability, diceCount, moves } = body;
-    if ((!name && !user) || probability == null || diceCount == null) {
-      return new Response(
-        JSON.stringify({ error: 'name, probability and diceCount are required' }),
-        { status: 400, headers: { 'Content-Type': 'application/json' } }
-      );
+    let score;
+    try {
+      score = validateScoreSubmission(body, user);
+    } catch (error) {
+      if (error instanceof ScoreValidationError) return json({ error: error.message }, 400);
+      throw error;
     }
 
     const entry = {
       id: randomUUID(),
       scenarioId,
-      name: String(user?.name ?? name).slice(0, 32),
-      probability: Number(probability),
-      diceCount: Number(diceCount),
+      name: score.name,
+      probability: score.probability,
+      diceCount: score.diceCount,
       date: new Date().toISOString(),
-      moves: Array.isArray(moves) ? moves : [],
+      moves: score.moves,
       ...entryAuthFields(user),
     };
 
-    const entries = await readEntries(store, scenarioId);
+    const matches = existing =>
+      user ? existing.userId === user.providerUserId : !existing.userId && existing.name === entry.name;
 
-    const idx = user
-      ? entries.findIndex(e => e.userId === user.providerUserId)
-      : entries.findIndex(e => e.name === entry.name);
-    if (idx >= 0) {
-      entries[idx] = entry;
-    } else {
-      entries.push(entry);
+    let persisted;
+    try {
+      const updated = await updateEntries(store, scenarioId, entries =>
+        upsertPersonalBest(entries, entry, matches),
+      );
+      persisted = updated.find(e => e.id === entry.id) ?? updated.find(matches) ?? entry;
+    } catch {
+      return json({ error: 'Could not save the score. Please try again.' }, 503);
     }
 
-    const updated = sortEntries(entries).slice(0, TOP_N);
-    await writeEntries(store, scenarioId, updated);
-
-    return new Response(JSON.stringify(entry), {
-      status: 201,
-      headers: { 'Content-Type': 'application/json' },
-    });
+    // Return whatever is actually on the board — an unbeaten personal best is
+    // kept, so the client highlights the surviving row, not a discarded one.
+    return json(persisted, 201);
   }
 
-  return new Response(JSON.stringify({ error: 'Method not allowed' }), {
-    status: 405,
-    headers: { 'Content-Type': 'application/json' },
-  });
+  return json({ error: 'Method not allowed' }, 405);
 }
-

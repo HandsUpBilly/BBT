@@ -1,40 +1,30 @@
-import type { PlayerPiece } from './types';
-import { computeReachable, key, neighbours } from './bfs';
-
-// Mirrors MAX_GFI in useGameState.ts — must match handleBlockAction's Blitz
-// reachability calculation so this availability check doesn't enable a Blitz
-// that immediately finds zero reachable targets.
-const MAX_GFI = 2;
+import type { GameState, PlayerPiece } from './types';
+import { key, neighbours } from './bfs';
+import { blitzTargetKeys } from './useGameState';
 
 export function blockActionAvailability(
   attacker: PlayerPiece,
-  pieces: PlayerPiece[],
-  blitzUsed: boolean,
+  state: GameState,
 ) {
   const canAct = !attacker.activated && !attacker.down;
   const adjacentKeys = new Set(neighbours(attacker.position).map(key));
-  const hasAdjacentOpponent = pieces.some(piece =>
+  const hasAdjacentOpponent = state.pieces.some(piece =>
     piece.team !== attacker.team
       && !piece.down
       && adjacentKeys.has(key(piece.position))
   );
 
-  // Unlike a plain Block, a Blitz may move before choosing its target — so it
-  // should only be offered when the attacker can actually reach contact with
-  // a standing opponent, not merely when one exists anywhere on the pitch.
-  const others = pieces.filter(p => p.id !== attacker.id).map(p => p.position);
-  const opponents = pieces.filter(p => p.team !== attacker.team && !p.down).map(p => p.position);
-  const { reachableKeys } = computeReachable(attacker.position, attacker.ma, others, opponents, MAX_GFI);
-  const hasReachableStandingOpponent = pieces.some(piece =>
-    piece.team !== attacker.team
-      && !piece.down
-      && neighbours(piece.position).some(pos =>
-        key(pos) === key(attacker.position) || reachableKeys.has(key(pos))
-      )
-  );
-
   return {
     canBlock: canAct && hasAdjacentOpponent,
-    canBlitz: canAct && !blitzUsed && hasReachableStandingOpponent,
+    // Unlike a plain Block, a Blitz may move before choosing its target — but
+    // only if it can actually reach contact with someone. Checking merely that
+    // a standing opponent exists left the menu offering a Blitz that silently
+    // did nothing when every opponent was out of range.
+    //
+    // Delegates to blitzTargetKeys, which is what handleBlockAction itself uses
+    // to build the target set — so this check can't drift from the behavior it
+    // is predicting. (An earlier fix duplicated the reachability walk here,
+    // along with its own copy of MAX_GFI.)
+    canBlitz: canAct && !state.blitzUsed && blitzTargetKeys(state, attacker).size > 0,
   };
 }

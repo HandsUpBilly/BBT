@@ -5,10 +5,11 @@
   "type": "module",
   "scripts": {
     "dev": "cd client && npm run dev",
-    "build": "cd client && npm run build",
-    "start": "cd server && node index.js"
-  },
-  "dependencies": {
-    "@netlify/blobs": "^8.2.0"
+    "build": "npm run generate:seed && cd client && npm run build",
+    "generate:seed": "node scripts/generate-scenario-seed.mjs",
+    "start": "cd server && node index.js",
+    "lint": "cd client && npm run lint",
+    "test": "node --test shared/*.test.js && cd client && npm test",
+    "verify": "npm run lint && npm test && npm run build"
   }
 }

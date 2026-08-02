@@ -1,3 +1,4 @@
+import { memo, useCallback, useMemo } from 'react';
 import type { GameState, Team } from './types';
 import { key, neighbours } from './bfs';
 import type { ZoomBounds } from './bfs';
@@ -10,6 +11,7 @@ function BallIcon({ ghost, loose }: { ghost?: boolean; loose?: boolean }) {
       style={{ opacity: ghost ? 0.5 : 1 }}
       viewBox="0 0 16 16"
       xmlns="http://www.w3.org/2000/svg"
+      aria-hidden="true"
     >
       {/* Ball body */}
       <ellipse cx="8" cy="8" rx="5.5" ry="3.5" fill="#c8732a" stroke="#7a3a0a" strokeWidth="0.8" transform="rotate(-30 8 8)" />
@@ -52,7 +54,8 @@ function PieceIcon({ team, role }: { team: Team; role?: string }) {
   const portraitClass = src.includes('-gritty.')
     ? 'piece__portrait'
     : 'piece__portrait piece__portrait--legacy';
-  return <img className={portraitClass} src={src} alt={role ?? team} draggable={false} />;
+  // Decorative: the square's aria-label already names the player and role.
+  return <img className={portraitClass} src={src} alt="" draggable={false} />;
 }
 
 // Dot positions for each face of a d6 (cx, cy as % of viewBox 0 0 20 20)
@@ -68,11 +71,7 @@ const DOT_POSITIONS: Record<number, [number, number][]> = {
 function DiceFace({ target }: { target: number }) {
   const dots = DOT_POSITIONS[target] ?? DOT_POSITIONS[6];
   return (
-    <svg
-      className="dodge-die"
-      viewBox="0 0 20 20"
-      xmlns="http://www.w3.org/2000/svg"
-    >
+    <svg className="dodge-die" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
       <rect x="1" y="1" width="18" height="18" rx="3" ry="3"
         fill="rgba(30,20,10,0.75)" stroke="rgba(255,160,0,0.9)" strokeWidth="1.5" />
       {dots.map(([cx, cy], i) => (
@@ -85,11 +84,7 @@ function DiceFace({ target }: { target: number }) {
 function GfiFace() {
   // Die showing face 2 — blue tint to distinguish from dodge dice
   return (
-    <svg
-      className="gfi-die"
-      viewBox="0 0 20 20"
-      xmlns="http://www.w3.org/2000/svg"
-    >
+    <svg className="gfi-die" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
       <rect x="1" y="1" width="18" height="18" rx="3" ry="3"
         fill="rgba(10,20,40,0.80)" stroke="rgba(80,160,255,0.95)" strokeWidth="1.5" />
       <circle cx="5" cy="5" r="2" fill="rgba(140,210,255,0.95)" />
@@ -103,11 +98,7 @@ function PickupFace({ target }: { target: number }) {
   // Agility test from a dodge Agility test when both dice are shown.
   const dots = DOT_POSITIONS[target] ?? DOT_POSITIONS[6];
   return (
-    <svg
-      className="pickup-die"
-      viewBox="0 0 20 20"
-      xmlns="http://www.w3.org/2000/svg"
-    >
+    <svg className="pickup-die" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
       <rect x="1" y="1" width="18" height="18" rx="3" ry="3"
         fill="rgba(50,30,0,0.80)" stroke="rgba(255,210,74,0.95)" strokeWidth="1.5" />
       {dots.map(([cx, cy], i) => (
@@ -123,6 +114,119 @@ function PickupFace({ target }: { target: number }) {
 const COLS = 26;
 const ROWS = 15;
 
+function colLabel(landscapeCol: number) { return String(landscapeCol); }
+function rowLabel(landscapeRow: number) { return String.fromCharCode(65 + landscapeRow); }
+
+interface DiceInfo {
+  isGfi: boolean;
+  dodgeTarget: number | null;
+  pickupTarget: number | null;
+}
+
+interface SquareProps {
+  pCol: number;
+  pRow: number;
+  lCol: number;
+  lRow: number;
+  classes: string;
+  label: string;
+  pieceTeam: Team | null;
+  pieceRole: string | undefined;
+  pieceClasses: string;
+  pieceHasBall: boolean;
+  looseBall: boolean;
+  inTackleZone: boolean;
+  actionLabel: string | null;
+  displayStep: number | null;
+  stepIsPreview: boolean;
+  dice: DiceInfo | null;
+  ghost: { team: Team; role?: string; hasBall: boolean } | null;
+  focusable: boolean;
+  onSquareClick: (col: number, row: number) => void;
+  onPieceClick: (col: number, row: number, x: number, y: number) => void;
+  onSquareHover: (col: number, row: number) => void;
+  onSquareLeave: () => void;
+}
+
+/**
+ * One pitch square.
+ *
+ * Memoized because hovering re-renders <Pitch> on every mouse-move, and only a
+ * handful of the 390 squares actually change between frames. All props are
+ * primitives or stable callbacks so the shallow comparison is meaningful.
+ */
+const Square = memo(function Square({
+  pCol, pRow, lCol, lRow, classes, label, pieceTeam, pieceRole, pieceClasses, pieceHasBall,
+  looseBall, inTackleZone, actionLabel, displayStep, stepIsPreview, dice, ghost, focusable,
+  onSquareClick, onPieceClick, onSquareHover, onSquareLeave,
+}: SquareProps) {
+  const activate = useCallback((clientX: number, clientY: number) => {
+    if (pieceTeam) onPieceClick(pCol, pRow, clientX, clientY);
+    else onSquareClick(pCol, pRow);
+  }, [pieceTeam, pCol, pRow, onPieceClick, onSquareClick]);
+
+  return (
+    <div
+      className={classes}
+      // role="button" rather than "gridcell": the CSS lays all 390 squares out
+      // as one flat grid with no row elements, and a grid without rows is
+      // invalid ARIA. A labelled button per square is honest and works.
+      role="button"
+      aria-label={label}
+      // Roving focus: only squares that can be acted on enter the tab order, so
+      // keyboard users aren't forced through 390 inert cells to reach the HUD.
+      tabIndex={focusable ? 0 : -1}
+      onClick={e => activate(e.clientX, e.clientY)}
+      onKeyDown={e => {
+        if (e.key !== 'Enter' && e.key !== ' ') return;
+        e.preventDefault();
+        // Position the context menu over the square itself, since there is no
+        // pointer position to anchor to.
+        const rect = e.currentTarget.getBoundingClientRect();
+        activate(rect.left + rect.width / 2, rect.top + rect.height / 2);
+      }}
+      onFocus={() => onSquareHover(pCol, pRow)}
+      onBlur={onSquareLeave}
+      onMouseEnter={() => onSquareHover(pCol, pRow)}
+      onMouseLeave={onSquareLeave}
+      data-col={lCol}
+      data-row={lRow}
+    >
+      <div className="square__overlay" />
+      {!pieceTeam && looseBall && <BallIcon loose />}
+      {inTackleZone && <div className="square__tz-overlay" />}
+      {pieceTeam && (
+        <div className={pieceClasses}>
+          <PieceIcon team={pieceTeam} role={pieceRole} />
+          {pieceHasBall && <BallIcon />}
+        </div>
+      )}
+      {actionLabel && <span className="piece__action-label">{actionLabel}</span>}
+
+      {displayStep !== null && (
+        <span className={`step-num ${stepIsPreview ? 'step-num--preview' : 'step-num--committed'}`}>
+          {displayStep}
+        </span>
+      )}
+
+      {dice && (
+        <div className="square__dice">
+          {dice.isGfi && <GfiFace />}
+          {dice.dodgeTarget !== null && <DiceFace target={dice.dodgeTarget} />}
+          {dice.pickupTarget !== null && <PickupFace target={dice.pickupTarget} />}
+        </div>
+      )}
+
+      {ghost && (
+        <div className={`piece piece--${ghost.team} piece--ghost`}>
+          <PieceIcon team={ghost.team} role={ghost.role} />
+          {ghost.hasBall && <BallIcon ghost />}
+        </div>
+      )}
+    </div>
+  );
+});
+
 interface Props {
   state: GameState;
   onSquareClick: (col: number, row: number) => void;
@@ -134,13 +238,19 @@ interface Props {
 }
 
 export function Pitch({ state, onSquareClick, onPieceClick, onSquareHover, onSquareLeave, zoomBounds }: Props) {
-  const pieceMap = new Map(state.pieces.map(p => [key(p.position), p]));
+  const pieceMap = useMemo(
+    () => new Map(state.pieces.map(p => [key(p.position), p])),
+    [state.pieces],
+  );
 
   // Preview path: map from key -> step info
-  const previewStepMap = new Map<string, { stepNum: number; requiresDodge: boolean; dodgeTarget: number | null; isGfi: boolean; pickupTarget: number | null }>();
-  state.pathPreview.forEach((s, i) => {
-    previewStepMap.set(key(s.pos), { stepNum: i + 1, requiresDodge: s.requiresDodge, dodgeTarget: s.dodgeTarget, isGfi: s.isGfi, pickupTarget: s.pickupTarget });
-  });
+  const previewStepMap = useMemo(() => {
+    const map = new Map<string, { stepNum: number; requiresDodge: boolean; dodgeTarget: number | null; isGfi: boolean; pickupTarget: number | null }>();
+    state.pathPreview.forEach((s, i) => {
+      map.set(key(s.pos), { stepNum: i + 1, requiresDodge: s.requiresDodge, dodgeTarget: s.dodgeTarget, isGfi: s.isGfi, pickupTarget: s.pickupTarget });
+    });
+    return map;
+  }, [state.pathPreview]);
 
   // Ghost = last square in preview path
   const ghostKey = state.pathPreview.length > 0
@@ -148,18 +258,23 @@ export function Pitch({ state, onSquareClick, onPieceClick, onSquareHover, onSqu
     : null;
 
   // Walked squares: every individual square stepped through, in order.
-  // Map key -> 1-based step number for rendering.
-  const walkedMap = new Map<string, number>();
-  state.walkedSquares.forEach((pos, i) => walkedMap.set(key(pos), i + 1));
+  const walkedMap = useMemo(() => {
+    const map = new Map<string, number>();
+    state.walkedSquares.forEach((pos, i) => map.set(key(pos), i + 1));
+    return map;
+  }, [state.walkedSquares]);
 
   // Committed dice: map from destination key -> dice info from actionLog.
   // Persists after a waypoint is set so dice remain visible on committed squares.
-  const committedDiceMap = new Map<string, { isGfi: boolean; dodgeTarget: number | null; pickupTarget: number | null }>();
-  for (const entry of state.actionLog) {
-    if (entry.kind === 'move' && (entry.isGfi || entry.dodgeTarget !== null || entry.pickupTarget)) {
-      committedDiceMap.set(key(entry.to), { isGfi: entry.isGfi, dodgeTarget: entry.dodgeTarget, pickupTarget: entry.pickupTarget ?? null });
+  const committedDiceMap = useMemo(() => {
+    const map = new Map<string, DiceInfo>();
+    for (const entry of state.actionLog) {
+      if (entry.kind === 'move' && (entry.isGfi || entry.dodgeTarget !== null || entry.pickupTarget)) {
+        map.set(key(entry.to), { isGfi: entry.isGfi, dodgeTarget: entry.dodgeTarget, pickupTarget: entry.pickupTarget ?? null });
+      }
     }
-  }
+    return map;
+  }, [state.actionLog]);
 
   const selectedPiece = state.selectedPieceId
     ? state.pieces.find(p => p.id === state.selectedPieceId)
@@ -185,18 +300,20 @@ export function Pitch({ state, onSquareClick, onPieceClick, onSquareHover, onSqu
         : 'Move';
 
   const isSelecting = !!state.selectedPieceId;
-  const opponents = state.pieces
-    .filter(p => p.team !== state.activeTeam && !p.down)
-    .map(p => p.position);
-  const tzCounts = new Map<string, number>();
-  if (isSelecting) {
+  const tzCounts = useMemo(() => {
+    const counts = new Map<string, number>();
+    if (!isSelecting) return counts;
+    const opponents = state.pieces
+      .filter(p => p.team !== state.activeTeam && !p.down)
+      .map(p => p.position);
     for (const opponent of opponents) {
       for (const pos of neighbours(opponent)) {
         const zoneKey = key(pos);
-        tzCounts.set(zoneKey, (tzCounts.get(zoneKey) ?? 0) + 1);
+        counts.set(zoneKey, (counts.get(zoneKey) ?? 0) + 1);
       }
     }
-  }
+    return counts;
+  }, [isSelecting, state.pieces, state.activeTeam]);
 
   // Landscape grid: COLS=26 (left→right = portrait rows 0→25),
   //                 ROWS=15  (top→bottom  = portrait cols 0→14)
@@ -208,6 +325,33 @@ export function Pitch({ state, onSquareClick, onPieceClick, onSquareHover, onSqu
   const rowEnd   = zoomBounds ? zoomBounds.maxRow : ROWS - 1;
   const visibleCols = colEnd - colStart + 1;
   const visibleRows = rowEnd - rowStart + 1;
+
+  /** Screen-reader description of a square: position, occupant, and what it offers. */
+  function describeSquare(
+    lCol: number, lRow: number,
+    pieceName: string | null, pieceTeam: Team | null, pieceRole: string | undefined,
+    pieceDown: boolean, pieceHasBall: boolean, pieceActivated: boolean,
+    reachable: boolean, dodge: number | null, gfi: boolean, pickup: number | null,
+    looseBall: boolean, isTarget: string | null,
+  ): string {
+    const parts = [`${colLabel(lCol)}${rowLabel(lRow)}`];
+    if (pieceName) {
+      parts.push(`${pieceName}, ${pieceTeam} ${pieceRole ?? ''}`.trim());
+      if (pieceHasBall) parts.push('carrying the ball');
+      if (pieceDown) parts.push('knocked down');
+      else if (pieceActivated) parts.push('already acted');
+    } else if (looseBall) {
+      parts.push('loose ball');
+    } else {
+      parts.push('empty');
+    }
+    if (isTarget) parts.push(isTarget);
+    else if (reachable) parts.push('reachable');
+    if (gfi) parts.push('Go For It 2 plus');
+    if (dodge !== null) parts.push(`dodge ${dodge} plus`);
+    if (pickup !== null) parts.push(`pickup ${pickup} plus`);
+    return parts.join(', ');
+  }
 
   const squares = [];
   for (let lRow = rowStart; lRow <= rowEnd; lRow++) {
@@ -245,6 +389,7 @@ export function Pitch({ state, onSquareClick, onPieceClick, onSquareHover, onSqu
       const isBlockTarget     = state.blockTargets.has(k);
       const isBlitzTarget     = piece?.id === state.blitzTargetId;
       const isPushTarget      = state.pushTargetKeys.has(k);
+      const isLooseBall       = looseBallKey === k;
 
       const classes = [
         'square',
@@ -274,89 +419,84 @@ export function Pitch({ state, onSquareClick, onPieceClick, onSquareHover, onSqu
         ? null
         : previewStep
           ? squaresWalked + previewStep.stepNum
-          : (isCommitted ? walkedStep! : null);
+          : (isCommitted ? walkedStep ?? null : null);
+
+      const committedDice = !previewStep && !piece ? committedDiceMap.get(k) ?? null : null;
+      const previewDice: DiceInfo | null = previewStep
+        && (previewStep.isGfi || previewStep.requiresDodge || previewStep.pickupTarget !== null)
+        ? {
+            isGfi: previewStep.isGfi,
+            dodgeTarget: previewStep.requiresDodge ? previewStep.dodgeTarget : null,
+            pickupTarget: previewStep.pickupTarget,
+          }
+        : null;
+
+      const targetDescription = isHandoffTarget ? 'handoff target'
+        : isPassReceiver ? 'pass target'
+        : isBlockTarget ? 'block target'
+        : isPushTarget ? 'push-back square'
+        : null;
+
+      // Ghost piece — suppress when the destination square has rolls (dice take priority)
+      const showGhost = isGhost && selectedPiece && !previewStep?.isGfi && !previewStep?.requiresDodge;
 
       squares.push(
-        <div
+        <Square
           key={k}
-          className={classes}
-          onClick={(e) => {
-            if (piece) {
-              onPieceClick(pCol, pRow, e.clientX, e.clientY);
-            } else {
-              onSquareClick(pCol, pRow);
-            }
-          }}
-          onMouseEnter={() => onSquareHover(pCol, pRow)}
-          onMouseLeave={onSquareLeave}
-        >
-          <div className="square__overlay" />
-          {!piece && looseBallKey === k && <BallIcon loose />}
-          {isInTZ && <div className="square__tz-overlay" />}
-          {piece && (
-            <div className={[
-              'piece',
-              `piece--${piece.team}`,
-              isSelected      ? 'piece--selected'  : '',
-              piece.activated ? 'piece--activated' : '',
-              piece.hasBall   ? 'piece--carrier'   : '',
-              piece.down      ? 'piece--down'      : '',
-            ].filter(Boolean).join(' ')}>
-              <PieceIcon team={piece.team} role={piece.role} />
-              {piece.hasBall && <BallIcon />}
-            </div>
+          pCol={pCol}
+          pRow={pRow}
+          lCol={lCol}
+          lRow={lRow}
+          classes={classes}
+          label={describeSquare(
+            lCol, lRow,
+            piece?.name ?? null, piece?.team ?? null, piece?.role,
+            piece?.down ?? false, piece?.hasBall ?? false, piece?.activated ?? false,
+            isReachable, previewStep?.requiresDodge ? previewStep.dodgeTarget : null,
+            previewStep?.isGfi ?? false, previewStep?.pickupTarget ?? null,
+            isLooseBall, targetDescription,
           )}
-          {isSelected && actionLabel && (
-            <span className="piece__action-label">{actionLabel}</span>
+          pieceTeam={piece?.team ?? null}
+          pieceRole={piece?.role}
+          pieceClasses={piece ? [
+            'piece',
+            `piece--${piece.team}`,
+            isSelected      ? 'piece--selected'  : '',
+            piece.activated ? 'piece--activated' : '',
+            piece.hasBall   ? 'piece--carrier'   : '',
+            piece.down      ? 'piece--down'      : '',
+          ].filter(Boolean).join(' ') : ''}
+          pieceHasBall={piece?.hasBall ?? false}
+          looseBall={isLooseBall}
+          inTackleZone={isInTZ}
+          actionLabel={isSelected ? actionLabel : null}
+          displayStep={displayStep}
+          stepIsPreview={!!previewStep}
+          dice={previewDice ?? committedDice}
+          ghost={showGhost && selectedPiece
+            ? { team: state.activeTeam, role: selectedPiece.role, hasBall: ghostHasBall }
+            : null}
+          // Focusable when the square is actionable, so Tab walks the legal
+          // moves rather than every cell on the pitch.
+          focusable={Boolean(
+            piece || isReachable || isHandoffTarget || isPassReceiver
+            || isBlockTarget || isPushTarget || isLooseBall,
           )}
-
-          {displayStep !== null && (
-            <span className={`step-num ${previewStep ? 'step-num--preview' : 'step-num--committed'}`}>
-              {displayStep}
-            </span>
-          )}
-
-          {/* Dice indicators — preview path (including ghost destination) */}
-          {previewStep && (previewStep.isGfi || previewStep.requiresDodge || previewStep.pickupTarget !== null) && (
-            <div className="square__dice">
-              {previewStep.isGfi && <GfiFace />}
-              {previewStep.requiresDodge && previewStep.dodgeTarget !== null && (
-                <DiceFace target={previewStep.dodgeTarget} />
-              )}
-              {previewStep.pickupTarget !== null && <PickupFace target={previewStep.pickupTarget} />}
-            </div>
-          )}
-
-          {/* Dice indicators — committed waypoint squares (persist after click) */}
-          {!previewStep && !piece && (() => {
-            const cd = committedDiceMap.get(k);
-            return cd ? (
-              <div className="square__dice">
-                {cd.isGfi && <GfiFace />}
-                {cd.dodgeTarget !== null && <DiceFace target={cd.dodgeTarget} />}
-                {cd.pickupTarget !== null && <PickupFace target={cd.pickupTarget} />}
-              </div>
-            ) : null;
-          })()}
-
-          {/* Ghost piece — suppress when the destination square has rolls (dice take priority) */}
-          {isGhost && selectedPiece && !previewStep?.isGfi && !previewStep?.requiresDodge && (
-            <div className={`piece piece--${state.activeTeam} piece--ghost`}>
-              <PieceIcon team={state.activeTeam} role={selectedPiece.role} />
-              {ghostHasBall && <BallIcon ghost />}
-            </div>
-          )}
-        </div>
+          onSquareClick={onSquareClick}
+          onPieceClick={onPieceClick}
+          onSquareHover={onSquareHover}
+          onSquareLeave={onSquareLeave}
+        />
       );
     }
   }
 
   const colLabels = Array.from({ length: visibleCols }, (_, i) => (
-    <div key={colStart + i} className="pitch__col-label">{colStart + i}</div>
+    <div key={colStart + i} className="pitch__col-label">{colLabel(colStart + i)}</div>
   ));
 
   const rowLabels = Array.from({ length: visibleRows }, (_, i) => (
-    <div key={rowStart + i} className="pitch__row-label">{String.fromCharCode(65 + rowStart + i)}</div>
+    <div key={rowStart + i} className="pitch__row-label">{rowLabel(rowStart + i)}</div>
   ));
 
   const gridStyle = zoomBounds
@@ -374,7 +514,7 @@ export function Pitch({ state, onSquareClick, onPieceClick, onSquareHover, onSqu
   return (
     <div className={`pitch${zoomBounds ? ' pitch--zoomed' : ''}`}>
       {/* Column labels — top */}
-      <div className="pitch__col-labels pitch__col-labels--top" style={colLabelsStyle}>
+      <div className="pitch__col-labels pitch__col-labels--top" style={colLabelsStyle} aria-hidden="true">
         <div className="pitch__corner" />
         {colLabels}
         <div className="pitch__corner" />
@@ -382,17 +522,17 @@ export function Pitch({ state, onSquareClick, onPieceClick, onSquareHover, onSqu
 
       <div className="pitch__middle">
         {/* Row labels — left */}
-        <div className="pitch__row-labels">{rowLabels}</div>
+        <div className="pitch__row-labels" aria-hidden="true">{rowLabels}</div>
 
         {/* The field */}
-        <div className="pitch__grid" style={gridStyle}>{squares}</div>
+        <div className="pitch__grid" style={gridStyle} role="group" aria-label="Pitch">{squares}</div>
 
         {/* Row labels — right */}
-        <div className="pitch__row-labels">{rowLabels}</div>
+        <div className="pitch__row-labels" aria-hidden="true">{rowLabels}</div>
       </div>
 
       {/* Column labels — bottom */}
-      <div className="pitch__col-labels pitch__col-labels--bottom" style={colLabelsStyle}>
+      <div className="pitch__col-labels pitch__col-labels--bottom" style={colLabelsStyle} aria-hidden="true">
         <div className="pitch__corner" />
         {colLabels}
         <div className="pitch__corner" />

@@ -1,6 +1,11 @@
 import type { LeaderboardEntry, RiskyMove, SeriesLeaderboardEntry, SeriesPuzzleResult } from './types';
+// Same module the server uses to build GitHub issue bodies, so the offline
+// download fallback is byte-identical to what would have been filed.
+import { buildIssueDraft, createDownload, REPORT_LIMITS } from '../../shared/reporting.js';
 
 const BASE = '/api';
+
+export { REPORT_LIMITS };
 
 export type ReportType = 'issue' | 'feature';
 
@@ -30,6 +35,23 @@ export interface ReportDownload {
   content: string;
 }
 
+/** Combined home-screen progress: every scenario board plus the series board. */
+export interface ProgressData {
+  scenarios: Record<string, LeaderboardEntry[]>;
+  series: SeriesLeaderboardEntry[];
+}
+
+/** Carries the HTTP status so callers can tell "signed out" from "server down". */
+export class ApiError extends Error {
+  readonly status: number;
+
+  constructor(status: number, message: string) {
+    super(message);
+    this.name = 'ApiError';
+    this.status = status;
+  }
+}
+
 export class ReportSubmissionError extends Error {
   readonly download?: ReportDownload;
 
@@ -40,13 +62,29 @@ export class ReportSubmissionError extends Error {
   }
 }
 
-export async function fetchLeaderboard(scenarioId: string): Promise<LeaderboardEntry[]> {
-  const res = await fetch(`${BASE}/leaderboard/${scenarioId}`);
-  if (!res.ok) {
-    const body = await res.text().catch(() => '');
-    throw new Error(`${res.status} ${res.statusText}${body ? `: ${body}` : ''}`);
+/** Rejects with ApiError on a non-2xx, preferring the server's own message. */
+async function requireOk(res: Response, fallback: string): Promise<Response> {
+  if (res.ok) return res;
+  let message = fallback;
+  try {
+    const body = await res.json() as { error?: string; errors?: string[] };
+    message = body.error ?? body.errors?.join(' ') ?? fallback;
+  } catch {
+    // Non-JSON error body (proxy, gateway) — keep the fallback message.
   }
-  return res.json();
+  throw new ApiError(res.status, message);
+}
+
+function authHeaders(idToken?: string | null): Record<string, string> {
+  return {
+    'Content-Type': 'application/json',
+    ...(idToken ? { Authorization: `Bearer ${idToken}` } : {}),
+  };
+}
+
+export async function fetchLeaderboard(scenarioId: string): Promise<LeaderboardEntry[]> {
+  const res = await fetch(`${BASE}/leaderboard/${encodeURIComponent(scenarioId)}`);
+  return (await requireOk(res, 'Could not load the leaderboard')).json();
 }
 
 export async function submitScore(
@@ -57,25 +95,17 @@ export async function submitScore(
   moves: RiskyMove[],
   idToken?: string | null,
 ): Promise<LeaderboardEntry> {
-  const res = await fetch(`${BASE}/leaderboard/${scenarioId}`, {
+  const res = await fetch(`${BASE}/leaderboard/${encodeURIComponent(scenarioId)}`, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      ...(idToken ? { Authorization: `Bearer ${idToken}` } : {}),
-    },
+    headers: authHeaders(idToken),
     body: JSON.stringify({ name, probability, diceCount, moves }),
   });
-  if (!res.ok) throw new Error('Failed to submit score');
-  return res.json();
+  return (await requireOk(res, 'Failed to submit score')).json();
 }
 
 export async function fetchSeriesLeaderboard(): Promise<SeriesLeaderboardEntry[]> {
   const res = await fetch(`${BASE}/series-leaderboard`);
-  if (!res.ok) {
-    const body = await res.text().catch(() => '');
-    throw new Error(`${res.status} ${res.statusText}${body ? `: ${body}` : ''}`);
-  }
-  return res.json();
+  return (await requireOk(res, 'Could not load the series leaderboard')).json();
 }
 
 export async function submitSeriesScore(
@@ -87,54 +117,43 @@ export async function submitSeriesScore(
 ): Promise<SeriesLeaderboardEntry> {
   const res = await fetch(`${BASE}/series-leaderboard`, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      ...(idToken ? { Authorization: `Bearer ${idToken}` } : {}),
-    },
+    headers: authHeaders(idToken),
     body: JSON.stringify({ name, probability, diceCount, puzzles }),
   });
-  if (!res.ok) throw new Error('Failed to submit series score');
-  return res.json();
+  return (await requireOk(res, 'Failed to submit series score')).json();
 }
 
-function escapeMarkdown(value: string): string {
-  return value
-    .trim()
-    .replace(/\\/g, '\\\\')
-    .replace(/([`*_{}[\]<>#+!|-])/g, '\\$1');
+/**
+ * One request for the whole home screen. Progress is decoration — an empty
+ * result just shows "Not played", so a failure here is swallowed rather than
+ * blocking the screen.
+ */
+export async function fetchProgress(): Promise<ProgressData> {
+  try {
+    const res = await fetch(`${BASE}/progress`);
+    if (!res.ok) return { scenarios: {}, series: [] };
+    const data = await res.json() as Partial<ProgressData>;
+    return {
+      scenarios: data.scenarios ?? {},
+      series: Array.isArray(data.series) ? data.series : [],
+    };
+  } catch {
+    return { scenarios: {}, series: [] };
+  }
 }
 
 /** Used only if the request never reaches the server, so the player can still
  * save a report that matches the server-created issue layout. */
 export function createReportDownload(input: ReportInput): ReportDownload {
-  const category = input.type === 'feature' ? 'Feature request' : 'Issue';
-  const titlePrefix = input.type === 'feature' ? '[Feature]' : '[Issue]';
-  const context = [
-    ['Submitted', new Date().toISOString()],
-    ['App mode', input.context.mode],
-    ['Scenario', input.context.scenarioName],
-    ['Scenario ID', input.context.scenarioId],
-    ['Build', input.context.appVersion],
-    ['Browser', input.context.userAgent],
-  ].filter(([, value]) => Boolean(value))
-    .map(([label, value]) => `- ${label}: ${escapeMarkdown(String(value))}`);
-  const title = `${titlePrefix} ${input.title.trim().replace(/\s+/g, ' ')}`;
-  const body = [
-    '## Report details',
-    '',
-    `- Type: ${category}`,
-    `- Reporter: ${escapeMarkdown(input.reporterName)}`,
-    '',
-    '## Description',
-    '',
-    escapeMarkdown(input.description),
-    '',
-    '## Context',
-    '',
-    ...context,
-  ].join('\n');
-  const date = new Date().toISOString().slice(0, 10);
-  return { fileName: `bbt-${input.type}-${date}.md`, content: `# ${title}\n\n${body}\n` };
+  return createDownload(
+    { ...input, context: input.context },
+    input.reporterName,
+  );
+}
+
+/** The exact issue title/body the server would file — shown as a preview. */
+export function previewIssue(input: ReportInput) {
+  return buildIssueDraft({ ...input, context: input.context }, input.reporterName);
 }
 
 export async function submitReport(input: ReportInput, idToken?: string | null): Promise<ReportSubmission> {
@@ -142,10 +161,7 @@ export async function submitReport(input: ReportInput, idToken?: string | null):
   try {
     res = await fetch(`${BASE}/reports`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        ...(idToken ? { Authorization: `Bearer ${idToken}` } : {}),
-      },
+      headers: authHeaders(idToken),
       body: JSON.stringify(input),
     });
   } catch {

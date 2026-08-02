@@ -1,4 +1,4 @@
-import { normalizeSeries } from './editorValidation.js';
+import { normalizeSeries } from '../../shared/scenarioValidation.js';
 import { editorStore, readDraftScenarios, writeDraftSeries } from './editorStore.js';
 import { AdminAuthError, authErrorResponse, requireAdminGoogleUser } from './auth.js';
 

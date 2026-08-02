@@ -105,12 +105,14 @@ export function computeReachable(
   const cleanDist = new Map<string, number>();
   const dodgeDist = new Map<string, number>();
 
-  type Node = { pos: Position; steps: number };
-  const queue: Node[] = [{ pos: origin, steps: 0 }];
+  // Plain FIFO over a growing array with a read cursor — Array.shift() is O(n)
+  // and this runs on every selection and every committed step.
+  const queue: { pos: Position; steps: number }[] = [{ pos: origin, steps: 0 }];
+  let head = 0;
   cleanDist.set(originKey, 0);
 
-  while (queue.length > 0) {
-    const { pos, steps } = queue.shift()!;
+  while (head < queue.length) {
+    const { pos, steps } = queue[head++];
     if (steps >= totalSteps) continue;
 
     const leavingTZ = tzKeys.has(key(pos));
@@ -137,11 +139,10 @@ export function computeReachable(
   const dodge: Position[] = [];
   const reachableKeys = new Set<string>();
 
-  for (const [k, dist] of cleanDist) {
+  for (const k of cleanDist.keys()) {
     if (k !== originKey) { free.push(fromKey(k)); reachableKeys.add(k); }
-    void dist;
   }
-  for (const [k] of dodgeDist) {
+  for (const k of dodgeDist.keys()) {
     dodge.push(fromKey(k)); reachableKeys.add(k);
   }
 
@@ -156,8 +157,8 @@ export interface PathStep {
   requiresDodge: boolean;
   /**
    * Dodge target number (2–6) if requiresDodge is true, otherwise null.
-   * Computed as: base (7 - AG) + number of opponent TZs covering the destination,
-   * clamped to [2, 6].
+   * Computed as: base (6 - AG) + number of opponent TZs covering the destination,
+   * clamped to [2, 6] — see dodgeTargetAt.
    */
   dodgeTarget: number | null;
   /** True if this step costs a GFI (Go For It) rather than regular MA */
@@ -167,6 +168,55 @@ export interface PathStep {
    * ball's square, otherwise null. Same formula as dodgeTargetAt.
    */
   pickupTarget: number | null;
+}
+
+// ── Priority queue ────────────────────────────────────────────────────────────
+
+/**
+ * Binary min-heap keyed by a numeric priority.
+ *
+ * findShortestPath runs on every mouse-move over the pitch; the previous
+ * implementation re-sorted its whole frontier on each iteration, which is
+ * O(V² log V) with an allocation per comparison pass.
+ */
+class MinHeap<T> {
+  private items: { priority: number; value: T }[] = [];
+
+  get size(): number {
+    return this.items.length;
+  }
+
+  push(priority: number, value: T): void {
+    this.items.push({ priority, value });
+    let i = this.items.length - 1;
+    while (i > 0) {
+      const parent = (i - 1) >> 1;
+      if (this.items[parent].priority <= this.items[i].priority) break;
+      [this.items[parent], this.items[i]] = [this.items[i], this.items[parent]];
+      i = parent;
+    }
+  }
+
+  pop(): T | undefined {
+    if (this.items.length === 0) return undefined;
+    const top = this.items[0];
+    const last = this.items.pop()!;
+    if (this.items.length > 0) {
+      this.items[0] = last;
+      let i = 0;
+      for (;;) {
+        const left = i * 2 + 1;
+        const right = left + 1;
+        let smallest = i;
+        if (left < this.items.length && this.items[left].priority < this.items[smallest].priority) smallest = left;
+        if (right < this.items.length && this.items[right].priority < this.items[smallest].priority) smallest = right;
+        if (smallest === i) break;
+        [this.items[smallest], this.items[i]] = [this.items[i], this.items[smallest]];
+        i = smallest;
+      }
+    }
+    return top.value;
+  }
 }
 
 /**
@@ -478,33 +528,36 @@ export function findShortestPath(
     return Math.abs(dx * (p.row - origin.row) - dy * (p.col - origin.col));
   }
 
-  type State = {
+  // Parent pointers instead of copying the whole path into every queued state —
+  // the path is reconstructed once, on success.
+  type Node = {
     pos: Position;
     steps: number;
-    path: PathStep[];
     totalDeviation: number;
+    step: PathStep | null;   // the step that arrived here (null at the origin)
+    parent: Node | null;
   };
 
-  const visited = new Map<string, [number, number]>();
-
-  const queue: State[] = [{
-    pos: origin,
-    steps: 0,
-    path: [],
-    totalDeviation: 0,
-  }];
-  visited.set(`${originKey}:0`, [0, 0]);
-
-  function priority(s: State): number {
-    return s.steps * 10000 + s.totalDeviation;
+  function reconstruct(node: Node): PathStep[] {
+    const path: PathStep[] = [];
+    for (let current: Node | null = node; current?.step; current = current.parent) {
+      path.push(current.step);
+    }
+    return path.reverse();
   }
 
-  while (queue.length > 0) {
-    queue.sort((a, b) => priority(a) - priority(b));
-    const { pos, steps, path, totalDeviation } = queue.shift()!;
+  const visited = new Map<string, [number, number]>();
+  const queue = new MinHeap<Node>();
+
+  visited.set(`${originKey}:0`, [0, 0]);
+  queue.push(0, { pos: origin, steps: 0, totalDeviation: 0, step: null, parent: null });
+
+  while (queue.size > 0) {
+    const node = queue.pop()!;
+    const { pos, steps, totalDeviation } = node;
 
     if (key(pos) === targetKey) {
-      return path;
+      return reconstruct(node);
     }
 
     if (steps >= totalSteps) continue;
@@ -541,11 +594,13 @@ export function findShortestPath(
         isGfi: stepIsGfi,
         pickupTarget: isBallSquare ? pickupTargetAt(next, ag, opponentPositions) : null,
       };
-      queue.push({
+      // Fewest steps first, straightest line as the tie-break.
+      queue.push(newSteps * 10000 + newDev, {
         pos: next,
         steps: newSteps,
-        path: [...path, step],
         totalDeviation: newDev,
+        step,
+        parent: node,
       });
     }
   }

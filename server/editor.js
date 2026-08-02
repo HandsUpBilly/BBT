@@ -1,12 +1,17 @@
 import { readdir, readFile, writeFile, mkdir, unlink } from 'fs/promises';
 import { join, basename } from 'path';
 import { AdminAuthError, requireAdminGoogleUser } from './auth.js';
+import {
+  SCENARIO_ID_RE,
+  normalizeScenario,
+  normalizeSeries,
+  validateScenario,
+} from '../shared/scenarioValidation.js';
 
 const ROOT = join(process.cwd(), '..');
 const SCENARIO_DIR = join(ROOT, 'client/src/scenarios');
 const SERIES_DIR = join(ROOT, 'client/src/series');
 const DEFAULT_SERIES_PATH = join(SERIES_DIR, 'default.json');
-const SCENARIO_ID_RE = /^[a-z0-9][a-z0-9-]*$/;
 
 function jsonResponse(res, status, body) {
   res.status(status).json(body);
@@ -16,172 +21,95 @@ function scenarioPath(id) {
   return join(SCENARIO_DIR, `${id}.json`);
 }
 
-function normalizeScenario(input) {
-  return {
-    id: String(input.id ?? '').trim(),
-    name: String(input.name ?? '').trim(),
-    description: String(input.description ?? '').trim(),
-    activeTeam: input.activeTeam === 'orc' ? 'orc' : 'human',
-    published: input.published !== false,
-    ballPosition: input.ballPosition ?? null,
-    pieces: Array.isArray(input.pieces) ? input.pieces.map(piece => ({
-      id: String(piece.id ?? '').trim(),
-      team: piece.team === 'orc' ? 'orc' : 'human',
-      role: String(piece.role ?? 'lineman').trim(),
-      name: String(piece.name ?? '').trim(),
-      ma: Number(piece.ma),
-      st: Number(piece.st),
-      ag: Number(piece.ag),
-      pa: Number(piece.pa),
-      av: Number(piece.av),
-      skills: Array.isArray(piece.skills) ? piece.skills.map(String) : [],
-      position: {
-        col: Number(piece.position?.col),
-        row: Number(piece.position?.row),
-      },
-      hasBall: Boolean(piece.hasBall),
-    })) : [],
-  };
+/** Rejects anything that isn't a bare, well-formed scenario id (no traversal). */
+function safeScenarioId(raw) {
+  const id = String(raw);
+  return basename(id) === id && SCENARIO_ID_RE.test(id) ? id : null;
 }
 
-function validatePosition(position, label, errors) {
-  if (!Number.isInteger(position?.col) || position.col < 0 || position.col > 14) {
-    errors.push(`${label} column must be between 0 and 14`);
+/** Runs `handler` only for an allowlisted admin; otherwise writes the auth error. */
+async function withAdmin(req, res, handler) {
+  try {
+    await requireAdminGoogleUser(req);
+  } catch (error) {
+    if (error instanceof AdminAuthError) return jsonResponse(res, error.status, { errors: [error.message] });
+    throw error;
   }
-  if (!Number.isInteger(position?.row) || position.row < 0 || position.row > 25) {
-    errors.push(`${label} row must be between 0 and 25`);
-  }
-}
-
-function validateScenario(scenario, existingIds = new Set(), { allowExisting = false } = {}) {
-  const errors = [];
-  if (!SCENARIO_ID_RE.test(scenario.id)) errors.push('Scenario id must be lowercase letters, numbers, and hyphens');
-  if (!scenario.name) errors.push('Scenario name is required');
-  if (!scenario.description) errors.push('Scenario description is required');
-  if (scenario.activeTeam !== 'human' && scenario.activeTeam !== 'orc') errors.push('Active team must be human or orc');
-  if (!allowExisting && existingIds.has(scenario.id)) errors.push('Scenario id already exists');
-  if (!Array.isArray(scenario.pieces) || scenario.pieces.length === 0) errors.push('At least one player is required');
-
-  const ids = new Set();
-  const squares = new Set();
-  let activeTeamPieces = 0;
-  let carriers = 0;
-
-  for (const piece of scenario.pieces) {
-    if (!piece.id) errors.push('Every player needs an id');
-    if (ids.has(piece.id)) errors.push(`Duplicate player id: ${piece.id}`);
-    ids.add(piece.id);
-    if (!piece.name) errors.push(`Player ${piece.id || '(missing id)'} needs a name`);
-    if (piece.team !== 'human' && piece.team !== 'orc') errors.push(`Player ${piece.id} team must be human or orc`);
-    if (piece.team === scenario.activeTeam) activeTeamPieces += 1;
-    validatePosition(piece.position, `Player ${piece.id}`, errors);
-    const square = `${piece.position.col},${piece.position.row}`;
-    if (squares.has(square)) errors.push(`Multiple players on square ${square}`);
-    squares.add(square);
-    for (const stat of ['ma', 'st', 'ag', 'pa', 'av']) {
-      if (!Number.isInteger(piece[stat]) || piece[stat] < 1 || piece[stat] > 12) {
-        errors.push(`Player ${piece.id} ${stat.toUpperCase()} must be between 1 and 12`);
-      }
-    }
-    if (piece.hasBall) carriers += 1;
-  }
-
-  if (activeTeamPieces === 0) errors.push('At least one player must belong to the active team');
-  if (scenario.ballPosition) validatePosition(scenario.ballPosition, 'Loose ball', errors);
-  if (carriers > 1) errors.push('Only one player can carry the ball');
-  if (carriers === 1 && scenario.ballPosition) errors.push('Ball can be carried or loose, not both');
-  if (carriers === 0 && !scenario.ballPosition) errors.push('Place the ball on a player or on the ground');
-
-  return errors;
+  return handler();
 }
 
 async function readScenarios() {
   const files = await readdir(SCENARIO_DIR);
   const jsonFiles = files.filter(file => file.endsWith('.json')).sort();
-  const scenarios = await Promise.all(jsonFiles.map(async file => {
+  return Promise.all(jsonFiles.map(async file => {
     const raw = await readFile(join(SCENARIO_DIR, file), 'utf8');
     return JSON.parse(raw);
   }));
-  return scenarios;
 }
 
 async function readDefaultSeries() {
   try {
-    return JSON.parse(await readFile(DEFAULT_SERIES_PATH, 'utf8'));
+    return normalizeSeries(JSON.parse(await readFile(DEFAULT_SERIES_PATH, 'utf8')));
   } catch {
     return { id: 'default', name: 'Default Series', description: '', scenarioIds: [] };
   }
 }
 
-function normalizeSeries(input) {
+/**
+ * The published view players get. Local dev has no draft/published split — the
+ * editor writes straight to these JSON files — so this is the same read
+ * filtered to `published !== false`, with series ids narrowed to scenarios that
+ * actually survive that filter (otherwise Series Play would silently skip a
+ * puzzle mid-run). Exported so /api/progress can reuse it.
+ */
+export async function readPublicScenarios() {
+  const [allScenarios, series] = await Promise.all([readScenarios(), readDefaultSeries()]);
+  const scenarios = allScenarios.filter(scenario => scenario.published !== false);
+  const publishedIds = new Set(scenarios.map(scenario => scenario.id));
   return {
-    id: 'default',
-    name: String(input.name ?? 'Default Series').trim() || 'Default Series',
-    description: String(input.description ?? '').trim(),
-    scenarioIds: Array.isArray(input.scenarioIds)
-      ? input.scenarioIds.map(String).filter(Boolean)
-      : [],
+    scenarios,
+    series: { ...series, scenarioIds: series.scenarioIds.filter(id => publishedIds.has(id)) },
   };
 }
 
 export function registerEditorRoutes(app) {
-  app.get('/api/editor/scenarios', async (_req, res) => {
+  // Drafts include unpublished puzzles, so this needs the same admin gate as
+  // the write routes — an open read here would leak work in progress.
+  app.get('/api/editor/scenarios', async (req, res) => withAdmin(req, res, async () => {
     const [scenarios, series] = await Promise.all([readScenarios(), readDefaultSeries()]);
     jsonResponse(res, 200, { scenarios, series });
-  });
+  }));
 
-  // Public read endpoint mirroring netlify/functions/scenarios.js. Local dev has
-  // no draft/published split (editor writes go straight to these JSON files),
-  // so this just re-reads the same files as /api/editor/scenarios but filters
-  // to published: true — kept as a separate route so the client can use one
-  // fetch path (/api/scenarios) in both environments.
+  // Public read endpoint mirroring netlify/functions/scenarios.js.
   app.get('/api/scenarios', async (_req, res) => {
-    const [scenarios, series] = await Promise.all([readScenarios(), readDefaultSeries()]);
-    const published = scenarios.filter(scenario => scenario.published !== false);
-    jsonResponse(res, 200, { scenarios: published, series });
+    res.set('Cache-Control', 'public, max-age=60');
+    jsonResponse(res, 200, await readPublicScenarios());
   });
 
-  app.post('/api/editor/scenarios', async (req, res) => {
-    try {
-      await requireAdminGoogleUser(req);
-    } catch (error) {
-      if (error instanceof AdminAuthError) return jsonResponse(res, error.status, { errors: [error.message] });
-      throw error;
-    }
+  app.post('/api/editor/scenarios', async (req, res) => withAdmin(req, res, async () => {
     const existing = await readScenarios();
     const existingIds = new Set(existing.map(scenario => scenario.id));
     const scenario = normalizeScenario(req.body);
     const errors = validateScenario(scenario, existingIds);
     if (errors.length) return jsonResponse(res, 400, { errors });
+    if (!safeScenarioId(scenario.id)) return jsonResponse(res, 400, { errors: ['Invalid scenario id'] });
     await writeFile(scenarioPath(scenario.id), `${JSON.stringify(scenario, null, 2)}\n`);
     jsonResponse(res, 201, scenario);
-  });
+  }));
 
-  app.put('/api/editor/scenarios/:scenarioId', async (req, res) => {
-    try {
-      await requireAdminGoogleUser(req);
-    } catch (error) {
-      if (error instanceof AdminAuthError) return jsonResponse(res, error.status, { errors: [error.message] });
-      throw error;
-    }
-    const id = String(req.params.scenarioId);
-    if (basename(id) !== id || !SCENARIO_ID_RE.test(id)) return jsonResponse(res, 400, { errors: ['Invalid scenario id'] });
+  app.put('/api/editor/scenarios/:scenarioId', async (req, res) => withAdmin(req, res, async () => {
+    const id = safeScenarioId(req.params.scenarioId);
+    if (!id) return jsonResponse(res, 400, { errors: ['Invalid scenario id'] });
     const scenario = normalizeScenario({ ...req.body, id });
     const errors = validateScenario(scenario, new Set(), { allowExisting: true });
     if (errors.length) return jsonResponse(res, 400, { errors });
     await writeFile(scenarioPath(id), `${JSON.stringify(scenario, null, 2)}\n`);
     jsonResponse(res, 200, scenario);
-  });
+  }));
 
-  app.delete('/api/editor/scenarios/:scenarioId', async (req, res) => {
-    try {
-      await requireAdminGoogleUser(req);
-    } catch (error) {
-      if (error instanceof AdminAuthError) return jsonResponse(res, error.status, { errors: [error.message] });
-      throw error;
-    }
-    const id = String(req.params.scenarioId);
-    if (basename(id) !== id || !SCENARIO_ID_RE.test(id)) return jsonResponse(res, 400, { errors: ['Invalid scenario id'] });
+  app.delete('/api/editor/scenarios/:scenarioId', async (req, res) => withAdmin(req, res, async () => {
+    const id = safeScenarioId(req.params.scenarioId);
+    if (!id) return jsonResponse(res, 400, { errors: ['Invalid scenario id'] });
 
     const scenarios = await readScenarios();
     if (!scenarios.some(scenario => scenario.id === id)) return jsonResponse(res, 404, { errors: ['Scenario not found'] });
@@ -196,15 +124,9 @@ export function registerEditorRoutes(app) {
     await mkdir(SERIES_DIR, { recursive: true });
     await writeFile(DEFAULT_SERIES_PATH, `${JSON.stringify(savedSeries, null, 2)}\n`);
     jsonResponse(res, 200, { scenarios: remainingScenarios, series: savedSeries });
-  });
+  }));
 
-  app.put('/api/editor/series/default', async (req, res) => {
-    try {
-      await requireAdminGoogleUser(req);
-    } catch (error) {
-      if (error instanceof AdminAuthError) return jsonResponse(res, error.status, { errors: [error.message] });
-      throw error;
-    }
+  app.put('/api/editor/series/default', async (req, res) => withAdmin(req, res, async () => {
     const scenarios = await readScenarios();
     const scenarioIds = new Set(scenarios.map(scenario => scenario.id));
     const series = normalizeSeries(req.body);
@@ -213,22 +135,15 @@ export function registerEditorRoutes(app) {
     await mkdir(SERIES_DIR, { recursive: true });
     await writeFile(DEFAULT_SERIES_PATH, `${JSON.stringify(series, null, 2)}\n`);
     jsonResponse(res, 200, series);
-  });
+  }));
 
-  // Local dev writes straight to the scenario/series JSON files players read
-  // (via import.meta.glob), so there's no separate draft/published split here —
-  // this endpoint exists only so the client can call the same publish() action
-  // in both environments. See netlify/functions/editor-publish.js for the
-  // Netlify equivalent, which actually copies Blobs draft state to a
-  // published key.
-  app.post('/api/editor/publish', async (req, res) => {
-    try {
-      await requireAdminGoogleUser(req);
-    } catch (error) {
-      if (error instanceof AdminAuthError) return jsonResponse(res, error.status, { errors: [error.message] });
-      throw error;
-    }
+  // Local dev writes straight to the scenario/series JSON files players read,
+  // so there's no separate draft/published split here — this endpoint exists
+  // only so the client can call the same publish() action in both
+  // environments. See netlify/functions/editor-publish.js for the Netlify
+  // equivalent, which actually copies Blobs draft state to a published key.
+  app.post('/api/editor/publish', async (req, res) => withAdmin(req, res, async () => {
     const [scenarios, series] = await Promise.all([readScenarios(), readDefaultSeries()]);
     jsonResponse(res, 200, { scenarios, series });
-  });
+  }));
 }
