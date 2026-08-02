@@ -212,10 +212,10 @@ function IdentityGate({ authConfigured, onGoogleSignIn, onGuest }: IdentityGateP
       <div className="identity-gate__panel">
         <div className="identity-gate__tape" aria-hidden="true" />
         <div className="identity-gate__header">
-          <span className="identity-gate__eyebrow">Coach's playbook</span>
-          <h1 className="identity-gate__title">BB Tactics</h1>
+          <span className="identity-gate__eyebrow">The final turn · Do or die</span>
+          <h1 className="identity-gate__title">Turn 16</h1>
           <p className="identity-gate__subtitle">
-            Sign the team sheet, then find the cleanest route to the end zone.
+            One turn remains. Sign the team sheet and find the route to the end zone.
           </p>
         </div>
 

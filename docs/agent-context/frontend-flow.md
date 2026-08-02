@@ -68,6 +68,16 @@ The identity gate and `home` mode use the tabletop-playbook visual shell:
   responsive contrast overlay. Off-canvas chalk decoration is contained by
   `app--landing` so 320 px and wider viewports do not scroll horizontally.
 
+## Player-Facing Brand
+
+- The app name is **Turn 16**, referring to the final turn of a Blood Bowl
+  game and the do-or-die touchdown plays the puzzles represent.
+- Keep the login gate, home masthead, browser title, and README aligned with
+  this name and final-turn framing.
+- Existing `bbt.*` localStorage keys are compatibility identifiers, not
+  player-facing branding. Do not rename them and invalidate saved sessions,
+  guest names, or local score history as part of a visual rebrand.
+
 ## Whole-App Rulebook Theme
 
 `client/src/PlaybookTheme.css` is the authoritative late-loaded visual layer

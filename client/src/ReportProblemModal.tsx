@@ -113,7 +113,7 @@ export function ReportProblemModal({ defaultReporterName, context, idToken, onCl
         <div className="report-problem-modal__header">
           <span className="report-problem-modal__eyebrow">Coach's note</span>
           <h2 id="report-problem-title" className="modal__title">Report a problem</h2>
-          <p className="report-problem-modal__copy">Send an issue or feature request to the BB Tactics team.</p>
+          <p className="report-problem-modal__copy">Send an issue or feature request to the Turn 16 team.</p>
         </div>
 
         <form className="report-problem-form" onSubmit={handleSubmit}>
