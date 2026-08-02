@@ -1,6 +1,6 @@
 // GENERATED FILE — do not edit.
 // Produced by scripts/generate-scenario-seed.mjs from:
-//   client/src/scenarios/*.json  (5 files)
+//   client/src/scenarios/*.json  (6 files)
 //   client/src/series/default.json
 // Regenerate with: npm run generate:seed
 
@@ -676,6 +676,319 @@ export const STATIC_SCENARIOS = [
         "hasBall": false
       }
     ]
+  },
+  {
+    "id": "scenario-006",
+    "name": "Loose Ball on the Goal Line",
+    "description": "Bonecruncher's hit jarred the ball loose five squares short of the line, and Skullkrak is standing right on top of it. Knock him off the ball, scoop it up, then pick your route home — Swiftfoot's legs, a quick pitch to Quickstep in space, or a throw into the end zone.",
+    "activeTeam": "human",
+    "published": true,
+    "ballPosition": {
+      "col": 7,
+      "row": 5
+    },
+    "pieces": [
+      {
+        "id": "aldric",
+        "team": "human",
+        "role": "thrower",
+        "name": "Aldric Swiftfoot",
+        "ma": 6,
+        "st": 3,
+        "ag": 3,
+        "pa": 3,
+        "av": 8,
+        "skills": [
+          "Pass",
+          "Sure Hands"
+        ],
+        "position": {
+          "col": 7,
+          "row": 7
+        },
+        "hasBall": false
+      },
+      {
+        "id": "cedric",
+        "team": "human",
+        "role": "blitzer",
+        "name": "Cedric Linebreaker",
+        "ma": 7,
+        "st": 3,
+        "ag": 3,
+        "pa": 4,
+        "av": 8,
+        "skills": [
+          "Block",
+          "Tackle"
+        ],
+        "position": {
+          "col": 6,
+          "row": 7
+        },
+        "hasBall": false
+      },
+      {
+        "id": "hugo",
+        "team": "human",
+        "role": "lineman",
+        "name": "Hugo Ironlace",
+        "ma": 6,
+        "st": 3,
+        "ag": 3,
+        "pa": 4,
+        "av": 8,
+        "skills": [],
+        "position": {
+          "col": 5,
+          "row": 7
+        },
+        "hasBall": false
+      },
+      {
+        "id": "bramm",
+        "team": "human",
+        "role": "lineman",
+        "name": "Bramm Surehands",
+        "ma": 6,
+        "st": 3,
+        "ag": 3,
+        "pa": 4,
+        "av": 8,
+        "skills": [],
+        "position": {
+          "col": 8,
+          "row": 7
+        },
+        "hasBall": false
+      },
+      {
+        "id": "dieter",
+        "team": "human",
+        "role": "lineman",
+        "name": "Dieter Longstride",
+        "ma": 6,
+        "st": 3,
+        "ag": 3,
+        "pa": 4,
+        "av": 8,
+        "skills": [],
+        "position": {
+          "col": 8,
+          "row": 6
+        },
+        "hasBall": false
+      },
+      {
+        "id": "sera",
+        "team": "human",
+        "role": "catcher",
+        "name": "Sera Quickhand",
+        "ma": 8,
+        "st": 3,
+        "ag": 3,
+        "pa": 4,
+        "av": 7,
+        "skills": [
+          "Catch",
+          "Dodge"
+        ],
+        "position": {
+          "col": 9,
+          "row": 4
+        },
+        "hasBall": false
+      },
+      {
+        "id": "franz",
+        "team": "human",
+        "role": "catcher",
+        "name": "Franz Quickstep",
+        "ma": 8,
+        "st": 3,
+        "ag": 3,
+        "pa": 4,
+        "av": 7,
+        "skills": [
+          "Catch",
+          "Dodge"
+        ],
+        "position": {
+          "col": 2,
+          "row": 2
+        },
+        "hasBall": false
+      },
+      {
+        "id": "throg",
+        "team": "orc",
+        "role": "big-un",
+        "name": "Throg Chainbellow",
+        "ma": 5,
+        "st": 4,
+        "ag": 2,
+        "pa": 6,
+        "av": 9,
+        "skills": [
+          "Mighty Blow",
+          "Taunt",
+          "Thick Skull",
+          "Unsteady"
+        ],
+        "position": {
+          "col": 4,
+          "row": 6
+        },
+        "hasBall": false
+      },
+      {
+        "id": "nobgul",
+        "team": "orc",
+        "role": "big-un",
+        "name": "Nobgul Linebasher",
+        "ma": 5,
+        "st": 4,
+        "ag": 2,
+        "pa": 6,
+        "av": 9,
+        "skills": [
+          "Mighty Blow",
+          "Taunt",
+          "Thick Skull",
+          "Unsteady"
+        ],
+        "position": {
+          "col": 5,
+          "row": 6
+        },
+        "hasBall": false
+      },
+      {
+        "id": "muzgash",
+        "team": "orc",
+        "role": "lineman",
+        "name": "Muzgash Skullkrak",
+        "ma": 5,
+        "st": 3,
+        "ag": 3,
+        "pa": 4,
+        "av": 9,
+        "skills": [],
+        "position": {
+          "col": 6,
+          "row": 6
+        },
+        "hasBall": false
+      },
+      {
+        "id": "dorg",
+        "team": "orc",
+        "role": "lineman",
+        "name": "Dorg Gutripper",
+        "ma": 5,
+        "st": 3,
+        "ag": 3,
+        "pa": 4,
+        "av": 9,
+        "skills": [],
+        "position": {
+          "col": 9,
+          "row": 6
+        },
+        "hasBall": false
+      },
+      {
+        "id": "zug",
+        "team": "orc",
+        "role": "lineman",
+        "name": "Zug Bloodfang",
+        "ma": 5,
+        "st": 3,
+        "ag": 3,
+        "pa": 4,
+        "av": 9,
+        "skills": [],
+        "position": {
+          "col": 10,
+          "row": 6
+        },
+        "hasBall": false
+      },
+      {
+        "id": "vrak",
+        "team": "orc",
+        "role": "blitzer",
+        "name": "Vrak Bonecruncher",
+        "ma": 6,
+        "st": 3,
+        "ag": 3,
+        "pa": 4,
+        "av": 9,
+        "skills": [
+          "Block",
+          "Break Tackle"
+        ],
+        "position": {
+          "col": 10,
+          "row": 3
+        },
+        "hasBall": false
+      },
+      {
+        "id": "rukbad",
+        "team": "orc",
+        "role": "lineman",
+        "name": "Rukbad Bootsnappa",
+        "ma": 5,
+        "st": 3,
+        "ag": 3,
+        "pa": 4,
+        "av": 9,
+        "skills": [],
+        "position": {
+          "col": 1,
+          "row": 4
+        },
+        "hasBall": false
+      },
+      {
+        "id": "skrag",
+        "team": "orc",
+        "role": "blitzer",
+        "name": "Skrag Headsmash",
+        "ma": 6,
+        "st": 3,
+        "ag": 3,
+        "pa": 4,
+        "av": 9,
+        "skills": [
+          "Block",
+          "Break Tackle"
+        ],
+        "position": {
+          "col": 4,
+          "row": 1
+        },
+        "hasBall": false
+      },
+      {
+        "id": "grukk",
+        "team": "orc",
+        "role": "lineman",
+        "name": "Grukk Ironjaw",
+        "ma": 5,
+        "st": 3,
+        "ag": 3,
+        "pa": 4,
+        "av": 9,
+        "skills": [],
+        "position": {
+          "col": 7,
+          "row": 1
+        },
+        "hasBall": false
+      }
+    ]
   }
 ];
 
@@ -688,6 +1001,7 @@ export const STATIC_SERIES = {
     "scenario-002",
     "scenario-003",
     "scenario-004",
-    "scenario-005"
+    "scenario-005",
+    "scenario-006"
   ]
 };
