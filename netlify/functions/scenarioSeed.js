@@ -8,7 +8,7 @@ export const STATIC_SCENARIOS = [
   {
     "id": "scenario-001",
     "name": "Reikland's Opening Drive",
-    "description": "Nuffle smiles on the Reavers' first snap. Swiftfoot has the ball and two Orc Blockers stand between him and glory — find the safest path to the end zone.",
+    "description": "Nuffle smiles on the Reavers' first snap. Swiftfoot has the ball and two Orc Linemen stand between him and glory — find the safest path to the end zone.",
     "activeTeam": "human",
     "published": true,
     "pieces": [
@@ -23,7 +23,8 @@ export const STATIC_SCENARIOS = [
         "pa": 3,
         "av": 8,
         "skills": [
-          "Block"
+          "Pass",
+          "Sure Hands"
         ],
         "position": {
           "col": 7,
@@ -34,16 +35,14 @@ export const STATIC_SCENARIOS = [
       {
         "id": "opp1",
         "team": "orc",
-        "role": "blocker",
+        "role": "lineman",
         "name": "Grukk Ironjaw",
-        "ma": 4,
+        "ma": 5,
         "st": 3,
         "ag": 3,
-        "pa": 6,
+        "pa": 4,
         "av": 9,
-        "skills": [
-          "Animosity"
-        ],
+        "skills": [],
         "position": {
           "col": 6,
           "row": 4
@@ -53,16 +52,14 @@ export const STATIC_SCENARIOS = [
       {
         "id": "opp2",
         "team": "orc",
-        "role": "blocker",
+        "role": "lineman",
         "name": "Muzgash Skullkrak",
-        "ma": 4,
+        "ma": 5,
         "st": 3,
         "ag": 3,
-        "pa": 6,
+        "pa": 4,
         "av": 9,
-        "skills": [
-          "Animosity"
-        ],
+        "skills": [],
         "position": {
           "col": 8,
           "row": 4
@@ -89,7 +86,8 @@ export const STATIC_SCENARIOS = [
         "pa": 3,
         "av": 8,
         "skills": [
-          "Block"
+          "Pass",
+          "Sure Hands"
         ],
         "position": {
           "col": 7,
@@ -103,9 +101,9 @@ export const STATIC_SCENARIOS = [
         "role": "catcher",
         "name": "Sera Quickhand",
         "ma": 8,
-        "st": 2,
-        "ag": 4,
-        "pa": 5,
+        "st": 3,
+        "ag": 3,
+        "pa": 4,
         "av": 7,
         "skills": [
           "Catch",
@@ -120,16 +118,14 @@ export const STATIC_SCENARIOS = [
       {
         "id": "orc1",
         "team": "orc",
-        "role": "blocker",
+        "role": "lineman",
         "name": "Grukk Ironjaw",
-        "ma": 4,
+        "ma": 5,
         "st": 3,
         "ag": 3,
-        "pa": 6,
+        "pa": 4,
         "av": 9,
-        "skills": [
-          "Animosity"
-        ],
+        "skills": [],
         "position": {
           "col": 6,
           "row": 12
@@ -139,16 +135,14 @@ export const STATIC_SCENARIOS = [
       {
         "id": "orc2",
         "team": "orc",
-        "role": "blocker",
+        "role": "lineman",
         "name": "Muzgash Skullkrak",
-        "ma": 4,
+        "ma": 5,
         "st": 3,
         "ag": 3,
-        "pa": 6,
+        "pa": 4,
         "av": 9,
-        "skills": [
-          "Animosity"
-        ],
+        "skills": [],
         "position": {
           "col": 8,
           "row": 12
@@ -163,10 +157,11 @@ export const STATIC_SCENARIOS = [
         "ma": 6,
         "st": 3,
         "ag": 3,
-        "pa": 5,
+        "pa": 4,
         "av": 9,
         "skills": [
-          "Block"
+          "Block",
+          "Break Tackle"
         ],
         "position": {
           "col": 5,
@@ -182,10 +177,11 @@ export const STATIC_SCENARIOS = [
         "ma": 6,
         "st": 3,
         "ag": 3,
-        "pa": 5,
+        "pa": 4,
         "av": 9,
         "skills": [
-          "Block"
+          "Block",
+          "Break Tackle"
         ],
         "position": {
           "col": 4,
@@ -196,16 +192,14 @@ export const STATIC_SCENARIOS = [
       {
         "id": "orc5",
         "team": "orc",
-        "role": "blocker",
+        "role": "lineman",
         "name": "Dorg Gutripper",
-        "ma": 4,
+        "ma": 5,
         "st": 3,
         "ag": 3,
-        "pa": 6,
+        "pa": 4,
         "av": 9,
-        "skills": [
-          "Animosity"
-        ],
+        "skills": [],
         "position": {
           "col": 7,
           "row": 5
@@ -233,7 +227,8 @@ export const STATIC_SCENARIOS = [
         "pa": 3,
         "av": 8,
         "skills": [
-          "Block"
+          "Pass",
+          "Sure Hands"
         ],
         "position": {
           "col": 7,
@@ -247,9 +242,9 @@ export const STATIC_SCENARIOS = [
         "role": "catcher",
         "name": "Sera Quickhand",
         "ma": 8,
-        "st": 2,
-        "ag": 4,
-        "pa": 5,
+        "st": 3,
+        "ag": 3,
+        "pa": 4,
         "av": 7,
         "skills": [
           "Catch",
@@ -264,16 +259,14 @@ export const STATIC_SCENARIOS = [
       {
         "id": "orc1",
         "team": "orc",
-        "role": "blocker",
+        "role": "lineman",
         "name": "Grukk Ironjaw",
-        "ma": 4,
+        "ma": 5,
         "st": 3,
         "ag": 3,
-        "pa": 6,
+        "pa": 4,
         "av": 9,
-        "skills": [
-          "Animosity"
-        ],
+        "skills": [],
         "position": {
           "col": 6,
           "row": 9
@@ -283,16 +276,14 @@ export const STATIC_SCENARIOS = [
       {
         "id": "orc2",
         "team": "orc",
-        "role": "blocker",
+        "role": "lineman",
         "name": "Muzgash Skullkrak",
-        "ma": 4,
+        "ma": 5,
         "st": 3,
         "ag": 3,
-        "pa": 6,
+        "pa": 4,
         "av": 9,
-        "skills": [
-          "Animosity"
-        ],
+        "skills": [],
         "position": {
           "col": 8,
           "row": 9
@@ -307,10 +298,11 @@ export const STATIC_SCENARIOS = [
         "ma": 6,
         "st": 3,
         "ag": 3,
-        "pa": 5,
+        "pa": 4,
         "av": 9,
         "skills": [
-          "Block"
+          "Block",
+          "Break Tackle"
         ],
         "position": {
           "col": 7,
@@ -321,16 +313,14 @@ export const STATIC_SCENARIOS = [
       {
         "id": "orc4",
         "team": "orc",
-        "role": "blocker",
+        "role": "lineman",
         "name": "Dorg Gutripper",
-        "ma": 4,
+        "ma": 5,
         "st": 3,
         "ag": 3,
-        "pa": 6,
+        "pa": 4,
         "av": 9,
-        "skills": [
-          "Animosity"
-        ],
+        "skills": [],
         "position": {
           "col": 8,
           "row": 3
@@ -340,16 +330,14 @@ export const STATIC_SCENARIOS = [
       {
         "id": "orc-blocker-7",
         "team": "orc",
-        "role": "blocker",
+        "role": "lineman",
         "name": "Skrag Headsmash",
-        "ma": 4,
+        "ma": 5,
         "st": 3,
         "ag": 3,
-        "pa": 6,
+        "pa": 4,
         "av": 9,
-        "skills": [
-          "Animosity"
-        ],
+        "skills": [],
         "position": {
           "col": 4,
           "row": 3
@@ -381,11 +369,9 @@ export const STATIC_SCENARIOS = [
         "ma": 5,
         "st": 3,
         "ag": 3,
-        "pa": 5,
+        "pa": 4,
         "av": 9,
-        "skills": [
-          "Animosity"
-        ],
+        "skills": [],
         "position": {
           "col": 11,
           "row": 10
@@ -407,9 +393,9 @@ export const STATIC_SCENARIOS = [
         "role": "catcher",
         "name": "Sera Quickhand",
         "ma": 8,
-        "st": 2,
-        "ag": 4,
-        "pa": 5,
+        "st": 3,
+        "ag": 3,
+        "pa": 4,
         "av": 7,
         "skills": [
           "Catch",
@@ -424,16 +410,14 @@ export const STATIC_SCENARIOS = [
       {
         "id": "orc1",
         "team": "orc",
-        "role": "blocker",
+        "role": "lineman",
         "name": "Grukk Ironjaw",
-        "ma": 4,
+        "ma": 5,
         "st": 3,
         "ag": 3,
-        "pa": 6,
+        "pa": 4,
         "av": 9,
-        "skills": [
-          "Animosity"
-        ],
+        "skills": [],
         "position": {
           "col": 5,
           "row": 7
@@ -443,16 +427,14 @@ export const STATIC_SCENARIOS = [
       {
         "id": "orc2",
         "team": "orc",
-        "role": "blocker",
+        "role": "lineman",
         "name": "Muzgash Skullkrak",
-        "ma": 4,
+        "ma": 5,
         "st": 3,
         "ag": 3,
-        "pa": 6,
+        "pa": 4,
         "av": 9,
-        "skills": [
-          "Animosity"
-        ],
+        "skills": [],
         "position": {
           "col": 9,
           "row": 7
@@ -467,10 +449,11 @@ export const STATIC_SCENARIOS = [
         "ma": 6,
         "st": 3,
         "ag": 3,
-        "pa": 5,
+        "pa": 4,
         "av": 9,
         "skills": [
-          "Block"
+          "Block",
+          "Break Tackle"
         ],
         "position": {
           "col": 7,
@@ -481,16 +464,14 @@ export const STATIC_SCENARIOS = [
       {
         "id": "orc4",
         "team": "orc",
-        "role": "blocker",
+        "role": "lineman",
         "name": "Dorg Gutripper",
-        "ma": 4,
+        "ma": 5,
         "st": 3,
         "ag": 3,
-        "pa": 6,
+        "pa": 4,
         "av": 9,
-        "skills": [
-          "Animosity"
-        ],
+        "skills": [],
         "position": {
           "col": 4,
           "row": 4
@@ -500,15 +481,16 @@ export const STATIC_SCENARIOS = [
       {
         "id": "orc5",
         "team": "orc",
-        "role": "blocker",
+        "role": "blitzer",
         "name": "Skrag Headsmash",
         "ma": 6,
         "st": 3,
         "ag": 3,
-        "pa": 5,
+        "pa": 4,
         "av": 9,
         "skills": [
-          "Block"
+          "Block",
+          "Break Tackle"
         ],
         "position": {
           "col": 10,
@@ -524,10 +506,11 @@ export const STATIC_SCENARIOS = [
         "ma": 6,
         "st": 3,
         "ag": 3,
-        "pa": 5,
+        "pa": 4,
         "av": 9,
         "skills": [
-          "Block"
+          "Block",
+          "Break Tackle"
         ],
         "position": {
           "col": 7,
@@ -555,7 +538,8 @@ export const STATIC_SCENARIOS = [
         "pa": 3,
         "av": 8,
         "skills": [
-          "Block"
+          "Pass",
+          "Sure Hands"
         ],
         "position": {
           "col": 7,
@@ -569,9 +553,9 @@ export const STATIC_SCENARIOS = [
         "role": "catcher",
         "name": "Sera Quickhand",
         "ma": 8,
-        "st": 2,
-        "ag": 4,
-        "pa": 5,
+        "st": 3,
+        "ag": 3,
+        "pa": 4,
         "av": 7,
         "skills": [
           "Catch",
@@ -586,16 +570,14 @@ export const STATIC_SCENARIOS = [
       {
         "id": "orc1",
         "team": "orc",
-        "role": "blocker",
+        "role": "lineman",
         "name": "Grukk Ironjaw",
-        "ma": 4,
+        "ma": 5,
         "st": 3,
         "ag": 3,
-        "pa": 6,
+        "pa": 4,
         "av": 9,
-        "skills": [
-          "Animosity"
-        ],
+        "skills": [],
         "position": {
           "col": 6,
           "row": 10
@@ -605,16 +587,14 @@ export const STATIC_SCENARIOS = [
       {
         "id": "orc2",
         "team": "orc",
-        "role": "blocker",
+        "role": "lineman",
         "name": "Muzgash Skullkrak",
-        "ma": 4,
+        "ma": 5,
         "st": 3,
         "ag": 3,
-        "pa": 6,
+        "pa": 4,
         "av": 9,
-        "skills": [
-          "Animosity"
-        ],
+        "skills": [],
         "position": {
           "col": 8,
           "row": 10
@@ -629,10 +609,11 @@ export const STATIC_SCENARIOS = [
         "ma": 6,
         "st": 3,
         "ag": 3,
-        "pa": 5,
+        "pa": 4,
         "av": 9,
         "skills": [
-          "Block"
+          "Block",
+          "Break Tackle"
         ],
         "position": {
           "col": 5,
@@ -648,10 +629,11 @@ export const STATIC_SCENARIOS = [
         "ma": 6,
         "st": 3,
         "ag": 3,
-        "pa": 5,
+        "pa": 4,
         "av": 9,
         "skills": [
-          "Block"
+          "Block",
+          "Break Tackle"
         ],
         "position": {
           "col": 9,
@@ -662,16 +644,14 @@ export const STATIC_SCENARIOS = [
       {
         "id": "orc5",
         "team": "orc",
-        "role": "blocker",
+        "role": "lineman",
         "name": "Dorg Gutripper",
-        "ma": 4,
+        "ma": 5,
         "st": 3,
         "ag": 3,
-        "pa": 6,
+        "pa": 4,
         "av": 9,
-        "skills": [
-          "Animosity"
-        ],
+        "skills": [],
         "position": {
           "col": 6,
           "row": 5
@@ -681,16 +661,14 @@ export const STATIC_SCENARIOS = [
       {
         "id": "orc6",
         "team": "orc",
-        "role": "blocker",
+        "role": "lineman",
         "name": "Zug Bloodfang",
-        "ma": 4,
+        "ma": 5,
         "st": 3,
         "ag": 3,
-        "pa": 6,
+        "pa": 4,
         "av": 9,
-        "skills": [
-          "Animosity"
-        ],
+        "skills": [],
         "position": {
           "col": 8,
           "row": 5

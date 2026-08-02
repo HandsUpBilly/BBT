@@ -17,7 +17,8 @@
       "pa": 3,
       "av": 8,
       "skills": [
-        "Block"
+        "Pass",
+        "Sure Hands"
       ],
       "position": {
         "col": 7,
@@ -31,9 +32,9 @@
       "role": "catcher",
       "name": "Sera Quickhand",
       "ma": 8,
-      "st": 2,
-      "ag": 4,
-      "pa": 5,
+      "st": 3,
+      "ag": 3,
+      "pa": 4,
       "av": 7,
       "skills": [
         "Catch",
@@ -48,16 +49,14 @@
     {
       "id": "orc1",
       "team": "orc",
-      "role": "blocker",
+      "role": "lineman",
       "name": "Grukk Ironjaw",
-      "ma": 4,
+      "ma": 5,
       "st": 3,
       "ag": 3,
-      "pa": 6,
+      "pa": 4,
       "av": 9,
-      "skills": [
-        "Animosity"
-      ],
+      "skills": [],
       "position": {
         "col": 6,
         "row": 9
@@ -67,16 +66,14 @@
     {
       "id": "orc2",
       "team": "orc",
-      "role": "blocker",
+      "role": "lineman",
       "name": "Muzgash Skullkrak",
-      "ma": 4,
+      "ma": 5,
       "st": 3,
       "ag": 3,
-      "pa": 6,
+      "pa": 4,
       "av": 9,
-      "skills": [
-        "Animosity"
-      ],
+      "skills": [],
       "position": {
         "col": 8,
         "row": 9
@@ -91,10 +88,11 @@
       "ma": 6,
       "st": 3,
       "ag": 3,
-      "pa": 5,
+      "pa": 4,
       "av": 9,
       "skills": [
-        "Block"
+        "Block",
+        "Break Tackle"
       ],
       "position": {
         "col": 7,
@@ -105,16 +103,14 @@
     {
       "id": "orc4",
       "team": "orc",
-      "role": "blocker",
+      "role": "lineman",
       "name": "Dorg Gutripper",
-      "ma": 4,
+      "ma": 5,
       "st": 3,
       "ag": 3,
-      "pa": 6,
+      "pa": 4,
       "av": 9,
-      "skills": [
-        "Animosity"
-      ],
+      "skills": [],
       "position": {
         "col": 8,
         "row": 3
@@ -124,16 +120,14 @@
     {
       "id": "orc-blocker-7",
       "team": "orc",
-      "role": "blocker",
+      "role": "lineman",
       "name": "Skrag Headsmash",
-      "ma": 4,
+      "ma": 5,
       "st": 3,
       "ag": 3,
-      "pa": 6,
+      "pa": 4,
       "av": 9,
-      "skills": [
-        "Animosity"
-      ],
+      "skills": [],
       "position": {
         "col": 4,
         "row": 3
@@ -165,11 +159,9 @@
       "ma": 5,
       "st": 3,
       "ag": 3,
-      "pa": 5,
+      "pa": 4,
       "av": 9,
-      "skills": [
-        "Animosity"
-      ],
+      "skills": [],
       "position": {
         "col": 11,
         "row": 10
