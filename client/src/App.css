@@ -472,10 +472,27 @@ body,
 }
 
 /* ── Legend ──────────────────────────────────────────────────────────── */
+.game-legends {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex-shrink: 0;
+}
+
+.skill-keys {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 4px;
+  min-width: 0;
+}
+
 .legend {
   display: flex;
+  align-items: center;
   gap: 12px;
   padding: 0 4px;
+  min-width: 0;
   flex-shrink: 0;
 }
 
@@ -485,6 +502,70 @@ body,
   border-radius: 4px;
   font-weight: 500;
 }
+
+.legend__key-title {
+  flex-shrink: 0;
+  font-size: 0.68rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.legend__item--skill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.legend__skill-swatch,
+.legend__skill-marker {
+  display: inline-flex;
+  width: 12px;
+  height: 12px;
+  flex: 0 0 12px;
+  align-items: center;
+  justify-content: center;
+}
+
+.legend__skill-swatch {
+  border: 1px solid rgba(20, 18, 14, 0.72);
+  border-radius: 50%;
+}
+
+.legend__skill-swatch--agility { background: var(--skill-band-agility); }
+.legend__skill-swatch--devious { background: var(--skill-band-devious); }
+.legend__skill-swatch--general { background: var(--skill-band-general); }
+.legend__skill-swatch--mutation { background: var(--skill-band-mutation); }
+.legend__skill-swatch--passing { background: var(--skill-band-passing); }
+.legend__skill-swatch--strength { background: var(--skill-band-strength); }
+
+.legend__skill-marker {
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  border-radius: 2px;
+  color: #fff;
+  font-family: 'Courier New', monospace;
+  font-size: 0.56rem;
+  font-weight: 900;
+  line-height: 1;
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.85);
+}
+
+.legend__skill-marker--block { background: var(--skill-marker-block); }
+.legend__skill-marker--dodge {
+  color: #17130a;
+  background: var(--skill-marker-dodge);
+  border-color: rgba(35, 29, 12, 0.82);
+  text-shadow: none;
+}
+.legend__skill-marker--guard { background: var(--skill-marker-guard); }
+.legend__skill-marker--tackle { background: var(--skill-marker-tackle); }
+.legend__skill-marker--wrestle {
+  color: #171512;
+  background: var(--skill-marker-wrestle);
+  border-color: rgba(35, 32, 26, 0.76);
+  text-shadow: none;
+}
+.legend__skill-marker--mighty-blow { background: var(--skill-marker-mighty-blow); }
+.legend__skill-marker--leader { background: var(--skill-marker-leader); }
 
 .legend__item--tz    { background: rgba(200, 40, 40, 0.30);  color: #f0a0a0; }
 .legend__item--free  { background: rgba(200, 180, 0, 0.40);  color: #f0e060; }

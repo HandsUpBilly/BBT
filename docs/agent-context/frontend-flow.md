@@ -143,6 +143,37 @@ gritty assets are displayed without a theme filter; fallback sources receive a
 scoped `--legacy` portrait class for restrained darkening/desaturation so they
 do not clash with the medallion set.
 
+### Gameplay token skill presentation
+
+Gameplay pitch tokens derive their visual skill information from each
+player's existing `skills: string[]`; scenario JSON has no separate display
+metadata for rings or badges. Keep all mappings and stable display order in
+`client/src/skillPresentation.ts` rather than duplicating them in components.
+
+- Concentric outer rings represent the distinct MK.III Season 3 skill groups,
+  ordered outer-to-inner as Agility, Devious, General, Mutation, Passing, and
+  Strength. Multiple skills in one group produce one ring. Traits such as
+  `Animosity`, unknown skills, and empty skill lists produce no ring.
+- Separate portrait-overlay badges mark only the canonical FUMBBL-style seven:
+  `B` Block, `D` Dodge, `G` Guard, `T` Tackle, `W` Wrestle, `M` Mighty Blow,
+  and `L` Leader. The helper owns their stable order and CSS class names;
+  other skills do not receive a letter badge.
+- Team identity no longer comes from the outer ring. A blue Human or red Orc
+  wash is confined to the circular portrait, leaving group rings and exact
+  skill badges unchanged. Selection, ball-carrier, activation, downed, and
+  ghost states remain separate presentation layers.
+- `Pitch.tsx` applies the same rings, badges, tint, and accessible description
+  to normal and movement-preview ghost tokens. The gameplay legends name all
+  six groups and all seven marked skills so neither color nor a single letter
+  is the only source of meaning.
+- `PlayerPanel` remains the source for the player's complete, exact skill list,
+  including traits and unknown values. The square Puzzle Editor markers remain
+  team-colored; editor preview uses the normal gameplay token renderer.
+
+When adding or renaming a supported skill, update the centralized mapping and
+`skillPresentation.test.ts` together. Do not fetch palette metadata at runtime
+or bake ring, tint, or badge labels into portrait bitmaps.
+
 ## Editor Preview
 
 Puzzle editor uses `onPlay={previewPuzzle}` from `App.tsx`.
