@@ -23,8 +23,30 @@ literal import list; generating it keeps "drop a JSON file in `scenarios/`" true
 in both environments. Never hand-edit that file.
 
 Functions live in `netlify/functions/` and are bundled with esbuild. They import
-from `shared/` at the repo root — esbuild follows that fine, and it is what keeps
-the production auth/validation identical to the Express server's.
+from `shared/` at the repo root, which is what keeps the production
+auth/validation identical to the Express server's.
+
+### shared/ must not import any package
+
+esbuild resolves bare imports relative to the *importing file*. `shared/` is not
+an ancestor of `netlify/functions/node_modules`, so a package import there
+cannot resolve during bundling:
+
+```
+✘ [ERROR] Could not resolve "google-auth-library"
+    ../shared/googleAuth.js:9:29
+```
+
+Inject the dependency from the target instead — `makeGoogleTokenVerifier` takes
+the `OAuth2Client` class as a parameter, and `netlify/functions/auth.js` imports
+the library itself.
+
+The build command runs `scripts/check-function-bundles.mjs` after the functions'
+`npm install`, so this fails with a clear message during the build command
+rather than as a raw esbuild error in the bundling stage. It also runs locally
+via `npm run check:functions` / `npm run verify`, and refuses to resolve above
+the repo root — a stray `node_modules` in a parent directory otherwise hides the
+problem on a developer machine while Netlify's clean checkout still fails.
 
 ## Redirects
 

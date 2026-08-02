@@ -1,6 +1,14 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { AdminAuthError, bearerToken, createGoogleAuth, entryAuthFields, parseAdminEmails } from './googleAuth.js';
+import {
+  AdminAuthError,
+  AuthError,
+  bearerToken,
+  createGoogleAuth,
+  entryAuthFields,
+  makeGoogleTokenVerifier,
+  parseAdminEmails,
+} from './googleAuth.js';
 
 const headers = map => name => map[name.toLowerCase()] ?? null;
 
@@ -23,7 +31,7 @@ test('parseAdminEmails normalizes case and whitespace', () => {
 test('production fails CLOSED when no allowlist is configured', async () => {
   // The old behavior returned null here, which meant a forgotten ADMIN_EMAILS
   // env var silently opened the editor to anyone on the internet.
-  const auth = createGoogleAuth({ clientId: 'x', adminEmails: '', allowUnauthenticated: false });
+  const auth = createGoogleAuth({ verifyIdToken: null, adminEmails: '', allowUnauthenticated: false });
   await assert.rejects(
     () => auth.requireAdminGoogleUser(headers({})),
     error => error instanceof AdminAuthError && error.status === 503,
@@ -31,13 +39,13 @@ test('production fails CLOSED when no allowlist is configured', async () => {
 });
 
 test('local dev may explicitly opt into the unauthenticated editor', async () => {
-  const auth = createGoogleAuth({ clientId: 'x', adminEmails: '', allowUnauthenticated: true });
+  const auth = createGoogleAuth({ verifyIdToken: null, adminEmails: '', allowUnauthenticated: true });
   assert.equal(await auth.requireAdminGoogleUser(headers({})), null);
 });
 
 test('a configured allowlist requires sign-in, then membership', async () => {
   const auth = createGoogleAuth({
-    clientId: 'x', adminEmails: 'admin@x.com', allowUnauthenticated: true,
+    verifyIdToken: null, adminEmails: 'admin@x.com', allowUnauthenticated: true,
   });
   await assert.rejects(
     () => auth.requireAdminGoogleUser(headers({})),
@@ -48,6 +56,51 @@ test('a configured allowlist requires sign-in, then membership', async () => {
   // An unverified Google email arrives as undefined and can never match.
   assert.equal(auth.isAdminUser({ email: undefined }), false);
   assert.equal(auth.isAdminUser(null), false);
+});
+
+test('makeGoogleTokenVerifier checks the audience and returns the payload', async () => {
+  // The OAuth2Client class is injected rather than imported so shared/ stays
+  // dependency-free — importing google-auth-library here broke the Netlify
+  // functions bundle, because shared/ is not an ancestor of its node_modules.
+  const calls = [];
+  class FakeOAuth2Client {
+    constructor(clientId) { this.clientId = clientId; }
+    async verifyIdToken(options) {
+      calls.push(options);
+      return { getPayload: () => ({ sub: '123', name: 'Coach', email_verified: true, email: 'a@b.com' }) };
+    }
+  }
+
+  const verify = makeGoogleTokenVerifier(FakeOAuth2Client, 'client-123');
+  const payload = await verify('token-abc');
+
+  assert.deepEqual(calls, [{ idToken: 'token-abc', audience: 'client-123' }]);
+  assert.equal(payload.sub, '123');
+
+  // No client id configured means Google sign-in is simply unavailable.
+  assert.equal(makeGoogleTokenVerifier(FakeOAuth2Client, undefined), null);
+});
+
+test('an unverified Google email is dropped so it can never match the allowlist', async () => {
+  const verifyIdToken = async () => ({ sub: '123', name: 'Coach', email: 'admin@x.com', email_verified: false });
+  const auth = createGoogleAuth({ verifyIdToken, adminEmails: 'admin@x.com', allowUnauthenticated: false });
+
+  const user = await auth.verifyOptionalGoogleUser(headers({ authorization: 'Bearer t' }));
+  assert.equal(user.email, undefined);
+  assert.equal(auth.isAdminUser(user), false);
+  await assert.rejects(
+    () => auth.requireAdminGoogleUser(headers({ authorization: 'Bearer t' })),
+    error => error instanceof AdminAuthError && error.status === 403,
+  );
+});
+
+test('a rejected verification surfaces as an AuthError, not the raw failure', async () => {
+  const verifyIdToken = async () => { throw new Error('jwt malformed'); };
+  const auth = createGoogleAuth({ verifyIdToken, adminEmails: '', allowUnauthenticated: true });
+  await assert.rejects(
+    () => auth.verifyOptionalGoogleUser(headers({ authorization: 'Bearer bad' })),
+    error => error instanceof AuthError && error.message === 'Invalid Google identity token',
+  );
 });
 
 test('entryAuthFields copies only the display metadata, never the email', () => {

@@ -2,7 +2,18 @@
 // Logic lives in shared/googleAuth.js — see server/auth.js for the Express
 // equivalent. The only intentional difference is the fail-closed default below.
 
-import { createGoogleAuth, AuthError, AdminAuthError, entryAuthFields } from '../../shared/googleAuth.js';
+// google-auth-library is imported HERE, not in shared/. esbuild resolves bare
+// imports relative to the importing file, and shared/ is not an ancestor of
+// netlify/functions/node_modules — importing it from shared/ fails the
+// functions bundle with "Could not resolve google-auth-library".
+import { OAuth2Client } from 'google-auth-library';
+import {
+  createGoogleAuth,
+  makeGoogleTokenVerifier,
+  AuthError,
+  AdminAuthError,
+  entryAuthFields,
+} from '../../shared/googleAuth.js';
 
 export { AuthError, AdminAuthError, entryAuthFields };
 
@@ -12,7 +23,7 @@ export { AuthError, AdminAuthError, entryAuthFields };
 // Setting EDITOR_ALLOW_UNAUTHENTICATED=true re-opens it, which is only ever
 // appropriate for a throwaway preview deploy.
 const auth = createGoogleAuth({
-  clientId: process.env.GOOGLE_CLIENT_ID,
+  verifyIdToken: makeGoogleTokenVerifier(OAuth2Client, process.env.GOOGLE_CLIENT_ID),
   adminEmails: process.env.ADMIN_EMAILS,
   allowUnauthenticated: process.env.EDITOR_ALLOW_UNAUTHENTICATED === 'true',
 });

@@ -49,6 +49,30 @@ They are plain ESM `.js` with hand-written `.d.ts` siblings so TypeScript can
 consume them. **Do not fork these into a package-local copy.** Vite is
 configured with `server.fs.allow: ['..']` so the client can import them.
 
+### Nothing in `shared/` may import a package
+
+`shared/` must stay dependency-free. Module resolution walks up from the
+*importing file*, and `shared/` is not an ancestor of `server/node_modules`,
+`netlify/functions/node_modules`, or `client/node_modules` — so a bare import
+there resolves from none of them. Moving `google-auth-library` into
+`shared/googleAuth.js` passed lint, `tsc`, and every test, then failed the
+Netlify deploy with `Could not resolve "google-auth-library"`.
+
+Inject the dependency from the target instead. `makeGoogleTokenVerifier` takes
+the `OAuth2Client` *class* as a parameter; `server/auth.js` and
+`netlify/functions/auth.js` each import the library themselves, from a
+directory where it resolves.
+
+`npm run check:functions` bundles every function the way Netlify does and fails
+on any package that can't be resolved from inside the repo. It runs as part of
+`npm run verify` and in the Netlify build command.
+
+> **Local-environment trap:** a stray `node_modules` in a parent directory (a
+> home-directory install, for example) satisfies the walk-up on your machine
+> while Netlify's clean `/opt/build/repo` checkout has no such ancestor. That is
+> exactly how this reached production. `check:functions` deliberately refuses to
+> look above the repo root, so it catches this locally.
+
 ## Setup
 
 Each package has its own `node_modules`. Install separately:
@@ -84,12 +108,15 @@ npm run verify
 Individually:
 
 ```bash
-npm run lint      # ESLint over client/
-npm test          # node --test over shared/, then vitest over client/
-npm run build     # regenerates the scenario seed, then tsc -b && vite build
+npm run lint             # ESLint over client/
+npm test                 # node --test over shared/, then vitest over client/
+npm run build            # regenerates the scenario seed, then tsc -b && vite build
+npm run check:functions  # bundles the Netlify functions as the deploy does
 ```
 
-There is no hosted CI, so `npm run verify` is the only signal before opening a PR.
+There is no hosted CI, so `npm run verify` is the only signal before opening a
+PR. Note that `lint`, `tsc`, and the tests all pass on a module-resolution break
+that fails the deploy — `check:functions` is the step that catches it.
 
 ## TypeScript / JavaScript
 

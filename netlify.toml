@@ -3,7 +3,12 @@
   # generate:seed rebuilds netlify/functions/scenarioSeed.js from
   # client/src/scenarios/*.json so adding a puzzle needs no manual import
   # registration (see scripts/generate-scenario-seed.mjs).
-  command = "npm install && npm run generate:seed && npm run build && cd ../netlify/functions && npm install"
+  #
+  # The functions' npm install must happen BEFORE Netlify bundles them, and the
+  # bundle check then runs against the same tree the deploy will bundle — so a
+  # module-resolution break fails the build command with a clear message rather
+  # than surfacing as a raw esbuild error in the bundling stage.
+  command = "npm install && npm run generate:seed && npm run build && cd ../netlify/functions && npm install && node ../../scripts/check-function-bundles.mjs"
   publish = "dist"
 
 [build.environment]

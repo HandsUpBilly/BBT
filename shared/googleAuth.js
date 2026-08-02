@@ -5,8 +5,13 @@
 // request object itself. Everything else — token verification, the admin
 // allowlist, and the entry metadata shape — lives here so the two targets can
 // never disagree about who is allowed to write.
-
-import { OAuth2Client } from 'google-auth-library';
+//
+// This module deliberately imports NOTHING. `google-auth-library` is injected
+// by the caller via makeGoogleTokenVerifier: esbuild resolves bare imports
+// relative to the importing file, and shared/ is not an ancestor of either
+// target's node_modules, so importing it here fails the Netlify functions
+// bundle. Keeping shared/ dependency-free also makes it safe for the browser
+// bundle to pull from the same directory.
 
 export class AuthError extends Error {}
 
@@ -34,29 +39,49 @@ export function bearerToken(getHeader) {
 }
 
 /**
+ * Builds the token verifier each target passes into createGoogleAuth.
+ *
+ * The OAuth2Client *class* is a parameter rather than an import so this module
+ * stays dependency-free — see the note at the top of the file. The audience
+ * check and payload extraction still live here, so both targets verify tokens
+ * identically.
+ *
+ * @param OAuth2Client  the class from google-auth-library
+ * @param clientId      GOOGLE_CLIENT_ID; null/undefined disables sign-in
+ * @returns `(idToken) => payload`, or null when no client id is configured
+ */
+export function makeGoogleTokenVerifier(OAuth2Client, clientId) {
+  if (!clientId) return null;
+  const client = new OAuth2Client(clientId);
+  return async idToken => {
+    const ticket = await client.verifyIdToken({ idToken, audience: clientId });
+    return ticket.getPayload();
+  };
+}
+
+/**
  * Creates the auth helpers bound to one environment's configuration.
  *
- * @param options.clientId              GOOGLE_CLIENT_ID
+ * @param options.verifyIdToken         from makeGoogleTokenVerifier; null when
+ *   Google sign-in is not configured for this environment
  * @param options.adminEmails           raw comma-separated ADMIN_EMAILS string
  * @param options.allowUnauthenticated  when no allowlist is configured, permit
  *   unauthenticated editor writes. Local dev opts in so the editor works
  *   without any OAuth setup; production must NOT, otherwise a missing env var
  *   silently opens the editor to the public internet.
  */
-export function createGoogleAuth({ clientId, adminEmails, allowUnauthenticated = false }) {
-  const client = new OAuth2Client(clientId);
+export function createGoogleAuth({ verifyIdToken, adminEmails, allowUnauthenticated = false }) {
   const allowlist = parseAdminEmails(adminEmails);
 
   /** Verifies the Bearer token if one is present. Returns null for guests. */
   async function verifyOptionalGoogleUser(getHeader) {
     const token = bearerToken(getHeader);
     if (!token) return null;
-    if (!clientId) throw new AuthError('Google sign-in is not configured');
+    if (!verifyIdToken) throw new AuthError('Google sign-in is not configured');
 
     let payload;
     try {
-      const ticket = await client.verifyIdToken({ idToken: token, audience: clientId });
-      payload = ticket.getPayload();
+      payload = await verifyIdToken(token);
     } catch {
       throw new AuthError('Invalid Google identity token');
     }
