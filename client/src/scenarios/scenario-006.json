@@ -1,7 +1,7 @@
 {
   "id": "scenario-006",
   "name": "Loose Ball on the Goal Line",
-  "description": "Bonecruncher's hit jarred the ball loose five squares short of the line, and Skullkrak is standing right on top of it. Knock him off the ball, scoop it up, then pick your route home — Swiftfoot's legs, a quick pitch to Quickstep in space, or a throw into the end zone.",
+  "description": "Bonecruncher's hit jarred the ball loose five squares short of the line, and Skullkrak is guarding it. Knock him away, scoop it up, then pick your route home — Swiftfoot's legs, Quickstep waiting across the paint, or Quickhand breaking from the slot.",
   "activeTeam": "human",
   "published": true,
   "ballPosition": { "col": 7, "row": 5 },
@@ -73,7 +73,7 @@
       "name": "Franz Quickstep",
       "ma": 8, "st": 3, "ag": 3, "pa": 4, "av": 7,
       "skills": ["Catch", "Dodge"],
-      "position": { "col": 2, "row": 2 },
+      "position": { "col": 0, "row": 0 },
       "hasBall": false
     },
     {
@@ -143,7 +143,7 @@
       "name": "Rukbad Bootsnappa",
       "ma": 5, "st": 3, "ag": 3, "pa": 4, "av": 9,
       "skills": [],
-      "position": { "col": 1, "row": 4 },
+      "position": { "col": 1, "row": 3 },
       "hasBall": false
     },
     {

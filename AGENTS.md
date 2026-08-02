@@ -141,16 +141,6 @@ worked locally and then silently vanished from the Netlify seed.)
 
 Never hand-edit `netlify/functions/scenarioSeed.js`.
 
-Two skills in `.claude/skills/` cover this workflow end to end:
-
-- **`new-scenario`** — board/roster reference and the authoring workflow, plus
-  `scripts/validate-scenarios.mjs`, which runs `shared/scenarioValidation.js` over
-  every scenario and the series and exits non-zero on failure.
-- **`audit-scenario`** — `scripts/audit-scenario.mjs` enumerates and prices every
-  scoring line in a puzzle (runs, passes, handoffs, blitzes, and the block openings
-  that unlock them). It imports `client/src/bfs.ts` directly so the maths cannot
-  drift from the engine. Run it on any scenario you add or change.
-
 ## Environment Variables
 
 | Variable | Used in | Purpose |

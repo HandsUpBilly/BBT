@@ -680,7 +680,7 @@ export const STATIC_SCENARIOS = [
   {
     "id": "scenario-006",
     "name": "Loose Ball on the Goal Line",
-    "description": "Bonecruncher's hit jarred the ball loose five squares short of the line, and Skullkrak is standing right on top of it. Knock him off the ball, scoop it up, then pick your route home — Swiftfoot's legs, a quick pitch to Quickstep in space, or a throw into the end zone.",
+    "description": "Bonecruncher's hit jarred the ball loose five squares short of the line, and Skullkrak is guarding it. Knock him away, scoop it up, then pick your route home — Swiftfoot's legs, Quickstep waiting across the paint, or Quickhand breaking from the slot.",
     "activeTeam": "human",
     "published": true,
     "ballPosition": {
@@ -814,8 +814,8 @@ export const STATIC_SCENARIOS = [
           "Dodge"
         ],
         "position": {
-          "col": 2,
-          "row": 2
+          "col": 0,
+          "row": 0
         },
         "hasBall": false
       },
@@ -947,7 +947,7 @@ export const STATIC_SCENARIOS = [
         "skills": [],
         "position": {
           "col": 1,
-          "row": 4
+          "row": 3
         },
         "hasBall": false
       },
