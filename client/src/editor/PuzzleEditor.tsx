@@ -11,8 +11,8 @@ import './PuzzleEditor.css';
 const COLS = PITCH.maxCol + 1;
 const ROWS = PITCH.maxRow + 1;
 const ROLES: Record<Team, string[]> = {
-  human: ['thrower', 'catcher', 'lineman', 'blocker', 'guard', 'tackle'],
-  orc: ['thrower', 'catcher', 'lineman', 'blocker', 'blitzer', 'black-orc', 'big-un'],
+  human: ['thrower', 'catcher', 'lineman', 'blitzer', 'halfling', 'ogre', 'blocker', 'guard', 'tackle'],
+  orc: ['thrower', 'catcher', 'lineman', 'blocker', 'blitzer', 'big-un', 'goblin', 'troll', 'black-orc'],
 };
 const EMPTY_SERIES: SeriesDefinition = {
   id: 'default',

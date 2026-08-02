@@ -11,7 +11,7 @@
       "role": "thrower",
       "name": "Aldric Swiftfoot",
       "ma": 6, "st": 3, "ag": 3, "pa": 3, "av": 8,
-      "skills": ["Block"],
+      "skills": ["Pass", "Sure Hands"],
       "position": { "col": 7, "row": 11 },
       "hasBall": true
     },
@@ -20,7 +20,7 @@
       "team": "human",
       "role": "catcher",
       "name": "Sera Quickhand",
-      "ma": 8, "st": 2, "ag": 4, "pa": 5, "av": 7,
+      "ma": 8, "st": 3, "ag": 3, "pa": 4, "av": 7,
       "skills": ["Catch", "Dodge"],
       "position": { "col": 7, "row": 7 },
       "hasBall": false
@@ -28,20 +28,20 @@
     {
       "id": "orc1",
       "team": "orc",
-      "role": "blocker",
+      "role": "lineman",
       "name": "Grukk Ironjaw",
-      "ma": 4, "st": 3, "ag": 3, "pa": 6, "av": 9,
-      "skills": ["Animosity"],
+      "ma": 5, "st": 3, "ag": 3, "pa": 4, "av": 9,
+      "skills": [],
       "position": { "col": 6, "row": 10 },
       "hasBall": false
     },
     {
       "id": "orc2",
       "team": "orc",
-      "role": "blocker",
+      "role": "lineman",
       "name": "Muzgash Skullkrak",
-      "ma": 4, "st": 3, "ag": 3, "pa": 6, "av": 9,
-      "skills": ["Animosity"],
+      "ma": 5, "st": 3, "ag": 3, "pa": 4, "av": 9,
+      "skills": [],
       "position": { "col": 8, "row": 10 },
       "hasBall": false
     },
@@ -50,8 +50,8 @@
       "team": "orc",
       "role": "blitzer",
       "name": "Vrak Bonecruncher",
-      "ma": 6, "st": 3, "ag": 3, "pa": 5, "av": 9,
-      "skills": ["Block"],
+      "ma": 6, "st": 3, "ag": 3, "pa": 4, "av": 9,
+      "skills": ["Block", "Break Tackle"],
       "position": { "col": 5, "row": 8 },
       "hasBall": false
     },
@@ -60,28 +60,28 @@
       "team": "orc",
       "role": "blitzer",
       "name": "Skrag Headsmash",
-      "ma": 6, "st": 3, "ag": 3, "pa": 5, "av": 9,
-      "skills": ["Block"],
+      "ma": 6, "st": 3, "ag": 3, "pa": 4, "av": 9,
+      "skills": ["Block", "Break Tackle"],
       "position": { "col": 9, "row": 8 },
       "hasBall": false
     },
     {
       "id": "orc5",
       "team": "orc",
-      "role": "blocker",
+      "role": "lineman",
       "name": "Dorg Gutripper",
-      "ma": 4, "st": 3, "ag": 3, "pa": 6, "av": 9,
-      "skills": ["Animosity"],
+      "ma": 5, "st": 3, "ag": 3, "pa": 4, "av": 9,
+      "skills": [],
       "position": { "col": 6, "row": 5 },
       "hasBall": false
     },
     {
       "id": "orc6",
       "team": "orc",
-      "role": "blocker",
+      "role": "lineman",
       "name": "Zug Bloodfang",
-      "ma": 4, "st": 3, "ag": 3, "pa": 6, "av": 9,
-      "skills": ["Animosity"],
+      "ma": 5, "st": 3, "ag": 3, "pa": 4, "av": 9,
+      "skills": [],
       "position": { "col": 8, "row": 5 },
       "hasBall": false
     }

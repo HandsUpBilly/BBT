@@ -93,6 +93,38 @@ the 1–12 range enforced by `shared/scenarioValidation.js`.
 Add a genuinely new player type by adding a template — that keeps the palette
 useful — rather than always hand-tuning stats after the fact.
 
+The palette is exactly the BB2025 Human and Orc rosters
+(https://bbtactics.com/human-teams/, https://bbtactics.com/orc-teams/):
+Lineman, Catcher, Thrower, Blitzer, Halfling Hopeful, and Ogre for Humans;
+Lineman, Thrower, Blitzer, Big Un Blocker, Goblin Lineman, and Troll for Orcs.
+
+The generic "Orc Blocker" template was removed — BB2025 has no such position,
+the Big Un Blocker replaces it. The `blocker` role itself is still in the role
+dropdown and both portrait maps, alongside `guard`, `tackle`, `black-orc`, and
+Orc `catcher`, in case an old draft still carries one.
+
+Templates only seed *new* pieces — pieces already in `client/src/scenarios/*.json`
+carry their own stored stats, so correcting a template does not retro-fit a
+saved puzzle. The five shipped scenarios were migrated to BB2025 in a one-off
+pass: generic Orc Blockers became Orc Linemen (Big Un is 0-2, so 4-per-team
+Blockers could not legally become Big Uns), one mis-roled MA 6 "Blocker" with
+Block became an Orc Blitzer, Human Catchers went ST 2 → 3 / AG 2+ → 3+ / PA 5+ →
+4+, and Human Throwers traded `Block` for `Pass, Sure Hands`. That last one is
+the only change with engine teeth — Throwers now fall on a Both Down.
+
+Stored stats are **engine values, not printed rulebook values** — see the
+comment at the top of `playerTemplates.ts`. In short: `ag` is `6 - printedTarget`
+(AG 3+ → 3) because `bfs.ts` rolls `6 - ag`, `pa` is the printed target used
+as-is, and `av` is the printed target minus 1 and is display-only.
+
+Templates may carry a `names` pool, used by `generatedPlayerName` instead of the
+team-wide pool — Halflings, Ogres, Goblins, and Trolls each have their own.
+
+`halfling`, `ogre`, `goblin`, and `troll` have no portrait art yet, so the
+role-to-asset maps in `Pitch.tsx` and `PlayerPanel.tsx` fall back to the team
+default. Skills beyond Block/Wrestle/Dodge/Tackle are display-only labels; the
+rules engine does not implement them.
+
 ## Validation
 
 Client and server share `shared/scenarioValidation.js`, so the editor's live

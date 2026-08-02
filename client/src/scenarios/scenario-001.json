@@ -1,7 +1,7 @@
 {
   "id": "scenario-001",
   "name": "Reikland's Opening Drive",
-  "description": "Nuffle smiles on the Reavers' first snap. Swiftfoot has the ball and two Orc Blockers stand between him and glory — find the safest path to the end zone.",
+  "description": "Nuffle smiles on the Reavers' first snap. Swiftfoot has the ball and two Orc Linemen stand between him and glory — find the safest path to the end zone.",
   "activeTeam": "human",
   "published": true,
   "pieces": [
@@ -11,27 +11,27 @@
       "role": "thrower",
       "name": "Aldric Swiftfoot",
       "ma": 6, "st": 3, "ag": 3, "pa": 3, "av": 8,
-      "skills": ["Block"],
+      "skills": ["Pass", "Sure Hands"],
       "position": { "col": 7, "row": 6 },
       "hasBall": true
     },
     {
       "id": "opp1",
       "team": "orc",
-      "role": "blocker",
+      "role": "lineman",
       "name": "Grukk Ironjaw",
-      "ma": 4, "st": 3, "ag": 3, "pa": 6, "av": 9,
-      "skills": ["Animosity"],
+      "ma": 5, "st": 3, "ag": 3, "pa": 4, "av": 9,
+      "skills": [],
       "position": { "col": 6, "row": 4 },
       "hasBall": false
     },
     {
       "id": "opp2",
       "team": "orc",
-      "role": "blocker",
+      "role": "lineman",
       "name": "Muzgash Skullkrak",
-      "ma": 4, "st": 3, "ag": 3, "pa": 6, "av": 9,
-      "skills": ["Animosity"],
+      "ma": 5, "st": 3, "ag": 3, "pa": 4, "av": 9,
+      "skills": [],
       "position": { "col": 8, "row": 4 },
       "hasBall": false
     }

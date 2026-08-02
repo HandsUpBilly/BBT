@@ -6,11 +6,15 @@ interface Props {
   side: 'left' | 'right';
 }
 
+// Keep in sync with the same map in Pitch.tsx.
+// `halfling`, `ogre`, `goblin`, and `troll` have no art yet and fall through to
+// the team default below.
 const PORTRAITS: Record<Team, Record<string, string>> = {
   human: {
     thrower: '/human-thrower-gritty.webp',
     catcher: '/human-catcher-gritty.webp',
     lineman:  '/human-lineman-gritty.webp',
+    blitzer:  '/human-tackle.png',
     blocker:  '/human-blocker.png',
     guard:    '/human-guard.png',
     tackle:   '/human-tackle.png',
