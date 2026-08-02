@@ -144,10 +144,10 @@ export function ScenarioSelect({
     <div className="scenario-select">
       <div className="scenario-select__header">
         <div className="scenario-select__brand">
-          <span className="scenario-select__eyebrow">Coach's playbook · Match day</span>
-          <h1 className="scenario-select__title">BB Tactics</h1>
+          <span className="scenario-select__eyebrow">The final turn · Do or die</span>
+          <h1 className="scenario-select__title">Turn 16</h1>
           <p className="scenario-select__subtitle">
-            Draw the clean route. Control the risk. Put the Reavers in the end zone.
+            One turn left. Control the risk. Put the Reavers in the end zone.
           </p>
         </div>
         <div className="scenario-select__user">
