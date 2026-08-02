@@ -22,10 +22,17 @@ so it is the only signal before opening a PR.
 Individually:
 
 ```bash
-npm run lint      # eslint over client/
-npm test          # node --test over shared/, then vitest over client/
-npm run build     # regenerates the scenario seed, then tsc -b && vite build
+npm run lint             # eslint over client/
+npm test                 # node --test over shared/, then vitest over client/
+npm run build            # regenerates the scenario seed, then tsc -b && vite build
+npm run check:functions  # bundles the Netlify functions as the deploy does
 ```
+
+`check:functions` exists because lint, `tsc`, and every test pass on a
+module-resolution break that still fails the deploy — a package imported from
+`shared/` cannot resolve during function bundling. It deliberately refuses to
+resolve above the repo root, so a stray `node_modules` in a parent directory
+can't hide the problem locally.
 
 For docs-only changes, build/lint/test are not usually necessary, but at least
 check `git diff --stat` and file paths.

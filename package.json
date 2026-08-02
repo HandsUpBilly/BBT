@@ -10,6 +10,7 @@
     "start": "cd server && node index.js",
     "lint": "cd client && npm run lint",
     "test": "node --test shared/*.test.js && cd client && npm test",
-    "verify": "npm run lint && npm test && npm run build"
+    "check:functions": "node scripts/check-function-bundles.mjs",
+    "verify": "npm run lint && npm test && npm run build && npm run check:functions"
   }
 }
