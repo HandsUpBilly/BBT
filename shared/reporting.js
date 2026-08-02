@@ -1,3 +1,10 @@
+// Isomorphic report validation + Markdown generation.
+//
+// Deliberately free of any Node/browser API so the client's "Download report"
+// fallback produces byte-identical Markdown to the issue the server would have
+// filed — spec.md requires the two to match. Anything needing `process.env` or
+// network access lives in githubIssues.js (server-only).
+
 export const REPORT_LIMITS = {
   reporterName: 64,
   title: 120,
@@ -12,8 +19,6 @@ export const REPORT_LIMITS = {
 const REPORT_TYPES = new Set(['issue', 'feature']);
 
 export class ReportValidationError extends Error {}
-export class ReportConfigurationError extends Error {}
-export class ReportDeliveryError extends Error {}
 
 function requiredText(value, field, maxLength) {
   if (typeof value !== 'string') throw new ReportValidationError(`${field} is required`);
@@ -29,8 +34,9 @@ function optionalText(value, maxLength) {
   return trimmed ? trimmed.slice(0, maxLength) : undefined;
 }
 
-function escapeMarkdown(value) {
-  return value
+/** Neutralizes Markdown so untrusted report text can never inject formatting. */
+export function escapeMarkdown(value) {
+  return String(value)
     .replace(/\\/g, '\\\\')
     .replace(/([`*_{}[\]<>#+!|-])/g, '\\$1');
 }
@@ -67,6 +73,7 @@ export function validateReportPayload(payload) {
   };
 }
 
+/** A verified Google name always wins over the browser-supplied one. */
 export function resolveReporterName(report, user) {
   return requiredText(user?.name ?? report.reporterName, 'reporterName', REPORT_LIMITS.reporterName);
 }
@@ -74,14 +81,14 @@ export function resolveReporterName(report, user) {
 export function buildIssueDraft(report, reporterName, submittedAt = new Date().toISOString()) {
   const category = report.type === 'feature' ? 'Feature request' : 'Issue';
   const titlePrefix = report.type === 'feature' ? '[Feature]' : '[Issue]';
-  const issueTitle = report.title.replace(/\s+/g, ' ');
+  const issueTitle = report.title.trim().replace(/\s+/g, ' ');
   const contextLines = [
     formatContext('Submitted', submittedAt),
-    formatContext('App mode', report.context.mode),
-    formatContext('Scenario', report.context.scenarioName),
-    formatContext('Scenario ID', report.context.scenarioId),
-    formatContext('Build', report.context.appVersion),
-    formatContext('Browser', report.context.userAgent),
+    formatContext('App mode', report.context?.mode),
+    formatContext('Scenario', report.context?.scenarioName),
+    formatContext('Scenario ID', report.context?.scenarioId),
+    formatContext('Build', report.context?.appVersion),
+    formatContext('Browser', report.context?.userAgent),
   ].filter(Boolean);
 
   return {
@@ -90,11 +97,11 @@ export function buildIssueDraft(report, reporterName, submittedAt = new Date().t
       '## Report details',
       '',
       `- Type: ${category}`,
-      `- Reporter: ${escapeMarkdown(reporterName)}`,
+      `- Reporter: ${escapeMarkdown(reporterName.trim())}`,
       '',
       '## Description',
       '',
-      escapeMarkdown(report.description),
+      escapeMarkdown(report.description.trim()),
       '',
       '## Context',
       '',
@@ -103,46 +110,10 @@ export function buildIssueDraft(report, reporterName, submittedAt = new Date().t
   };
 }
 
-export function createDownload(report, reporterName) {
-  const draft = buildIssueDraft(report, reporterName);
-  const date = new Date().toISOString().slice(0, 10);
+export function createDownload(report, reporterName, submittedAt = new Date().toISOString()) {
+  const draft = buildIssueDraft(report, reporterName, submittedAt);
   return {
-    fileName: `bbt-${report.type}-${date}.md`,
+    fileName: `bbt-${report.type}-${submittedAt.slice(0, 10)}.md`,
     content: `# ${draft.title}\n\n${draft.body}\n`,
   };
-}
-
-export async function createGitHubIssue(draft, { token = process.env.GITHUB_ISSUES_TOKEN, fetchImpl = fetch } = {}) {
-  if (!token) throw new ReportConfigurationError('Issue reporting is not configured');
-
-  let response;
-  try {
-    response = await fetchImpl('https://api.github.com/repos/HandsUpBilly/BBT/issues', {
-      method: 'POST',
-      headers: {
-        Accept: 'application/vnd.github+json',
-        Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json',
-        'X-GitHub-Api-Version': '2022-11-28',
-      },
-      body: JSON.stringify({ title: draft.title, body: draft.body }),
-    });
-  } catch {
-    throw new ReportDeliveryError('Could not reach GitHub');
-  }
-
-  if (!response.ok) throw new ReportDeliveryError('GitHub could not create the issue');
-
-  let issue;
-  try {
-    issue = await response.json();
-  } catch {
-    throw new ReportDeliveryError('GitHub returned an invalid response');
-  }
-
-  if (!Number.isInteger(issue?.number) || typeof issue?.html_url !== 'string') {
-    throw new ReportDeliveryError('GitHub returned an incomplete issue response');
-  }
-
-  return { number: issue.number, url: issue.html_url };
 }

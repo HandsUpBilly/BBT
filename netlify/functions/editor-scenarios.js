@@ -1,4 +1,4 @@
-import { normalizeScenario, validateScenario, SCENARIO_ID_RE } from './editorValidation.js';
+import { SCENARIO_ID_RE, normalizeScenario, validateScenario } from '../../shared/scenarioValidation.js';
 import { editorStore, readDraftScenarios, writeDraftScenarios, readDraftSeries, writeDraftSeries } from './editorStore.js';
 import { AdminAuthError, authErrorResponse, requireAdminGoogleUser } from './auth.js';
 
@@ -17,8 +17,23 @@ function scenarioIdFromPath(pathname) {
   return last;
 }
 
+function requestedScenarioId(url) {
+  const id = scenarioIdFromPath(url.pathname) ?? url.searchParams.get('scenarioId');
+  return id && SCENARIO_ID_RE.test(id) ? id : null;
+}
+
 export default async function handler(req) {
   const url = new URL(req.url);
+
+  // Every method here — including GET — is admin-only. Drafts contain
+  // unpublished puzzles, so an open read would leak work in progress.
+  try {
+    await requireAdminGoogleUser(req);
+  } catch (error) {
+    if (error instanceof AdminAuthError) return authErrorResponse(error);
+    throw error;
+  }
+
   const store = editorStore();
 
   if (req.method === 'GET') {
@@ -30,13 +45,6 @@ export default async function handler(req) {
   }
 
   if (req.method === 'POST') {
-    try {
-      await requireAdminGoogleUser(req);
-    } catch (error) {
-      if (error instanceof AdminAuthError) return authErrorResponse(error);
-      throw error;
-    }
-
     let body;
     try {
       body = await req.json();
@@ -55,15 +63,8 @@ export default async function handler(req) {
   }
 
   if (req.method === 'PUT') {
-    try {
-      await requireAdminGoogleUser(req);
-    } catch (error) {
-      if (error instanceof AdminAuthError) return authErrorResponse(error);
-      throw error;
-    }
-
-    const id = scenarioIdFromPath(url.pathname) ?? url.searchParams.get('scenarioId');
-    if (!id || !SCENARIO_ID_RE.test(id)) return jsonResponse(400, { errors: ['Invalid scenario id'] });
+    const id = requestedScenarioId(url);
+    if (!id) return jsonResponse(400, { errors: ['Invalid scenario id'] });
 
     let body;
     try {
@@ -86,15 +87,8 @@ export default async function handler(req) {
   }
 
   if (req.method === 'DELETE') {
-    try {
-      await requireAdminGoogleUser(req);
-    } catch (error) {
-      if (error instanceof AdminAuthError) return authErrorResponse(error);
-      throw error;
-    }
-
-    const id = scenarioIdFromPath(url.pathname) ?? url.searchParams.get('scenarioId');
-    if (!id || !SCENARIO_ID_RE.test(id)) return jsonResponse(400, { errors: ['Invalid scenario id'] });
+    const id = requestedScenarioId(url);
+    if (!id) return jsonResponse(400, { errors: ['Invalid scenario id'] });
 
     const [existing, currentSeries] = await Promise.all([
       readDraftScenarios(store),
@@ -105,7 +99,7 @@ export default async function handler(req) {
     const scenarios = existing.filter(s => s.id !== id);
     const series = {
       ...currentSeries,
-      scenarioIds: currentSeries.scenarioIds.filter(scenarioId => scenarioId !== id),
+      scenarioIds: (currentSeries?.scenarioIds ?? []).filter(scenarioId => scenarioId !== id),
     };
     await Promise.all([writeDraftScenarios(store, scenarios), writeDraftSeries(store, series)]);
     return jsonResponse(200, { scenarios, series });

@@ -1,20 +1,36 @@
 import { AuthError, authErrorResponse, verifyOptionalGoogleUser } from './auth.js';
 import {
-  ReportConfigurationError,
-  ReportDeliveryError,
   ReportValidationError,
   buildIssueDraft,
   createDownload,
-  createGitHubIssue,
   resolveReporterName,
   validateReportPayload,
-} from '../../server/reporting.js';
+} from '../../shared/reporting.js';
+import {
+  ReportConfigurationError,
+  ReportDeliveryError,
+  createGitHubIssue,
+} from '../../shared/githubIssues.js';
+import { REPORT_RATE_LIMIT, createRateLimiter } from '../../shared/rateLimit.js';
 
-function json(body, status) {
+// Per-instance limiter. Netlify recycles function instances, so this throttles a
+// burst from one attacker rather than guaranteeing a global cap — see
+// shared/rateLimit.js for why that trade-off is acceptable here.
+const takeReportToken = createRateLimiter(REPORT_RATE_LIMIT);
+
+function json(body, status, headers = {}) {
   return new Response(JSON.stringify(body), {
     status,
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', ...headers },
   });
+}
+
+function clientKey(req, user) {
+  if (user?.providerUserId) return user.providerUserId;
+  const forwarded = req.headers.get('x-nf-client-connection-ip')
+    ?? req.headers.get('x-forwarded-for')
+    ?? '';
+  return forwarded.split(',')[0].trim() || 'unknown';
 }
 
 export default async function handler(req) {
@@ -47,6 +63,20 @@ export default async function handler(req) {
 
   const draft = buildIssueDraft(report, reporterName);
   const download = createDownload(report, reporterName);
+
+  // Rate-limit after validation so malformed spam can't burn a caller's budget.
+  const { allowed, retryAfterSeconds } = takeReportToken(clientKey(req, user));
+  if (!allowed) {
+    return json(
+      {
+        error: 'Too many reports from this session. Try again later, or download the report below.',
+        download,
+      },
+      429,
+      { 'Retry-After': String(retryAfterSeconds) },
+    );
+  }
+
   try {
     const issue = await createGitHubIssue(draft);
     return json(issue, 201);

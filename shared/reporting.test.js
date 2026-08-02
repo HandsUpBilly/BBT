@@ -1,13 +1,13 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
-  ReportConfigurationError,
   ReportValidationError,
   buildIssueDraft,
-  createGitHubIssue,
+  createDownload,
   resolveReporterName,
   validateReportPayload,
 } from './reporting.js';
+import { ReportConfigurationError, createGitHubIssue } from './githubIssues.js';
 
 const validPayload = {
   type: 'issue',
@@ -67,4 +67,26 @@ test('requires a configured GitHub credential', async () => {
     () => createGitHubIssue({ title: '[Issue] Test', body: 'Test body' }, { token: '' }),
     ReportConfigurationError,
   );
+});
+
+test('the download fallback reproduces the issue the server would have filed', () => {
+  const report = validateReportPayload(validPayload);
+  const submittedAt = '2026-08-01T12:34:56.000Z';
+  const draft = buildIssueDraft(report, 'Guest Coach', submittedAt);
+  const download = createDownload(report, 'Guest Coach', submittedAt);
+
+  assert.equal(download.fileName, 'bbt-issue-2026-08-01.md');
+  assert.equal(download.content, `# ${draft.title}\n\n${draft.body}\n`);
+});
+
+test('trims whitespace consistently so client and server output match', () => {
+  const report = validateReportPayload({
+    ...validPayload,
+    title: '  spaced   out  title  ',
+    description: '  padded description  ',
+  });
+  const draft = buildIssueDraft(report, '  Padded Coach  ', '2026-08-01T00:00:00.000Z');
+  assert.equal(draft.title, '[Issue] spaced out title');
+  assert.ok(draft.body.includes('- Reporter: Padded Coach\n'));
+  assert.ok(draft.body.includes('padded description'));
 });

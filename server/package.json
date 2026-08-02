@@ -4,7 +4,7 @@
   "type": "module",
   "scripts": {
     "dev": "node index.js",
-    "test": "node --test"
+    "test": "node --test ../shared/*.test.js"
   },
   "dependencies": {
     "express": "^4.18.2",

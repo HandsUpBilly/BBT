@@ -1,10 +1,16 @@
-import type { PathStep } from './bfs';
+import type { PathStep, BlockOutcomeFace } from './bfs';
+
+export type { BlockOutcomeFace };
 
 export type Team = 'human' | 'orc';
 
+/**
+ * Portrait pitch coordinates — the orientation scenario JSON and the rules
+ * engine both use. <Pitch> transposes these for its landscape rendering.
+ */
 export interface Position {
-  col: number; // 0-indexed, 0..25
-  row: number; // 0-indexed, 0..14
+  col: number; // 0-indexed, 0..14
+  row: number; // 0-indexed, 0..25
 }
 
 export interface PlayerPiece {
@@ -120,9 +126,6 @@ export type PassCatchLogEntry = {
   isGfi: false;
 };
 
-export type BlockOutcomeFace =
-  | 'attacker-down' | 'both-down' | 'push' | 'defender-stumbles' | 'defender-down';
-
 export type BlockLogEntry = {
   kind: 'block';
   isBlitz: boolean;
@@ -146,20 +149,24 @@ export type BlockLogEntry = {
 
 export type ActionLogEntry = MoveLogEntry | HandoffLogEntry | PassLogEntry | PassCatchLogEntry | BlockLogEntry;
 
+/** A puzzle is a single turn: you are either still playing it or you scored. */
 export type GamePhase =
   | 'playing'
-  | 'half_over'
-  | 'game_over'
   | 'touchdown';
 
 export type AppMode =
   | 'home'
-  | 'freeplay'
   | 'puzzle'
   | 'leaderboard'
   | 'admin'
   | 'series-puzzle'
   | 'series-leaderboard';
+
+/** Board state captured when an activation begins, so a cancel can rewind it. */
+export interface ActivationSnapshot {
+  pieces: PlayerPiece[];
+  ballPosition: Position | null;
+}
 
 export interface GameState {
   pieces: PlayerPiece[];
@@ -168,24 +175,25 @@ export interface GameState {
   // All squares reachable within remaining MA (for click validation)
   reachableKeys: Set<string>;
   originPos: Position | null;
-  // Squares committed so far this activation (piece stays at origin until End Turn)
+  // Squares committed so far this activation (piece stays at origin until the
+  // activation is finalized by clicking it again)
   committedPath: Position[];
   walkedSquares: Position[];
   // Hover preview: shortest path from path tip to hovered square
   pathPreview: PathStep[];
   remainingMa: number;
   remainingGfi: number;        // GFI steps still available (max 2, resets each activation)
-  // Dodge targets queued along committed path (rolled on End Turn)
+  // Dodge targets queued along the committed path, shown as pending dice
   pendingDodgeTargets: number[];
-  humanTurn: number;
-  orcTurn: number;
-  half: 1 | 2;
-  score: { human: number; orc: number };
   phase: GamePhase;
   activationLogStart: number;  // actionLog.length when current piece was selected (for cancel rollback)
-  pendingProb: number;         // product of all pending dodge probabilities this turn
+  // Board as it was when the current activation began. Sub-steps such as Blitz
+  // movement and loose-ball pickup commit to the board before the activation
+  // ends, so cancelling must restore this alongside truncating the log —
+  // otherwise the movement survives while its probability cost is refunded.
+  activationSnapshot: ActivationSnapshot | null;
+  pendingProb: number;         // product of all pending roll probabilities this activation
   actionLog: ActionLogEntry[];
-  isPuzzleMode: boolean;
   scenarioId: string | null;
   // Loose ball on the pitch, not carried by any piece (null once picked up)
   ballPosition: Position | null;
@@ -200,7 +208,7 @@ export interface GameState {
   isPassTargeting: boolean;
   passRangeKeys: Map<string, 'quick' | 'short' | 'long' | 'bomb'>;
   passReceiverKeys: Set<string>;
-  // Block / Blitz (one Blitz per team turn; plain Block has no turn limit)
+  // Block / Blitz (one Blitz per turn; plain Block has no limit)
   blitzUsed: boolean;
   pendingBlock: boolean;         // declared Block/Blitz — move first (Blitz only) then pick target
   pendingBlockIsBlitz: boolean;  // whether the current pendingBlock/isBlockTargeting sequence is a Blitz (persists across the movement step, since blockChoice isn't set until a target is picked)

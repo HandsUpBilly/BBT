@@ -1,7 +1,8 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useId } from 'react';
 import type { BlockOutcomeFace } from './types';
 import { BLOCK_OUTCOME_FACES, blockCombinedProbability } from './bfs';
 import { isBlockOutcomeSelectable } from './blockControls';
+import { useModalFocus } from './useModalFocus';
 import './SubmitModal.css'; // shared modal-backdrop/modal styles
 import './BlockOutcomePanel.css';
 
@@ -41,6 +42,9 @@ export function BlockOutcomePanel({
 }: Props) {
   const [accepted, setAccepted] = useState<Set<BlockOutcomeFace>>(new Set());
   const [continueAs, setContinueAs] = useState<BlockOutcomeFace | null>(null);
+  const titleId = useId();
+  // Escape backs out of the block, matching the Cancel button.
+  const ref = useModalFocus<HTMLDivElement>(onCancel);
 
   const acceptedList = useMemo(() => BLOCK_OUTCOME_FACES.filter(f => accepted.has(f)), [accepted]);
   const combinedProb = useMemo(
@@ -67,8 +71,15 @@ export function BlockOutcomePanel({
 
   return (
     <div className="modal-backdrop">
-      <div className="modal block-outcome">
-        <h2 className="modal__title">{attackerName} blocks {defenderName}</h2>
+      <div
+        ref={ref}
+        className="modal block-outcome"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+        tabIndex={-1}
+      >
+        <h2 id={titleId} className="modal__title">{attackerName} blocks {defenderName}</h2>
         <p className="modal__desc">
           {diceCount} {diceCount === 1 ? 'die' : 'dice'} · {picker === 'attacker' ? 'Attacker' : 'Defender'} picks —
           check which outcome(s) you'd accept as this block "succeeding"

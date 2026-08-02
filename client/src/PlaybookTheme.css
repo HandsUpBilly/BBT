@@ -138,9 +138,7 @@
   border-left: 3px solid var(--home-gold-500);
 }
 
-.app--game .hud__prob-label,
-.app--game .hud__score-label,
-.app--game .hud__turn {
+.app--game .hud__prob-label {
   color: rgba(246, 241, 223, 0.55);
   font-family: 'Courier New', monospace;
   font-weight: 800;
@@ -176,10 +174,6 @@
 
 .app--game .hud__divider {
   background: rgba(246, 241, 223, 0.2);
-}
-
-.app--game .hud__half {
-  color: var(--home-chalk-100);
 }
 
 .app--game .legend {

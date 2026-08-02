@@ -1,10 +1,12 @@
-import { useEffect, useRef, useState } from 'react';
+import { useState } from 'react';
 import {
   ReportSubmissionError,
   createReportDownload,
   submitReport,
+  REPORT_LIMITS,
 } from './api';
 import type { ReportContext, ReportDownload, ReportType } from './api';
+import { useModalFocus } from './useModalFocus';
 import './ReportProblem.css';
 
 interface Props {
@@ -14,9 +16,11 @@ interface Props {
   onClose: () => void;
 }
 
-const MAX_REPORTER_NAME = 64;
-const MAX_TITLE = 120;
-const MAX_DESCRIPTION = 4000;
+// Limits come from the same module the server validates against, so the
+// client can never disagree with it about what fits.
+const MAX_REPORTER_NAME = REPORT_LIMITS.reporterName;
+const MAX_TITLE = REPORT_LIMITS.title;
+const MAX_DESCRIPTION = REPORT_LIMITS.description;
 
 function downloadReport(download: ReportDownload) {
   const blob = new Blob([download.content], { type: 'text/markdown;charset=utf-8' });
@@ -27,11 +31,13 @@ function downloadReport(download: ReportDownload) {
   document.body.appendChild(link);
   link.click();
   link.remove();
-  URL.revokeObjectURL(url);
+  // Revoking synchronously can race the download in some browsers; defer to
+  // the next task so the fetch of the blob has certainly started.
+  setTimeout(() => URL.revokeObjectURL(url), 0);
 }
 
 export function ReportProblemModal({ defaultReporterName, context, idToken, onClose }: Props) {
-  const titleRef = useRef<HTMLInputElement>(null);
+  const dialogRef = useModalFocus<HTMLElement>(onClose);
   const [type, setType] = useState<ReportType>('issue');
   const [reporterName, setReporterName] = useState(defaultReporterName);
   const [title, setTitle] = useState('');
@@ -40,10 +46,6 @@ export function ReportProblemModal({ defaultReporterName, context, idToken, onCl
   const [download, setDownload] = useState<ReportDownload>();
   const [submitting, setSubmitting] = useState(false);
   const [submittedIssue, setSubmittedIssue] = useState<{ number: number; url: string }>();
-
-  useEffect(() => {
-    titleRef.current?.focus();
-  }, []);
 
   const input = {
     type,
@@ -91,7 +93,7 @@ export function ReportProblemModal({ defaultReporterName, context, idToken, onCl
   if (submittedIssue) {
     return (
       <div className="modal-backdrop report-problem-backdrop">
-        <section className="modal report-problem-modal" role="dialog" aria-modal="true" aria-labelledby="report-problem-title">
+        <section ref={dialogRef} className="modal report-problem-modal" role="dialog" aria-modal="true" aria-labelledby="report-problem-title" tabIndex={-1}>
           <span className="report-problem-modal__eyebrow">Report filed</span>
           <h2 id="report-problem-title" className="modal__title">Thanks for the report</h2>
           <p className="report-problem-modal__copy">
@@ -134,7 +136,7 @@ export function ReportProblemModal({ defaultReporterName, context, idToken, onCl
 
           <label className="report-problem-form__field" htmlFor="report-title">
             Title
-            <input id="report-title" ref={titleRef} maxLength={MAX_TITLE} value={title} onChange={event => setTitle(event.target.value)} placeholder="A short summary" />
+            <input id="report-title" maxLength={MAX_TITLE} value={title} onChange={event => setTitle(event.target.value)} placeholder="A short summary" />
           </label>
 
           <label className="report-problem-form__field" htmlFor="report-description">

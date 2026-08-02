@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
+    "generate:seed": "node ../scripts/generate-scenario-seed.mjs",
     "lint": "eslint .",
     "preview": "vite preview",
     "test": "vitest run"

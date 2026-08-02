@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState, type ReactNode } from 'react';
-import { fetchLeaderboard, fetchSeriesLeaderboard } from './api';
+import { useMemo, useState, type ReactNode } from 'react';
+import type { ProgressData } from './api';
 import type { LeaderboardEntry, Scenario, SeriesDefinition, SeriesLeaderboardEntry } from './types';
 import './ScenarioSelect.css';
 
@@ -24,7 +24,8 @@ interface Props {
   onStartSeries: () => void;
   onSeriesLeaderboard: () => void;
   onAdmin: () => void;
-  progressRefreshKey: number;
+  /** Fetched once by App in a single request; undefined while it is in flight. */
+  progress?: ProgressData;
   userId?: string;
   isAdmin: boolean;
   userMenu: ReactNode;
@@ -77,7 +78,12 @@ function formatProgress(progress?: ScenarioProgress): string {
   if (!progress.played) {
     return progress.entries > 0 ? `Not played · ${progress.entries} ranked` : 'Not played';
   }
-  return `Best ${pct(progress.bestPercent ?? 0)} · Rank #${progress.rank}`;
+  // Rank is only meaningful while the entry is inside the returned top slice.
+  // Outside it we still know the player's own best, so show that alone rather
+  // than an invented position.
+  return progress.rank === null
+    ? `Best ${pct(progress.bestPercent ?? 0)}`
+    : `Best ${pct(progress.bestPercent ?? 0)} · Rank #${progress.rank}`;
 }
 
 export function ScenarioSelect({
@@ -88,7 +94,7 @@ export function ScenarioSelect({
   onStartSeries,
   onSeriesLeaderboard,
   onAdmin,
-  progressRefreshKey,
+  progress,
   userId,
   isAdmin,
   userMenu,
@@ -96,50 +102,25 @@ export function ScenarioSelect({
   version,
 }: Props) {
   const [playView, setPlayView] = useState<PlayView>('series');
-  const [leaderboards, setLeaderboards] = useState<Record<string, LeaderboardEntry[]>>({});
-  const [seriesLeaderboard, setSeriesLeaderboard] = useState<SeriesLeaderboardEntry[]>([]);
 
-  useEffect(() => {
-    let cancelled = false;
-
-    async function loadProgress() {
-      const [scenarioResults, seriesResults] = await Promise.all([
-        Promise.all(
-          scenarios.map(async scenario => {
-            try {
-              return [scenario.id, await fetchLeaderboard(scenario.id)] as const;
-            } catch {
-              return [scenario.id, []] as const;
-            }
-          }),
-        ),
-        fetchSeriesLeaderboard().catch(() => [] as SeriesLeaderboardEntry[]),
-      ]);
-
-      if (!cancelled) {
-        setLeaderboards(Object.fromEntries(scenarioResults));
-        setSeriesLeaderboard(seriesResults);
-      }
-    }
-
-    void loadProgress();
-    return () => { cancelled = true; };
-  }, [progressRefreshKey, scenarios]);
-
-  const localScores = readLocalScores();
+  // Read storage once per mount, not on every render — as a plain call this was
+  // a fresh object identity each time, which defeated both memos below.
+  const localScores = useMemo(() => readLocalScores(), []);
 
   const scenarioProgress = useMemo(() => {
+    const leaderboards: Record<string, LeaderboardEntry[]> = progress?.scenarios ?? {};
     return Object.fromEntries(
       scenarios.map(scenario => [
         scenario.id,
         progressFromEntries(leaderboards[scenario.id] ?? [], localScores[scenario.id], userId),
       ]),
     ) as Record<string, ScenarioProgress>;
-  }, [scenarios, leaderboards, localScores, userId]);
+  }, [scenarios, progress, localScores, userId]);
 
   const seriesProgress = useMemo(() => {
+    const seriesLeaderboard: SeriesLeaderboardEntry[] = progress?.series ?? [];
     return progressFromEntries(seriesLeaderboard, localScores[SERIES_SCORE_KEY], userId);
-  }, [seriesLeaderboard, localScores, userId]);
+  }, [progress, localScores, userId]);
 
   const individualProgress = useMemo(() => {
     const items = scenarios.map(scenario => scenarioProgress[scenario.id]).filter(Boolean);

@@ -48,6 +48,10 @@
 .modal__roll-btn:hover:not(:disabled) { background: #2080d8; }
 .modal__roll-btn:disabled { opacity: 0.4; cursor: default; }
 
+/* Destructive confirm (delete a puzzle, discard unsaved edits). */
+.modal__roll-btn--danger { background: #b4342a; }
+.modal__roll-btn--danger:hover:not(:disabled) { background: #cc4136; }
+
 .modal__continue-btn {
   background: #444;
   color: #f0f0f0;
@@ -60,6 +64,24 @@
 }
 
 .modal__continue-btn:hover { background: #555; }
+.modal__continue-btn:disabled { opacity: 0.4; cursor: default; }
+
+/* Submission failure shown inside the touchdown dialog. */
+.submit-modal__error {
+  margin: 12px 0 0;
+  padding: 10px 12px;
+  border-radius: 6px;
+  border: 1px solid rgba(220, 90, 80, 0.55);
+  background: rgba(90, 26, 22, 0.5);
+  color: #ffd9d4;
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .modal__roll-btn,
+  .modal__continue-btn { transition: none; }
+}
 
 .submit-modal__td {
   font-size: 1.8rem;

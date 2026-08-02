@@ -14,27 +14,38 @@ Primary files:
 
 Admin Mode renders `PuzzleEditor`.
 
-Local editor features:
+Editor features:
 
-- list all scenarios, including disabled ones,
-- create a new puzzle,
-- duplicate current puzzle,
-- drag fixed Human/Orc player templates onto the editor pitch,
+- list all scenarios (including disabled ones) with description, active team,
+  piece count, enabled state, and series position,
+- create, duplicate, and delete puzzles,
+- drag Human/Orc player templates onto the editor pitch,
 - auto-generate Blood Bowl style player names,
-- override player names in inspector,
-- move/delete players,
+- **full piece inspector**: name, id, team, role, MA/ST/AG/PA/AV as bounded
+  numeric inputs, comma-separated skills, has-ball, delete,
+- move players by drag,
 - place ball on a player or loose on the ground,
-- save over existing puzzle,
-- save as new puzzle,
-- delete saved draft puzzles,
+- save over existing / save as new,
 - enable/disable puzzles for players,
-- publish draft changes,
-- add/remove/reorder puzzle in default series,
+- publish draft changes (behind a confirmation),
+- add/remove/reorder puzzle in default series, with a warning + one-click fix
+  for series entries pointing at deleted puzzles,
 - play draft and return to designer.
+
+### Guards
+
+- **Unsaved-changes guard.** Opening another puzzle, starting a new one,
+  reloading, or leaving the editor asks before discarding edits, and a
+  `beforeunload` handler covers tab close. Previously all of these discarded
+  silently.
+- **Publish confirmation.** Publish is the one irreversible, player-facing
+  action, so it asks first.
+- **Piece ids commit on blur**, not per keystroke — editing them live meant every
+  intermediate value (including the empty string) briefly became the real id.
 
 ## Local Save API
 
-`server/editor.js` registers:
+`server/editor.js` registers (all admin-gated):
 
 - `GET /api/editor/scenarios`
 - `POST /api/editor/scenarios`
@@ -73,8 +84,25 @@ Editor pitch uses scenario data orientation directly:
 
 Gameplay pitch rendering is separate and visually landscape.
 
-## Fixed Templates
+## Templates and Stats
 
-Stats come from `playerTemplates.ts`. The editor does not allow stat editing in
-the inspector. Add new player types by adding templates, not by changing saved
-scenario pieces manually.
+`playerTemplates.ts` supplies the starting stats when a template is dragged onto
+the pitch. Those values are then **editable per piece** in the inspector, within
+the 1–12 range enforced by `shared/scenarioValidation.js`.
+
+Add a genuinely new player type by adding a template — that keeps the palette
+useful — rather than always hand-tuning stats after the fact.
+
+## Validation
+
+Client and server share `shared/scenarioValidation.js`, so the editor's live
+error list is exactly what the server will enforce. The client previously had
+its own looser validator (no stat ranges, no team checks), which meant a
+designer could see a clean list and still get a 400 on save.
+
+## Auth
+
+Every `/api/editor/*` route is admin-gated, **including the GET** — drafts
+contain unpublished puzzles. `editorApi.fetchEditorData` therefore sends the
+`Authorization` header too. On Netlify, a missing `ADMIN_EMAILS` means 503, not
+an open editor; locally it defaults open so the editor works without OAuth.

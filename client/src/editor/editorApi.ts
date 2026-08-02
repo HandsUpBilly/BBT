@@ -11,7 +11,14 @@ interface PublishResponse {
 }
 
 async function parseJsonResponse<T>(response: Response): Promise<T> {
-  const body = await response.json();
+  let body: { errors?: unknown; error?: unknown };
+  try {
+    body = await response.json();
+  } catch {
+    // An HTML error page from a proxy, or an empty body.
+    if (!response.ok) throw new Error(`Editor request failed (${response.status})`);
+    throw new Error('Editor returned an unreadable response');
+  }
   if (!response.ok) {
     // Validation errors use { errors: string[] }; auth failures (401/403) use { error: string }.
     const message = Array.isArray(body.errors)
@@ -28,8 +35,10 @@ function authHeaders(idToken: string | null): HeadersInit {
   return idToken ? { Authorization: `Bearer ${idToken}` } : {};
 }
 
-export async function fetchEditorData(): Promise<EditorLoadResponse> {
-  const response = await fetch('/api/editor/scenarios');
+// Drafts include unpublished puzzles, so the read is admin-gated like the
+// writes and needs the same Authorization header.
+export async function fetchEditorData(idToken: string | null): Promise<EditorLoadResponse> {
+  const response = await fetch('/api/editor/scenarios', { headers: authHeaders(idToken) });
   return parseJsonResponse<EditorLoadResponse>(response);
 }
 

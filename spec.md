@@ -2,7 +2,41 @@
 
 ---
 
-## Whole-App Gritty Rulebook Visual Overhaul
+## Status Index
+
+This file mixes shipped history with forward plans. Every top-level section
+carries a **Status** line — read it before treating a section as work to do.
+
+| Section | Status |
+| --- | --- |
+| Whole-App Gritty Rulebook Visual Overhaul | Shipped |
+| Issue and Feature Request Reporting | Shipped |
+| Handoff Action | Shipped |
+| Pass Action | Shipped |
+| Scenario 002 — The Handoff Play | Shipped |
+| Leaderboard — Move Summary on Row Click | Shipped |
+| Leaderboard — Netlify Deployment | Shipped |
+| Puzzle Mode | Shipped (Free Play removed) |
+| Series Mode Specification | Shipped |
+| Google Social Sign-On Plan | Shipped |
+| Puzzle Editor / Creator Plan | Shipped |
+| Bug Fix — Pass/Handoff fails when receiver already activated this turn | Shipped |
+| Agent Context Documentation Plan | Shipped |
+| Loose Ball Pickup | Shipped |
+| Block and Blitz Actions | Shipped (with rules simplifications) |
+| BB Tactics — Tabletop Playbook Home Redesign | Shipped |
+| Leaderboard and Report Integrity | **Planned** |
+
+Durable behavior that has already shipped belongs in `docs/agent-context/`, not
+here. When a plan below ships, move the facts worth keeping into the matching
+context doc and mark the section Shipped rather than deleting it — the rationale
+is often still useful.
+
+---
+
+# Whole-App Gritty Rulebook Visual Overhaul
+
+**Status:** Shipped. Landed as "Unify app with gritty rulebook theme"; PlaybookTheme.css now owns the whole-app visual layer.
 
 ### Status and Decisions
 
@@ -301,7 +335,9 @@ so the theme remains predictable without specificity escalation or
 
 ---
 
-## Issue and Feature Request Reporting
+# Issue and Feature Request Reporting
+
+**Status:** Shipped. Report launcher, modal, /api/reports, and the Markdown download fallback are live. Rate limiting was added later; see "Leaderboard and Report Integrity".
 
 ### Goal
 
@@ -441,7 +477,9 @@ and Markdown metadata.
 
 ---
 
-## Handoff Action
+# Handoff Action
+
+**Status:** Shipped. Implemented in useGameState (handleHandoffAction/handleHandoffTarget) with tests in useGameState.test.ts.
 
 ### Overview
 
@@ -548,7 +586,9 @@ Add `passUsed: boolean` to `RiskyMove` is **not** needed — handoff entries are
 
 ---
 
-## Pass Action
+# Pass Action
+
+**Status:** Shipped. Range table, pass/catch rolls, and range overlay are live in bfs.ts and useGameState.ts.
 
 ### Overview
 
@@ -742,7 +782,9 @@ export function computePassRange(passerPos: Position): Map<string, PassRangeBand
 
 ---
 
-## Scenario 002 — The Handoff Play
+# Scenario 002 — The Handoff Play
+
+**Status:** Shipped. Lives at client/src/scenarios/scenario-002.json.
 
 ### Concept
 
@@ -853,7 +895,9 @@ A browser-based Blood Bowl puzzle game.
 
 ---
 
-## Leaderboard — Move Summary on Row Click
+# Leaderboard — Move Summary on Row Click
+
+**Status:** Shipped. Both leaderboards persist `moves` and render ScoreSummary on row click.
 
 ### Problem Statement
 
@@ -920,7 +964,9 @@ interface RiskyMove {
 
 ---
 
-## Leaderboard — Netlify Deployment
+# Leaderboard — Netlify Deployment
+
+**Status:** Shipped. See netlify/functions/leaderboard.js. NOTE: the storage section below says "top 10" while the API section says "top 20" — the shipped behavior is that the store keeps EVERY entry and only the read is truncated (10 on Netlify, 20 locally).
 
 ### Problem Statement
 
@@ -939,7 +985,9 @@ The existing Express server (`server/`) is retained for local development only. 
 
 ### Storage Model
 
-One Netlify Blob per scenario, keyed by `scenarioId`. Each blob contains a JSON array of `LeaderboardEntry` objects. On every write the full array is read, upserted, sorted, trimmed to top 10, and written back.
+One Netlify Blob per scenario, keyed by `scenarioId`. Each blob contains a JSON array of `LeaderboardEntry` objects. On every write the full array is read, upserted, and written back.
+
+**Corrected during implementation:** an earlier draft of this section trimmed the *stored* array to the top 10. That deleted a player's personal best the moment they dropped out of the visible table, which then broke both the by-userId upsert and the home screen's "Best / Rank" display. The store now keeps every entry and only the read is truncated.
 
 ```json
 [
@@ -952,8 +1000,8 @@ One Netlify Blob per scenario, keyed by `scenarioId`. Each blob contains a JSON 
 ### Requirements
 
 1. **Netlify Function** at `netlify/functions/leaderboard.js` handles both GET and POST for `/api/leaderboard/:scenarioId`.
-2. **GET**: Read blob for `scenarioId`, return top 10 sorted `probability DESC`, `diceCount ASC`. Return `[]` if blob doesn't exist yet.
-3. **POST**: Read blob, upsert entry by `name` (replace existing entry for same name with latest submission), sort, trim to top 10, write blob back. Return the upserted entry.
+2. **GET**: Read blob for `scenarioId`, return the top 10 sorted `probability DESC`, `diceCount ASC`. Return `[]` if the blob doesn't exist yet. (The local Express server returns 20; only the visible slice differs.)
+3. **POST**: Read blob, upsert by `userId` for signed-in players and by `name` for guests, keeping the *better* of the two runs, then write the full list back. Return whatever entry survived on the board.
 4. **Routing**: `netlify.toml` rewrites `/api/*` to the function, and `/*` to `index.html` for SPA routing.
 5. **Client `api.ts`**: No changes needed — `/api/leaderboard/:scenarioId` continues to work identically.
 6. **Local dev**: Vite proxy (`/api` → `localhost:3001`) continues to route to the Express server. `netlify dev` can also be used as an alternative local runner.
@@ -992,7 +1040,7 @@ One Netlify Blob per scenario, keyed by `scenarioId`. Each blob contains a JSON 
 1. Create `netlify/functions/leaderboard.js`:
    - Import `@netlify/blobs` (`getStore`).
    - Parse `scenarioId` from the request path.
-   - GET: read blob → parse JSON → return top 10.
+   - GET: read blob → parse JSON → return the top 10.
    - POST: read blob → upsert by name → sort → trim → write blob → return entry.
 2. Add `@netlify/blobs` to a new `netlify/package.json` (or root `package.json`).
 3. Create `netlify.toml` at repo root with build config and redirects above.
@@ -1003,6 +1051,10 @@ One Netlify Blob per scenario, keyed by `scenarioId`. Each blob contains a JSON 
 The current prototype (hot-seat two-player free play) remains as a sandbox/dev mode. The puzzle mode is the primary product.
 
 ---
+
+# Puzzle Mode
+
+**Status:** Shipped, with one deliberate divergence. Mode 2 (Puzzle Mode) is the whole game now. Mode 1 (Free Play) was removed: a puzzle is always exactly one turn, so the multi-turn loop, score, half, and turn counters no longer exist.
 
 ## Stack
 
@@ -1015,13 +1067,19 @@ The current prototype (hot-seat two-player free play) remains as a sandbox/dev m
 
 ---
 
-## Mode 1 — Free Play (existing, keep as-is)
+## Mode 1 — Free Play — REMOVED
 
-Hot-seat two-player sandbox. No scenarios, no leaderboard. Used for development and casual play.
+Originally a hot-seat two-player sandbox with no scenarios and no leaderboard.
+
+**Removed.** A puzzle is always exactly one turn — that is the core of the game —
+so the multi-turn loop this mode needed (End Turn, turn counters, halves, the
+running score) was never wired to any UI and has been deleted. Do not
+reintroduce it: anything that lets a player bank a turn and start fresh also
+resets the probability chain that *is* the score.
 
 ---
 
-## Mode 2 — Puzzle Mode (new)
+## Mode 2 — Puzzle Mode
 
 ### Scenario Definition
 
@@ -1077,14 +1135,14 @@ Fields:
 - Per scenario, ranked by **probability % descending**, tiebroken by **dice count ascending** (fewer rolls = cleaner play).
 - Shows: rank, name, probability %, dice count, date.
 - Accessible from the scenario select screen at any time.
-- API: `GET /api/leaderboard/:scenarioId` returns top 20 entries.
+- API: `GET /api/leaderboard/:scenarioId` returns the top entries (20 locally, 10 on Netlify).
 
 ### Leaderboard API (stubbed)
 
 The Express server exposes:
 
 ```
-GET  /api/leaderboard/:scenarioId   → top 20 entries (in-memory for now)
+GET  /api/leaderboard/:scenarioId   → top entries (20 local / 10 Netlify)
 POST /api/leaderboard/:scenarioId   → submit a score
 ```
 
@@ -1131,6 +1189,8 @@ In-memory store is replaced with a real database (Supabase/Postgres) in a later 
 ---
 
 # Series Mode Specification
+
+**Status:** Shipped. See series/default.json, resolveSeriesScenarios, and the series leaderboard.
 
 ## Problem Statement
 
@@ -1310,6 +1370,8 @@ leaderboards and standalone Play/Leaderboard/Sandbox options must continue to wo
 ---
 
 # Google Social Sign-On Plan
+
+**Status:** Shipped. Google Identity Services + guest identity, verified server-side via shared/googleAuth.js. Token expiry handling was added later (client/src/auth.ts isTokenExpired).
 
 ## Purpose
 
@@ -1620,6 +1682,8 @@ NETLIFY_TOKEN / NETLIFY_AUTH_TOKEN
 ---
 
 # Puzzle Editor / Creator Plan
+
+**Status:** Shipped. Including the piece inspector (stats, skills, team, role), puzzle-list metadata, and the missing-series-id warning, all of which were outstanding for a while. Local dev writes JSON files; Netlify uses Blobs drafts plus an explicit Publish.
 
 ## Purpose
 
@@ -2049,7 +2113,9 @@ Update Series Play in `App.tsx` to use the default series list instead of the fu
 
 ---
 
-## Bug Fix — Pass/Handoff fails when receiver already activated this turn
+# Bug Fix — Pass/Handoff fails when receiver already activated this turn
+
+**Status:** Shipped. Fixed; guarded by regression tests in useGameState.test.ts.
 
 ### Problem Statement
 
@@ -2221,7 +2287,9 @@ In `client/src/useGameState.ts`:
 
 ---
 
-## Agent Context Documentation Plan
+# Agent Context Documentation Plan
+
+**Status:** Shipped. docs/agent-context/ exists and is routed from AGENTS.md.
 
 ### Problem Statement
 
@@ -2558,6 +2626,8 @@ Use a three-layer documentation model:
 
 # Loose Ball Pickup
 
+**Status:** Shipped. Pickup rolls fold into the probability chain; see bfs.ts pickupTargetAt and the tests in useGameState.test.ts.
+
 ## Problem Statement
 
 The game only supports the ball while it is carried by a player
@@ -2720,6 +2790,8 @@ a real pass/fail dice roll.
 ---
 
 # Block and Blitz Actions
+
+**Status:** Shipped, with rules simplifications. Live. Two rules gaps were closed afterwards: a knocked-down carrier now drops the ball, and a Blitz block costs a square of movement. Still simplified: flat assist counting (no Guard, no marked-assister exclusion), no armour/injury rolls, and no chain pushes.
 
 ## Problem Statement
 
@@ -3076,6 +3148,8 @@ shows "which physical die," only the resulting chance.
 
 # BB Tactics — Tabletop Playbook Home Redesign
 
+**Status:** Shipped. Has its own Status section below.
+
 ## Status
 
 Historical specification for the already-shipped first visual redesign pass.
@@ -3421,3 +3495,57 @@ game while preserving all rules, data, authentication, and navigation behavior.
    provide an internal horizontal scroll area where needed.
 5. Admin Mode does not inherit the player-facing theme.
 6. Tests, production build, and lint pass with no new browser console errors.
+
+---
+
+# Leaderboard and Report Integrity
+
+**Status:** Planned — partial mitigations shipped.
+
+## Problem Statement
+
+The client computes a run's probability and submits it. Nothing server-side
+recomputes it from the rules engine, so a crafted request can claim any score.
+
+## What already ships
+
+`shared/scoreValidation.js` closes the cheap holes:
+
+- probability must be a finite number in `(0, 1]` and diceCount a bounded
+  integer, so NaN/Infinity/negatives can never corrupt the sort;
+- `diceCount` must equal the number of submitted moves;
+- the product of the submitted per-action probabilities must match the claimed
+  total, so a tamperer cannot raise the number on an otherwise real run;
+- a worse run never overwrites a better one (`upsertPersonalBest`);
+- `shared/rateLimit.js` caps report submissions per session.
+
+## What is still open
+
+Two gaps remain, and neither is closable without the rules engine:
+
+1. **A forged clean run is accepted.** `{probability: 1, diceCount: 0,
+   moves: []}` passes, because walking to the end zone with no rolls is a
+   legitimate 100% solution on some scenarios. Nothing in the payload
+   distinguishes the two.
+2. **An internally consistent but fabricated move list is accepted.** The
+   checks verify the arithmetic of what was submitted, not that those moves
+   were reachable on that scenario.
+
+Closing both needs a server-side replay:
+
+1. Load the scenario by id on the server.
+2. Re-run the submitted moves through the rules engine (`bfs.ts` would need to
+   become environment-neutral, or move into `shared/`).
+3. Reject the submission if the replay's probability, dice count, or final board
+   state disagrees with what was claimed.
+
+This is deferred because it requires the rules engine to be shared between the
+client and both server targets, which is a larger refactor than the leaderboard
+warrants today. The per-instance report rate limiter is likewise best-effort on
+Netlify — a Blobs- or KV-backed counter would make it a hard cap.
+
+## Acceptance Criteria
+
+- A replayed submission that does not reproduce the claimed probability is
+  rejected with a 400 and never reaches the leaderboard.
+- Legitimate submissions from the real client are unaffected.

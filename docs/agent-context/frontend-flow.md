@@ -19,8 +19,14 @@ Current modes:
 - `admin`: puzzle editor, replacing old Sandbox-first Admin Mode.
 - `series-puzzle`: active series run.
 - `series-leaderboard`: aggregate series leaderboard and summary.
-- `freeplay`: legacy mode still in the type, but Sandbox is no longer the
-  Admin Mode entry point.
+
+`freeplay` has been **removed** from the type. It was never assigned anywhere,
+and the multi-turn machinery it needed (End Turn, turn counters, halves, score)
+was unreachable dead code. A puzzle is always exactly one turn — see
+`game-rules-engine.md`.
+
+Render branches key off `effectiveAppMode`, not `appMode`: Admin Mode falls back
+to `home` for non-admins as defence in depth.
 
 ## Identity Gate
 
@@ -137,14 +143,37 @@ Preview state:
 - Game HUD back button shows `Designer` for editor preview.
 - Back from preview returns to `admin`, not `home`.
 
+## Notices and Error States
+
+`App.tsx` renders a shared `{notice}` fragment on every screen:
+
+- an **expired-session** banner with a "Sign in again" action, shown whenever a
+  Google user is cached but their token has lapsed;
+- a dismissible **notice** for non-blocking failures, e.g. the best-effort
+  individual submit failing mid-series.
+
+Blocking failures on the touchdown submit go to `SubmitModal`'s `error` prop
+instead, which keeps the dialog open with a retry button so the player doesn't
+silently lose a run.
+
+## Accessibility
+
+- Pitch squares are `role="button"` with `aria-label`s describing the square,
+  its occupant, and any pending rolls, and respond to Enter/Space. Only
+  *actionable* squares are in the tab order.
+- All modals use `useModalFocus` (`client/src/useModalFocus.ts`), which traps
+  Tab, wires Escape, and restores focus to whatever opened the dialog. Because
+  dialogs stop Escape propagation, `App.tsx`'s global Escape handler only ever
+  cancels the current activation.
+
 ## Common Change Checks
 
 When changing app modes or navigation:
 
-- Check `App.tsx` render branches.
+- Check `App.tsx` render branches (they key off `effectiveAppMode`).
 - Check `handleBackClick`.
-- Check whether `UserMenu` should still appear.
-- Run `npm run build` and `cd client && npm run lint`.
+- Check whether `UserMenu` and `{notice}` should still appear.
+- Run `npm run verify` from the repo root.
 
 ## Gameplay Action Menu
 

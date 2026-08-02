@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import { useGameState } from './useGameState';
-import type { GameState, PlayerPiece } from './types';
+import { makeState, humanThrower as thrower, humanCatcher as catcher } from './test/gameState';
 
 /**
  * Regression tests for the "long bomb" pass/handoff bug: a receiver who
@@ -9,87 +9,6 @@ import type { GameState, PlayerPiece } from './types';
  * excluded as a pass/handoff target, leaving the carrier's activation
  * stuck (never marked `activated`) and reselectable for a free extra move.
  */
-
-function makeState(
-  pieces: PlayerPiece[],
-  activeTeam: GameState['activeTeam'] = 'human',
-  ballPosition: GameState['ballPosition'] = null,
-): GameState {
-  return {
-    pieces,
-    activeTeam,
-    selectedPieceId: null,
-    reachableKeys: new Set(),
-    originPos: null,
-    committedPath: [],
-    walkedSquares: [],
-    pathPreview: [],
-    remainingMa: 0,
-    remainingGfi: 0,
-    pendingDodgeTargets: [],
-    humanTurn: 1,
-    orcTurn: 1,
-    half: 1,
-    score: { human: 0, orc: 0 },
-    phase: 'playing',
-    activationLogStart: 0,
-    pendingProb: 1,
-    actionLog: [],
-    isPuzzleMode: false,
-    scenarioId: null,
-    ballPosition,
-    passUsed: false,
-    pendingHandoff: false,
-    isHandoffTargeting: false,
-    handoffTargets: new Set(),
-    pendingPass: false,
-    isPassTargeting: false,
-    passRangeKeys: new Map(),
-    passReceiverKeys: new Set(),
-    blitzUsed: false,
-    pendingBlock: false,
-    pendingBlockIsBlitz: false,
-    blitzTargetId: null,
-    isBlockTargeting: false,
-    blockTargets: new Set(),
-    blockChoice: null,
-    pushTargetKeys: new Set(),
-    pendingBlockResolution: null,
-  };
-}
-
-function thrower(overrides: Partial<PlayerPiece> = {}): PlayerPiece {
-  return {
-    id: 'thrower',
-    team: 'human',
-    role: 'thrower',
-    name: 'Aldric Swiftfoot',
-    position: { col: 7, row: 10 },
-    ma: 6, st: 3, ag: 3, pa: 3, av: 8,
-    skills: [],
-    activated: false,
-    hasBall: true,
-    down: false,
-    ...overrides,
-  };
-}
-
-function catcher(overrides: Partial<PlayerPiece> = {}): PlayerPiece {
-  return {
-    id: 'catcher',
-    team: 'human',
-    role: 'catcher',
-    name: 'Sera Quickhand',
-    // dx=0, dy=2 from the thrower's default position → "quick" range band
-    position: { col: 7, row: 8 },
-    ma: 8, st: 2, ag: 4, pa: 5, av: 7,
-    skills: ['Catch', 'Dodge'],
-    activated: false,
-    hasBall: false,
-    down: false,
-    ...overrides,
-  };
-}
 
 describe('pass to an already-activated receiver', () => {
   it('(a) includes an already-activated teammate in passReceiverKeys', () => {
@@ -295,7 +214,7 @@ describe('loose ball pickup', () => {
     expect(stepEntry!.actionProb).toBeCloseTo(expectedProb, 5);
   });
 
-  it('the loose ball persists across turns until picked up', () => {
+  it('an activation that never reaches the loose ball leaves it on the pitch', () => {
     const state = makeState(
       [thrower({ hasBall: false, position: { col: 7, row: 12 } })],
       'human',
@@ -303,10 +222,12 @@ describe('loose ball pickup', () => {
     );
     const { result } = renderHook(() => useGameState(state));
 
-    act(() => result.current.handleSquareClick(7, 12)); // select, no movement
-    act(() => result.current.handleEndTurn());
+    act(() => result.current.handleSquareClick(7, 12)); // select
+    act(() => result.current.handleSquareClick(7, 11)); // move away from the ball
+    act(() => result.current.handleSquareClick(7, 11)); // end activation
 
     expect(result.current.state.ballPosition).toEqual({ col: 3, row: 3 });
+    expect(result.current.state.pieces[0].hasBall).toBe(false);
   });
 
   it('handleHandoffAction is allowed for a piece without the ball when the ball is loose', () => {

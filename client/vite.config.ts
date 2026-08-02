@@ -6,14 +6,23 @@ import { version } from '../package.json'
 export default defineConfig({
   plugins: [react()],
   define: {
-    __BBT_VERSION__: JSON.stringify(process.env.VITE_APP_VERSION ?? version),
+    // Netlify exposes the deploy's git SHA as COMMIT_REF; falling back to the
+    // root package version keeps local builds readable. Surfaced in the home
+    // masthead and attached to issue reports, so it needs to change per deploy.
+    __BBT_VERSION__: JSON.stringify(
+      process.env.VITE_APP_VERSION
+        ?? (process.env.COMMIT_REF ? `${version}+${process.env.COMMIT_REF.slice(0, 7)}` : version),
+    ),
   },
   server: {
-    allowedHosts: 
-    ['5173--019dea7a-db9d-733d-b843-669e32bef1eb.eu-central-1-01.gitpod.dev',
-     '5173--019f9dd4-3ed3-70ce-8a38-91fb33fb1ab8.eu-central-1-01.gitpod.dev',
-     '5173--019f9e0a-a8a6-7604-9d00-0cb93d2b3df1.eu-central-1-01.gitpod.dev'
-    ],
+    // Gitpod workspace URLs are ephemeral, so match the domain rather than
+    // accumulating one hard-coded hostname per workspace.
+    allowedHosts: ['.gitpod.dev'],
+    fs: {
+      // The client imports shared/ (validation + report formatting) from the
+      // repo root so it cannot drift from the server's copy.
+      allow: ['..'],
+    },
     proxy: {
       '/api': 'http://localhost:3001',
     },
