@@ -1,8 +1,8 @@
-# Blood Bowl Tactical Puzzle
+# Turn 16
 
-A browser-based Blood Bowl puzzle game: move your ball carrier through
-Orc pressure, dodge and hand off across the pitch, and chase the highest
-success probability on the leaderboard.
+A browser-based Blood Bowl puzzle game built around the pressure of the final
+turn: move your ball carrier through Orc pressure, make the do-or-die play, and
+chase the highest touchdown probability on the leaderboard.
 
 ```
 client/               React + TypeScript + Vite frontend

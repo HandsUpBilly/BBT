@@ -97,7 +97,7 @@ Keep durable shipped behavior in these docs. Keep future plans in `spec.md`.
 | `NETLIFY_SITE_ID` / `SITE_ID` | `netlify/functions/leaderboard.js` | Netlify Blobs site ID |
 | `NETLIFY_TOKEN` / `NETLIFY_AUTH_TOKEN` | `netlify/functions/leaderboard.js` | Netlify Blobs auth |
 | `ADMIN_EMAILS` | `server/auth.js`, `netlify/functions/auth.js` | Comma-separated allowlist gating `/api/editor/*` writes. Unset = unrestricted (matches pre-admin-gating behavior). |
-| `VITE_ADMIN_EMAILS` | `client/src/App.tsx` | Same list, client-side, controls Admin Mode button visibility only — not a security boundary. Keep in sync with `ADMIN_EMAILS`. |
+| `VITE_ADMIN_EMAILS` | `client/src/App.tsx` | Same list, client-side, controls Admin Mode tab visibility only — not a security boundary. Keep in sync with `ADMIN_EMAILS`. |
 
 ## Puzzle Editor: Draft vs. Published Scenarios
 
