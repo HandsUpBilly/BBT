@@ -1,0 +1,198 @@
+.admin-statistics {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.admin-statistics__notice,
+.admin-statistics__error,
+.admin-statistics__status {
+  padding: 14px 16px;
+  color: var(--home-chalk-300, #bbb);
+  background: rgba(12, 16, 13, 0.68);
+  border: 1px solid rgba(227, 220, 200, 0.18);
+  line-height: 1.5;
+}
+
+.admin-statistics__error {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  color: #e3a399;
+  border-left: 3px solid var(--home-danger-500, #bd5548);
+}
+
+.admin-statistics__cards {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.admin-statistics__card,
+.admin-statistics__panel {
+  color: var(--home-chalk-100, #f0f0f0);
+  background: var(--rulebook-iron, #262626);
+  border: 1px solid #090b08;
+  border-radius: 2px;
+  box-shadow: inset 0 0 0 1px rgba(227, 220, 200, 0.08), 4px 5px 0 rgba(0, 0, 0, 0.24);
+}
+
+.admin-statistics__card {
+  min-height: 150px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 18px;
+}
+
+.admin-statistics__card span,
+.admin-statistics__series-grid dt {
+  color: var(--home-gold-500, #d7a63b);
+  font-family: 'Courier New', monospace;
+  font-size: 0.68rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.admin-statistics__card strong {
+  font-family: Rockwell, 'Roboto Slab', 'Courier New', serif;
+  font-size: clamp(2rem, 5vw, 3.5rem);
+  line-height: 1;
+}
+
+.admin-statistics__card small,
+.admin-statistics__panel-heading p {
+  color: var(--home-chalk-300, #aaa);
+  line-height: 1.4;
+}
+
+.admin-statistics__panel {
+  overflow: hidden;
+}
+
+.admin-statistics__panel-heading {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 18px 20px;
+  border-bottom: 1px solid rgba(227, 220, 200, 0.15);
+}
+
+.admin-statistics__panel-heading h2 {
+  font-family: Rockwell, 'Roboto Slab', 'Courier New', serif;
+  text-transform: uppercase;
+}
+
+.admin-statistics__panel-heading span {
+  color: var(--home-chalk-300, #aaa);
+  font-family: 'Courier New', monospace;
+  font-size: 0.7rem;
+  text-align: right;
+}
+
+.admin-statistics__table-wrap {
+  overflow-x: auto;
+}
+
+.admin-statistics__table {
+  width: 100%;
+  min-width: 920px;
+  border-collapse: collapse;
+  font-variant-numeric: tabular-nums;
+}
+
+.admin-statistics__table th,
+.admin-statistics__table td {
+  padding: 13px 16px;
+  border-bottom: 1px solid rgba(227, 220, 200, 0.1);
+  text-align: right;
+}
+
+.admin-statistics__table thead th {
+  color: var(--home-gold-500, #d7a63b);
+  background: rgba(12, 16, 13, 0.45);
+  font-family: 'Courier New', monospace;
+  font-size: 0.66rem;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.admin-statistics__table th:first-child {
+  text-align: left;
+}
+
+.admin-statistics__table tbody th {
+  min-width: 220px;
+}
+
+.admin-statistics__table tbody th strong,
+.admin-statistics__table tbody th span {
+  display: block;
+}
+
+.admin-statistics__table tbody th span {
+  margin-top: 3px;
+  color: var(--home-chalk-300, #999);
+  font-family: 'Courier New', monospace;
+  font-size: 0.68rem;
+  font-weight: 400;
+}
+
+.admin-statistics__table tbody tr:hover {
+  background: rgba(43, 58, 46, 0.54);
+}
+
+.admin-statistics__series {
+  padding-bottom: 18px;
+}
+
+.admin-statistics__series-grid {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 1px;
+  padding: 18px 20px 0;
+}
+
+.admin-statistics__series-grid div {
+  min-width: 0;
+  padding: 14px;
+  background: rgba(12, 16, 13, 0.45);
+}
+
+.admin-statistics__series-grid dd {
+  margin-top: 9px;
+  font-family: Rockwell, 'Roboto Slab', 'Courier New', serif;
+  font-size: 1.35rem;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 1000px) {
+  .admin-statistics__cards {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .admin-statistics__series-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 560px) {
+  .admin-statistics__cards,
+  .admin-statistics__series-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-statistics__error,
+  .admin-statistics__panel-heading {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .admin-statistics__panel-heading span {
+    text-align: left;
+  }
+}

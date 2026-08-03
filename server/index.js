@@ -3,7 +3,13 @@ import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import { randomUUID } from 'crypto';
 import { existsSync } from 'fs';
-import { AuthError, entryAuthFields, verifyOptionalGoogleUser } from './auth.js';
+import {
+  AdminAuthError,
+  AuthError,
+  entryAuthFields,
+  requireAdminGoogleUser,
+  verifyOptionalGoogleUser,
+} from './auth.js';
 import { registerEditorRoutes, readPublicScenarios } from './editor.js';
 import {
   ReportValidationError,
@@ -25,6 +31,7 @@ import {
   validateSeriesSubmission,
 } from '../shared/scoreValidation.js';
 import { REPORT_RATE_LIMIT, createRateLimiter } from '../shared/rateLimit.js';
+import { buildPlayerStatistics } from '../shared/statistics.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const app = express();
@@ -144,6 +151,27 @@ app.post('/api/series-leaderboard', async (req, res) => {
     user ? e.userId === user.providerUserId : !e.userId && e.name === entry.name,
   );
   res.status(201).json(persisted ?? entry);
+});
+
+// ── Admin player-performance statistics ────────────────────────────────────
+// Uses the full retained personal-best lists, not the truncated public boards.
+// Only anonymous aggregates leave the server; player names and move histories
+// are deliberately excluded from the response.
+app.get('/api/editor/statistics', async (req, res) => {
+  try {
+    await requireAdminGoogleUser(req);
+  } catch (error) {
+    if (error instanceof AdminAuthError) {
+      return res.status(error.status).json({ error: error.message, errors: [error.message] });
+    }
+    throw error;
+  }
+
+  const { scenarios } = await readPublicScenarios();
+  const scenarioBoards = Object.fromEntries(
+    scenarios.map(scenario => [scenario.id, getBoard(scenario.id)]),
+  );
+  return res.json(buildPlayerStatistics({ scenarios, scenarioBoards, seriesEntries: seriesBoard }));
 });
 
 // ── Combined home-screen progress ───────────────────────────────────────────

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { DragEvent } from 'react';
 import type { Scenario, ScenarioPieceDef, SeriesDefinition, Team } from '../types';
 import { ConfirmDialog } from '../ConfirmDialog';
+import { AdminStatistics } from './AdminStatistics';
 import { createScenario, deleteScenario, fetchEditorData, publishEditorData, updateDefaultSeries, updateScenario } from './editorApi';
 import { missingSeriesScenarioIds, nextScenarioId, validateScenarioDraft } from './editorValidation';
 import { PLAYER_TEMPLATES, generatedPlayerName, templateToPiece } from './playerTemplates';
@@ -90,6 +91,7 @@ export function PuzzleEditor({ onBack, onPlay, previewScenario, idToken }: Props
   const [confirm, setConfirm] = useState<{
     title: string; message: string; confirmLabel: string; destructive?: boolean; run: () => void;
   } | null>(null);
+  const [adminSection, setAdminSection] = useState<'editor' | 'statistics'>('editor');
 
   const load = useCallback(async () => {
     try {
@@ -416,8 +418,46 @@ export function PuzzleEditor({ onBack, onPlay, previewScenario, idToken }: Props
     });
   }
 
+  function openStatistics() {
+    guardUnsaved(() => {
+      if (hasUnsavedChanges) {
+        const restored = savedDraft ? cloneScenario(savedDraft) : emptyScenario(existingIds);
+        setDraft(restored);
+        setOriginalId(savedDraft?.id);
+        setSelectedPieceId(null);
+        setBallTool(false);
+      }
+      setAdminSection('statistics');
+    }, 'Opening statistics');
+  }
+
   return (
     <div className="editor">
+      <nav className="editor__sections" role="tablist" aria-label="Admin sections">
+        <button
+          className={`editor__section-tab${adminSection === 'editor' ? ' editor__section-tab--active' : ''}`}
+          type="button"
+          role="tab"
+          aria-selected={adminSection === 'editor'}
+          onClick={() => setAdminSection('editor')}
+        >
+          Puzzle Editor
+        </button>
+        <button
+          className={`editor__section-tab${adminSection === 'statistics' ? ' editor__section-tab--active' : ''}`}
+          type="button"
+          role="tab"
+          aria-selected={adminSection === 'statistics'}
+          onClick={openStatistics}
+        >
+          Statistics
+        </button>
+      </nav>
+
+      {adminSection === 'statistics' ? (
+        <AdminStatistics idToken={idToken} onBack={onBack} />
+      ) : (
+        <>
       <header className="editor__header">
         <div>
           <h1 className="editor__title">Puzzle Editor</h1>
@@ -710,6 +750,8 @@ export function PuzzleEditor({ onBack, onPlay, previewScenario, idToken }: Props
           </section>
         </aside>
       </div>
+        </>
+      )}
 
       {confirm && (
         <ConfirmDialog

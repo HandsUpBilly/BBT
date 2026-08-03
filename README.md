@@ -89,10 +89,11 @@ deploy finishes, confirm:
 
 ### Puzzle Editor on Netlify
 
-Admin Mode's puzzle editor (create/edit scenarios, edit the default
-series) writes to **Netlify Blobs**, since Netlify Functions have no
-persistent filesystem — unlike local dev, where the editor writes
-straight to `client/src/scenarios/*.json` via `server/editor.js`.
+Admin Mode has separate **Puzzle Editor** and **Statistics** sections. The
+editor (create/edit scenarios, edit the default series) writes to **Netlify
+Blobs**, since Netlify Functions have no persistent filesystem — unlike local
+dev, where the editor writes straight to `client/src/scenarios/*.json` via
+`server/editor.js`.
 
 Blobs holds two states:
 
@@ -111,6 +112,12 @@ Blobs holds two states:
 which copies the current draft into the published Blobs keys — no
 redeploy required, and it's live for players within a page refresh.
 
+**Statistics**: the admin-only `GET /api/editor/statistics` endpoint reads the
+full retained puzzle and series leaderboards and returns anonymous aggregates.
+The dashboard reports personal-best counts and probability/dice summaries, not
+attempt counts or completion rates; leaderboard storage keeps only one personal
+best per player. Player names, ids, and move histories are not returned.
+
 If you'd rather commit puzzles to the repo (e.g. to keep the static
 fallback current, or avoid depending on Blobs), fetch the published JSON
 directly and copy it into the scenario files by hand:
@@ -126,7 +133,7 @@ don't hand-edit it.
 
 **Access control**: every `/api/editor/*` route — including the `GET`, which
 returns unpublished drafts — requires a signed-in Google user whose *verified*
-email is in `ADMIN_EMAILS`. The "Admin Mode" button is hidden client-side for
+email is in `ADMIN_EMAILS`. The "Admin Mode" tab is hidden client-side for
 non-allowlisted users (`VITE_ADMIN_EMAILS`), but that's a UX nicety, not the
 security boundary. Only `GET /api/scenarios` (published state, what players'
 clients fetch) is intentionally public.
