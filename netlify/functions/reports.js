@@ -1,4 +1,4 @@
-import { AuthError, authErrorResponse, verifyOptionalGoogleUser } from './auth.js';
+import { AuthError, verifyOptionalGoogleUser } from './auth.js';
 import {
   ReportValidationError,
   buildIssueDraft,
@@ -40,8 +40,11 @@ export default async function handler(req) {
   try {
     user = await verifyOptionalGoogleUser(req);
   } catch (error) {
-    if (error instanceof AuthError) return authErrorResponse(error);
-    throw error;
+    if (!(error instanceof AuthError)) throw error;
+    // A present-but-unverifiable token (e.g. expired after the tab sat idle)
+    // shouldn't block a report — the reporter name the form always collects
+    // is enough to file one. Degrade to the guest path instead of rejecting.
+    user = null;
   }
 
   let payload;

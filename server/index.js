@@ -192,8 +192,16 @@ app.get('/api/progress', async (_req, res) => {
 const takeReportToken = createRateLimiter(REPORT_RATE_LIMIT);
 
 app.post('/api/reports', async (req, res) => {
-  const { user, failed } = await identify(req, res);
-  if (failed) return;
+  let user = null;
+  try {
+    user = await verifyOptionalGoogleUser(req);
+  } catch (error) {
+    if (!(error instanceof AuthError)) throw error;
+    // A present-but-unverifiable token (e.g. expired after the tab sat idle)
+    // shouldn't block a report — the reporter name the form always collects
+    // is enough to file one. Degrade to the guest path instead of rejecting.
+    user = null;
+  }
 
   let report;
   let reporterName;
