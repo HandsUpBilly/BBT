@@ -14,6 +14,10 @@ const SERIES_KEY = 'series-default';
 const PUBLISHED_SCENARIOS_KEY = 'published-scenarios';
 const PUBLISHED_SERIES_KEY = 'published-series-default';
 
+const SCENARIO_006_ID = 'scenario-006';
+const SCENARIO_006_PLACEHOLDER_NAME = 'New Puzzle';
+const SCENARIO_006_PLACEHOLDER_DESCRIPTION = 'Describe the scoring puzzle.';
+
 export function editorStore() {
   return getStore({
     name: 'editor-drafts',
@@ -36,8 +40,38 @@ async function readSeeded(store, key, seed) {
   return seed;
 }
 
-export const readDraftScenarios = store => readSeeded(store, SCENARIOS_KEY, STATIC_SCENARIOS);
-export const readDraftSeries = store => readSeeded(store, SERIES_KEY, STATIC_SERIES);
+function repairScenario006Placeholder(scenarios) {
+  const seed = STATIC_SCENARIOS.find(scenario => scenario.id === SCENARIO_006_ID);
+  const index = scenarios.findIndex(scenario =>
+    scenario.id === SCENARIO_006_ID
+    && scenario.name === SCENARIO_006_PLACEHOLDER_NAME
+    && scenario.description === SCENARIO_006_PLACEHOLDER_DESCRIPTION
+  );
+  if (!seed || index < 0) return scenarios;
+  return scenarios.map((scenario, scenarioIndex) => (scenarioIndex === index ? seed : scenario));
+}
+
+function repairScenario006Series(series) {
+  const seededIds = STATIC_SERIES.scenarioIds ?? [];
+  const currentIds = series?.scenarioIds ?? [];
+  const legacyIds = seededIds.filter(id => id !== SCENARIO_006_ID);
+  const isExactLegacySeries = seededIds.includes(SCENARIO_006_ID)
+    && currentIds.length === legacyIds.length
+    && currentIds.every((id, index) => id === legacyIds[index]);
+  return isExactLegacySeries ? { ...series, scenarioIds: seededIds } : series;
+}
+
+async function readRepaired(store, key, seed, repair) {
+  const value = await readSeeded(store, key, seed);
+  const repaired = repair(value);
+  if (repaired !== value) await store.set(key, JSON.stringify(repaired));
+  return repaired;
+}
+
+export const readDraftScenarios = store =>
+  readRepaired(store, SCENARIOS_KEY, STATIC_SCENARIOS, repairScenario006Placeholder);
+export const readDraftSeries = store =>
+  readRepaired(store, SERIES_KEY, STATIC_SERIES, repairScenario006Series);
 
 export const writeDraftScenarios = (store, scenarios) =>
   store.set(SCENARIOS_KEY, JSON.stringify(scenarios));
@@ -51,9 +85,9 @@ export const writeDraftSeries = (store, series) =>
  * every draft save, so an admin can stage several edits before making them live.
  */
 export const readPublishedScenarios = store =>
-  readSeeded(store, PUBLISHED_SCENARIOS_KEY, STATIC_SCENARIOS);
+  readRepaired(store, PUBLISHED_SCENARIOS_KEY, STATIC_SCENARIOS, repairScenario006Placeholder);
 export const readPublishedSeries = store =>
-  readSeeded(store, PUBLISHED_SERIES_KEY, STATIC_SERIES);
+  readRepaired(store, PUBLISHED_SERIES_KEY, STATIC_SERIES, repairScenario006Series);
 
 export const writePublishedScenarios = (store, scenarios) =>
   store.set(PUBLISHED_SCENARIOS_KEY, JSON.stringify(scenarios));
