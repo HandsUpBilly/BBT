@@ -209,8 +209,9 @@
 .editor-pitch {
   padding: 12px;
   display: grid;
-  grid-template-columns: repeat(15, minmax(28px, 1fr));
+  grid-template-columns: repeat(15, 28px);
   grid-template-rows: repeat(26, 28px);
+  justify-content: center;
   gap: 1px;
   background: #181818;
   border-top: 1px solid #383838;
@@ -420,6 +421,7 @@
   }
 
   .editor-pitch {
+    grid-template-columns: repeat(15, 24px);
     grid-template-rows: repeat(26, 24px);
   }
 }
