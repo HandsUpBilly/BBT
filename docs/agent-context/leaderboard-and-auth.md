@@ -59,6 +59,15 @@ reporter name. Guest reports require a non-empty reporter name. Neither report
 payloads nor generated GitHub issues include Google IDs, e-mail addresses, or
 tokens.
 
+A Bearer token that fails verification (most commonly: expired after the tab
+sat idle — see "Token expiry" above) does **not** reject the report. The
+report form always collects a reporter name regardless of sign-in state, so
+both server targets catch that `AuthError` and degrade to the guest path
+(`user = null`) rather than surfacing "Invalid Google identity token" for a
+flow that doesn't need a verified identity. This is a deliberate exception:
+leaderboard and series-leaderboard submissions still reject an unverifiable
+token outright, since attribution there is tied to score integrity.
+
 ## Entry Metadata
 
 `LeaderboardEntry` and `SeriesLeaderboardEntry` can include:
