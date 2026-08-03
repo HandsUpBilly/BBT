@@ -28,9 +28,7 @@ test('parseAdminEmails normalizes case and whitespace', () => {
   assert.equal(parseAdminEmails(undefined).size, 0);
 });
 
-test('production fails CLOSED when no allowlist is configured', async () => {
-  // The old behavior returned null here, which meant a forgotten ADMIN_EMAILS
-  // env var silently opened the editor to anyone on the internet.
+test('an explicit strict configuration fails closed when no allowlist is configured', async () => {
   const auth = createGoogleAuth({ verifyIdToken: null, adminEmails: '', allowUnauthenticated: false });
   await assert.rejects(
     () => auth.requireAdminGoogleUser(headers({})),
@@ -38,8 +36,8 @@ test('production fails CLOSED when no allowlist is configured', async () => {
   );
 });
 
-test('local dev may explicitly opt into the unauthenticated editor', async () => {
-  const auth = createGoogleAuth({ verifyIdToken: null, adminEmails: '', allowUnauthenticated: true });
+test('no allowlist defaults to unrestricted admin access', async () => {
+  const auth = createGoogleAuth({ verifyIdToken: null, adminEmails: '' });
   assert.equal(await auth.requireAdminGoogleUser(headers({})), null);
 });
 

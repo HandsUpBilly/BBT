@@ -66,11 +66,11 @@ export function makeGoogleTokenVerifier(OAuth2Client, clientId) {
  *   Google sign-in is not configured for this environment
  * @param options.adminEmails           raw comma-separated ADMIN_EMAILS string
  * @param options.allowUnauthenticated  when no allowlist is configured, permit
- *   unauthenticated editor writes. Local dev opts in so the editor works
- *   without any OAuth setup; production must NOT, otherwise a missing env var
- *   silently opens the editor to the public internet.
+ *   unauthenticated editor access. This defaults to true so an unset
+ *   ADMIN_EMAILS means no restriction; deployments can explicitly pass false
+ *   to fail closed instead.
  */
-export function createGoogleAuth({ verifyIdToken, adminEmails, allowUnauthenticated = false }) {
+export function createGoogleAuth({ verifyIdToken, adminEmails, allowUnauthenticated = true }) {
   const allowlist = parseAdminEmails(adminEmails);
 
   /** Verifies the Bearer token if one is present. Returns null for guests. */
@@ -106,9 +106,9 @@ export function createGoogleAuth({ verifyIdToken, adminEmails, allowUnauthentica
   /**
    * Requires a verified Google identity on the admin allowlist.
    *
-   * Throws AdminAuthError (401 not signed in, 403 not allowlisted, 503 not
-   * configured) — a subclass of AuthError, so callers share one error branch.
-   * Guest sessions carry no ID token and can never pass.
+   * When no allowlist is configured, access is unrestricted unless the caller
+   * explicitly disables allowUnauthenticated. With an allowlist, throws
+   * AdminAuthError (401 not signed in, 403 not allowlisted) as appropriate.
    */
   async function requireAdminGoogleUser(getHeader) {
     if (allowlist.size === 0) {
