@@ -1,4 +1,5 @@
 import type { Scenario, SeriesDefinition } from '../types';
+import type { PlayerStatistics } from '../../../shared/statistics.js';
 
 interface EditorLoadResponse {
   scenarios: Scenario[];
@@ -40,6 +41,11 @@ function authHeaders(idToken: string | null): HeadersInit {
 export async function fetchEditorData(idToken: string | null): Promise<EditorLoadResponse> {
   const response = await fetch('/api/editor/scenarios', { headers: authHeaders(idToken) });
   return parseJsonResponse<EditorLoadResponse>(response);
+}
+
+export async function fetchPlayerStatistics(idToken: string | null): Promise<PlayerStatistics> {
+  const response = await fetch('/api/editor/statistics', { headers: authHeaders(idToken) });
+  return parseJsonResponse<PlayerStatistics>(response);
 }
 
 export async function createScenario(scenario: Scenario, idToken: string | null): Promise<Scenario> {

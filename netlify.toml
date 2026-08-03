@@ -48,6 +48,11 @@
 # see README "Puzzle Editor on Netlify" for the publish workflow). Every
 # /api/editor/* route, including GET, requires an allowlisted admin.
 [[redirects]]
+  from   = "/api/editor/statistics"
+  to     = "/.netlify/functions/editor-statistics"
+  status = 200
+
+[[redirects]]
   from   = "/api/editor/scenarios"
   to     = "/.netlify/functions/editor-scenarios"
   status = 200

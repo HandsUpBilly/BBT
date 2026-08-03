@@ -42,12 +42,14 @@ check `git diff --stat` and file paths.
 | Suite | Runner | Covers |
 |---|---|---|
 | `shared/*.test.js` | `node --test` | scenario validation, score validation, Google auth gating, rate limiting, report formatting |
+| `shared/statistics.test.js` | `node --test` | anonymous personal-best aggregation, identity deduplication, empty boards |
 | `client/src/bfs.test.ts` | vitest | pathfinding, reachability, roll targets, pass ranges, block dice, pushes, zoom bounds |
 | `client/src/useGameState.test.ts` | vitest | pass/handoff regressions, loose-ball pickup, touchdowns |
 | `client/src/blockBlitz.test.ts` | vitest | block/blitz targeting, assists, outcomes, follow-ups |
 | `client/src/activationRollback.test.ts` | vitest | cancel-rewind, ball-drop-on-knockdown, blitz movement cost |
 | `client/src/auth.test.ts` | vitest | JWT decoding (UTF-8) and expiry |
 | `client/src/editor/editorValidation.test.ts` | vitest | client/server validation parity, series resolution |
+| `client/src/editor/AdminStatistics.test.tsx` | vitest | admin statistics loading and personal-best labeling |
 | `client/src/blockControls.test.tsx` | vitest | menu placement, outcome selectability |
 
 `client/src/test/gameState.ts` builds test states from `makeEmptyState()` rather

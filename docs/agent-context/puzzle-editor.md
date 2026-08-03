@@ -12,7 +12,9 @@ Primary files:
 
 ## What Works Now
 
-Admin Mode renders `PuzzleEditor`.
+Admin Mode renders `PuzzleEditor` with two sections: **Puzzle Editor** and
+**Statistics**. Switching away from an unsaved puzzle is covered by the same
+discard confirmation as other editor navigation.
 
 Editor features:
 
@@ -31,6 +33,20 @@ Editor features:
 - add/remove/reorder puzzle in default series, with a warning + one-click fix
   for series entries pointing at deleted puzzles,
 - play draft and return to designer.
+
+The Statistics section shows anonymous player-performance aggregates from the
+full retained leaderboard data:
+
+- unique recorded players, deduplicated by verified user id or guest name,
+- retained puzzle and series personal-best counts,
+- average, median, and best success probability,
+- average dice count and latest score date,
+- a per-puzzle breakdown plus a full-series summary.
+
+Leaderboard storage keeps one personal best per player, not every attempt, so
+these figures are explicitly labeled as personal-best statistics. They cannot
+represent total attempts or completion rates. The API never returns player
+names, ids, or move histories to the dashboard.
 
 ### Guards
 
@@ -53,6 +69,7 @@ Editor features:
 - `DELETE /api/editor/scenarios/:scenarioId`
 - `PUT /api/editor/series/default`
 - `POST /api/editor/publish`
+- `GET /api/editor/statistics`
 
 These write local JSON files under:
 
@@ -68,6 +85,8 @@ Netlify production persists editor drafts in Netlify Blobs:
 - `netlify/functions/editor-scenarios.js` handles scenario draft create/update/delete.
 - `netlify/functions/editor-series.js` handles the default draft series.
 - `netlify/functions/editor-publish.js` copies draft scenarios/series to the published keys.
+- `netlify/functions/editor-statistics.js` reads the full leaderboard Blobs and
+  returns anonymous aggregates built by `shared/statistics.js`.
 - `netlify/functions/scenarios.js` serves published scenarios/series to players.
 
 Draft saves are not player-visible until an admin clicks Publish Drafts.
@@ -134,7 +153,8 @@ designer could see a clean list and still get a 400 on save.
 
 ## Auth
 
-Every `/api/editor/*` route is admin-gated, **including the GET** — drafts
-contain unpublished puzzles. `editorApi.fetchEditorData` therefore sends the
-`Authorization` header too. On Netlify, a missing `ADMIN_EMAILS` means 503, not
-an open editor; locally it defaults open so the editor works without OAuth.
+Every `/api/editor/*` route is admin-gated, **including both GET endpoints** —
+drafts contain unpublished puzzles and statistics summarize the full untrimmed
+leaderboards. Editor API reads therefore send the `Authorization` header too.
+On Netlify, a missing `ADMIN_EMAILS` means 503, not an open editor; locally it
+defaults open so the editor works without OAuth.

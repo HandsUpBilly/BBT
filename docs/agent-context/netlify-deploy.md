@@ -58,6 +58,7 @@ All configured in `netlify.toml`, in this order:
 | `/api/series-leaderboard` | `series-leaderboard` | Optional Google (guest allowed) |
 | `/api/progress` | `progress` | Public |
 | `/api/reports` | `reports` | Optional Google, rate-limited |
+| `/api/editor/statistics` | `editor-statistics` | **Admin only** |
 | `/api/editor/scenarios` | `editor-scenarios` | **Admin only, including GET** |
 | `/api/editor/scenarios/*` | `editor-scenarios` | **Admin only** |
 | `/api/editor/series/default` | `editor-series` | **Admin only** |
@@ -135,5 +136,7 @@ client-side by the delayed refetch in `App.tsx`.
 - Individual + series leaderboards, with server-side score validation
 - Combined home-screen progress endpoint
 - Player issue and feature reporting via `/api/reports`, rate-limited
+- Admin-only anonymous player-performance statistics from the full retained
+  personal-best leaderboards
 - **Persistent puzzle-editor saves** via Netlify Blobs, with an explicit
   draft → published publish step
