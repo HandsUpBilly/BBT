@@ -1,6 +1,6 @@
 // Netlify-side binding of the shared Google auth helpers.
 // Logic lives in shared/googleAuth.js — see server/auth.js for the Express
-// equivalent. The only intentional difference is the fail-closed default below.
+// equivalent. Keep their empty-allowlist defaults aligned.
 
 // google-auth-library is imported HERE, not in shared/. esbuild resolves bare
 // imports relative to the importing file, and shared/ is not an ancestor of
@@ -17,15 +17,13 @@ import {
 
 export { AuthError, AdminAuthError, entryAuthFields };
 
-// Production fails CLOSED. If ADMIN_EMAILS is missing or mistyped the editor
-// endpoints return 503 rather than accepting anonymous writes — a forgotten env
-// var must never turn the deployed site into a world-writable puzzle editor.
-// Setting EDITOR_ALLOW_UNAUTHENTICATED=true re-opens it, which is only ever
-// appropriate for a throwaway preview deploy.
+// An empty ADMIN_EMAILS means Admin Mode is unrestricted. Set
+// EDITOR_ALLOW_UNAUTHENTICATED=false to opt into fail-closed behavior instead.
+// A non-empty allowlist always requires a verified, matching Google account.
 const auth = createGoogleAuth({
   verifyIdToken: makeGoogleTokenVerifier(OAuth2Client, process.env.GOOGLE_CLIENT_ID),
   adminEmails: process.env.ADMIN_EMAILS,
-  allowUnauthenticated: process.env.EDITOR_ALLOW_UNAUTHENTICATED === 'true',
+  allowUnauthenticated: process.env.EDITOR_ALLOW_UNAUTHENTICATED !== 'false',
 });
 
 const headerReader = req => name => req.headers.get(name);

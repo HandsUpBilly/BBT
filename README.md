@@ -62,10 +62,10 @@ Set these in Netlify's UI under **Site configuration → Environment variables**
 | `GOOGLE_CLIENT_ID` | Functions | Server-side verification of Google ID tokens (`netlify/functions/auth.js`) |
 | `NETLIFY_SITE_ID` (or `SITE_ID`) | Functions | Netlify Blobs site scoping |
 | `NETLIFY_TOKEN` (or `NETLIFY_AUTH_TOKEN`) | Functions | Netlify Blobs auth |
-| `ADMIN_EMAILS` | Functions | Comma-separated Google account emails allowed to use `/api/editor/*` (see below). **Unset = editor disabled (503)** on Netlify. |
-| `VITE_ADMIN_EMAILS` | Build | Same list, baked into the client bundle to control whether the "Admin Mode" button is shown. Keep in sync with `ADMIN_EMAILS`. |
+| `ADMIN_EMAILS` | Functions | Comma-separated Google account emails allowed to use `/api/editor/*` (see below). **Unset = unrestricted Admin Mode.** |
+| `VITE_ADMIN_EMAILS` | Build | Same list, baked into the client bundle to control whether the Admin Mode tab is shown. Unset shows it to everyone. Keep in sync with `ADMIN_EMAILS`. |
 | `GITHUB_ISSUES_TOKEN` | Functions | Fine-grained token limited to `HandsUpBilly/BBT` with **Issues: Read and write**, for player-submitted reports. Server-only — never a `VITE_` variable. |
-| `EDITOR_ALLOW_UNAUTHENTICATED` | Functions | Escape hatch that re-opens the editor when no allowlist is set. Only appropriate for a throwaway preview deploy. |
+| `EDITOR_ALLOW_UNAUTHENTICATED` | Functions | Set to `false` to make an empty `ADMIN_EMAILS` fail closed with 503. Defaults to unrestricted. |
 
 ### Google Cloud OAuth config
 
@@ -131,20 +131,12 @@ After adding or editing `client/src/scenarios/*.json`, run `npm run build`
 first-read seed for the Blobs store — is regenerated. It is a generated file;
 don't hand-edit it.
 
-**Access control**: every `/api/editor/*` route — including the `GET`, which
-returns unpublished drafts — requires a signed-in Google user whose *verified*
-email is in `ADMIN_EMAILS`. The "Admin Mode" tab is hidden client-side for
-non-allowlisted users (`VITE_ADMIN_EMAILS`), but that's a UX nicety, not the
-security boundary. Only `GET /api/scenarios` (published state, what players'
-clients fetch) is intentionally public.
+**Access control**: when `ADMIN_EMAILS` is non-empty, every `/api/editor/*`
+route — including reads of drafts and statistics — requires a signed-in Google
+user whose *verified* email is listed. When `ADMIN_EMAILS` is empty or unset,
+Admin Mode is unrestricted and the tab is shown to everyone. Set
+`EDITOR_ALLOW_UNAUTHENTICATED=false` if a deployment should return 503 instead
+when its allowlist is empty.
 
-**The editor fails closed in production.** If `ADMIN_EMAILS` is unset or
-mistyped, the Netlify editor endpoints return **503**. An earlier version
-treated "no allowlist" as "no restriction", which meant one forgotten env var
-turned the deployed site into a world-writable puzzle editor.
-
-Local dev still defaults open so the editor works without any Google OAuth
-setup; set `EDITOR_ALLOW_UNAUTHENTICATED=false` locally to exercise the
-production behavior.
-
-If a fresh deploy's editor returns 503, `ADMIN_EMAILS` is missing.
+`VITE_ADMIN_EMAILS` only controls tab visibility and is not a security
+boundary. Keep it aligned with `ADMIN_EMAILS` when using an allowlist.

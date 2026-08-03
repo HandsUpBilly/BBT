@@ -16,11 +16,9 @@ import {
 
 export { AuthError, AdminAuthError, entryAuthFields };
 
-// Local dev intentionally allows editor writes with no allowlist configured, so
-// the puzzle editor works without any Google OAuth setup. Set
-// EDITOR_ALLOW_UNAUTHENTICATED=false to exercise the production behavior
-// locally. The Netlify build does NOT get this default — see
-// netlify/functions/auth.js.
+// With no allowlist configured, Admin Mode is intentionally unrestricted.
+// Set EDITOR_ALLOW_UNAUTHENTICATED=false to make an empty ADMIN_EMAILS fail
+// closed instead. A non-empty allowlist always requires a matching Google user.
 const auth = createGoogleAuth({
   verifyIdToken: makeGoogleTokenVerifier(OAuth2Client, process.env.GOOGLE_CLIENT_ID),
   adminEmails: process.env.ADMIN_EMAILS,

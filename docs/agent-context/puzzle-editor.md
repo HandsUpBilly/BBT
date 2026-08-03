@@ -156,5 +156,6 @@ designer could see a clean list and still get a 400 on save.
 Every `/api/editor/*` route is admin-gated, **including both GET endpoints** —
 drafts contain unpublished puzzles and statistics summarize the full untrimmed
 leaderboards. Editor API reads therefore send the `Authorization` header too.
-On Netlify, a missing `ADMIN_EMAILS` means 503, not an open editor; locally it
-defaults open so the editor works without OAuth.
+When `ADMIN_EMAILS` is empty, access is unrestricted in both local development
+and Netlify. A configured allowlist requires a verified matching Google user.
+Set `EDITOR_ALLOW_UNAUTHENTICATED=false` to make an empty allowlist return 503.

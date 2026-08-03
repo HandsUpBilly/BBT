@@ -41,6 +41,15 @@ Guest flow:
 - Guest name persists via `bbt.guestName.v1`.
 - `IdentityGate` in `App.tsx` blocks UI until a Google user or guest name exists.
 
+## Admin Access
+
+- Empty or unset `ADMIN_EMAILS` means Admin Mode is unrestricted; the matching
+  empty `VITE_ADMIN_EMAILS` makes the tab visible to everyone.
+- A non-empty `ADMIN_EMAILS` requires a verified Google account whose email is
+  listed. Guests cannot satisfy a configured allowlist.
+- `EDITOR_ALLOW_UNAUTHENTICATED=false` opts a deployment into returning 503
+  when the allowlist is empty.
+
 ## Issue and Feature Report Identity
 
 `POST /api/reports` accepts reports from either identified session type. A

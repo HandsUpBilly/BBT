@@ -152,20 +152,16 @@ Never hand-edit `netlify/functions/scenarioSeed.js`.
 | `NETLIFY_TOKEN` / `NETLIFY_AUTH_TOKEN` | Netlify functions | Netlify Blobs auth |
 | `ADMIN_EMAILS` | `shared/googleAuth.js` | Comma-separated allowlist gating `/api/editor/*` |
 | `VITE_ADMIN_EMAILS` | `client/src/App.tsx` | Same list, controls Admin Mode tab visibility only — not a security boundary |
-| `EDITOR_ALLOW_UNAUTHENTICATED` | `shared/googleAuth.js` | Escape hatch when no allowlist is set. Defaults **true** locally, **false** on Netlify |
+| `EDITOR_ALLOW_UNAUTHENTICATED` | `shared/googleAuth.js` | Set to `false` to fail closed when no allowlist is set. Defaults **true** everywhere |
 | `GITHUB_ISSUES_TOKEN` | `shared/githubIssues.js` | Fine-grained token, `HandsUpBilly/BBT` + Issues:RW. Server-only — never a `VITE_` var |
 | `VITE_APP_VERSION` / `COMMIT_REF` | `vite.config.ts` | Build identifier shown in the masthead and attached to reports |
 
-### Editor auth fails closed in production
+### Editor auth policy
 
-If `ADMIN_EMAILS` is unset, `requireAdminGoogleUser` used to return `null` —
-meaning a forgotten env var turned the deployed puzzle editor into a
-world-writable endpoint. Now:
-
-- **Local dev** defaults to allowing unauthenticated editor writes, so the
-  editor works without any OAuth setup. Set `EDITOR_ALLOW_UNAUTHENTICATED=false`
-  to exercise production behavior.
-- **Netlify** fails closed: no allowlist means `/api/editor/*` returns 503.
+An empty or unset `ADMIN_EMAILS` means Admin Mode is unrestricted in both local
+development and Netlify. A non-empty allowlist requires a verified Google user
+whose email is listed. Set `EDITOR_ALLOW_UNAUTHENTICATED=false` to opt a
+deployment into returning 503 when its allowlist is empty.
 
 `GET /api/editor/scenarios` is admin-gated too — it returns *drafts*, including
 unpublished puzzles. Only `GET /api/scenarios` (published state) is public.

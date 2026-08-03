@@ -108,15 +108,13 @@ Required for player-created GitHub issues:
 Google OAuth must include the deployed Netlify origin in its authorized
 JavaScript origins.
 
-### The editor fails closed here
+### Editor access defaults open without an allowlist
 
-`netlify/functions/auth.js` passes `allowUnauthenticated: false` unless
-`EDITOR_ALLOW_UNAUTHENTICATED=true` is explicitly set. With no `ADMIN_EMAILS`
-configured, every `/api/editor/*` route returns **503**, not an open endpoint.
-This differs deliberately from `server/auth.js`, which defaults open so local
-dev works without any OAuth setup.
-
-If the editor returns 503 on a fresh deploy, `ADMIN_EMAILS` is missing.
+`netlify/functions/auth.js` and `server/auth.js` both treat an empty or unset
+`ADMIN_EMAILS` as unrestricted Admin Mode. Once the allowlist contains an
+address, every `/api/editor/*` route requires a verified matching Google user.
+Set `EDITOR_ALLOW_UNAUTHENTICATED=false` to opt a deployment into returning 503
+when its allowlist is empty.
 
 ## Blobs Concurrency
 
