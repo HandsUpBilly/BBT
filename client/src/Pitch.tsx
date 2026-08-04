@@ -69,6 +69,22 @@ function PieceIcon({ team, role, skills }: { team: Team; role?: string; skills: 
       <img className={portraitClass} src={src} alt="" draggable={false} />
       <span className="piece__team-tint" />
       <span className="piece__state-overlay" />
+    </div>
+  );
+
+  for (let index = groups.length - 1; index >= 0; index -= 1) {
+    const group = groups[index];
+    portrait = (
+      <div className={`piece__skill-ring piece__skill-ring--${group.id}`}>
+        {portrait}
+      </div>
+    );
+  }
+
+  // Decorative: the square's aria-label names the player, groups, and markers.
+  return (
+    <div className="piece__visual" aria-hidden="true">
+      {portrait}
       {markers.length > 0 && (
         <span className="piece__skill-markers">
           {markers.map(marker => (
@@ -83,18 +99,6 @@ function PieceIcon({ team, role, skills }: { team: Team; role?: string; skills: 
       )}
     </div>
   );
-
-  for (let index = groups.length - 1; index >= 0; index -= 1) {
-    const group = groups[index];
-    portrait = (
-      <div className={`piece__skill-ring piece__skill-ring--${group.id}`}>
-        {portrait}
-      </div>
-    );
-  }
-
-  // Decorative: the square's aria-label names the player, groups, and markers.
-  return <div className="piece__visual" aria-hidden="true">{portrait}</div>;
 }
 
 // Dot positions for each face of a d6 (cx, cy as % of viewBox 0 0 20 20)

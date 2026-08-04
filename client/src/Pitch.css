@@ -297,6 +297,7 @@
 .piece__visual {
   position: relative;
   pointer-events: none;
+  container-type: inline-size;
 }
 
 .piece__skill-ring {
