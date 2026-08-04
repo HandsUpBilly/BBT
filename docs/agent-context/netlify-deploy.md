@@ -127,6 +127,15 @@ never be read still converges instead of rejecting every submission forever.
 Blobs is also not immediately read-consistent after a write — that is handled
 client-side by the delayed refetch in `App.tsx`.
 
+`netlify/functions/editorStore.js` self-heals a Blobs `scenarios`/`series-default`
+key (draft or published) that was first seeded before a new scenario existed in
+`STATIC_SCENARIOS`: on every read it appends any shipped scenario missing
+entirely from the stored array, and separately swaps a still-present editor
+placeholder for the shipped seed. Add a new scenario's id to both
+`repairScenario006Placeholder`-style checks if this pattern needs to repeat —
+otherwise an old Blobs snapshot can silently hide a newly shipped puzzle from
+Admin Mode and players.
+
 ## Current Production Capabilities
 
 - Static game frontend

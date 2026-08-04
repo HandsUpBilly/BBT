@@ -42,13 +42,20 @@ async function readSeeded(store, key, seed) {
 
 function repairScenario006Placeholder(scenarios) {
   const seed = STATIC_SCENARIOS.find(scenario => scenario.id === SCENARIO_006_ID);
-  const index = scenarios.findIndex(scenario =>
-    scenario.id === SCENARIO_006_ID
-    && scenario.name === SCENARIO_006_PLACEHOLDER_NAME
-    && scenario.description === SCENARIO_006_PLACEHOLDER_DESCRIPTION
-  );
-  if (!seed || index < 0) return scenarios;
-  return scenarios.map((scenario, scenarioIndex) => (scenarioIndex === index ? seed : scenario));
+  if (!seed) return scenarios;
+
+  const index = scenarios.findIndex(scenario => scenario.id === SCENARIO_006_ID);
+  if (index < 0) {
+    // Store was first seeded before Scenario 006 existed, so it was never
+    // even created as a placeholder here — append the shipped seed.
+    return [...scenarios, seed];
+  }
+
+  const scenario = scenarios[index];
+  const isPlaceholder = scenario.name === SCENARIO_006_PLACEHOLDER_NAME
+    && scenario.description === SCENARIO_006_PLACEHOLDER_DESCRIPTION;
+  if (!isPlaceholder) return scenarios;
+  return scenarios.map((s, scenarioIndex) => (scenarioIndex === index ? seed : s));
 }
 
 function repairScenario006Series(series) {
