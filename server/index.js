@@ -30,7 +30,7 @@ import {
   validateScoreSubmission,
   validateSeriesSubmission,
 } from '../shared/scoreValidation.js';
-import { REPORT_RATE_LIMIT, createRateLimiter } from '../shared/rateLimit.js';
+import { LEADERBOARD_RATE_LIMIT, REPORT_RATE_LIMIT, createRateLimiter } from '../shared/rateLimit.js';
 import { buildPlayerStatistics } from '../shared/statistics.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -66,6 +66,7 @@ async function identify(req, res) {
 }
 
 // ── In-memory leaderboard ────────────────────────────────────────────────────
+const takeLeaderboardToken = createRateLimiter(LEADERBOARD_RATE_LIMIT);
 const store = new Map();
 
 function getBoard(scenarioId) {
@@ -87,6 +88,14 @@ app.post('/api/leaderboard/:scenarioId', async (req, res) => {
   } catch (error) {
     if (error instanceof ScoreValidationError) return res.status(400).json({ error: error.message });
     throw error;
+  }
+
+  // Rate-limit after validation so malformed spam can't burn a caller's budget.
+  const leaderboardBucket = user?.providerUserId ?? req.ip ?? 'unknown';
+  const leaderboardLimit = takeLeaderboardToken(leaderboardBucket);
+  if (!leaderboardLimit.allowed) {
+    res.set('Retry-After', String(leaderboardLimit.retryAfterSeconds));
+    return res.status(429).json({ error: 'Too many submissions. Please wait a moment and try again.' });
   }
 
   const entry = {
@@ -131,6 +140,14 @@ app.post('/api/series-leaderboard', async (req, res) => {
   } catch (error) {
     if (error instanceof ScoreValidationError) return res.status(400).json({ error: error.message });
     throw error;
+  }
+
+  // Rate-limit after validation so malformed spam can't burn a caller's budget.
+  const seriesLeaderboardBucket = user?.providerUserId ?? req.ip ?? 'unknown';
+  const seriesLeaderboardLimit = takeLeaderboardToken(seriesLeaderboardBucket);
+  if (!seriesLeaderboardLimit.allowed) {
+    res.set('Retry-After', String(seriesLeaderboardLimit.retryAfterSeconds));
+    return res.status(429).json({ error: 'Too many submissions. Please wait a moment and try again.' });
   }
 
   const entry = {

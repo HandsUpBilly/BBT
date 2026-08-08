@@ -7,10 +7,22 @@ import {
   upsertPersonalBest,
   validateSeriesSubmission,
 } from '../../shared/scoreValidation.js';
+import { LEADERBOARD_RATE_LIMIT, createRateLimiter } from '../../shared/rateLimit.js';
 
 // See leaderboard.js — read-truncated only, the store keeps every entry.
 const TOP_N = 10;
 const KEY = 'series';
+
+// Per-instance limiter — see shared/rateLimit.js and leaderboard.js.
+const takeLeaderboardToken = createRateLimiter(LEADERBOARD_RATE_LIMIT);
+
+function clientKey(req, user) {
+  if (user?.providerUserId) return user.providerUserId;
+  const forwarded = req.headers.get('x-nf-client-connection-ip')
+    ?? req.headers.get('x-forwarded-for')
+    ?? '';
+  return forwarded.split(',')[0].trim() || 'unknown';
+}
 
 function json(body, status, headers = {}) {
   return new Response(JSON.stringify(body), {
@@ -53,6 +65,16 @@ export default async function handler(req) {
     } catch (error) {
       if (error instanceof ScoreValidationError) return json({ error: error.message }, 400);
       throw error;
+    }
+
+    // Rate-limit after validation so malformed spam can't burn a caller's budget.
+    const { allowed, retryAfterSeconds } = takeLeaderboardToken(clientKey(req, user));
+    if (!allowed) {
+      return json(
+        { error: 'Too many submissions. Please wait a moment and try again.' },
+        429,
+        { 'Retry-After': String(retryAfterSeconds) },
+      );
     }
 
     const entry = {

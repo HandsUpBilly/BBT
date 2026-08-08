@@ -44,3 +44,11 @@ export function createRateLimiter({ limit, windowMs, now = () => Date.now() }) {
 
 /** Reports are cheap to file and expensive to clean up — keep this tight. */
 export const REPORT_RATE_LIMIT = { limit: 5, windowMs: 60 * 60 * 1000 };
+
+/**
+ * Leaderboard/series submissions are unauthenticated and each one triggers a
+ * Blobs read-modify-write; loose enough not to interfere with a player
+ * legitimately retrying a submission or replaying a puzzle several times in
+ * a session, tight enough to blunt a scripted flood.
+ */
+export const LEADERBOARD_RATE_LIMIT = { limit: 20, windowMs: 60 * 1000 };

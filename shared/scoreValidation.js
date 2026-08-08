@@ -9,7 +9,11 @@
 //   - reject a score whose claimed probability disagrees with the product of
 //     the move list it submitted, so a tamperer cannot simply raise the number
 //     on an otherwise real run;
-//   - bound payload size so one request can't bloat a Blob.
+//   - bound each request's contribution to the stored Blob: moves are capped
+//     in count (SCORE_LIMITS.maxMoves) and each move is projected down to a
+//     fixed whitelist of fields with length-capped strings (sanitizeMove),
+//     not stored verbatim — a move object can't carry arbitrary extra
+//     properties or multi-kilobyte strings into the leaderboard.
 //
 // It does NOT:
 //   - distinguish a forged clean run from a real one. `{probability: 1,
@@ -24,9 +28,16 @@ export const SCORE_LIMITS = {
   name: 32,
   maxMoves: 200,
   maxPuzzles: 50,
+  /** Cap on each string field kept from a move (piece/receiver name and role). */
+  moveStringLimit: 40,
   /** Relative tolerance when comparing a claimed probability to the move product. */
   probabilityTolerance: 1e-6,
 };
+
+const RANGE_BANDS = new Set(['quick', 'short', 'long', 'bomb']);
+const BLOCK_FACES = new Set(['attacker-down', 'both-down', 'push', 'defender-stumbles', 'defender-down']);
+const PICKERS = new Set(['attacker', 'defender']);
+const DICE_COUNTS = new Set([1, 2, 3]);
 
 export class ScoreValidationError extends Error {}
 
@@ -54,9 +65,71 @@ function closeEnough(a, b) {
   return Math.abs(a - b) <= SCORE_LIMITS.probabilityTolerance * Math.max(1, Math.abs(a), Math.abs(b));
 }
 
+function sanitizedString(value) {
+  return typeof value === 'string' ? value.slice(0, SCORE_LIMITS.moveStringLimit) : '';
+}
+
+function sanitizedPosition(value) {
+  const col = Number(value?.col);
+  const row = Number(value?.row);
+  return { col: Number.isFinite(col) ? col : 0, row: Number.isFinite(row) ? row : 0 };
+}
+
+/** Dice roll targets are always 1-6; anything else isn't a real target. */
+function sanitizedRollTarget(value) {
+  const num = Number(value);
+  return Number.isInteger(num) && num >= 1 && num <= 6 ? num : undefined;
+}
+
+function sanitizedCumulativeProb(value, fallback) {
+  const num = Number(value);
+  return Number.isFinite(num) && num > 0 && num <= 1 ? num : fallback;
+}
+
+/**
+ * Projects a raw move object down to exactly the fields the leaderboard UI
+ * renders (RiskyMove in client/src/types.ts), discarding everything else.
+ * Without this, a submitted move's extra properties and string lengths were
+ * stored verbatim — a single move could carry arbitrary junk into the Blob.
+ */
+function sanitizeMove(move, actionProb) {
+  const sanitized = {
+    pieceName: sanitizedString(move.pieceName),
+    pieceRole: sanitizedString(move.pieceRole),
+    from: sanitizedPosition(move.from),
+    to: sanitizedPosition(move.to),
+    dodgeTarget: sanitizedRollTarget(move.dodgeTarget) ?? null,
+    isGfi: Boolean(move.isGfi),
+    actionProb,
+    cumulativeProb: sanitizedCumulativeProb(move.cumulativeProb, actionProb),
+  };
+
+  if (move.receiverName !== undefined) sanitized.receiverName = sanitizedString(move.receiverName);
+  if (move.receiverRole !== undefined) sanitized.receiverRole = sanitizedString(move.receiverRole);
+
+  const pickupTarget = sanitizedRollTarget(move.pickupTarget);
+  if (pickupTarget !== undefined) sanitized.pickupTarget = pickupTarget;
+  const catchTarget = sanitizedRollTarget(move.catchTarget);
+  if (catchTarget !== undefined) sanitized.catchTarget = catchTarget;
+  const passTarget = sanitizedRollTarget(move.passTarget);
+  if (passTarget !== undefined) sanitized.passTarget = passTarget;
+  if (RANGE_BANDS.has(move.rangeBand)) sanitized.rangeBand = move.rangeBand;
+
+  if (move.isBlitz !== undefined) sanitized.isBlitz = Boolean(move.isBlitz);
+  if (DICE_COUNTS.has(move.diceCount)) sanitized.diceCount = move.diceCount;
+  if (PICKERS.has(move.picker)) sanitized.picker = move.picker;
+  if (Array.isArray(move.acceptedFaces)) {
+    sanitized.acceptedFaces = move.acceptedFaces.filter(face => BLOCK_FACES.has(face)).slice(0, 3);
+  }
+  if (BLOCK_FACES.has(move.resolvedFace)) sanitized.resolvedFace = move.resolvedFace;
+
+  return sanitized;
+}
+
 /**
  * Checks that a move list is internally consistent and that the product of its
- * per-action probabilities matches the claimed total.
+ * per-action probabilities matches the claimed total. Returns the sanitized
+ * move list (see sanitizeMove) rather than the raw submitted objects.
  */
 function validateMoves(moves, probability, diceCount, label) {
   if (!Array.isArray(moves)) throw new ScoreValidationError(`${label} moves must be an array`);
@@ -71,20 +144,23 @@ function validateMoves(moves, probability, diceCount, label) {
     if (!closeEnough(probability, 1)) {
       throw new ScoreValidationError(`${label} probability must be 1 when no dice were rolled`);
     }
-    return moves;
+    return [];
   }
 
   let product = 1;
+  const sanitized = [];
   for (const move of moves) {
     if (!move || typeof move !== 'object') throw new ScoreValidationError(`${label} contains an invalid move`);
-    product *= validProbability(move.actionProb, `${label} move probability`);
+    const actionProb = validProbability(move.actionProb, `${label} move probability`);
+    product *= actionProb;
+    sanitized.push(sanitizeMove(move, actionProb));
   }
 
   if (!closeEnough(product, probability)) {
     throw new ScoreValidationError(`${label} probability does not match its recorded rolls`);
   }
 
-  return moves;
+  return sanitized;
 }
 
 export function normalizeName(name, user) {

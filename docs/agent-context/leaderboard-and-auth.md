@@ -108,7 +108,16 @@ trusted**. `shared/scoreValidation.js` (used by both targets):
 - checks the claimed probability against the *product* of the submitted
   per-action probabilities, so a tamperer can't just raise the number on an
   otherwise real run;
+- projects each move down to a fixed whitelist of fields (`sanitizeMove`,
+  matching `RiskyMove` in `client/src/types.ts`) with length-capped strings and
+  enum-checked faces/bands/pickers — a submitted move cannot carry arbitrary
+  extra properties or oversized strings into the stored Blob;
 - for series, requires the average and dice total to match the puzzle results.
+
+Both leaderboard POST routes (`/api/leaderboard/:scenarioId` and
+`/api/series-leaderboard`, in both `server/index.js` and the Netlify
+functions) are rate-limited with the same `shared/rateLimit.js` limiter used
+by `/api/reports`, keyed on the verified user id or client IP.
 
 **Be precise about what this is not.** It does not distinguish a forged clean
 run from a real one — `{probability: 1, diceCount: 0, moves: []}` is accepted,
