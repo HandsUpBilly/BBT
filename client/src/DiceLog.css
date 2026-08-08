@@ -1,20 +1,20 @@
 .dice-log {
-  background: #222;
-  border: 1px solid #333;
-  border-radius: 6px;
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
   padding: 7px 8px;
   display: flex;
   flex-direction: column;
   gap: 4px;
   font-size: 0.70rem;
-  color: #ccc;
+  color: var(--color-text);
 }
 
 .dice-log__title {
   font-size: 0.68rem;
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  color: #555;
+  color: var(--color-text-muted);
   font-weight: 600;
   margin-bottom: 2px;
 }
@@ -24,23 +24,25 @@
   align-items: center;
   gap: 5px;
   padding: 4px 6px;
-  border-radius: 4px;
-  background: #2a2a2a;
+  border-radius: 2px;
+  background: var(--color-surface-sunken);
   min-width: 0;
 }
 
-.dice-log__entry--move      { border-left: 3px solid #4a8c2a; }
-.dice-log__entry--dodge     { border-left: 3px solid #f0a060; }
-.dice-log__entry--gfi       { border-left: 3px solid #5090ff; }
-.dice-log__entry--gfi-dodge { border-left: 3px solid #c060ff; }
-.dice-log__entry--handoff    { border-left: 3px solid #00d278; }
-.dice-log__entry--pass       { border-left: 3px solid #b060ff; }
-.dice-log__entry--pass-catch { border-left: 3px solid #9040dd; }
-.dice-log__entry--pickup     { border-left: 3px solid #ffd24a; }
-.dice-log__entry--block      { border-left: 3px solid #ff5050; }
-.dice-log__entry--success   { border-left: 3px solid #4caf50; }
-.dice-log__entry--fail      { border-left: 3px solid #e53935; }
-.dice-log__entry--pending   { border-left: 3px solid #666; opacity: 0.7; }
+/* The left rule keys each entry to its action type — muted a step from the
+   pitch overlay hues so a long log stays calm. */
+.dice-log__entry--move      { border-left: 3px solid #5c8a3c; }
+.dice-log__entry--dodge     { border-left: 3px solid #c07a35; }
+.dice-log__entry--gfi       { border-left: 3px solid var(--team-human); }
+.dice-log__entry--gfi-dodge { border-left: 3px solid #8f6bb5; }
+.dice-log__entry--handoff    { border-left: 3px solid #3f9e77; }
+.dice-log__entry--pass       { border-left: 3px solid #8f6bb5; }
+.dice-log__entry--pass-catch { border-left: 3px solid #7a5aa0; }
+.dice-log__entry--pickup     { border-left: 3px solid var(--color-warning); }
+.dice-log__entry--block      { border-left: 3px solid var(--color-danger); }
+.dice-log__entry--success   { border-left: 3px solid var(--color-success); }
+.dice-log__entry--fail      { border-left: 3px solid var(--color-danger); }
+.dice-log__entry--pending   { border-left: 3px solid var(--color-border); opacity: 0.7; }
 
 .dice-log__icon {
   font-size: 1rem;
@@ -51,7 +53,7 @@
 
 .dice-log__detail {
   flex: 1;
-  color: #aaa;
+  color: var(--color-text-muted);
   font-size: 0.74rem;
   min-width: 0;
   overflow: hidden;
@@ -60,23 +62,24 @@
 }
 
 .dice-log__piece {
-  color: #ddd;
+  color: var(--color-text);
   font-weight: 600;
 }
 
 .dice-log__ma {
-  color: #666;
+  color: var(--color-text-disabled);
   font-size: 0.7rem;
 }
 
 .dice-log__dodge-flag {
-  color: #f0a060;
+  color: #d0a878;
   font-size: 0.7rem;
 }
 
 .dice-log__prob {
   font-size: 0.72rem;
-  color: #f0a060;
+  color: #d0a878;
+  font-variant-numeric: tabular-nums;
   font-weight: 600;
   flex-shrink: 0;
   white-space: nowrap;
@@ -86,48 +89,48 @@
 }
 
 .dice-log__gfi-tag {
-  color: #90c0ff;
+  color: #92aec5;
   font-size: 0.68rem;
   font-weight: 700;
 }
 
 .dice-log__handoff-tag {
-  color: #00d278;
+  color: #5fb694;
   font-size: 0.68rem;
   font-weight: 700;
 }
 
 .dice-log__pass-tag {
-  color: #c080ff;
+  color: #a98ec9;
   font-size: 0.68rem;
   font-weight: 700;
 }
 
 .dice-log__pass-catch-tag {
-  color: #a060ee;
+  color: #9b81be;
   font-size: 0.68rem;
   font-weight: 700;
 }
 
 .dice-log__pickup-tag {
-  color: #ffd24a;
+  color: var(--color-warning);
   font-size: 0.68rem;
   font-weight: 700;
 }
 
 .dice-log__block-tag {
-  color: #ff5050;
+  color: #cf9b90;
   font-size: 0.68rem;
   font-weight: 700;
 }
 
 .dice-log__block-face {
-  color: #ff9090;
+  color: #cf9b90;
   font-size: 0.7rem;
 }
 
 .dice-log__prob-pct {
-  color: #888;
+  color: var(--color-text-muted);
   font-weight: 400;
 }
 
@@ -139,9 +142,9 @@
   flex-shrink: 0;
 }
 
-.dice-log__badge--ok      { color: #4caf50; }
-.dice-log__badge--fail    { color: #e53935; }
-.dice-log__badge--pending { color: #666; }
+.dice-log__badge--ok      { color: var(--color-success); }
+.dice-log__badge--fail    { color: var(--color-danger); }
+.dice-log__badge--pending { color: var(--color-text-disabled); }
 
 .dice-log__prob-row {
   display: flex;
@@ -149,18 +152,19 @@
   justify-content: space-between;
   margin-top: 4px;
   padding-top: 6px;
-  border-top: 1px solid #333;
+  border-top: 1px solid var(--color-border-subtle);
 }
 
 .dice-log__prob-label {
-  color: #666;
+  color: var(--color-text-muted);
   font-size: 0.7rem;
 }
 
 .dice-log__prob-total {
   font-weight: 700;
   font-size: 0.95rem;
-  color: #4caf50;
+  color: var(--color-success);
+  font-variant-numeric: tabular-nums;
 }
 
-.dice-log__prob-total--risky { color: #ff9800; }
+.dice-log__prob-total--risky { color: var(--color-warning); }

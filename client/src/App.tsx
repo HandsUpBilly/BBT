@@ -211,7 +211,6 @@ function IdentityGate({ authConfigured, onGoogleSignIn, onGuest }: IdentityGateP
   return (
     <div className="identity-gate">
       <div className="identity-gate__panel">
-        <div className="identity-gate__tape" aria-hidden="true" />
         <div className="identity-gate__header">
           <span className="identity-gate__eyebrow">The final turn · Do or die</span>
           <h1 className="identity-gate__title">Turn 16</h1>

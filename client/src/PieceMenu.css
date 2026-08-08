@@ -1,10 +1,10 @@
 .piece-menu {
   position: fixed;
   z-index: 100;
-  background: #2a2a2a;
-  border: 1px solid #444;
-  border-radius: 6px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.6);
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-panel);
+  box-shadow: var(--shadow-overlay);
   width: min(260px, calc(100vw - 16px));
   max-height: calc(100vh - 16px);
   overflow: hidden;
@@ -24,8 +24,8 @@
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  color: #888;
-  border-bottom: 1px solid #383838;
+  color: var(--color-text-muted);
+  border-bottom: 1px solid var(--color-border-subtle);
   white-space: nowrap;
 }
 
@@ -37,20 +37,20 @@
   padding: 9px 10px;
   background: transparent;
   border: none;
-  color: #e8e8e8;
+  color: var(--color-text);
   font-size: 0.88rem;
   text-align: left;
   cursor: pointer;
-  transition: background 0.1s;
+  transition: background var(--transition-fast), box-shadow var(--transition-fast);
   box-sizing: border-box;
 }
 
 .piece-menu__item:hover {
-  background: #3a3a3a;
+  background: var(--color-surface-hover);
 }
 
 .piece-menu__item--disabled {
-  color: #555;
+  color: var(--color-text-disabled);
   cursor: default;
 }
 
@@ -62,7 +62,7 @@
   width: 14px;
   height: 14px;
   flex-shrink: 0;
-  accent-color: #5a9fff;
+  accent-color: var(--color-accent);
   cursor: pointer;
 }
 
@@ -75,22 +75,23 @@
   width: calc(100% - 16px);
   margin: 6px 8px 8px;
   padding: 8px 12px;
-  background: #3a6fd8;
-  border: none;
-  border-radius: 4px;
-  color: #fff;
+  background: #b94229;
+  border: 1px solid var(--color-accent-border);
+  border-radius: var(--radius-button);
+  color: #f4eee3;
   font-size: 0.82rem;
   font-weight: 600;
   cursor: pointer;
-  transition: background 0.1s;
+  transition: background var(--transition-fast);
 }
 
 .piece-menu__confirm:hover:not(:disabled) {
-  background: #4a7fe8;
+  background: #ca4d30;
 }
 
 .piece-menu__confirm:disabled {
-  background: #333;
-  color: #666;
-  cursor: default;
+  background: #171918;
+  border-color: #292c29;
+  color: var(--color-text-disabled);
+  cursor: not-allowed;
 }

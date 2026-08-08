@@ -2,29 +2,32 @@
 .panel {
   width: 130px;
   flex-shrink: 0;
-  background: #1c1c1c;
-  border-radius: 6px;
+  background: var(--color-surface-2);
+  border-radius: var(--radius-card);
   padding: 0 0 8px;
   display: flex;
   flex-direction: column;
   gap: 0;
   font-size: 0.72rem;
-  color: #ccc;
-  border: 1px solid #333;
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
   overflow: hidden;
   align-self: flex-start;
 }
 
 .panel--human {
-  border-color: #4aa3ff;
-  box-shadow: inset 4px 0 0 #1d78d8;
+  box-shadow: inset 3px 0 0 var(--team-human);
 }
 
 .panel--orc {
-  border-color: #ff4b4b;
-  box-shadow: inset 4px 0 0 #c62828;
+  box-shadow: inset 3px 0 0 var(--team-orc);
 }
-.panel--empty { border-color: #333; justify-content: center; align-items: center; min-height: 200px; }
+.panel--empty {
+  border-color: var(--color-border-subtle);
+  justify-content: center;
+  align-items: center;
+  min-height: 200px;
+}
 
 /* ── Portrait ────────────────────────────────────────────── */
 .panel__portrait-wrap {
@@ -32,15 +35,15 @@
   width: 100%;
   aspect-ratio: 1 / 1;
   overflow: hidden;
-  background: #111;
+  background: var(--color-surface-sunken);
 }
 
 .panel--human .panel__portrait-wrap {
-  background: #0f3c78;
+  background: var(--team-human-deep);
 }
 
 .panel--orc .panel__portrait-wrap {
-  background: #751414;
+  background: var(--team-orc-deep);
 }
 
 .panel__portrait {
@@ -79,7 +82,7 @@
 .panel__name {
   font-weight: 700;
   font-size: 0.74rem;
-  color: #f0f0f0;
+  color: var(--color-text-strong);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -88,8 +91,8 @@
 
 .panel__role {
   font-size: 0.62rem;
-  color: #888;
-  text-transform: capitalize;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
   padding: 1px 8px 4px;
 }
 
@@ -102,8 +105,8 @@
 }
 
 .panel__stat {
-  background: #2a2a2a;
-  border-radius: 4px;
+  background: var(--color-surface-sunken);
+  border-radius: 2px;
   padding: 4px 2px 3px;
   display: flex;
   flex-direction: column;
@@ -119,17 +122,18 @@
 }
 
 .panel__stat-value {
-  font-size: 0.88rem;
+  font-size: 0.9rem;
   font-weight: 700;
-  color: #f0f0f0;
+  color: var(--color-text);
   line-height: 1;
+  font-variant-numeric: tabular-nums;
 }
 
 .panel__stat-label {
   font-size: 0.55rem;
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  color: #666;
+  color: #858b83;
   font-weight: 600;
 }
 
@@ -142,12 +146,12 @@
 }
 
 .panel__skill {
-  background: #2e2e2e;
-  border: 1px solid #444;
-  border-radius: 3px;
+  background: var(--color-surface-sunken);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: 2px;
   padding: 1px 5px;
   font-size: 0.6rem;
-  color: #bbb;
+  color: var(--color-text-muted);
   white-space: nowrap;
 }
 

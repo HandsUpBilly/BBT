@@ -27,18 +27,18 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  background: #262626;
-  border: 1px solid #3a3a3a;
-  border-radius: 20px;
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-button);
   padding: 4px 10px 4px 4px;
   cursor: pointer;
-  color: #f0f0f0;
-  transition: border-color 0.15s, background 0.15s;
+  color: var(--color-text);
+  transition: border-color var(--transition-fast), background var(--transition-fast);
 }
 
 .user-menu__trigger:hover {
-  border-color: #555;
-  background: #2c2c2c;
+  border-color: #706e66;
+  background: var(--color-surface-hover);
 }
 
 .user-menu__avatar {
@@ -53,8 +53,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #4a8c2a;
-  color: #fff;
+  background: var(--color-accent-dark);
+  color: #f4eee3;
   font-size: 0.7rem;
   font-weight: 700;
 }
@@ -76,7 +76,7 @@
 
 .user-menu__caret {
   font-size: 0.6rem;
-  color: #888;
+  color: var(--color-text-muted);
 }
 
 .user-menu__dropdown {
@@ -84,10 +84,10 @@
   top: calc(100% + 8px);
   right: 0;
   min-width: 200px;
-  background: #262626;
-  border: 1px solid #3a3a3a;
-  border-radius: 8px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-panel);
+  box-shadow: var(--shadow-overlay);
   padding: 8px;
   display: flex;
   flex-direction: column;
@@ -100,14 +100,14 @@
   align-items: center;
   gap: 10px;
   padding: 6px 8px 10px;
-  border-bottom: 1px solid #3a3a3a;
+  border-bottom: 1px solid var(--color-border-subtle);
   margin-bottom: 4px;
 }
 
 .user-menu__dropdown-name {
   font-size: 0.88rem;
   font-weight: 700;
-  color: #f0f0f0;
+  color: var(--color-text-strong);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -118,57 +118,36 @@
   border: none;
   text-align: left;
   padding: 8px 8px;
-  border-radius: 6px;
-  color: #ccc;
+  border-radius: 2px;
+  color: var(--color-text-muted);
   font-size: 0.85rem;
   cursor: pointer;
 }
 
 .user-menu__item:hover:not(:disabled) {
-  background: #333;
-  color: #f0f0f0;
+  background: var(--color-surface-hover);
+  color: var(--color-text-strong);
 }
 
 .user-menu__item:disabled {
-  color: #666;
+  color: var(--color-text-disabled);
   cursor: default;
 }
 
 .user-menu__item--danger {
-  color: #e08080;
+  color: #c98577;
 }
 
 .user-menu__item--danger:hover {
-  background: rgba(224, 128, 128, 0.15);
-  color: #ff9999;
+  background: rgba(196, 74, 55, 0.12);
+  color: #dfa094;
 }
 
-/* Tabletop treatment is intentionally limited to the landing experience.
-   The game HUD and other non-game screens retain the compact dark menu. */
+/* The menu's colours come from the shared system in PlaybookTheme.css. Only the
+   landing screen's tighter sizing lives here, because the trigger sits inside
+   the masthead rather than in a bar of its own. */
 .app--landing .user-menu__trigger {
   min-height: 34px;
-  color: var(--home-ink-950);
-  background: var(--home-paper-100);
-  border-color: #8f8266;
-  border-radius: 3px;
-  box-shadow: 2px 3px 0 rgba(0, 0, 0, 0.24);
-}
-
-.app--landing .user-menu__trigger:hover {
-  color: var(--home-ink-950);
-  background: #fff5da;
-  border-color: var(--home-gold-500);
-}
-
-.app--landing .user-menu__trigger:focus-visible,
-.app--landing .user-menu__item:focus-visible {
-  outline: 3px solid var(--home-gold-500);
-  outline-offset: 3px;
-}
-
-.app--landing .user-menu__avatar--fallback {
-  color: var(--home-chalk-100);
-  background: var(--home-rust-500);
 }
 
 .app--landing .scenario-select__user .user-menu__avatar {
@@ -178,63 +157,20 @@
 }
 
 .app--landing .user-menu__name {
-  font-family: 'Courier New', monospace;
-  font-size: 0.75rem;
-  font-weight: 800;
+  font-family: var(--font-display);
+  font-size: 0.76rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
 }
 
 .app--landing .scenario-select__user .user-menu__name {
   max-width: 100px;
-  font-size: 0.67rem;
-}
-
-.app--landing .user-menu__caret {
-  color: var(--home-ink-700);
+  font-size: 0.68rem;
 }
 
 .app--landing .user-menu__dropdown {
   top: calc(100% + 10px);
   min-width: 220px;
-  color: var(--home-ink-950);
-  background:
-    repeating-linear-gradient(0deg, transparent 0 27px, rgba(79, 75, 64, 0.09) 28px 29px),
-    var(--home-paper-100);
-  border-color: #8f8266;
-  border-radius: 3px;
-  box-shadow: 7px 10px 0 rgba(0, 0, 0, 0.28);
-}
-
-.app--landing .user-menu__dropdown-header {
-  border-bottom-color: rgba(79, 75, 64, 0.4);
-}
-
-.app--landing .user-menu__dropdown-name {
-  color: var(--home-ink-950);
-}
-
-.app--landing .user-menu__item {
-  color: var(--home-ink-700);
-  border-radius: 2px;
-  font-family: 'Courier New', monospace;
-  font-weight: 700;
-}
-
-.app--landing .user-menu__item:hover:not(:disabled) {
-  color: var(--home-ink-950);
-  background: rgba(215, 166, 59, 0.25);
-}
-
-.app--landing .user-menu__item:disabled {
-  color: rgba(79, 75, 64, 0.55);
-}
-
-.app--landing .user-menu__item--danger {
-  color: #8b382e;
-}
-
-.app--landing .user-menu__item--danger:hover {
-  color: #6d261f;
-  background: rgba(189, 85, 72, 0.16);
 }
 
 @media (max-width: 480px) {
