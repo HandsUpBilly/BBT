@@ -8,29 +8,15 @@ interface Props {
 }
 
 function pct(p: number): string { return `${(p * 100).toFixed(1)}%`; }
-function gcd(a: number, b: number): number { return b === 0 ? a : gcd(b, a % b); }
 
-function cumFraction(log: ActionLogEntry[]): string {
-  let num = 1, den = 1;
-  for (const e of log) {
-    if (e.kind === 'handoff')    { num *= (7 - e.catchTarget); den *= 6; continue; }
-    if (e.kind === 'pass')       { num *= (7 - e.passTarget);  den *= 6; continue; }
-    if (e.kind === 'pass-catch') { num *= (7 - e.catchTarget); den *= 6; continue; }
-    if (e.kind === 'block') {
-      // actionProb isn't naturally an N-in-6 shape (it's a combined
-      // any-die/all-dice probability over an arbitrary accepted subset),
-      // so approximate it as a fraction over 1000 and let the final gcd
-      // reduction simplify it same as every other entry.
-      num *= Math.round(e.actionProb * 1000);
-      den *= 1000;
-      continue;
-    }
-    if (e.isGfi) { num *= 5; den *= 6; }
-    if (e.dodgeTarget !== null) { num *= (7 - e.dodgeTarget); den *= 6; }
-    if (e.kind === 'move' && e.pickupTarget) { num *= (7 - e.pickupTarget); den *= 6; }
-  }
-  const g = gcd(num, den);
-  return `${num / g}/${den / g}`;
+/** Odds out of 100, e.g. "39/100" — an exact reduced fraction can have a huge
+ * coprime numerator/denominator (e.g. "702595369/1800000000") and convey
+ * nothing useful, so round to a percentage-shaped fraction instead. */
+function oddsFraction(prob: number): string {
+  const rounded = Math.round(prob * 100);
+  if (prob > 0 && rounded === 0) return '<1/100';
+  if (prob < 1 && rounded === 100) return '>99/100';
+  return `${rounded}/100`;
 }
 
 const BAND_LABEL: Record<string, string> = {
@@ -162,7 +148,7 @@ export function DiceLog({ log, pendingProb }: Props) {
         <div className="dice-log__prob-row">
           <span className="dice-log__prob-label">Cumulative</span>
           <span className={`dice-log__prob-total ${overallProb < 0.5 ? 'dice-log__prob-total--risky' : ''}`}>
-            {cumFraction(log)} <span className="dice-log__prob-pct">({pct(overallProb)})</span>
+            {oddsFraction(overallProb)} <span className="dice-log__prob-pct">({pct(overallProb)})</span>
           </span>
         </div>
       )}

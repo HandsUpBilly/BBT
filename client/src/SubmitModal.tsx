@@ -19,28 +19,15 @@ interface Props {
 }
 
 function pct(p: number) { return `${(p * 100).toFixed(1)}%`; }
-function gcd(a: number, b: number): number { return b === 0 ? a : gcd(b, a % b); }
 
-/**
- * Exact odds as a fraction, e.g. "5/12". Returns null when the numbers grow
- * past exact integer arithmetic — block outcomes contribute an awkward
- * denominator, and a handful of them used to silently overflow into Infinity
- * and render "NaN/NaN". The caller falls back to the percentage alone.
- */
-function cumFraction(entries: ActionLogEntry[]): string | null {
-  let num = 1, den = 1;
-  for (const e of entries) {
-    if (e.kind === 'handoff')    { num *= (7 - e.catchTarget); den *= 6; continue; }
-    if (e.kind === 'pass')       { num *= (7 - e.passTarget);  den *= 6; continue; }
-    if (e.kind === 'pass-catch') { num *= (7 - e.catchTarget); den *= 6; continue; }
-    if (e.kind === 'block') { num *= Math.round(e.actionProb * 1000); den *= 1000; continue; }
-    if (e.isGfi) { num *= 5; den *= 6; }
-    if (e.dodgeTarget !== null) { num *= (7 - e.dodgeTarget); den *= 6; }
-    if (e.kind === 'move' && e.pickupTarget) { num *= (7 - e.pickupTarget); den *= 6; }
-    if (!Number.isSafeInteger(num) || !Number.isSafeInteger(den)) return null;
-  }
-  const g = gcd(num, den);
-  return `${num / g}/${den / g}`;
+/** Odds out of 100, e.g. "39/100" — an exact reduced fraction can have a huge
+ * coprime numerator/denominator (e.g. "702595369/1800000000") and convey
+ * nothing useful, so round to a percentage-shaped fraction instead. */
+function oddsFraction(prob: number): string {
+  const rounded = Math.round(prob * 100);
+  if (prob > 0 && rounded === 0) return '<1/100';
+  if (prob < 1 && rounded === 100) return '>99/100';
+  return `${rounded}/100`;
 }
 
 const BAND_LABEL: Record<string, string> = {
@@ -133,12 +120,7 @@ export function SubmitModal({ actionLog, onSubmit, onDismiss, seriesMode, contin
             <div className="submit-modal__cum-row">
               <span className="submit-modal__cum-label">Cumulative probability</span>
               <span className={`submit-modal__cum-value${cumulativeProb < 0.5 ? ' submit-modal__cum-value--risky' : ''}`}>
-                {(() => {
-                  const fraction = cumFraction(riskyMoves);
-                  return fraction
-                    ? <>{fraction} <span className="submit-modal__cum-pct">({pct(cumulativeProb)})</span></>
-                    : pct(cumulativeProb);
-                })()}
+                {oddsFraction(cumulativeProb)} <span className="submit-modal__cum-pct">({pct(cumulativeProb)})</span>
               </span>
             </div>
           </div>
