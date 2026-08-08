@@ -1,62 +1,120 @@
-/* Whole-app battered rulebook theme. Structural component styles load first;
-   this late, scoped layer owns the shared visual system for player and admin
-   surfaces without changing their layout or behavior. */
+/* Whole-app dark tactical theme. Structural component styles load first; this
+   late, scoped layer owns the shared visual system for player and admin surfaces
+   without changing their layout or behavior.
+
+   Every value here comes from theme.css. Surfaces are dark, borders are 1px,
+   radii are tight, and the orange/red accent is reserved for active navigation,
+   primary actions, selection and warnings. Team colours stay independent of it. */
 .app--playbook {
-  --home-felt-950: #0c100d;
-  --home-felt-900: #151b16;
-  --home-felt-700: #2b3a2e;
-  --home-ink-950: #1b1812;
-  --home-ink-700: #514938;
-  --home-paper-100: #c8b98f;
-  --home-paper-200: #ab9a70;
-  --home-paper-300: #8d7b56;
-  --home-charcoal-900: #22231e;
-  --home-charcoal-950: #141612;
-  --home-chalk-100: #e3dcc8;
-  --home-chalk-300: #bdb49d;
-  --home-gold-500: #b58b38;
-  --home-gold-600: #8e6724;
-  --home-blue-500: #3b6179;
-  --home-blue-700: #29475b;
-  --home-rust-500: #873d31;
-  --home-rust-700: #622a23;
-  --home-danger-500: #a9483a;
-  --rulebook-line: rgba(54, 47, 34, 0.24);
-  --rulebook-line-soft: rgba(54, 47, 34, 0.12);
-  --rulebook-edge: #6f6041;
-  --rulebook-shadow: rgba(0, 0, 0, 0.48);
-  --rulebook-focus: #d2aa4c;
-  --rulebook-paper:
-    radial-gradient(circle at 13% 17%, rgba(73, 45, 22, 0.1), transparent 18%),
-    radial-gradient(circle at 88% 82%, rgba(34, 29, 20, 0.12), transparent 22%),
-    repeating-linear-gradient(0deg, transparent 0 27px, var(--rulebook-line-soft) 28px 29px),
-    linear-gradient(105deg, rgba(255, 244, 204, 0.08), transparent 38%, rgba(56, 43, 24, 0.08)),
-    var(--home-paper-100);
-  --rulebook-iron:
-    linear-gradient(112deg, rgba(255, 255, 255, 0.045), transparent 32%, rgba(0, 0, 0, 0.14)),
-    radial-gradient(circle at 18% 20%, rgba(255, 255, 255, 0.035) 0 1px, transparent 1.5px) 0 0 / 9px 9px,
-    var(--home-charcoal-900);
-  --playbook-paper-lines: repeating-linear-gradient(
-    0deg,
-    transparent 0 27px,
-    var(--rulebook-line-soft) 28px 29px
-  );
+  color: var(--color-text);
+  background:
+    var(--texture-noise),
+    radial-gradient(circle at 50% -30%, #171b19, transparent 62%),
+    var(--color-bg);
 }
 
-.app--playbook:not(.app--landing) {
-  color: var(--home-chalk-100);
-  background:
-    radial-gradient(circle at 18% 24%, rgba(255, 255, 255, 0.03) 0 1px, transparent 1.5px) 0 0 / 11px 11px,
-    radial-gradient(circle at 72% 68%, rgba(0, 0, 0, 0.12) 0 1px, transparent 1.5px) 0 0 / 13px 13px,
-    radial-gradient(circle at 50% -35%, var(--home-felt-700), transparent 62%),
-    var(--home-felt-950);
+.app--playbook button,
+.app--playbook input,
+.app--playbook select,
+.app--playbook textarea {
+  font: inherit;
 }
 
 .app--playbook button:focus-visible,
 .app--playbook input:focus-visible,
+.app--playbook select:focus-visible,
+.app--playbook textarea:focus-visible,
+.app--playbook [tabindex]:focus-visible,
 .app--playbook label:has(input:focus-visible) {
-  outline: 3px solid var(--home-gold-500);
-  outline-offset: 3px;
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+/* ── Section headings ─────────────────────────────────────────────── */
+.app--playbook .dice-log__title,
+.app--playbook .piece-menu__header,
+.app--playbook .challenge-section__title,
+.app--playbook .editor__panel h2,
+.app--playbook .editor-tool h2 {
+  color: #c8c3b7;
+  font-family: var(--font-display);
+  font-size: 0.82rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+/* ── Shared buttons ───────────────────────────────────────────────── */
+.app--playbook .btn {
+  min-height: 38px;
+  padding: 9px 16px;
+  color: var(--color-text);
+  background: transparent;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-button);
+  box-shadow: none;
+  font-family: var(--font-display);
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  transition:
+    background var(--transition-fast),
+    border-color var(--transition-fast),
+    color var(--transition-fast),
+    transform var(--transition-fast);
+}
+
+.app--playbook .btn:hover:not(:disabled) {
+  color: var(--color-text-strong);
+  background: #1b1f1d;
+  border-color: #706e66;
+  transform: none;
+}
+
+.app--playbook .btn:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+.app--playbook .btn:disabled {
+  color: var(--color-text-disabled);
+  background: #171918;
+  border-color: #292c29;
+  cursor: not-allowed;
+  opacity: 1;
+}
+
+.app--playbook .btn--primary {
+  color: #f4eee3;
+  background: #b94229;
+  border-color: var(--color-accent-border);
+}
+
+.app--playbook .btn--primary:hover:not(:disabled) {
+  color: #f4eee3;
+  background: #ca4d30;
+  border-color: #e06a45;
+}
+
+.app--playbook .btn--primary:active:not(:disabled) {
+  background: var(--color-accent-press);
+}
+
+.app--playbook .btn--secondary {
+  color: #c5c1b7;
+  background: transparent;
+  border-color: var(--color-border-strong);
+}
+
+.app--playbook .btn--ghost {
+  color: var(--color-text-muted);
+  background: transparent;
+  border-color: var(--color-border);
+}
+
+.app--playbook .btn--ghost:hover:not(:disabled) {
+  color: var(--color-text);
+  border-color: #706e66;
 }
 
 /* ── Game board shell ─────────────────────────────────────────────── */
@@ -68,18 +126,16 @@
 
 .app--game .hud {
   position: relative;
-  min-height: 62px;
+  min-height: 60px;
   gap: 16px;
   padding: 9px 13px;
-  color: var(--home-chalk-100);
+  color: var(--color-text);
   background:
-    linear-gradient(100deg, rgba(255, 255, 255, 0.035), transparent 45%),
-    var(--home-charcoal-900);
-  border: 1px solid #080c09;
-  border-radius: 4px;
-  box-shadow:
-    inset 0 0 0 1px rgba(241, 232, 207, 0.12),
-    0 5px 16px rgba(0, 0, 0, 0.35);
+    var(--texture-noise),
+    var(--color-surface-1);
+  border: 1px solid #292d2a;
+  border-radius: var(--radius-panel);
+  box-shadow: inset 0 1px rgba(255, 255, 255, 0.025);
 }
 
 .app--game .hud::after {
@@ -87,10 +143,10 @@
   position: absolute;
   right: 14px;
   bottom: 3px;
-  color: rgba(246, 241, 223, 0.19);
-  font-family: 'Courier New', monospace;
-  font-size: 0.48rem;
-  font-weight: 800;
+  color: rgba(222, 217, 203, 0.14);
+  font-family: var(--font-display);
+  font-size: 0.5rem;
+  font-weight: 600;
   letter-spacing: 0.1em;
   pointer-events: none;
 }
@@ -99,96 +155,137 @@
 .app--game .hud__restart,
 .app--game .hud__zoom,
 .app--game .hud__end-turn {
-  min-height: 34px;
-  padding: 6px 10px;
-  color: var(--home-chalk-100);
-  background: rgba(16, 25, 21, 0.7);
-  border: 1px solid rgba(246, 241, 223, 0.3);
-  border-radius: 2px;
-  font-family: 'Courier New', monospace;
-  font-size: 0.68rem;
-  font-weight: 800;
-  letter-spacing: 0.035em;
+  min-height: 32px;
+  padding: 6px 11px;
+  color: #c5c1b7;
+  background: transparent;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-button);
+  font-family: var(--font-display);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
   text-transform: uppercase;
+  transition:
+    background var(--transition-fast),
+    border-color var(--transition-fast),
+    color var(--transition-fast);
 }
 
 .app--game .hud__back:hover,
 .app--game .hud__restart:hover,
 .app--game .hud__zoom:hover,
 .app--game .hud__end-turn:hover:not(:disabled) {
-  color: var(--home-ink-950);
-  background: var(--home-gold-500);
-  border-color: var(--home-gold-600);
+  color: var(--color-text-strong);
+  background: #1b1f1d;
+  border-color: #706e66;
 }
 
 .app--game .hud__restart {
-  color: #e39b8f;
-  border-color: rgba(189, 85, 72, 0.55);
+  color: #c98577;
+  border-color: #57332c;
 }
 
-.app--game .hud__zoom--active {
-  color: var(--home-ink-950);
-  background: var(--home-gold-500);
-  border-color: var(--home-gold-600);
+.app--game .hud__restart:hover {
+  color: #dfa094;
+  border-color: #7d4437;
+}
+
+/* Zoom is a persistent mode, so its on-state gets the accent — but as a marker
+   plus surface change, never a full orange fill. */
+.app--game .hud__zoom--active,
+.app--game .hud__zoom--active:hover {
+  color: var(--color-text-strong);
+  background: #1b1d1b;
+  border-color: var(--color-border-selected);
+  box-shadow: inset 3px 0 var(--color-accent);
 }
 
 .app--game .hud__prob {
   min-width: 84px;
   padding: 3px 12px 3px 10px;
-  border-left: 3px solid var(--home-gold-500);
+  border-left: 3px solid var(--color-accent);
 }
 
 .app--game .hud__prob-label {
-  color: rgba(246, 241, 223, 0.55);
-  font-family: 'Courier New', monospace;
-  font-weight: 800;
-  letter-spacing: 0.055em;
+  color: var(--color-text-muted);
+  font-family: var(--font-display);
+  font-size: 0.62rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
 }
 
 .app--game .hud__prob-value {
-  color: var(--home-gold-500);
-  font-family: Rockwell, 'Roboto Slab', 'Courier New', serif;
+  color: var(--color-text-strong);
+  font-family: var(--font-display);
   font-size: 1.4rem;
+  font-variant-numeric: tabular-nums;
 }
 
 .app--game .hud__prob-value--risky {
-  color: #e47f5f;
+  color: var(--color-warning);
 }
 
 .app--game .hud__status {
-  color: rgba(246, 241, 223, 0.68);
+  color: var(--color-text-muted);
   font-size: 0.78rem;
 }
 
 .app--game .hud__team {
-  font-family: Rockwell, 'Roboto Slab', 'Courier New', serif;
+  font-family: var(--font-display);
   font-size: 0.94rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
   text-transform: uppercase;
 }
 
+.app--game .hud__dot--human { background-color: var(--team-human); }
+.app--game .hud__dot--orc { background-color: var(--team-orc); }
+
 .app--game .hud__dot {
-  border-color: var(--home-paper-200);
-  box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.35);
+  border-color: rgba(222, 217, 203, 0.28);
+  box-shadow: none;
 }
 
 .app--game .hud__divider {
-  background: rgba(246, 241, 223, 0.2);
+  background: var(--color-border);
 }
 
+/* ── Legend ───────────────────────────────────────────────────────────
+   Each entry keeps its own hue — the colour is the key to the overlay it
+   describes — but sits on a common dark chip instead of a paper tag. */
 .app--game .legend {
   min-height: 27px;
   align-items: center;
-  gap: 7px;
+  gap: 6px;
   overflow-x: auto;
   padding: 1px 5px 2px;
   scrollbar-width: thin;
 }
 
+.app--game .legend__item {
+  flex-shrink: 0;
+  padding: 3px 8px;
+  color: var(--color-text-muted);
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border-subtle);
+  border-left-width: 3px;
+  border-radius: var(--radius-button);
+  font-family: var(--font-display);
+  font-size: 0.64rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+/* Skill key: a second, denser legend row. It sits on the nested surface so it
+   reads as subordinate to the action legend above it. */
 .app--game .legend--skill-key {
   min-height: 24px;
-  background: rgba(12, 16, 13, 0.44);
-  border: 1px solid rgba(227, 220, 200, 0.12);
+  background: var(--color-surface-1);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-button);
 }
 
 .app--game .legend__key-title {
@@ -198,78 +295,80 @@
   align-self: stretch;
   display: inline-flex;
   align-items: center;
-  padding: 0 7px;
-  color: var(--home-chalk-100);
-  background: var(--home-charcoal-900);
-  border-right: 1px solid rgba(227, 220, 200, 0.18);
-  font-family: 'Courier New', monospace;
+  padding: 0 8px;
+  color: var(--color-text-muted);
+  background: var(--color-surface-2);
+  border-right: 1px solid var(--color-border-subtle);
+  font-family: var(--font-display);
   font-size: 0.58rem;
-  letter-spacing: 0.04em;
+  font-weight: 600;
+  letter-spacing: 0.06em;
 }
 
-.app--game .legend__item {
-  flex-shrink: 0;
-  padding: 3px 8px;
-  color: var(--home-ink-950);
-  background: var(--home-paper-200);
-  border: 1px solid #8f8266;
-  border-radius: 2px;
-  font-family: 'Courier New', monospace;
-  font-size: 0.61rem;
-  font-weight: 800;
-  letter-spacing: 0.025em;
-  text-transform: uppercase;
-}
-
+/* Skill names are proper nouns ("Mighty Blow"), so they keep their casing
+   rather than taking the uppercase treatment the action chips use. */
 .app--game .legend__item--skill {
   padding: 2px 6px;
+  background: transparent;
+  border: 0;
+  color: var(--color-text-muted);
+  font-family: var(--font-body);
+  font-size: 0.62rem;
+  letter-spacing: 0;
   text-transform: none;
 }
 
 .app--game .legend__item--tz,
-.app--game .legend__item--dodge,
 .app--game .legend__item--block-target {
-  color: #6e251d;
-  border-left: 4px solid var(--home-rust-500);
+  color: #cf9b90;
+  border-left-color: var(--color-danger);
+}
+
+.app--game .legend__item--dodge,
+.app--game .legend__item--push-target {
+  color: #d0a878;
+  border-left-color: #c07a35;
 }
 
 .app--game .legend__item--free,
-.app--game .legend__item--range-quick,
-.app--game .legend__item--push-target {
-  color: #5f430e;
-  border-left: 4px solid var(--home-gold-500);
+.app--game .legend__item--range-quick {
+  color: #ccc38c;
+  border-left-color: var(--color-warning);
+}
+
+.app--game .legend__item--range-short {
+  color: #a8c286;
+  border-left-color: var(--color-success);
 }
 
 .app--game .legend__item--gfi,
-.app--game .legend__item--range-short,
 .app--game .legend__item--range-long,
 .app--game .legend__item--range-bomb {
-  color: #244e6b;
-  border-left: 4px solid var(--home-blue-500);
+  color: #92aec5;
+  border-left-color: var(--team-human);
 }
 
 .app--game .game-area {
   gap: 8px;
 }
 
+/* ── Pitch surround ───────────────────────────────────────────────────
+   Deliberately the quietest chrome in the app so the pitch itself reads as
+   the focal element. */
 .app--game .pitch-wrapper {
   position: relative;
   padding: 8px;
-  background:
-    linear-gradient(110deg, rgba(255, 255, 255, 0.04), transparent 40%),
-    #20231e;
-  border: 1px solid #080c09;
-  border-radius: 4px;
-  box-shadow:
-    inset 0 0 0 1px rgba(241, 232, 207, 0.16),
-    0 10px 25px rgba(0, 0, 0, 0.35);
+  background: var(--color-surface-1);
+  border: 1px solid #242825;
+  border-radius: var(--radius-panel);
+  box-shadow: inset 0 1px rgba(255, 255, 255, 0.02);
 }
 
 .app--game .pitch-wrapper::before {
   content: '';
   position: absolute;
   inset: 3px;
-  border: 1px dashed rgba(215, 166, 59, 0.22);
+  border: 1px solid rgba(222, 217, 203, 0.06);
   pointer-events: none;
 }
 
@@ -279,91 +378,119 @@
 }
 
 .app--game .pitch__grid {
-  border-color: rgba(241, 232, 207, 0.72);
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.38);
+  border-color: rgba(222, 217, 203, 0.4);
+  box-shadow: none;
 }
 
-.app--game .square--light { background: #456f35; }
-.app--game .square--dark { background: #3d6430; }
-.app--game .square--endzone-left.square--dark { background: #294b62; }
-.app--game .square--endzone-left.square--light { background: #315b76; }
-.app--game .square--endzone-right.square--dark { background: #713b32; }
-.app--game .square--endzone-right.square--light { background: #82483d; }
+.app--game .square--light { background: #3c6031; }
+.app--game .square--dark { background: #355729; }
+.app--game .square--endzone-left.square--dark { background: #22405a; }
+.app--game .square--endzone-left.square--light { background: #294c69; }
+.app--game .square--endzone-right.square--dark { background: #562c25; }
+.app--game .square--endzone-right.square--light { background: #63352c; }
 
 .app--game .pitch__col-label,
 .app--game .pitch__row-label {
-  color: rgba(241, 232, 207, 0.82);
-  font-weight: 800;
+  color: rgba(222, 217, 203, 0.55);
+  font-family: var(--font-display);
+  font-weight: 600;
 }
 
 .app--game .piece__action-label {
-  color: var(--home-ink-950);
-  background: var(--home-paper-100);
-  border-color: var(--home-ink-950);
-  border-radius: 1px;
-  font-family: 'Courier New', monospace;
+  color: var(--color-text-strong);
+  background: rgba(13, 15, 15, 0.9);
+  border-color: rgba(222, 217, 203, 0.45);
+  border-radius: 2px;
+  font-family: var(--font-display);
 }
 
 /* ── Game side cards and action log ───────────────────────────────── */
 .app--game .panel,
 .app--game .dice-log {
-  color: var(--home-ink-950);
-  background:
-    var(--playbook-paper-lines),
-    var(--home-paper-100);
-  border-color: #8f8266;
-  border-radius: 3px;
-  box-shadow: 3px 4px 0 rgba(0, 0, 0, 0.28);
-}
-
-.app--game .panel--human {
-  border-color: var(--home-blue-500);
-  box-shadow: inset 4px 0 0 var(--home-blue-500), 3px 4px 0 rgba(0, 0, 0, 0.28);
-}
-
-.app--game .panel--orc {
-  border-color: var(--home-rust-500);
-  box-shadow: inset 4px 0 0 var(--home-rust-500), 3px 4px 0 rgba(0, 0, 0, 0.28);
-}
-
-/* Unpopulated side panel (no piece hovered/selected): stay felt-toned instead
-   of the paper texture, which reads as a stray white block on the board. */
-.app--game .panel--empty {
-  background: rgba(16, 25, 21, 0.35);
-  border-color: rgba(246, 241, 223, 0.18);
+  color: var(--color-text);
+  background: var(--color-surface-2);
+  border: 1px solid #2a2f2b;
+  border-radius: var(--radius-card);
   box-shadow: none;
 }
 
-.app--game .panel__name {
-  color: var(--home-ink-950);
-  font-family: Rockwell, 'Roboto Slab', 'Courier New', serif;
+/* Team identity reads as a spine on the panel edge, not as a fill. */
+.app--game .panel--human {
+  border-color: #2a2f2b;
+  box-shadow: inset 3px 0 0 var(--team-human);
 }
 
-.app--game .panel__role,
-.app--game .panel__stat-label {
-  color: var(--home-ink-700);
-  font-family: 'Courier New', monospace;
-  font-weight: 800;
+.app--game .panel--orc {
+  border-color: #2a2f2b;
+  box-shadow: inset 3px 0 0 var(--team-orc);
+}
+
+/* Unpopulated side panel (no piece hovered/selected): drop back to the nested
+   surface so it reads as an empty slot rather than a card. */
+.app--game .panel--empty {
+  background: var(--color-surface-1);
+  border-color: var(--color-border-subtle);
+  box-shadow: none;
+}
+
+.app--game .panel__portrait-wrap {
+  border-bottom: 1px solid #2a2f2b;
+  box-shadow: inset 0 -18px 24px -18px rgba(0, 0, 0, 0.7);
+}
+
+.app--game .panel--human .panel__portrait-wrap { background: var(--team-human-deep); }
+.app--game .panel--orc .panel__portrait-wrap { background: var(--team-orc-deep); }
+
+.app--game .panel__portrait--legacy,
+.app--game .piece__portrait--legacy {
+  filter: saturate(0.72) contrast(1.05) brightness(0.88);
+}
+
+.app--game .panel__name {
+  color: var(--color-text-strong);
+  font-family: var(--font-display);
+  font-size: 0.82rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.app--game .panel__role {
+  color: var(--color-text-muted);
+  font-family: var(--font-display);
+  font-size: 0.64rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
 }
 
 .app--game .panel__stat {
-  background: rgba(223, 210, 179, 0.58);
-  border: 1px solid rgba(79, 75, 64, 0.22);
+  background: var(--color-surface-sunken);
+  border: 1px solid var(--color-border-subtle);
   border-radius: 2px;
 }
 
+.app--game .panel__stat-label {
+  color: #858b83;
+  font-family: var(--font-display);
+  font-size: 0.56rem;
+  font-weight: 600;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
 .app--game .panel__stat-value {
-  color: var(--home-ink-950);
+  color: var(--color-text);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
 }
 
 .app--game .panel__skill {
-  color: var(--home-ink-700);
-  background: rgba(241, 232, 207, 0.7);
-  border-color: #8f8266;
-  border-radius: 1px;
-  font-family: 'Courier New', monospace;
-  font-weight: 700;
+  color: var(--color-text-muted);
+  background: var(--color-surface-sunken);
+  border-color: var(--color-border-subtle);
+  border-radius: 2px;
+  font-size: 0.6rem;
+  font-weight: 500;
 }
 
 .app--game .dice-log {
@@ -373,96 +500,98 @@
 
 .app--game .dice-log__title {
   padding-bottom: 6px;
-  color: var(--home-rust-500);
-  border-bottom: 2px solid rgba(79, 75, 64, 0.45);
-  font-family: 'Courier New', monospace;
-  font-weight: 900;
-  letter-spacing: 0.1em;
+  border-bottom: 1px solid var(--color-border-subtle);
 }
 
 .app--game .dice-log__entry {
-  color: var(--home-ink-950);
-  background: rgba(255, 255, 255, 0.25);
-  border-radius: 1px;
+  color: var(--color-text);
+  background: var(--color-surface-sunken);
+  border-radius: 2px;
 }
 
-.app--game .dice-log__detail,
-.app--game .dice-log__piece {
-  color: var(--home-ink-700);
+.app--game .dice-log__detail {
+  color: var(--color-text-muted);
 }
 
 .app--game .dice-log__piece {
-  color: var(--home-ink-950);
+  color: var(--color-text);
 }
 
 .app--game .dice-log__prob-row {
-  border-color: rgba(79, 75, 64, 0.35);
+  border-color: var(--color-border-subtle);
 }
 
 .app--game .dice-log__prob-label,
 .app--game .dice-log__prob-pct {
-  color: var(--home-ink-700);
+  color: var(--color-text-muted);
 }
 
 .app--game .dice-log__prob-total {
-  color: #486a2d;
+  color: var(--color-success);
+  font-variant-numeric: tabular-nums;
 }
 
 .app--game .dice-log__prob-total--risky {
-  color: #a34a36;
+  color: var(--color-warning);
 }
 
 /* ── Context menu ─────────────────────────────────────────────────── */
 .app--playbook .piece-menu {
-  color: var(--home-ink-950);
-  background:
-    var(--playbook-paper-lines),
-    var(--home-paper-100);
-  border-color: #8f8266;
-  border-radius: 3px;
-  box-shadow: 6px 8px 0 rgba(0, 0, 0, 0.34);
+  color: var(--color-text);
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-panel);
+  box-shadow: var(--shadow-overlay);
 }
 
 .app--playbook .piece-menu__header {
-  color: var(--home-rust-500);
-  border-bottom-color: rgba(79, 75, 64, 0.35);
-  font-family: 'Courier New', monospace;
-  font-weight: 900;
+  border-bottom-color: var(--color-border-subtle);
 }
 
 .app--playbook .piece-menu__item {
-  color: var(--home-ink-950);
-  font-family: 'Courier New', monospace;
-  font-size: 0.79rem;
-  font-weight: 700;
+  color: var(--color-text);
+  font-size: 0.84rem;
+  transition: background var(--transition-fast), box-shadow var(--transition-fast);
 }
 
-.app--playbook .piece-menu__item:hover {
-  background: rgba(215, 166, 59, 0.28);
+.app--playbook .piece-menu__item:hover:not(.piece-menu__item--disabled) {
+  background: var(--color-surface-hover);
+  box-shadow: inset 3px 0 var(--color-accent);
 }
 
 .app--playbook .piece-menu__item--disabled {
-  color: rgba(79, 75, 64, 0.45);
+  color: var(--color-text-disabled);
+}
+
+.app--playbook .piece-menu__checkbox {
+  accent-color: var(--color-accent);
 }
 
 .app--playbook .piece-menu__confirm {
-  color: var(--home-ink-950);
-  background: var(--home-gold-500);
-  border: 1px solid var(--home-gold-600);
-  border-radius: 2px;
-  font-family: 'Courier New', monospace;
-  font-weight: 900;
+  color: #f4eee3;
+  background: #b94229;
+  border: 1px solid var(--color-accent-border);
+  border-radius: var(--radius-button);
+  font-family: var(--font-display);
+  font-weight: 600;
+  letter-spacing: 0.05em;
   text-transform: uppercase;
 }
 
 .app--playbook .piece-menu__confirm:hover:not(:disabled) {
-  background: #e4b84f;
+  background: #ca4d30;
+}
+
+.app--playbook .piece-menu__confirm:disabled {
+  color: var(--color-text-disabled);
+  background: #171918;
+  border-color: #292c29;
 }
 
 /* ── Shared modals and block outcome sheet ────────────────────────── */
 .app--playbook .modal-backdrop {
   padding: 16px;
-  background: rgba(7, 12, 9, 0.82);
+  background: rgba(8, 10, 10, 0.78);
   backdrop-filter: blur(2px);
 }
 
@@ -472,125 +601,153 @@
   width: min(820px, calc(100vw - 32px));
   max-height: calc(100vh - 32px);
   overflow-y: auto;
-  padding: 36px 40px 32px;
-  color: var(--home-ink-950);
-  background:
-    linear-gradient(90deg, transparent 0 30px, rgba(168, 83, 62, 0.22) 31px 32px, transparent 33px),
-    var(--playbook-paper-lines),
-    var(--home-paper-100);
-  border: 1px solid #8f8266;
-  border-radius: 3px 3px 9px 4px;
-  box-shadow:
-    0 0 0 8px var(--home-charcoal-900),
-    0 22px 55px rgba(0, 0, 0, 0.48);
-}
-
-.app--playbook .modal::before {
-  content: '';
-  position: absolute;
-  top: -6px;
-  left: 50%;
-  width: 110px;
-  height: 25px;
-  background: rgba(215, 166, 59, 0.82);
-  transform: translateX(-50%) rotate(-1deg);
-  clip-path: polygon(2% 7%, 100% 0, 97% 100%, 0 91%);
+  padding: 28px 32px 26px;
+  color: var(--color-text);
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-modal);
+  box-shadow: var(--shadow-overlay);
 }
 
 .app--playbook .modal__title,
 .app--playbook .submit-modal__td {
-  color: var(--home-ink-950);
-  font-family: Rockwell, 'Roboto Slab', 'Courier New', serif;
+  color: var(--color-text-strong);
+  font-family: var(--font-display);
+  font-weight: 600;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
 }
 
 .app--playbook .modal__title {
-  font-size: 1.55rem;
+  font-size: 1.4rem;
 }
 
 .app--playbook .submit-modal__td {
-  color: var(--home-rust-500);
-  font-size: clamp(1.7rem, 5vw, 2.6rem);
+  color: var(--color-accent);
+  font-size: clamp(1.7rem, 5vw, 2.4rem);
 }
 
 .app--playbook .modal__desc,
 .app--playbook .submit-modal__prompt {
-  color: var(--home-ink-700);
+  color: var(--color-text-muted);
 }
 
 .app--playbook .modal__roll-btn,
 .app--playbook .modal__continue-btn {
-  min-height: 42px;
+  min-height: 40px;
   padding: 10px 22px;
   border: 1px solid transparent;
-  border-radius: 2px;
-  font-family: 'Courier New', monospace;
-  font-size: 0.76rem;
-  font-weight: 900;
+  border-radius: var(--radius-button);
+  font-family: var(--font-display);
+  font-size: 0.8rem;
+  font-weight: 600;
   letter-spacing: 0.05em;
   text-transform: uppercase;
+  transition:
+    background var(--transition-fast),
+    border-color var(--transition-fast),
+    transform var(--transition-fast);
 }
 
 .app--playbook .modal__roll-btn {
-  color: var(--home-ink-950);
-  background: var(--home-gold-500);
-  border-color: var(--home-gold-600);
-  box-shadow: 2px 3px 0 #7e5a16;
+  color: #f4eee3;
+  background: #b94229;
+  border-color: var(--color-accent-border);
 }
 
 .app--playbook .modal__roll-btn:hover:not(:disabled) {
-  background: #e4b84f;
+  background: #ca4d30;
+}
+
+.app--playbook .modal__roll-btn:active:not(:disabled) {
+  background: var(--color-accent-press);
+  transform: translateY(1px);
+}
+
+.app--playbook .modal__roll-btn--danger {
+  background: var(--color-danger);
+  border-color: #d8624e;
+}
+
+.app--playbook .modal__roll-btn--danger:hover:not(:disabled) {
+  background: #d3573f;
 }
 
 .app--playbook .modal__continue-btn {
-  color: var(--home-chalk-100);
-  background: var(--home-charcoal-900);
-  border-color: #0f100e;
+  color: #c5c1b7;
+  background: transparent;
+  border-color: var(--color-border-strong);
 }
 
-.app--playbook .modal__continue-btn:hover {
-  background: #34372f;
+.app--playbook .modal__continue-btn:hover:not(:disabled) {
+  color: var(--color-text-strong);
+  background: #1b1f1d;
+  border-color: #706e66;
+}
+
+.app--playbook .submit-modal__stat-label {
+  color: var(--color-text-muted);
+  font-family: var(--font-display);
+  letter-spacing: 0.06em;
+}
+
+.app--playbook .submit-modal__stat-value {
+  color: var(--color-text-strong);
+  font-family: var(--font-display);
+  font-variant-numeric: tabular-nums;
 }
 
 .app--playbook .submit-modal__input {
-  color: var(--home-ink-950);
-  background: rgba(255, 255, 255, 0.38);
-  border-color: #8f8266;
-  border-radius: 2px;
+  color: var(--color-text);
+  background: var(--color-surface-1);
+  border: 1px solid #343934;
+  border-radius: var(--radius-input);
 }
 
+.app--playbook .submit-modal__input:hover {
+  border-color: #4a504a;
+}
+
+.app--playbook .submit-modal__input:focus,
 .app--playbook .submit-modal__input:focus-visible {
-  border-color: var(--home-ink-950);
+  border-color: var(--color-border-focus);
+  outline: 2px solid rgba(197, 75, 45, 0.18);
+  outline-offset: 1px;
+}
+
+.app--playbook .submit-modal__input::placeholder {
+  color: #666c65;
 }
 
 .app--playbook .submit-modal__moves,
 .app--playbook .score-summary__moves,
 .app--playbook .block-outcome__rows {
-  color: var(--home-ink-950);
-  background: rgba(255, 255, 255, 0.24);
-  border: 1px solid rgba(79, 75, 64, 0.28);
-  border-radius: 2px;
+  color: var(--color-text);
+  background: var(--color-surface-sunken);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-card);
 }
 
 .app--playbook .submit-modal__moves-header,
 .app--playbook .score-summary__moves-header {
-  color: var(--home-ink-700);
-  border-color: rgba(79, 75, 64, 0.35);
-  font-family: 'Courier New', monospace;
-  font-weight: 900;
+  color: var(--color-text-muted);
+  border-color: var(--color-border-subtle);
+  font-family: var(--font-display);
+  font-weight: 600;
+  letter-spacing: 0.06em;
 }
 
 .app--playbook .submit-modal__move-row,
 .app--playbook .score-summary__move-row,
 .app--playbook .block-outcome__row {
-  border-color: rgba(79, 75, 64, 0.2);
+  border-color: var(--color-border-subtle);
 }
 
 .app--playbook .submit-modal__move-name,
 .app--playbook .score-summary__move-name,
 .app--playbook .block-outcome__row-label,
 .app--playbook .block-outcome__continue-option {
-  color: var(--home-ink-950);
+  color: var(--color-text);
 }
 
 .app--playbook .submit-modal__move-role,
@@ -601,36 +758,44 @@
 .app--playbook .score-summary__move-prob,
 .app--playbook .block-outcome__row-prob,
 .app--playbook .block-outcome__continue-label {
-  color: var(--home-ink-700);
+  color: var(--color-text-muted);
+}
+
+.app--playbook .submit-modal__move-pos,
+.app--playbook .submit-modal__move-prob,
+.app--playbook .score-summary__move-pos,
+.app--playbook .score-summary__move-prob {
+  font-variant-numeric: tabular-nums;
 }
 
 .app--playbook .submit-modal__move-action,
 .app--playbook .score-summary__move-action {
-  color: #8c3d30;
+  color: var(--color-warning);
 }
 
 .app--playbook .submit-modal__cum-row,
 .app--playbook .score-summary__cum-row {
-  border-color: rgba(79, 75, 64, 0.35);
+  border-color: var(--color-border-subtle);
 }
 
 .app--playbook .submit-modal__cum-label,
 .app--playbook .submit-modal__cum-pct,
 .app--playbook .score-summary__cum-label,
 .app--playbook .score-summary__cum-pct {
-  color: var(--home-ink-700);
+  color: var(--color-text-muted);
 }
 
 .app--playbook .submit-modal__cum-value,
 .app--playbook .score-summary__cum-value,
 .app--playbook .block-outcome__combined,
 .app--playbook .submit-modal__no-risk {
-  color: #486a2d;
+  color: var(--color-success);
+  font-variant-numeric: tabular-nums;
 }
 
 .app--playbook .submit-modal__cum-value--risky,
 .app--playbook .score-summary__cum-value--risky {
-  color: #a34a36;
+  color: var(--color-warning);
 }
 
 .app--playbook .block-outcome {
@@ -639,7 +804,7 @@
 }
 
 .app--playbook .block-outcome input {
-  accent-color: var(--home-rust-500);
+  accent-color: var(--color-accent);
 }
 
 /* ── Leaderboards and run summaries ───────────────────────────────── */
@@ -657,36 +822,18 @@
   max-width: 900px;
   min-height: min(680px, calc(100vh - 80px));
   margin: 40px auto;
-  padding: 48px 46px;
-  color: var(--home-ink-950);
-  background:
-    linear-gradient(90deg, transparent 0 38px, rgba(168, 83, 62, 0.22) 39px 40px, transparent 41px),
-    var(--playbook-paper-lines),
-    var(--home-paper-100);
-  border: 1px solid #8f8266;
-  border-radius: 3px 3px 9px 4px;
-  box-shadow:
-    0 0 0 8px var(--home-charcoal-900),
-    0 20px 48px rgba(0, 0, 0, 0.4);
-}
-
-.app--archive .leaderboard::before,
-.app--archive .score-summary::before {
-  content: '';
-  position: absolute;
-  top: -19px;
-  left: 50%;
-  width: 126px;
-  height: 34px;
-  background: rgba(215, 166, 59, 0.86);
-  transform: translateX(-50%) rotate(-1deg);
-  clip-path: polygon(3% 7%, 97% 0, 100% 90%, 1% 100%);
+  padding: 32px 34px;
+  color: var(--color-text);
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-panel);
+  box-shadow: var(--shadow-panel);
 }
 
 .app--archive .leaderboard__header,
 .app--archive .score-summary__header {
-  padding-bottom: 19px;
-  border-bottom: 3px double rgba(23, 23, 19, 0.65);
+  padding-bottom: 18px;
+  border-bottom: 1px solid var(--color-border-subtle);
 }
 
 .app--archive .leaderboard__header > div,
@@ -696,10 +843,12 @@
 
 .app--archive .leaderboard__title,
 .app--archive .score-summary__name {
-  color: var(--home-ink-950);
-  font-family: Rockwell, 'Roboto Slab', 'Courier New', serif;
-  font-size: clamp(1.5rem, 4vw, 2.25rem);
-  line-height: 1.05;
+  color: var(--color-text-strong);
+  font-family: var(--font-display);
+  font-size: clamp(1.4rem, 4vw, 2rem);
+  font-weight: 600;
+  line-height: 1.1;
+  letter-spacing: 0.02em;
   text-transform: uppercase;
 }
 
@@ -707,518 +856,214 @@
 .app--archive .score-summary__meta,
 .app--archive .leaderboard__state,
 .app--archive .score-summary__empty {
-  color: var(--home-ink-700);
+  color: var(--color-text-muted);
+}
+
+.app--archive .leaderboard__state--error {
+  color: var(--color-danger);
 }
 
 .app--archive .lb-back-btn,
 .app--archive .lb-reload-btn {
-  color: var(--home-chalk-100);
-  background: var(--home-charcoal-900);
-  border-color: #0f100e;
-  border-radius: 2px;
-  font-family: 'Courier New', monospace;
-  font-weight: 800;
+  color: #c5c1b7;
+  background: transparent;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-button);
+  font-family: var(--font-display);
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  transition: background var(--transition-fast), border-color var(--transition-fast), color var(--transition-fast);
 }
 
 .app--archive .lb-back-btn:hover,
 .app--archive .lb-reload-btn:hover:not(:disabled) {
-  color: var(--home-ink-950);
-  background: var(--home-gold-500);
-  border-color: var(--home-gold-600);
+  color: var(--color-text-strong);
+  background: #1b1f1d;
+  border-color: #706e66;
 }
 
 .app--archive .lb-table {
-  color: var(--home-ink-950);
-  border: 1px solid rgba(79, 75, 64, 0.3);
-  background: rgba(255, 255, 255, 0.2);
+  color: var(--color-text);
+  background: var(--color-surface-sunken);
+  border: 1px solid var(--color-border-subtle);
+  font-variant-numeric: tabular-nums;
 }
 
 .app--archive .lb-table th {
-  color: var(--home-ink-700);
-  background: rgba(223, 210, 179, 0.56);
-  border-color: rgba(79, 75, 64, 0.35);
-  font-family: 'Courier New', monospace;
-  font-weight: 900;
+  color: var(--color-text-muted);
+  background: var(--color-surface-1);
+  border-color: var(--color-border-subtle);
+  font-family: var(--font-display);
+  font-weight: 600;
+  letter-spacing: 0.06em;
 }
 
 .app--archive .lb-table td {
-  color: var(--home-ink-700);
-  border-color: rgba(79, 75, 64, 0.2);
+  color: var(--color-text-muted);
+  border-color: var(--color-border-subtle);
 }
 
 .app--archive .lb-table__name {
-  color: var(--home-ink-950);
+  color: var(--color-text);
 }
 
 .app--archive .lb-table__prob {
-  color: #486a2d;
+  color: var(--color-success);
 }
 
 .app--archive .lb-table__dice,
 .app--archive .lb-table__date {
-  color: var(--home-ink-700);
+  color: var(--color-text-muted);
 }
 
 .app--archive .lb-table__row--clickable:hover td {
-  background: rgba(215, 166, 59, 0.2);
+  background: var(--color-surface-hover);
 }
 
+/* The player's own row: accent spine plus a lifted surface, so the marker is
+   structural and not colour alone. */
 .app--archive .lb-table__row--highlight td {
-  color: var(--home-ink-950);
-  background: rgba(215, 166, 59, 0.3);
+  color: var(--color-text-strong);
+  background: #1b1d1b;
+}
+
+.app--archive .lb-table__row--highlight td:first-child {
+  box-shadow: inset 3px 0 var(--color-accent);
 }
 
 .app--archive .lb-table__avatar--fallback {
-  background: var(--home-rust-500);
+  color: #f4eee3;
+  background: var(--color-accent-dark);
 }
 
-.app--archive .app__account-controls .user-menu__trigger,
-.app--game .user-menu__trigger {
-  color: var(--home-ink-950);
-  background: var(--home-paper-100);
-  border-color: #8f8266;
-  border-radius: 3px;
-}
-
-.app--archive .app__account-controls .user-menu__trigger:hover,
-.app--game .user-menu__trigger:hover {
-  color: var(--home-ink-950);
-  background: #fff5da;
-  border-color: var(--home-gold-500);
-}
-
-.app--archive .app__account-controls .user-menu__avatar--fallback,
-.app--game .user-menu__avatar--fallback {
-  background: var(--home-rust-500);
-}
-
-.app--archive .app__account-controls .user-menu__caret,
-.app--game .user-menu__caret {
-  color: var(--home-ink-700);
-}
-
-.app--archive .app__account-controls .user-menu__dropdown,
-.app--game .user-menu__dropdown {
-  color: var(--home-ink-950);
-  background:
-    var(--playbook-paper-lines),
-    var(--home-paper-100);
-  border-color: #8f8266;
-  border-radius: 3px;
-  box-shadow: 6px 8px 0 rgba(0, 0, 0, 0.3);
-}
-
-.app--archive .app__account-controls .user-menu__dropdown-name,
-.app--game .user-menu__dropdown-name {
-  color: var(--home-ink-950);
-}
-
-.app--archive .app__account-controls .user-menu__item,
-.app--game .user-menu__item {
-  color: var(--home-ink-700);
-}
-
-.app--archive .app__account-controls .user-menu__item:hover:not(:disabled),
-.app--game .user-menu__item:hover:not(:disabled) {
-  color: var(--home-ink-950);
-  background: rgba(215, 166, 59, 0.25);
-}
-
-/* ── Shared battered-material refinements ─────────────────────────── */
-.app--playbook {
-  color: var(--home-chalk-100);
-  background:
-    radial-gradient(circle at 14% 21%, rgba(255, 255, 255, 0.025) 0 1px, transparent 1.5px) 0 0 / 10px 10px,
-    radial-gradient(circle at 78% 63%, rgba(0, 0, 0, 0.18) 0 1px, transparent 1.5px) 0 0 / 13px 13px,
-    linear-gradient(118deg, transparent 0 47%, rgba(255, 255, 255, 0.012) 49%, transparent 51%),
-    radial-gradient(circle at 50% -30%, var(--home-felt-700), transparent 58%),
-    var(--home-felt-950);
-}
-
-.app--playbook button,
-.app--playbook input,
-.app--playbook select,
-.app--playbook textarea {
-  font: inherit;
-}
-
-.app--playbook button:focus-visible,
-.app--playbook input:focus-visible,
-.app--playbook select:focus-visible,
-.app--playbook textarea:focus-visible,
-.app--playbook [tabindex]:focus-visible,
-.app--playbook label:has(input:focus-visible) {
-  outline: 3px solid var(--rulebook-focus);
-  outline-offset: 3px;
-}
-
-.app--playbook .btn {
-  min-height: 40px;
-  padding: 9px 15px;
-  color: var(--home-chalk-100);
-  background: var(--rulebook-iron);
-  border: 1px solid #090b08;
-  border-radius: 2px;
-  box-shadow: inset 0 0 0 1px rgba(227, 220, 200, 0.12), 2px 3px 0 rgba(0, 0, 0, 0.34);
-  font-family: 'Courier New', monospace;
-  font-size: 0.72rem;
-  font-weight: 900;
-  letter-spacing: 0.055em;
-  text-transform: uppercase;
-}
-
-.app--playbook .btn:hover:not(:disabled) {
-  color: var(--home-chalk-100);
-  background:
-    linear-gradient(rgba(255, 255, 255, 0.06), transparent),
-    #303129;
-  transform: translateY(-1px);
-}
-
-.app--playbook .btn:active:not(:disabled) {
-  transform: translateY(2px);
-  box-shadow: inset 0 0 0 1px rgba(227, 220, 200, 0.1);
-}
-
-.app--playbook .btn--primary {
-  color: var(--home-ink-950);
-  background:
-    linear-gradient(105deg, rgba(255, 242, 188, 0.12), transparent 45%, rgba(57, 37, 10, 0.12)),
-    var(--home-gold-500);
-  border-color: #594014;
-  box-shadow: inset 0 0 0 1px rgba(255, 228, 157, 0.22), 2px 3px 0 #594014;
-}
-
-.app--playbook .btn--primary:hover:not(:disabled) {
-  color: var(--home-ink-950);
-  background:
-    linear-gradient(105deg, rgba(255, 242, 188, 0.16), transparent 45%, rgba(57, 37, 10, 0.1)),
-    #c39a49;
-}
-
-.app--playbook .btn--secondary {
-  color: var(--home-chalk-100);
-  background: var(--rulebook-iron);
-  border-color: #090b08;
-}
-
-.app--playbook .btn--ghost {
-  color: var(--home-chalk-300);
-  background: rgba(12, 16, 13, 0.42);
-  border-color: rgba(227, 220, 200, 0.27);
-  box-shadow: none;
-}
-
-.app--playbook .btn--ghost:hover:not(:disabled) {
-  color: var(--home-chalk-100);
-  border-color: var(--home-rust-500);
-}
-
-/* Landing: the preserved clash art stays untouched while its frame and all
-   surrounding stationery take on the darker, worn rulebook treatment. */
-.app--landing .scenario-select__header {
-  background:
-    linear-gradient(90deg, rgba(9, 10, 8, 0.98) 0%, rgba(12, 13, 11, 0.9) 38%, rgba(12, 13, 11, 0.38) 73%, rgba(12, 13, 11, 0.22) 100%),
-    linear-gradient(0deg, rgba(10, 10, 8, 0.82), transparent 62%),
-    url('./assets/matchday-clash.webp') center 49% / cover no-repeat,
-    var(--home-charcoal-950);
-  border: 2px solid #080907;
-  border-radius: 2px;
-  box-shadow: inset 0 0 0 1px rgba(227, 220, 200, 0.1), 8px 10px 0 rgba(0, 0, 0, 0.3);
-}
-
-.app--landing .scenario-select__header::before {
-  border-color: rgba(227, 220, 200, 0.14);
-  box-shadow: inset 0 0 24px rgba(0, 0, 0, 0.28);
-}
-
-.app--landing .identity-gate__panel,
-.app--landing .series-row,
-.app--landing .challenge-tile {
-  border-color: var(--rulebook-edge);
-  border-radius: 2px;
-  box-shadow:
-    inset 0 0 28px rgba(61, 42, 22, 0.12),
-    6px 8px 0 rgba(0, 0, 0, 0.3),
-    0 18px 34px rgba(0, 0, 0, 0.24);
-}
-
-.app--landing .identity-gate__panel {
-  background:
-    linear-gradient(90deg, transparent 0 30px, rgba(98, 42, 33, 0.22) 31px 32px, transparent 33px),
-    var(--rulebook-paper);
-  box-shadow:
-    inset 0 0 28px rgba(61, 42, 22, 0.14),
-    0 0 0 8px var(--home-charcoal-900),
-    0 0 0 10px #080907,
-    0 24px 60px rgba(0, 0, 0, 0.54);
-}
-
-.app--landing .identity-gate__tape,
-.app--landing .series-row::before,
-.app--archive .leaderboard::before,
-.app--archive .score-summary::before,
-.app--playbook .modal::before {
-  background:
-    linear-gradient(90deg, rgba(255, 255, 255, 0.07), transparent 30%, rgba(42, 21, 13, 0.14)),
-    #8e6d35;
-  opacity: 0.88;
-  box-shadow: 0 2px 3px rgba(0, 0, 0, 0.28);
-}
-
-.app--landing .series-row {
-  background:
-    linear-gradient(90deg, transparent 0 46px, rgba(135, 61, 49, 0.38) 47px 49px, transparent 50px),
-    var(--rulebook-paper);
-}
-
-.app--landing .challenge-tile {
-  background:
-    linear-gradient(90deg, transparent 0 24px, rgba(59, 97, 121, 0.3) 25px 27px, transparent 28px),
-    var(--rulebook-paper);
-}
-
-.app--landing .challenge-tile:nth-child(4n + 2),
-.app--landing .challenge-tile:nth-child(4n + 3) {
-  background:
-    linear-gradient(90deg, transparent 0 24px, rgba(135, 61, 49, 0.3) 25px 27px, transparent 28px),
-    var(--rulebook-paper);
-}
-
-.app--landing .series-row:hover,
-.app--landing .challenge-tile:hover {
-  border-color: var(--home-gold-600);
-  box-shadow:
-    inset 0 0 28px rgba(61, 42, 22, 0.14),
-    7px 10px 0 rgba(0, 0, 0, 0.36),
-    0 19px 34px rgba(0, 0, 0, 0.28);
-}
-
-.app--landing .play-switch__tab {
-  color: #3f3829;
-  background:
-    linear-gradient(105deg, rgba(255, 245, 205, 0.07), transparent 55%),
-    var(--home-paper-200);
-  border-color: var(--rulebook-edge);
-  border-bottom-color: #766746;
-  border-radius: 2px 2px 0 0;
-  box-shadow: inset 0 1px rgba(255, 244, 205, 0.14), 0 -4px 0 rgba(0, 0, 0, 0.12);
-}
-
-.app--landing .play-switch__tab:hover {
-  color: var(--home-ink-950);
-  background: #b9aa80;
-}
-
-.app--landing .play-switch__tab--active {
-  color: var(--home-ink-950);
-  background: var(--home-paper-100);
-  border-bottom-color: var(--home-paper-100);
-}
-
-.app--landing .scenario-select__subtitle,
-.app--landing .challenge-section__subtitle {
-  color: rgba(227, 220, 200, 0.72);
-}
-
-.app--landing .scenario-select__version {
-  color: rgba(227, 220, 200, 0.62);
-}
-
-.app--landing .series-row__meta,
-.app--landing .challenge-tile__meta,
-.app--landing .challenge-section__summary {
-  color: #644513;
-}
-
-/* Game materials keep tactical geometry and state colors intact. */
-.app--game .hud,
-.app--game .pitch-wrapper {
-  background: var(--rulebook-iron);
-  border-color: #070806;
-  border-radius: 2px;
-  box-shadow: inset 0 0 0 1px rgba(227, 220, 200, 0.09), 5px 6px 0 rgba(0, 0, 0, 0.25);
-}
-
-.app--game .pitch-wrapper::before {
-  border-color: rgba(181, 139, 56, 0.27);
-}
-
-.app--game .square--light { background: #3c6031; }
-.app--game .square--dark { background: #335529; }
-.app--game .square--endzone-left.square--dark { background: #264252; }
-.app--game .square--endzone-left.square--light { background: #2d5063; }
-.app--game .square--endzone-right.square--dark { background: #5d302a; }
-.app--game .square--endzone-right.square--light { background: #6c3931; }
-
-.app--game .panel,
-.app--game .dice-log,
-.app--playbook .piece-menu {
-  background: var(--rulebook-paper);
-  border-color: var(--rulebook-edge);
-  box-shadow: inset 0 0 18px rgba(61, 42, 22, 0.11), 3px 4px 0 rgba(0, 0, 0, 0.32);
-}
-
-.app--game .panel--human {
-  border-color: var(--home-blue-500);
-  box-shadow: inset 4px 0 0 var(--home-blue-500), inset 0 0 18px rgba(61, 42, 22, 0.11), 3px 4px 0 rgba(0, 0, 0, 0.32);
-}
-
-.app--game .panel--orc {
-  border-color: var(--home-rust-500);
-  box-shadow: inset 4px 0 0 var(--home-rust-500), inset 0 0 18px rgba(61, 42, 22, 0.11), 3px 4px 0 rgba(0, 0, 0, 0.32);
-}
-
-.app--game .panel--empty {
-  background: rgba(12, 16, 13, 0.48);
-  border-color: rgba(227, 220, 200, 0.16);
-  box-shadow: inset 0 0 18px rgba(0, 0, 0, 0.28);
-}
-
-.app--game .panel__portrait-wrap {
-  border-bottom: 2px solid var(--rulebook-edge);
-  box-shadow: inset 0 0 18px rgba(0, 0, 0, 0.38);
-}
-
-.app--game .panel__portrait--legacy,
-.app--game .piece__portrait--legacy {
-  filter: saturate(0.58) contrast(1.08) brightness(0.78) sepia(0.12);
-}
-
-.app--game .panel__stat {
-  background: rgba(171, 154, 112, 0.54);
-  border-color: rgba(54, 47, 34, 0.3);
-}
-
-.app--game .panel__skill,
-.app--game .dice-log__entry {
-  background: rgba(200, 185, 143, 0.46);
-}
-
-.app--playbook .piece-menu__item:hover,
-.app--archive .lb-table__row--clickable:hover td {
-  background: rgba(181, 139, 56, 0.22);
-}
-
-.app--playbook .piece-menu__confirm:hover:not(:disabled),
-.app--playbook .modal__roll-btn:hover:not(:disabled) {
-  background: #c39a49;
-}
-
-/* Sheets, archives, menus, and reporting share one aged-paper recipe. */
-.app--playbook .modal,
-.app--archive .leaderboard,
-.app--archive .score-summary,
-.app--playbook .user-menu__dropdown,
-.app--playbook .report-problem-modal {
-  background:
-    linear-gradient(90deg, transparent 0 30px, rgba(135, 61, 49, 0.2) 31px 32px, transparent 33px),
-    var(--rulebook-paper);
-  border-color: var(--rulebook-edge);
-  border-radius: 2px;
-}
-
-.app--playbook .modal,
-.app--archive .leaderboard,
-.app--archive .score-summary {
-  box-shadow:
-    inset 0 0 30px rgba(61, 42, 22, 0.13),
-    0 0 0 8px var(--home-charcoal-900),
-    0 0 0 10px #080907,
-    0 22px 55px rgba(0, 0, 0, 0.52);
-}
-
-.app--archive .lb-table,
-.app--playbook .submit-modal__moves,
-.app--playbook .score-summary__moves,
-.app--playbook .block-outcome__rows {
-  background: rgba(171, 154, 112, 0.28);
-  border-color: rgba(54, 47, 34, 0.34);
-}
-
-.app--archive .lb-table th {
-  background: rgba(141, 123, 86, 0.4);
-}
-
-.app--archive .lb-table__row--highlight td {
-  background: rgba(181, 139, 56, 0.3);
-  box-shadow: inset 4px 0 var(--home-rust-500);
-}
-
+/* ── Account menu and report button ───────────────────────────────── */
 .app--playbook .user-menu__trigger,
 .app--playbook .report-problem-button {
-  color: var(--home-ink-950);
-  background:
-    linear-gradient(105deg, rgba(255, 245, 205, 0.08), transparent 60%),
-    var(--home-paper-100);
-  border-color: var(--rulebook-edge);
-  border-radius: 2px;
-  box-shadow: 2px 3px 0 rgba(0, 0, 0, 0.3);
+  color: #c5c1b7;
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-button);
+  box-shadow: none;
 }
 
 .app--playbook .user-menu__trigger:hover,
 .app--playbook .report-problem-button:hover {
-  color: var(--home-ink-950);
-  background: #bfae80;
-  border-color: var(--home-gold-600);
+  color: var(--color-text-strong);
+  background: var(--color-surface-hover);
+  border-color: #706e66;
 }
 
-.app--playbook .user-menu__dropdown {
-  color: var(--home-ink-950);
-  box-shadow: inset 0 0 20px rgba(61, 42, 22, 0.12), 5px 7px 0 rgba(0, 0, 0, 0.34);
-}
-
-.app--playbook .user-menu__dropdown-header {
-  border-bottom-color: var(--rulebook-line);
+.app--playbook .user-menu__caret {
+  color: var(--color-text-muted);
 }
 
 .app--playbook .user-menu__avatar--fallback {
-  color: var(--home-chalk-100);
-  background: var(--home-rust-500);
+  color: #f4eee3;
+  background: var(--color-accent-dark);
 }
 
-.app--playbook .user-menu__dropdown-name,
-.app--playbook .user-menu__item {
-  color: var(--home-ink-950);
+.app--playbook .user-menu__dropdown {
+  color: var(--color-text);
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-panel);
+  box-shadow: var(--shadow-overlay);
+}
+
+.app--playbook .user-menu__dropdown-header {
+  border-bottom-color: var(--color-border-subtle);
+}
+
+.app--playbook .user-menu__dropdown-name {
+  color: var(--color-text-strong);
 }
 
 .app--playbook .user-menu__item {
-  border-radius: 1px;
-  font-family: 'Courier New', monospace;
-  font-weight: 700;
+  color: var(--color-text-muted);
+  border-radius: 2px;
+  transition: background var(--transition-fast), color var(--transition-fast);
 }
 
 .app--playbook .user-menu__item:hover:not(:disabled) {
-  color: var(--home-ink-950);
-  background: rgba(181, 139, 56, 0.24);
+  color: var(--color-text-strong);
+  background: var(--color-surface-hover);
+}
+
+.app--playbook .user-menu__item:disabled {
+  color: var(--color-text-disabled);
+}
+
+.app--playbook .user-menu__item--danger {
+  color: #c98577;
+}
+
+.app--playbook .user-menu__item--danger:hover:not(:disabled) {
+  color: #dfa094;
+  background: rgba(196, 74, 55, 0.12);
 }
 
 .app--playbook .report-problem-button--header,
 .app--playbook .report-problem-button--hud {
-  color: var(--home-chalk-100);
-  background: rgba(12, 16, 13, 0.78);
-  border-color: rgba(227, 220, 200, 0.28);
+  color: #c5c1b7;
+  background: var(--color-surface-2);
+  border-color: var(--color-border);
   box-shadow: none;
 }
 
 .app--playbook .report-problem-button--header:hover,
 .app--playbook .report-problem-button--hud:hover {
-  color: var(--home-ink-950);
-  background: var(--home-gold-500);
+  color: var(--color-text-strong);
+  background: var(--color-surface-hover);
+  border-color: #706e66;
 }
 
-.app--playbook .report-problem-form__field input,
-.app--playbook .report-problem-form__field textarea,
-.app--playbook .submit-modal__input {
-  color: var(--home-ink-950);
-  background: rgba(219, 205, 163, 0.56);
-  border-color: #776745;
-  border-radius: 1px;
+/* ── Landing ──────────────────────────────────────────────────────────
+   The match-day artwork stays; its frame and every surrounding surface move
+   onto the shared dark panel system. */
+.app--landing .scenario-select__header {
+  background:
+    linear-gradient(90deg, rgba(13, 15, 15, 0.97) 0%, rgba(13, 15, 15, 0.88) 38%, rgba(13, 15, 15, 0.4) 74%, rgba(13, 15, 15, 0.22) 100%),
+    linear-gradient(0deg, rgba(13, 15, 15, 0.8), transparent 62%),
+    url('./assets/matchday-clash.webp') center 49% / cover no-repeat,
+    var(--color-surface-1);
+  border: 1px solid #242825;
+  border-radius: var(--radius-panel);
+  box-shadow: none;
 }
 
-.app--playbook .report-problem-form__type {
-  border-color: #776745;
-  border-radius: 1px;
+.app--landing .scenario-select__header::before {
+  border-color: rgba(222, 217, 203, 0.08);
+  box-shadow: none;
+}
+
+.app--landing .scenario-select__eyebrow {
+  color: var(--color-accent);
+}
+
+.app--landing .scenario-select__title {
+  color: var(--color-text-strong);
+}
+
+.app--landing .scenario-select__subtitle,
+.app--landing .challenge-section__subtitle {
+  color: var(--color-text-muted);
+  text-shadow: none;
+}
+
+.app--landing .scenario-select__version {
+  color: var(--color-text-disabled);
+  font-family: var(--font-display);
+}
+
+.app--landing .challenge-section__summary {
+  color: var(--color-text-muted);
+  font-family: var(--font-display);
+}
+
+.app--landing .series-row__meta,
+.app--landing .challenge-tile__meta {
+  color: var(--color-text-muted);
+  font-family: var(--font-display);
 }
 
 /* ── Admin dossier ───────────────────────────────────────────────── */
@@ -1231,16 +1076,18 @@
 .app--admin .editor {
   gap: 14px;
   padding: 22px;
-  color: var(--home-chalk-100);
+  color: var(--color-text);
 }
 
 .app--admin .editor__header {
   position: relative;
   padding: 18px 20px;
-  background: var(--rulebook-iron);
-  border: 1px solid #070806;
-  border-radius: 2px;
-  box-shadow: inset 0 0 0 1px rgba(227, 220, 200, 0.1), 5px 6px 0 rgba(0, 0, 0, 0.28);
+  background:
+    var(--texture-noise),
+    var(--color-surface-1);
+  border: 1px solid #292d2a;
+  border-radius: var(--radius-panel);
+  box-shadow: inset 0 1px rgba(255, 255, 255, 0.025);
 }
 
 .app--admin .editor__header::after {
@@ -1248,139 +1095,143 @@
   position: absolute;
   left: 20px;
   bottom: 5px;
-  color: rgba(227, 220, 200, 0.22);
-  font-family: 'Courier New', monospace;
-  font-size: 0.48rem;
-  font-weight: 900;
+  color: rgba(222, 217, 203, 0.16);
+  font-family: var(--font-display);
+  font-size: 0.5rem;
+  font-weight: 600;
   letter-spacing: 0.11em;
   pointer-events: none;
 }
 
 .app--admin .editor__title {
-  color: var(--home-chalk-100);
-  font-family: Rockwell, 'Roboto Slab', 'Courier New', serif;
-  font-size: 2rem;
-  line-height: 1;
-  letter-spacing: -0.02em;
+  color: var(--color-text-strong);
+  font-family: var(--font-display);
+  font-size: 1.8rem;
+  font-weight: 600;
+  line-height: 1.05;
+  letter-spacing: 0.02em;
   text-transform: uppercase;
 }
 
 .app--admin .editor__subtitle,
 .app--admin .editor__hint,
 .app--admin .editor__status {
-  color: var(--home-chalk-300);
+  color: var(--color-text-muted);
 }
 
 .app--admin .editor__panel,
 .app--admin .editor__pitch-panel,
 .app--admin .editor-tool {
-  background: var(--rulebook-iron);
-  border: 1px solid #090b08;
-  border-radius: 2px;
-  box-shadow: inset 0 0 0 1px rgba(227, 220, 200, 0.08), 4px 5px 0 rgba(0, 0, 0, 0.24);
-}
-
-.app--admin .editor__panel h2,
-.app--admin .editor-tool h2 {
-  color: var(--home-chalk-100);
-  font-family: Rockwell, 'Roboto Slab', 'Courier New', serif;
-  text-transform: uppercase;
+  background: var(--color-surface-2);
+  border: 1px solid #2a2f2b;
+  border-radius: var(--radius-card);
+  box-shadow: none;
 }
 
 .app--admin .editor-tool h3,
 .app--admin .editor label,
 .app--admin .editor__checkbox {
-  color: var(--home-chalk-300);
-  font-family: 'Courier New', monospace;
+  color: var(--color-text-muted);
 }
 
 .app--admin .editor__puzzle-row,
 .app--admin .palette-piece,
 .app--admin .editor__stats span,
 .app--admin .editor__skills {
-  color: var(--home-chalk-300);
-  background: rgba(12, 16, 13, 0.68);
-  border-color: rgba(227, 220, 200, 0.18);
-  border-radius: 1px;
-}
-
-.app--admin .editor__puzzle-row strong,
-.app--admin .palette-piece,
-.app--admin .editor__stats span,
-.app--admin .editor__skills {
-  color: var(--home-chalk-100);
+  color: var(--color-text);
+  background: var(--color-surface-1);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: 2px;
+  transition: background var(--transition-fast), border-color var(--transition-fast);
 }
 
 .app--admin .editor__puzzle-row:hover,
 .app--admin .palette-piece:hover {
-  border-color: var(--home-gold-500);
-  background: rgba(43, 58, 46, 0.72);
+  background: var(--color-surface-hover);
+  border-color: #3a403a;
 }
 
 .app--admin .editor__puzzle-row--active {
-  color: var(--home-chalk-100);
-  border-color: var(--home-gold-500);
-  box-shadow: inset 4px 0 var(--home-rust-500);
+  color: var(--color-text-strong);
+  background: #1b1d1b;
+  border-color: var(--color-border-selected);
+  box-shadow: inset 3px 0 var(--color-accent);
 }
 
 .app--admin .editor input,
 .app--admin .editor select,
 .app--admin .editor textarea {
-  color: var(--home-ink-950);
-  background:
-    linear-gradient(105deg, rgba(255, 245, 205, 0.08), transparent 62%),
-    var(--home-paper-100);
-  border: 1px solid var(--rulebook-edge);
-  border-radius: 1px;
+  color: var(--color-text);
+  background: var(--color-surface-1);
+  border: 1px solid #343934;
+  border-radius: var(--radius-input);
+  transition: border-color var(--transition-fast);
+}
+
+.app--admin .editor input:hover,
+.app--admin .editor select:hover,
+.app--admin .editor textarea:hover {
+  border-color: #4a504a;
+}
+
+.app--admin .editor input:focus,
+.app--admin .editor select:focus,
+.app--admin .editor textarea:focus {
+  border-color: var(--color-border-focus);
 }
 
 .app--admin .editor input::placeholder,
 .app--admin .editor textarea::placeholder {
-  color: rgba(27, 24, 18, 0.58);
+  color: #666c65;
 }
 
 .app--admin .editor-pitch {
-  background: #0d100d;
-  border: 8px solid var(--home-charcoal-950);
-  border-top-color: var(--home-charcoal-950);
-  box-shadow: inset 0 0 0 1px rgba(227, 220, 200, 0.16), 0 0 22px rgba(0, 0, 0, 0.42);
+  background: var(--color-bg);
+  border: 6px solid var(--color-surface-1);
+  border-top-color: var(--color-surface-1);
+  box-shadow: inset 0 0 0 1px rgba(222, 217, 203, 0.12);
 }
 
 .app--admin .editor-pitch__square--light { background: #3c6031; }
-.app--admin .editor-pitch__square--dark { background: #335529; }
-.app--admin .editor-pitch__square--endzone-top { background: #2d5063; }
-.app--admin .editor-pitch__square--endzone-bottom { background: #6c3931; }
-.app--admin .editor-pitch__square--scrimmage { box-shadow: inset 0 -2px 0 rgba(227, 220, 200, 0.44); }
-.app--admin .editor-pitch__square--selected { outline-color: var(--rulebook-focus); }
+.app--admin .editor-pitch__square--dark { background: #355729; }
+.app--admin .editor-pitch__square--endzone-top { background: #294c69; }
+.app--admin .editor-pitch__square--endzone-bottom { background: #63352c; }
+.app--admin .editor-pitch__square--scrimmage { box-shadow: inset 0 -2px 0 rgba(222, 217, 203, 0.4); }
+.app--admin .editor-pitch__square--selected { outline-color: var(--color-accent); }
 
 .app--admin .editor-piece {
-  border-color: var(--home-paper-200);
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.55);
+  border-color: rgba(222, 217, 203, 0.5);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
 }
 
-.app--admin .editor-piece--human { background: var(--home-blue-700); }
-.app--admin .editor-piece--orc { background: var(--home-rust-700); }
-.app--admin .palette-piece--human { background: rgba(41, 71, 91, 0.74); }
-.app--admin .palette-piece--orc { background: rgba(98, 42, 35, 0.74); }
+.app--admin .editor-piece--human { background: var(--team-human-deep); }
+.app--admin .editor-piece--orc { background: var(--team-orc-deep); }
+.app--admin .palette-piece--human { background: rgba(18, 60, 102, 0.55); }
+.app--admin .palette-piece--orc { background: rgba(106, 31, 24, 0.55); }
 
 .app--admin .editor__errors {
-  color: #e3a399;
-  background: rgba(135, 61, 49, 0.18);
-  border-left: 3px solid var(--home-danger-500);
+  color: #cf9b90;
+  background: rgba(196, 74, 55, 0.1);
+  border-left: 3px solid var(--color-danger);
   padding-block: 8px;
 }
 
 .app--admin .editor__series-list {
-  color: var(--home-chalk-300);
+  color: var(--color-text-muted);
 }
 
 .app--admin .editor__series-item--active {
-  color: var(--rulebook-focus);
+  color: var(--color-accent);
 }
 
 .app--admin .editor-tool .btn--ghost {
-  color: #e3a399;
-  border-color: var(--home-rust-500);
+  color: #c98577;
+  border-color: #57332c;
+}
+
+.app--admin .editor-tool .btn--ghost:hover:not(:disabled) {
+  color: #dfa094;
+  border-color: #7d4437;
 }
 
 @media (max-width: 680px) {
@@ -1473,8 +1324,8 @@
   .app--archive .leaderboard,
   .app--archive .score-summary {
     width: calc(100% - 28px);
-    margin: 34px auto;
-    padding: 42px 28px 30px;
+    margin: 28px auto;
+    padding: 26px 22px;
   }
 }
 
@@ -1492,7 +1343,7 @@
     order: 10;
     flex-basis: 100%;
     padding: 4px 6px 0;
-    border-top: 1px solid rgba(246, 241, 223, 0.15);
+    border-top: 1px solid var(--color-border-subtle);
   }
 
   .app--game .hud__team {
@@ -1509,7 +1360,7 @@
   }
 
   .app--playbook .modal {
-    padding: 34px 22px 26px;
+    padding: 24px 18px 22px;
   }
 
   .app--playbook .submit-modal__moves,
@@ -1528,8 +1379,8 @@
   .app--archive .score-summary {
     width: calc(100% - 24px);
     min-height: calc(100vh - 48px);
-    margin: 24px auto;
-    padding: 42px 18px 24px;
+    margin: 20px auto;
+    padding: 24px 16px;
   }
 
   .app--archive .leaderboard__header,
@@ -1603,5 +1454,11 @@
   .app--playbook *::before,
   .app--playbook *::after {
     scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+  }
+
+  .app--playbook .btn:active:not(:disabled),
+  .app--playbook .modal__roll-btn:active:not(:disabled) {
+    transform: none;
   }
 }

@@ -21,10 +21,10 @@
 .pitch__col-label {
   font-size: 0.55rem;
   font-weight: 600;
-  color: rgba(200, 184, 122, 0.75);
+  color: rgba(222, 217, 203, 0.55);
   text-align: center;
   line-height: 1.4em;
-  font-family: 'Courier New', monospace;
+  font-family: var(--font-display);
 }
 
 /* ── Middle row: row-labels + grid + row-labels ─────────────────────── */
@@ -45,12 +45,12 @@
   flex: 1;
   font-size: 0.55rem;
   font-weight: 600;
-  color: rgba(200, 184, 122, 0.75);
+  color: rgba(222, 217, 203, 0.55);
   text-align: center;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-family: 'Courier New', monospace;
+  font-family: var(--font-display);
 }
 
 /* ── The field grid ─────────────────────────────────────────────────── */
@@ -60,7 +60,7 @@
   display: grid;
   grid-template-columns: repeat(26, 1fr);
   grid-template-rows:    repeat(15, 1fr);
-  border: 2px solid rgba(200, 184, 122, 0.6);
+  border: 2px solid rgba(222, 217, 203, 0.4);
   box-sizing: border-box;
 }
 
@@ -88,14 +88,14 @@
 }
 
 /* Subtle checkerboard so squares are countable */
-.square--light { background: #4e821c; }
-.square--dark  { background: #467518; }
+.square--light { background: #3c6031; }
+.square--dark  { background: #355729; }
 
 /* ── End zones ──────────────────────────────────────────────────────── */
-.square--endzone-left.square--dark   { background: #162f58; }
-.square--endzone-left.square--light  { background: #1e4478; }
-.square--endzone-right.square--dark  { background: #581616; }
-.square--endzone-right.square--light { background: #781e1e; }
+.square--endzone-left.square--dark   { background: #22405a; }
+.square--endzone-left.square--light  { background: #294c69; }
+.square--endzone-right.square--dark  { background: #562c25; }
+.square--endzone-right.square--light { background: #63352c; }
 
 /* End zone boundary lines — right edge of col 0, left edge of col 25 */
 .square--endzone-left::before {
@@ -103,7 +103,7 @@
   position: absolute;
   right: 0; top: 0; bottom: 0;
   width: 2px;
-  background: rgba(220, 200, 140, 0.8);
+  background: rgba(222, 217, 203, 0.62);
   pointer-events: none;
   z-index: 1;
 }
@@ -112,7 +112,7 @@
   position: absolute;
   left: 0; top: 0; bottom: 0;
   width: 2px;
-  background: rgba(220, 200, 140, 0.8);
+  background: rgba(222, 217, 203, 0.62);
   pointer-events: none;
   z-index: 1;
 }
@@ -123,7 +123,7 @@
   position: absolute;
   left: 0; right: 0; top: 0;
   height: 1px;
-  background: rgba(220, 200, 140, 0.55);
+  background: rgba(222, 217, 203, 0.4);
   pointer-events: none;
   z-index: 1;
 }
@@ -134,7 +134,7 @@
   position: absolute;
   left: 0; top: 0; bottom: 0;
   width: 2px;
-  background: rgba(220, 200, 140, 0.85);
+  background: rgba(222, 217, 203, 0.68);
   pointer-events: none;
   z-index: 1;
 }
@@ -152,32 +152,32 @@
   inset: 0;
   pointer-events: none;
   z-index: 3;
-  box-shadow: inset 0 0 0 2px rgba(230, 45, 45, 0.76);
+  box-shadow: inset 0 0 0 2px rgba(196, 74, 55, 0.7);
   background:
-    linear-gradient(135deg, rgba(235, 55, 55, 0.22) 0 10%, transparent 10% 100%);
+    linear-gradient(135deg, rgba(196, 74, 55, 0.2) 0 10%, transparent 10% 100%);
 }
 
 .square--tz-2 .square__tz-overlay {
-  box-shadow: inset 0 0 0 3px rgba(245, 54, 54, 0.88);
+  box-shadow: inset 0 0 0 3px rgba(206, 79, 58, 0.82);
   background:
-    linear-gradient(135deg, rgba(245, 54, 54, 0.30) 0 12%, transparent 12% 100%),
-    linear-gradient(225deg, rgba(245, 54, 54, 0.20) 0 10%, transparent 10% 100%);
+    linear-gradient(135deg, rgba(206, 79, 58, 0.28) 0 12%, transparent 12% 100%),
+    linear-gradient(225deg, rgba(206, 79, 58, 0.18) 0 10%, transparent 10% 100%);
 }
 
 .square--tz-3 .square__tz-overlay,
 .square--tz-4 .square__tz-overlay {
-  box-shadow: inset 0 0 0 3px rgba(255, 42, 42, 0.96);
+  box-shadow: inset 0 0 0 3px rgba(219, 86, 63, 0.92);
   background:
-    linear-gradient(135deg, rgba(255, 42, 42, 0.38) 0 14%, transparent 14% 100%),
-    linear-gradient(225deg, rgba(255, 42, 42, 0.26) 0 12%, transparent 12% 100%);
+    linear-gradient(135deg, rgba(219, 86, 63, 0.34) 0 14%, transparent 14% 100%),
+    linear-gradient(225deg, rgba(219, 86, 63, 0.24) 0 12%, transparent 12% 100%);
 }
 
 .square--reachable .square__overlay {
   background:
     repeating-linear-gradient(
       135deg,
-      rgba(255, 232, 92, 0.26) 0,
-      rgba(255, 232, 92, 0.26) 2px,
+      rgba(222, 217, 203, 0.24) 0,
+      rgba(222, 217, 203, 0.24) 2px,
       transparent 2px,
       transparent 7px
     );
@@ -187,60 +187,60 @@
   background:
     repeating-linear-gradient(
       135deg,
-      rgba(255, 232, 92, 0.56) 0,
-      rgba(255, 232, 92, 0.56) 3px,
-      rgba(25, 70, 20, 0.08) 3px,
-      rgba(25, 70, 20, 0.08) 8px
+      rgba(235, 231, 219, 0.5) 0,
+      rgba(235, 231, 219, 0.5) 3px,
+      rgba(13, 15, 15, 0.1) 3px,
+      rgba(13, 15, 15, 0.1) 8px
     );
 }
 
 .square--preview-gfi .square__overlay {
-  background: rgba(40, 120, 255, 0.45);
-  box-shadow: inset 0 0 0 2px rgba(80, 160, 255, 0.85);
+  background: rgba(58, 106, 152, 0.5);
+  box-shadow: inset 0 0 0 2px rgba(90, 154, 212, 0.85);
 }
 
 .square--preview-dodge .square__overlay {
-  background: rgba(220, 110, 0, 0.60);
-  box-shadow: inset 0 0 0 2px rgba(255, 160, 0, 0.85);
+  background: rgba(160, 100, 42, 0.6);
+  box-shadow: inset 0 0 0 2px rgba(199, 150, 61, 0.9);
 }
 
 .square--preview-gfi-dodge .square__overlay {
-  background: rgba(160, 60, 220, 0.55);
-  box-shadow: inset 0 0 0 2px rgba(200, 100, 255, 0.90);
+  background: rgba(114, 78, 150, 0.58);
+  box-shadow: inset 0 0 0 2px rgba(160, 128, 196, 0.9);
 }
 
 .square--path .square__overlay {
-  background: rgba(255, 255, 255, 0.12);
+  background: var(--move-safe);
 }
 
 .square--handoff-target .square__overlay {
-  background: rgba(0, 210, 120, 0.35);
-  box-shadow: inset 0 0 0 2px rgba(0, 255, 140, 0.85);
+  background: rgba(63, 158, 119, 0.38);
+  box-shadow: inset 0 0 0 2px rgba(95, 182, 148, 0.85);
 }
 
 /* Pass range bands — subtle tints, receiver highlight on top */
-.square--range-quick .square__overlay { background: rgba(255, 240, 60, 0.12); }
-.square--range-short .square__overlay { background: rgba(80, 200, 80, 0.12); }
-.square--range-long  .square__overlay { background: rgba(255, 140, 30, 0.12); }
-.square--range-bomb  .square__overlay { background: rgba(220, 50, 50, 0.12); }
+.square--range-quick .square__overlay { background: rgba(199, 150, 61, 0.12); }
+.square--range-short .square__overlay { background: rgba(127, 168, 75, 0.12); }
+.square--range-long  .square__overlay { background: rgba(192, 122, 53, 0.14); }
+.square--range-bomb  .square__overlay { background: rgba(196, 74, 55, 0.14); }
 
 .square--pass-receiver .square__overlay {
-  background: rgba(140, 80, 255, 0.35);
-  box-shadow: inset 0 0 0 2px rgba(180, 120, 255, 0.90);
+  background: rgba(114, 78, 150, 0.4);
+  box-shadow: inset 0 0 0 2px rgba(160, 128, 196, 0.9);
 }
 
 .square--block-target .square__overlay {
-  background: rgba(220, 30, 30, 0.35);
-  box-shadow: inset 0 0 0 2px rgba(255, 70, 70, 0.90);
+  background: var(--move-danger);
+  box-shadow: inset 0 0 0 2px rgba(219, 86, 63, 0.9);
 }
 
 .square--blitz-target .square__overlay {
-  box-shadow: inset 0 0 0 3px #ff9800, inset 0 0 18px rgb(255 152 0 / 35%);
+  box-shadow: inset 0 0 0 3px var(--color-warning), inset 0 0 18px rgba(199, 150, 61, 0.3);
 }
 
 .square--push-target .square__overlay {
-  background: rgba(255, 140, 0, 0.35);
-  box-shadow: inset 0 0 0 2px rgba(255, 170, 40, 0.90);
+  background: var(--move-risk);
+  box-shadow: inset 0 0 0 2px rgba(199, 150, 61, 0.9);
 }
 
 /* ── Pieces ─────────────────────────────────────────────────────────── */
@@ -317,9 +317,9 @@
   overflow: hidden;
   isolation: isolate;
   container-type: inline-size;
-  background: #171914;
+  background: var(--color-surface-sunken);
   box-shadow:
-    inset 0 0 0 1px rgba(235, 229, 208, 0.42),
+    inset 0 0 0 1px rgba(222, 217, 203, 0.34),
     inset 0 0 7px rgba(0, 0, 0, 0.62);
 }
 
@@ -347,11 +347,11 @@
 }
 
 .piece--human .piece__team-tint {
-  background: rgba(38, 115, 196, 0.32);
+  background: rgba(90, 154, 212, 0.3);
 }
 
 .piece--orc .piece__team-tint {
-  background: rgba(184, 48, 38, 0.3);
+  background: rgba(207, 83, 64, 0.3);
 }
 
 .piece__state-overlay {
@@ -361,10 +361,10 @@
 
 .piece--selected {
   box-shadow:
-    0 0 0 2px rgba(255, 255, 255, 0.95),
-    0 0 12px 3px rgba(255, 255, 255, 0.5),
+    0 0 0 2px var(--move-path),
+    0 0 9px 2px rgba(235, 231, 219, 0.3),
     0 2px 6px rgba(0, 0, 0, 0.55);
-  transform: scale(1.15);
+  transform: scale(1.12);
   z-index: 4;
 }
 
@@ -382,21 +382,21 @@
 }
 
 .piece--selected.piece--down {
-  transform: rotate(90deg) scale(1.15);
+  transform: rotate(90deg) scale(1.12);
 }
 
 .piece--carrier {
   box-shadow:
-    0 0 0 2px rgba(255, 214, 74, 0.92),
-    0 0 16px 4px rgba(255, 190, 40, 0.65),
+    0 0 0 2px rgba(199, 150, 61, 0.85),
+    0 0 12px 3px rgba(199, 150, 61, 0.4),
     0 2px 10px rgba(0, 0, 0, 0.6);
 }
 
 .piece--selected.piece--carrier {
   box-shadow:
-    0 0 0 2px rgba(255, 214, 74, 0.95),
-    0 0 0 4px rgba(255, 255, 255, 0.95),
-    0 0 14px 5px rgba(255, 255, 255, 0.42),
+    0 0 0 2px rgba(199, 150, 61, 0.9),
+    0 0 0 4px var(--move-path),
+    0 0 11px 4px rgba(235, 231, 219, 0.32),
     0 2px 10px rgba(0, 0, 0, 0.6);
 }
 
@@ -405,7 +405,7 @@
 }
 
 .piece--ghost .piece__visual {
-  outline: 1px dashed rgba(255, 255, 255, 0.9);
+  outline: 1px dashed var(--move-path);
   outline-offset: 1px;
 }
 
@@ -432,7 +432,7 @@
   border: max(1px, 1.5cqi) solid rgba(255, 255, 255, 0.88);
   border-radius: 2cqi;
   color: #fff;
-  font-family: 'Courier New', monospace;
+  font-family: var(--font-mono);
   font-size: 12cqi;
   font-weight: 900;
   line-height: 1;
@@ -472,14 +472,14 @@
   bottom: 1%;
   right: 1%;
   max-width: 96%;
-  background: rgba(10, 10, 10, 0.88);
-  color: #fff;
+  background: rgba(13, 15, 15, 0.9);
+  color: var(--color-text-strong);
   font-size: 0.38rem;
   font-weight: 700;
   line-height: 1.2;
   padding: 0.06em 0.3em;
-  border-radius: 0.5em;
-  border: 1px solid rgba(255, 255, 255, 0.65);
+  border-radius: 2px;
+  border: 1px solid rgba(222, 217, 203, 0.45);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -551,5 +551,5 @@
   user-select: none;
 }
 
-.step-num--preview   { color: rgba(255,255,255,0.85); text-shadow: 0 0 3px rgba(0,0,0,0.9); }
-.step-num--committed { color: rgba(255,255,255,0.40); text-shadow: 0 0 3px rgba(0,0,0,0.7); }
+.step-num--preview   { color: var(--move-path); text-shadow: 0 0 3px rgba(0, 0, 0, 0.9); font-variant-numeric: tabular-nums; }
+.step-num--committed { color: rgba(235, 231, 219, 0.4); text-shadow: 0 0 3px rgba(0, 0, 0, 0.7); font-variant-numeric: tabular-nums; }

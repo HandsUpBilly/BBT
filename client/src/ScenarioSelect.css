@@ -18,15 +18,15 @@
   gap: 24px;
   overflow: visible;
   padding: 30px 32px;
-  color: var(--home-chalk-100);
+  color: var(--color-text);
   background:
-    linear-gradient(90deg, rgba(15, 16, 14, 0.96) 0%, rgba(15, 16, 14, 0.82) 36%, rgba(15, 16, 14, 0.28) 72%, rgba(15, 16, 14, 0.16) 100%),
-    linear-gradient(0deg, rgba(15, 16, 14, 0.68), transparent 58%),
+    linear-gradient(90deg, rgba(13, 15, 15, 0.96) 0%, rgba(13, 15, 15, 0.82) 36%, rgba(13, 15, 15, 0.28) 72%, rgba(13, 15, 15, 0.16) 100%),
+    linear-gradient(0deg, rgba(13, 15, 15, 0.68), transparent 58%),
     url('./assets/matchday-clash.webp') center 49% / cover no-repeat,
-    var(--home-charcoal-900);
-  border: 1px solid #070b08;
-  border-radius: 5px;
-  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.26);
+    var(--color-surface-1);
+  border: 1px solid #242825;
+  border-radius: var(--radius-panel);
+  box-shadow: none;
 }
 
 .scenario-select__header::before {
@@ -34,7 +34,7 @@
   position: absolute;
   inset: 7px;
   pointer-events: none;
-  border: 1px solid rgba(241, 232, 207, 0.13);
+  border: 1px solid rgba(222, 217, 203, 0.08);
 }
 
 .scenario-select__brand,
@@ -53,31 +53,31 @@
 .scenario-select__eyebrow,
 .series-row__eyebrow,
 .challenge-tile__index {
-  font-family: 'Courier New', monospace;
-  font-size: 0.68rem;
-  font-weight: 800;
+  font-family: var(--font-display);
+  font-size: 0.7rem;
+  font-weight: 600;
   letter-spacing: 0.13em;
   text-transform: uppercase;
 }
 
 .scenario-select__eyebrow {
-  color: var(--home-gold-500);
+  color: var(--color-accent);
 }
 
 .scenario-select__title {
-  color: var(--home-chalk-100);
-  font-family: Rockwell, 'Roboto Slab', 'Courier New', serif;
-  font-size: clamp(3.2rem, 7vw, 5.5rem);
-  font-weight: 900;
-  line-height: 0.88;
-  letter-spacing: -0.055em;
+  color: var(--color-text-strong);
+  font-family: var(--font-display);
+  font-size: clamp(3rem, 7vw, 5rem);
+  font-weight: 600;
+  line-height: 0.92;
+  letter-spacing: -0.005em;
   text-transform: uppercase;
   text-shadow: 0 3px 18px rgba(0, 0, 0, 0.7);
 }
 
 .scenario-select__subtitle {
   max-width: 620px;
-  color: rgba(246, 241, 223, 0.72);
+  color: var(--color-text-muted);
   font-size: 0.95rem;
   line-height: 1.5;
   text-shadow: 0 2px 8px rgba(0, 0, 0, 0.9);
@@ -98,12 +98,13 @@
 }
 
 .scenario-select__version {
-  color: rgba(246, 241, 223, 0.52);
-  font-family: 'Courier New', monospace;
-  font-size: 0.58rem;
-  font-weight: 800;
+  color: var(--color-text-disabled);
+  font-family: var(--font-display);
+  font-size: 0.6rem;
+  font-weight: 600;
   letter-spacing: 0.08em;
   text-transform: uppercase;
+  font-variant-numeric: tabular-nums;
 }
 
 .scenario-select__route {
@@ -112,7 +113,7 @@
   bottom: -42px;
   width: 280px;
   height: 112px;
-  opacity: 0.2;
+  opacity: 0.1;
   pointer-events: none;
   transform: rotate(-5deg);
 }
@@ -124,7 +125,7 @@
   bottom: 24px;
   width: 250px;
   height: 88px;
-  border-top: 3px dashed var(--home-chalk-100);
+  border-top: 3px dashed var(--color-text);
   border-radius: 50%;
   transform: skewX(-22deg);
 }
@@ -136,8 +137,8 @@
   top: 4px;
   width: 19px;
   height: 19px;
-  border-top: 3px solid var(--home-chalk-100);
-  border-right: 3px solid var(--home-chalk-100);
+  border-top: 3px solid var(--color-text);
+  border-right: 3px solid var(--color-text);
   transform: rotate(28deg);
 }
 
@@ -146,7 +147,7 @@
   bottom: 15px;
   width: 12px;
   height: 12px;
-  border: 2px solid var(--home-chalk-100);
+  border: 2px solid var(--color-text);
   border-radius: 50%;
 }
 
@@ -166,52 +167,56 @@
   gap: 6px;
 }
 
+/* The app's primary navigation. Active state reads through three channels —
+   accent bar, raised surface, and extra height — so it never depends on colour
+   alone. */
 .play-switch__tab {
+  position: relative;
   min-width: 150px;
   min-height: 48px;
   padding: 12px 28px 10px;
-  border: 1px solid #8f8266;
-  border-bottom-color: #b9a982;
-  border-radius: 5px 5px 0 0;
-  color: #6b624f;
-  background: #cbbd9d;
-  font-family: 'Courier New', monospace;
-  font-size: 0.76rem;
-  font-weight: 800;
-  letter-spacing: 0.08em;
+  border: 1px solid var(--color-border-subtle);
+  border-bottom-color: transparent;
+  border-radius: var(--radius-card) var(--radius-card) 0 0;
+  color: var(--color-text-muted);
+  background: var(--color-surface-1);
+  font-family: var(--font-display);
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
   cursor: pointer;
-  box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.12);
-  transition: min-height 160ms ease, color 160ms ease, background 160ms ease, transform 160ms ease;
+  box-shadow: none;
+  transition:
+    min-height var(--transition-standard),
+    color var(--transition-fast),
+    background var(--transition-fast),
+    border-color var(--transition-fast);
 }
 
 .play-switch__tab:hover {
-  color: var(--home-ink-950);
-  background: var(--home-paper-200);
+  color: #d6d2c8;
+  background: var(--color-surface-3);
 }
 
 .play-switch__tab--active {
   min-height: 54px;
-  color: var(--home-ink-950);
-  background: var(--home-paper-100);
-  border-bottom-color: var(--home-paper-100);
+  color: var(--color-text-strong);
+  background: #1b1d1b;
+  border-color: var(--color-border);
+  border-bottom-color: transparent;
 }
 
+/* Narrow accent marker along the tab's leading edge. */
 .play-switch__tab--active::before {
   content: '';
-  display: inline-block;
-  width: 6px;
-  height: 6px;
-  margin-right: 8px;
-  background: var(--home-rust-500);
-  border-radius: 50%;
-  vertical-align: 0.08em;
-}
-
-.play-switch__tab:focus-visible,
-.app--landing .btn:focus-visible {
-  outline: 3px solid var(--home-gold-500);
-  outline-offset: 3px;
+  position: absolute;
+  top: -1px;
+  left: -1px;
+  right: -1px;
+  height: 3px;
+  background: var(--color-accent);
+  border-radius: var(--radius-card) var(--radius-card) 0 0;
 }
 
 .play-section {
@@ -224,46 +229,34 @@
   grid-template-columns: 84px minmax(0, 1fr) auto;
   align-items: center;
   gap: 24px;
-  min-height: 248px;
+  min-height: 232px;
   overflow: hidden;
-  padding: 34px 36px;
-  color: var(--home-ink-950);
-  background:
-    linear-gradient(90deg, transparent 0 46px, rgba(168, 83, 62, 0.3) 47px 48px, transparent 49px),
-    repeating-linear-gradient(0deg, transparent 0 27px, rgba(79, 75, 64, 0.12) 28px 29px),
-    var(--home-paper-100);
-  border: 1px solid #b9a982;
-  border-radius: 3px 3px 9px 4px;
-  box-shadow: 0 16px 30px rgba(0, 0, 0, 0.28);
-  transition: transform 160ms ease, box-shadow 160ms ease;
-}
-
-.series-row::before {
-  content: '';
-  position: absolute;
-  top: -7px;
-  left: 50%;
-  width: 118px;
-  height: 24px;
-  background: rgba(215, 166, 59, 0.8);
-  transform: translateX(-50%) rotate(1deg);
-  clip-path: polygon(2% 7%, 100% 0, 97% 100%, 0 91%);
+  padding: 30px 34px;
+  color: var(--color-text);
+  background: var(--color-surface-2);
+  border: 1px solid #2a2f2b;
+  border-radius: var(--radius-card);
+  box-shadow: none;
+  transition:
+    background var(--transition-standard),
+    border-color var(--transition-standard);
 }
 
 .series-row:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 20px 36px rgba(0, 0, 0, 0.34);
+  background: var(--color-surface-3);
+  border-color: #3a403a;
 }
 
 .series-row__number {
   align-self: stretch;
   display: grid;
   place-items: center;
-  color: var(--home-rust-500);
-  font-family: Rockwell, 'Roboto Slab', serif;
-  font-size: 3.25rem;
-  font-weight: 900;
-  border-right: 2px solid rgba(79, 75, 64, 0.35);
+  color: var(--color-accent);
+  font-family: var(--font-display);
+  font-size: 3rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  border-right: 1px solid var(--color-border-subtle);
 }
 
 .series-row__body {
@@ -275,19 +268,22 @@
 }
 
 .series-row__eyebrow {
-  color: var(--home-rust-500);
+  color: var(--color-accent);
 }
 
 .series-row__title {
-  color: var(--home-ink-950);
-  font-family: Rockwell, 'Roboto Slab', 'Courier New', serif;
-  font-size: clamp(1.75rem, 4vw, 2.6rem);
-  line-height: 1.05;
+  color: var(--color-text-strong);
+  font-family: var(--font-display);
+  font-size: clamp(1.7rem, 4vw, 2.4rem);
+  font-weight: 600;
+  line-height: 1.1;
+  letter-spacing: 0.01em;
+  text-transform: uppercase;
 }
 
 .series-row__desc {
   max-width: 590px;
-  color: var(--home-ink-700);
+  color: var(--color-text-muted);
   font-size: 0.94rem;
   line-height: 1.55;
 }
@@ -295,19 +291,20 @@
 .series-row__meta,
 .challenge-tile__meta,
 .challenge-section__summary {
-  color: #6b4a0e;
-  font-family: 'Courier New', monospace;
+  color: var(--color-text-muted);
+  font-family: var(--font-display);
   font-variant-numeric: tabular-nums;
-  font-weight: 800;
+  font-weight: 600;
 }
 
 .series-row__meta {
   margin-top: 3px;
   padding: 6px 9px;
-  border: 1px solid rgba(107, 74, 14, 0.58);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: 2px;
   font-size: 0.75rem;
+  letter-spacing: 0.05em;
   text-transform: uppercase;
-  transform: rotate(-0.5deg);
 }
 
 .series-row__actions {
@@ -326,21 +323,23 @@
 }
 
 .challenge-section__title {
-  color: var(--home-chalk-100);
-  font-family: Rockwell, 'Roboto Slab', 'Courier New', serif;
-  font-size: 1.55rem;
+  color: #c8c3b7;
+  font-family: var(--font-display);
+  font-size: 1.3rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
 }
 
 .challenge-section__subtitle {
   margin-top: 3px;
-  color: rgba(246, 241, 223, 0.62);
+  color: var(--color-text-muted);
   font-size: 0.82rem;
 }
 
 .challenge-section__summary {
-  color: var(--home-gold-500);
   font-size: 0.76rem;
+  letter-spacing: 0.05em;
   text-align: right;
   text-transform: uppercase;
 }
@@ -359,53 +358,27 @@
   flex-direction: column;
   gap: 18px;
   overflow: hidden;
-  padding: 25px 26px 23px;
-  color: var(--home-ink-950);
-  background:
-    linear-gradient(90deg, transparent 0 24px, rgba(71, 125, 165, 0.18) 25px 26px, transparent 27px),
-    repeating-linear-gradient(0deg, transparent 0 25px, rgba(79, 75, 64, 0.1) 26px 27px),
-    var(--home-paper-100);
-  border: 1px solid #b9a982;
-  border-radius: 2px 3px 7px 3px;
-  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.25);
-  transition: transform 160ms ease, box-shadow 160ms ease, border-color 160ms ease;
-}
-
-.challenge-tile:nth-child(4n + 2),
-.challenge-tile:nth-child(4n + 3) {
-  background:
-    linear-gradient(90deg, transparent 0 24px, rgba(168, 83, 62, 0.16) 25px 26px, transparent 27px),
-    repeating-linear-gradient(0deg, transparent 0 25px, rgba(79, 75, 64, 0.1) 26px 27px),
-    var(--home-paper-100);
-}
-
-.challenge-tile::after {
-  content: '';
-  position: absolute;
-  right: -22px;
-  bottom: -22px;
-  width: 76px;
-  height: 76px;
-  border: 2px solid rgba(79, 75, 64, 0.14);
-  border-radius: 50%;
+  padding: 24px 26px 22px;
+  color: var(--color-text);
+  background: var(--color-surface-2);
+  border: 1px solid #2a2f2b;
+  border-radius: var(--radius-card);
+  box-shadow: none;
+  transition:
+    background var(--transition-standard),
+    border-color var(--transition-standard);
 }
 
 .challenge-tile:hover {
-  border-color: var(--home-gold-500);
-  transform: translateY(-2px);
-  box-shadow: 0 15px 30px rgba(0, 0, 0, 0.31);
+  background: var(--color-surface-3);
+  border-color: #3a403a;
 }
 
 .challenge-tile__index {
   align-self: flex-start;
-  color: var(--home-blue-500);
+  color: var(--color-text-muted);
   padding-bottom: 6px;
-  border-bottom: 2px solid currentColor;
-}
-
-.challenge-tile:nth-child(4n + 2) .challenge-tile__index,
-.challenge-tile:nth-child(4n + 3) .challenge-tile__index {
-  color: var(--home-rust-500);
+  border-bottom: 1px solid var(--color-border);
 }
 
 .challenge-tile__body {
@@ -417,15 +390,17 @@
 }
 
 .challenge-tile__name {
-  color: var(--home-ink-950);
-  font-family: Rockwell, 'Roboto Slab', 'Courier New', serif;
-  font-size: 1.35rem;
-  font-weight: 800;
-  line-height: 1.15;
+  color: var(--color-text-strong);
+  font-family: var(--font-display);
+  font-size: 1.3rem;
+  font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: 0.01em;
+  text-transform: uppercase;
 }
 
 .challenge-tile__desc {
-  color: var(--home-ink-700);
+  color: var(--color-text-muted);
   font-size: 0.86rem;
   line-height: 1.5;
 }
@@ -434,6 +409,7 @@
   margin-top: auto;
   padding-top: 7px;
   font-size: 0.72rem;
+  letter-spacing: 0.05em;
   text-transform: uppercase;
 }
 
@@ -444,58 +420,8 @@
   gap: 9px;
 }
 
-.app--landing .btn {
-  min-height: 42px;
-  border-radius: 2px;
-  font-family: 'Courier New', monospace;
-  font-size: 0.74rem;
-  font-weight: 900;
-  letter-spacing: 0.055em;
-  text-transform: uppercase;
-}
-
-.app--landing .btn--primary {
-  color: #171713;
-  background: var(--home-gold-500);
-  border-color: #7e5a16;
-  box-shadow: 2px 3px 0 #7e5a16;
-}
-
-.app--landing .btn--primary:hover:not(:disabled) {
-  color: #171713;
-  background: #e4b84f;
-  transform: translateY(-1px);
-  box-shadow: 2px 4px 0 #7e5a16;
-}
-
-.app--landing .btn--secondary {
-  color: var(--home-chalk-100);
-  background: var(--home-charcoal-900);
-  border-color: #0f100e;
-  box-shadow: 2px 3px 0 rgba(15, 16, 14, 0.75);
-}
-
-.app--landing .btn--secondary:hover:not(:disabled) {
-  color: #fff;
-  background: #34372f;
-  transform: translateY(-1px);
-}
-
-.app--landing .btn:active:not(:disabled) {
-  transform: translateY(2px);
-  box-shadow: none;
-}
-
-.app--landing .btn--ghost {
-  color: rgba(246, 241, 223, 0.72);
-  background: rgba(16, 25, 21, 0.55);
-  border-color: rgba(246, 241, 223, 0.28);
-}
-
-.app--landing .btn--ghost:hover:not(:disabled) {
-  color: var(--home-chalk-100);
-  border-color: rgba(246, 241, 223, 0.62);
-}
+/* Buttons on the landing screen use the shared `.btn` system from
+   PlaybookTheme.css — no screen-specific variants. */
 
 @media (max-width: 760px) {
   .scenario-select {
@@ -507,10 +433,10 @@
     grid-template-columns: minmax(0, 1fr) auto;
     padding: 25px 22px;
     background:
-      linear-gradient(90deg, rgba(15, 16, 14, 0.9) 0%, rgba(15, 16, 14, 0.62) 58%, rgba(15, 16, 14, 0.22) 100%),
-      linear-gradient(0deg, rgba(15, 16, 14, 0.78), transparent 62%),
+      linear-gradient(90deg, rgba(13, 15, 15, 0.92) 0%, rgba(13, 15, 15, 0.66) 58%, rgba(13, 15, 15, 0.24) 100%),
+      linear-gradient(0deg, rgba(13, 15, 15, 0.8), transparent 62%),
       url('./assets/matchday-clash.webp') center 47% / cover no-repeat,
-      var(--home-charcoal-900);
+      var(--color-surface-1);
   }
 
   .scenario-select__title {
@@ -542,7 +468,7 @@
     grid-template-columns: 56px minmax(0, 1fr);
     align-items: start;
     gap: 18px;
-    padding: 34px 24px 26px;
+    padding: 26px 22px 24px;
   }
 
   .series-row__number {
@@ -614,7 +540,7 @@
     display: block;
     padding-bottom: 8px;
     border-right: 0;
-    border-bottom: 2px solid rgba(79, 75, 64, 0.35);
+    border-bottom: 1px solid var(--color-border-subtle);
   }
 
   .series-row__actions,

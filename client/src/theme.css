@@ -1,0 +1,92 @@
+/* Central theme tokens. Every surface, border, text and accent value in the app
+   should come from here rather than a hard-coded hex, so the whole interface can
+   be retuned in one place.
+
+   Direction: dark tactical sports interface. Restrained fantasy-sports styling,
+   subtle wear, thin borders, tight radii. The pitch is the strongest visual
+   element; UI chrome frames it rather than competing with it. */
+:root {
+  color-scheme: dark;
+
+  /* ── Surfaces ─────────────────────────────────────────────────────── */
+  --color-bg: #0d0f0f;
+  --color-surface-1: #111413;
+  --color-surface-2: #151817;
+  --color-surface-3: #191d1b;
+  --color-surface-hover: #1e2320;
+  /* Recessed wells: tables, log entries, stat chips inside a panel. */
+  --color-surface-sunken: #0f1211;
+
+  /* ── Borders ──────────────────────────────────────────────────────── */
+  --color-border: #303530;
+  --color-border-subtle: #252925;
+  --color-border-strong: #464b46;
+  --color-border-selected: #6e392b;
+  --color-border-focus: #9d442e;
+
+  /* ── Text ─────────────────────────────────────────────────────────── */
+  --color-text: #ded9cb;
+  --color-text-strong: #eee8da;
+  --color-text-muted: #979b92;
+  --color-text-disabled: #636861;
+
+  /* ── Accent ───────────────────────────────────────────────────────────
+     Reserved for active navigation, primary actions, selected/focused
+     controls and important warnings. Never applied decoratively. */
+  --color-accent: #c54b2d;
+  --color-accent-hover: #dc5835;
+  --color-accent-dark: #78311f;
+  --color-accent-press: #963923;
+  --color-accent-border: #d05a3b;
+
+  /* ── Status ───────────────────────────────────────────────────────── */
+  --color-success: #7fa84b;
+  --color-warning: #c7963d;
+  --color-danger: #c44a37;
+
+  /* ── Team identity ────────────────────────────────────────────────────
+     Deliberately independent of the UI accent — these identify sides on the
+     pitch and must not drift toward the interface's orange/red. */
+  --team-human: #5a9ad4;
+  --team-human-deep: #123c66;
+  --team-orc: #cf5340;
+  --team-orc-deep: #6a1f18;
+
+  /* ── Movement and tactical overlays ───────────────────────────────── */
+  --move-safe: rgba(222, 217, 203, 0.2);
+  --move-path: rgba(235, 231, 219, 0.86);
+  --move-risk: rgba(199, 150, 61, 0.55);
+  --move-danger: rgba(196, 74, 55, 0.55);
+
+  /* ── Radii ────────────────────────────────────────────────────────── */
+  --radius-button: 3px;
+  --radius-card: 4px;
+  --radius-panel: 4px;
+  --radius-modal: 6px;
+  --radius-input: 4px;
+
+  /* ── Motion ───────────────────────────────────────────────────────── */
+  --transition-fast: 120ms ease;
+  --transition-standard: 160ms ease;
+
+  /* ── Type ─────────────────────────────────────────────────────────────
+     No webfont: the deployed CSP is `font-src 'self'`, so the display stack
+     resolves to a condensed face if the reader has one and degrades to the
+     system UI face otherwise. */
+  --font-display: 'Oswald', 'Roboto Condensed', 'Archivo Narrow', 'Barlow Condensed',
+    'Bahnschrift Condensed', 'Arial Narrow', system-ui, sans-serif;
+  --font-body: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: ui-monospace, 'Cascadia Mono', 'Segoe UI Mono', Menlo, monospace;
+
+  /* ── Texture ──────────────────────────────────────────────────────────
+     Perceived opacity sits around 2-3%: felt before it is noticed. Applied to
+     large chrome only — never behind small text or inside form controls. */
+  --texture-noise:
+    radial-gradient(circle at 15% 22%, rgba(255, 255, 255, 0.022) 0 1px, transparent 1.5px) 0 0 / 11px 11px,
+    radial-gradient(circle at 74% 66%, rgba(0, 0, 0, 0.16) 0 1px, transparent 1.5px) 0 0 / 13px 13px;
+
+  /* ── Elevation ────────────────────────────────────────────────────────
+     Depth is used sparingly; there is no soft SaaS card shadow. */
+  --shadow-panel: 0 2px 8px rgba(0, 0, 0, 0.22);
+  --shadow-overlay: 0 12px 32px rgba(0, 0, 0, 0.5);
+}
