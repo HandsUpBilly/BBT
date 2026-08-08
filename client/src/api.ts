@@ -1,7 +1,7 @@
 import type { LeaderboardEntry, RiskyMove, SeriesLeaderboardEntry, SeriesPuzzleResult } from './types';
 // Same module the server uses to build GitHub issue bodies, so the offline
 // download fallback is byte-identical to what would have been filed.
-import { buildIssueDraft, createDownload, REPORT_LIMITS } from '../../shared/reporting.js';
+import { createDownload, REPORT_LIMITS } from '../../shared/reporting.js';
 
 const BASE = '/api';
 
@@ -149,11 +149,6 @@ export function createReportDownload(input: ReportInput): ReportDownload {
     { ...input, context: input.context },
     input.reporterName,
   );
-}
-
-/** The exact issue title/body the server would file — shown as a preview. */
-export function previewIssue(input: ReportInput) {
-  return buildIssueDraft({ ...input, context: input.context }, input.reporterName);
 }
 
 export async function submitReport(input: ReportInput, idToken?: string | null): Promise<ReportSubmission> {
