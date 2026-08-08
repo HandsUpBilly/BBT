@@ -11,7 +11,3 @@ export const allScenarios: Scenario[] = Object.values(modules).sort((a, b) =>
 );
 
 export const scenarios: Scenario[] = allScenarios.filter(scenario => scenario.published !== false);
-
-export function getScenario(id: string): Scenario | undefined {
-  return allScenarios.find(s => s.id === id);
-}
