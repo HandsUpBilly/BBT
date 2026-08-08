@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { readEntries, updateEntries } from './blobEntries.js';
+import { readEntries, updateEntries } from '../functions/blobEntries.js';
 
 /**
  * A minimal fake of the @netlify/blobs store surface updateEntries/readEntries

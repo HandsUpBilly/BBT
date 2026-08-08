@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { toPublicView } from './editorStore.js';
+import { toPublicView } from '../functions/editorStore.js';
 
 const scenarios = [
   { id: 'scenario-001', published: true },

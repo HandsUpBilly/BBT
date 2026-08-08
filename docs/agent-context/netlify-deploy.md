@@ -22,9 +22,11 @@ Primary files:
 literal import list; generating it keeps "drop a JSON file in `scenarios/`" true
 in both environments. Never hand-edit that file.
 
-Functions live in `netlify/functions/` and are bundled with esbuild. They import
-from `shared/` at the repo root, which is what keeps the production
-auth/validation identical to the Express server's.
+Deployable functions live in `netlify/functions/`; their Node tests live in
+`netlify/tests/` so Netlify never mistakes a `*.test.js` file for a serverless
+function. Functions are bundled with esbuild. They import from `shared/` at the
+repo root, which is what keeps the production auth/validation identical to the
+Express server's.
 
 ### shared/ must not import any package
 

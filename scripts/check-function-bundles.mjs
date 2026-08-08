@@ -93,13 +93,21 @@ try {
 
 const esbuild = await loadEsbuild();
 
-const entries = (await readdir(functionsDir))
+const functionFiles = await readdir(functionsDir);
+const testFiles = functionFiles.filter(file => file.endsWith('.test.js'));
+
+if (testFiles.length > 0) {
+  console.error(
+    `Netlify would deploy test files as functions: ${testFiles.join(', ')}. `
+    + 'Move them to netlify/tests/ instead.',
+  );
+  process.exit(1);
+}
+
+const entries = functionFiles
   .filter(file => file.endsWith('.js'))
   // Generated data module, not a function.
   .filter(file => file !== 'scenarioSeed.js')
-  // Test files import node:test, which isn't resolvable in a deployed
-  // function bundle — and don't need to be, since Netlify never invokes them.
-  .filter(file => !file.endsWith('.test.js'))
   .sort();
 
 let failed = 0;
