@@ -87,7 +87,9 @@ production, and a build break that passed every local check.
 > **6. Security posture.**
 > - Do all `/api/editor/*` routes still require an allowlisted admin, including
 >   the GET that returns unpublished drafts?
-> - Does the Netlify path still fail *closed* when `ADMIN_EMAILS` is unset?
+> - Does the empty-`ADMIN_EMAILS` default still match what `AGENTS.md`
+>   documents, and does `EDITOR_ALLOW_UNAUTHENTICATED=false` still produce a
+>   503?
 > - Is `GITHUB_ISSUES_TOKEN` still server-only, never a `VITE_` variable?
 > - Do any new endpoints need rate limiting?
 > - Does the CSP in `netlify.toml` still cover everything the app loads, and
