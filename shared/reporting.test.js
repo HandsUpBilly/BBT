@@ -17,10 +17,9 @@ const validPayload = {
   context: { mode: 'puzzle', scenarioId: 'scenario-003', scenarioName: 'Long Bomb' },
 };
 
-test('validates a report and prefers the verified Google name', () => {
+test('validates a report and keeps the chosen public alias', () => {
   const report = validateReportPayload(validPayload);
-  assert.equal(resolveReporterName(report, { name: 'Verified Coach' }), 'Verified Coach');
-  assert.equal(resolveReporterName(report, null), 'Guest Coach');
+  assert.equal(resolveReporterName(report), 'Guest Coach');
 });
 
 test('rejects invalid category and missing guest reporter', () => {
@@ -29,7 +28,7 @@ test('rejects invalid category and missing guest reporter', () => {
     ReportValidationError,
   );
   const report = validateReportPayload({ ...validPayload, reporterName: '' });
-  assert.throws(() => resolveReporterName(report, null), ReportValidationError);
+  assert.throws(() => resolveReporterName(report), ReportValidationError);
 });
 
 test('escapes user text when building the GitHub issue draft', () => {

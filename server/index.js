@@ -224,7 +224,7 @@ app.post('/api/reports', async (req, res) => {
   let reporterName;
   try {
     report = validateReportPayload(req.body);
-    reporterName = resolveReporterName(report, user);
+    reporterName = resolveReporterName(report);
   } catch (error) {
     if (error instanceof ReportValidationError) return res.status(400).json({ error: error.message });
     throw error;

@@ -163,8 +163,8 @@ function validateMoves(moves, probability, diceCount, label) {
   return sanitized;
 }
 
-export function normalizeName(name, user) {
-  const resolved = String(user?.name ?? name ?? '').trim().slice(0, SCORE_LIMITS.name);
+export function normalizeName(name) {
+  const resolved = String(name ?? '').trim().slice(0, SCORE_LIMITS.name);
   if (!resolved) throw new ScoreValidationError('name is required');
   return resolved;
 }
@@ -179,7 +179,7 @@ export function validateScoreSubmission(body, user) {
   const diceCount = validDiceCount(body.diceCount, 'diceCount');
   const moves = validateMoves(body.moves ?? [], probability, diceCount, 'Score');
 
-  return { name: normalizeName(body.name, user), probability, diceCount, moves };
+  return { name: normalizeName(body.name), probability, diceCount, moves };
 }
 
 /** Validates a series submission: average probability, total dice, per-puzzle results. */
@@ -224,7 +224,7 @@ export function validateSeriesSubmission(body, user) {
     throw new ScoreValidationError('Series diceCount must be the total across its puzzles');
   }
 
-  return { name: normalizeName(body.name, user), probability, diceCount, puzzles: validated };
+  return { name: normalizeName(body.name), probability, diceCount, puzzles: validated };
 }
 
 /**

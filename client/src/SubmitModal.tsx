@@ -144,12 +144,12 @@ export function SubmitModal({ actionLog, onSubmit, onDismiss, seriesMode, contin
               <p className="submit-modal__prompt">Submit as {signedInName}</p>
             ) : (
               <>
-                <p className="submit-modal__prompt">Enter your name for the leaderboard:</p>
+                <p className="submit-modal__prompt">Enter a public alias for the leaderboard:</p>
                 <input
                   className="submit-modal__input"
                   type="text"
                   maxLength={32}
-                  placeholder="Your name"
+                  placeholder="Your public alias"
                   value={name}
                   onChange={e => setName(e.target.value)}
                   onKeyDown={e => e.key === 'Enter' && name.trim() && !submitting && runSubmit(name.trim())}

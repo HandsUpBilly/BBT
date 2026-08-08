@@ -101,13 +101,13 @@ test('a rejected verification surfaces as an AuthError, not the raw failure', as
   );
 });
 
-test('entryAuthFields copies only the display metadata, never the email', () => {
+test('entryAuthFields keeps only the stable account identifier, never profile data', () => {
   assert.deepEqual(entryAuthFields(null), {});
   assert.deepEqual(
     entryAuthFields({
       provider: 'google', providerUserId: 'sub-1', name: 'Coach',
       email: 'secret@x.com', picture: 'https://img',
     }),
-    { userId: 'sub-1', authProvider: 'google', displayName: 'Coach', avatarUrl: 'https://img' },
+    { userId: 'sub-1', authProvider: 'google' },
   );
 });

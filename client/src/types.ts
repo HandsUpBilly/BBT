@@ -271,8 +271,6 @@ export interface LeaderboardEntry {
   moves: RiskyMove[];
   userId?: string;
   authProvider?: 'google';
-  displayName?: string;
-  avatarUrl?: string;
 }
 
 // ── Series ──────────────────────────────────────────────────────────────────
@@ -295,6 +293,4 @@ export interface SeriesLeaderboardEntry {
   puzzles: SeriesPuzzleResult[];
   userId?: string;
   authProvider?: 'google';
-  displayName?: string;
-  avatarUrl?: string;
 }

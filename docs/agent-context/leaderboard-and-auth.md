@@ -16,12 +16,14 @@ The app uses Google Identity Services plus guest names.
 Google flow:
 
 - `AuthProvider.tsx` loads `https://accounts.google.com/gsi/client`.
-- Client decodes the JWT payload for display only (`decodeJwtPayload` in
-  `auth.ts`). It decodes as UTF-8, not latin1 — `atob` alone mangles any
-  non-ASCII display name.
+- The client keeps only the Google subject ID and verified e-mail (the latter
+  only for the server-side admin allowlist). It does not cache/display Google
+  profile names or avatars.
 - Server verifies ID tokens with `google-auth-library` via
   `shared/googleAuth.js`, and only trusts `email_verified` addresses.
 - Cached auth session uses localStorage key `bbt.auth.v1`.
+- A signed-in player must choose a public alias, stored per Google subject in
+  `bbt.googleAliases.v1`. That alias is used for leaderboards and reports.
 
 ### Token expiry
 
@@ -38,8 +40,9 @@ because the failure was swallowed. Now:
 
 Guest flow:
 
-- Guest name persists via `bbt.guestName.v1`.
-- `IdentityGate` in `App.tsx` blocks UI until a Google user or guest name exists.
+- Guest aliases persist via `bbt.guestName.v1` (the key is retained for
+  compatibility).
+- `IdentityGate` in `App.tsx` blocks UI until a player chooses an alias.
 
 ## Admin Access
 
@@ -53,11 +56,10 @@ Guest flow:
 ## Issue and Feature Report Identity
 
 `POST /api/reports` accepts reports from either identified session type. A
-Google ID token is verified with the existing `verifyOptionalGoogleUser` path;
-the server uses its verified display name rather than the browser-supplied
-reporter name. Guest reports require a non-empty reporter name. Neither report
-payloads nor generated GitHub issues include Google IDs, e-mail addresses, or
-tokens.
+Google ID token is verified with the existing `verifyOptionalGoogleUser` path,
+but reports use the supplied public alias rather than a Google profile name.
+Neither report payloads nor generated GitHub issues include Google IDs,
+e-mail addresses, or tokens.
 
 A Bearer token that fails verification (most commonly: expired after the tab
 sat idle — see "Token expiry" above) does **not** reject the report. The
@@ -74,10 +76,9 @@ token outright, since attribution there is tied to score integrity.
 
 - `userId`
 - `authProvider`
-- `displayName`
-- `avatarUrl`
 
-Backend helper `entryAuthFields()` adds these from verified Google tokens.
+Backend helper `entryAuthFields()` adds these from verified Google tokens. The
+public `name` field is always the player-chosen alias.
 
 ## Leaderboard Consistency
 

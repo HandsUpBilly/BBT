@@ -41,7 +41,6 @@ export declare function escapeMarkdown(value: string): string;
 export declare function validateReportPayload(payload: unknown): ValidatedReport;
 export declare function resolveReporterName(
   report: ValidatedReport,
-  user?: { name?: string } | null,
 ): string;
 export declare function buildIssueDraft(
   report: ValidatedReport,

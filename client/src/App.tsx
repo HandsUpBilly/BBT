@@ -15,6 +15,7 @@ import { ConfirmDialog } from './ConfirmDialog';
 import { BlockOutcomePanel } from './BlockOutcomePanel';
 import { blockActionAvailability } from './blockActionAvailability';
 import { UserMenu } from './UserMenu';
+import { AppFooter } from './AppFooter';
 import { ReportProblemButton } from './ReportProblemButton';
 import { ReportProblemModal } from './ReportProblemModal';
 import { submitScore, fetchLeaderboard, submitSeriesScore, fetchSeriesLeaderboard, fetchProgress, ApiError } from './api';
@@ -38,6 +39,7 @@ import './PlaybookTheme.css';
 
 const LOCAL_SCORE_KEY = 'bbt.localScores.v1';
 const GUEST_NAME_KEY = 'bbt.guestName.v1';
+const GOOGLE_ALIASES_KEY = 'bbt.googleAliases.v1';
 
 // Client-side allowlist controlling whether the "Admin Mode" tab is shown at
 // all — this is a UX nicety only, NOT the security boundary. The actual write
@@ -67,6 +69,30 @@ function writeGuestName(name: string): void {
     window.localStorage.setItem(GUEST_NAME_KEY, name);
   } catch {
     // Storage unavailable — guest name just won't persist across refreshes.
+  }
+}
+
+function readGoogleAliases(): Record<string, string> {
+  try {
+    const raw = window.localStorage.getItem(GOOGLE_ALIASES_KEY);
+    if (!raw) return {};
+    const parsed = JSON.parse(raw) as unknown;
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return {};
+    return Object.fromEntries(
+      Object.entries(parsed).filter(([, alias]) => typeof alias === 'string'),
+    );
+  } catch {
+    return {};
+  }
+}
+
+function writeGoogleAlias(userId: string, alias: string): void {
+  try {
+    const aliases = readGoogleAliases();
+    aliases[userId] = alias;
+    window.localStorage.setItem(GOOGLE_ALIASES_KEY, JSON.stringify(aliases));
+  } catch {
+    // Storage unavailable — the alias will be requested again after refresh.
   }
 }
 
@@ -184,13 +210,14 @@ interface SeriesRunState {
 
 interface IdentityGateProps {
   authConfigured: boolean;
+  googleSignedIn: boolean;
   onGoogleSignIn: () => Promise<void>;
-  onGuest: (name: string) => void;
+  onAlias: (alias: string) => void;
 }
 
-function IdentityGate({ authConfigured, onGoogleSignIn, onGuest }: IdentityGateProps) {
+function IdentityGate({ authConfigured, googleSignedIn, onGoogleSignIn, onAlias }: IdentityGateProps) {
   const [guestMode, setGuestMode] = useState(false);
-  const [guestName, setGuestName] = useState('');
+  const [alias, setAlias] = useState('');
   const [signingIn, setSigningIn] = useState(false);
 
   async function handleGoogleSignIn() {
@@ -202,11 +229,13 @@ function IdentityGate({ authConfigured, onGoogleSignIn, onGuest }: IdentityGateP
     }
   }
 
-  function submitGuest() {
-    const trimmed = guestName.trim();
+  function submitAlias() {
+    const trimmed = alias.trim();
     if (!trimmed) return;
-    onGuest(trimmed);
+    onAlias(trimmed);
   }
+
+  const showAliasEntry = googleSignedIn || guestMode;
 
   return (
     <div className="identity-gate">
@@ -219,35 +248,38 @@ function IdentityGate({ authConfigured, onGoogleSignIn, onGuest }: IdentityGateP
           </p>
         </div>
 
-        <div className="identity-gate__actions">
-          <button
-            className="btn btn--primary"
-            disabled={!authConfigured || signingIn}
-            onClick={() => { void handleGoogleSignIn(); }}
-          >
-            {authConfigured ? 'Log In With Google' : 'Google Login Unavailable'}
-          </button>
-          <button className="btn btn--secondary" onClick={() => setGuestMode(true)}>
-            Play As Guest
-          </button>
-        </div>
+        {!googleSignedIn && (
+          <div className="identity-gate__actions">
+            <button
+              className="btn btn--primary"
+              disabled={!authConfigured || signingIn}
+              onClick={() => { void handleGoogleSignIn(); }}
+            >
+              {authConfigured ? 'Log In With Google' : 'Google Login Unavailable'}
+            </button>
+            <button className="btn btn--secondary" onClick={() => setGuestMode(true)}>
+              Play As Guest
+            </button>
+          </div>
+        )}
 
-        {guestMode && (
+        {showAliasEntry && (
           <div className="identity-gate__guest">
-            <label className="identity-gate__label" htmlFor="guest-name">Guest name</label>
+            <label className="identity-gate__label" htmlFor="player-alias">Choose your public alias</label>
+            <p className="identity-gate__alias-help">This is the name shown on leaderboards and reports.</p>
             <div className="identity-gate__guest-row">
               <input
-                id="guest-name"
+                id="player-alias"
                 className="identity-gate__input"
                 type="text"
                 maxLength={32}
-                placeholder="Your name"
-                value={guestName}
-                onChange={e => setGuestName(e.target.value)}
-                onKeyDown={e => e.key === 'Enter' && submitGuest()}
+                placeholder="e.g. Endzone Expert"
+                value={alias}
+                onChange={e => setAlias(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && submitAlias()}
                 autoFocus
               />
-              <button className="btn btn--primary" disabled={!guestName.trim()} onClick={submitGuest}>
+              <button className="btn btn--primary" disabled={!alias.trim()} onClick={submitAlias}>
                 Continue
               </button>
             </div>
@@ -268,11 +300,17 @@ export default function App() {
     series: staticSeries,
   }));
   const seriesScenarios = resolveSeriesScenarios(scenarioData.series, scenarioData.scenarios);
-  const [guestName, setGuestNameState] = useState(readGuestName);
-  const setGuestName = useCallback((name: string) => {
-    setGuestNameState(name);
-    writeGuestName(name);
+  const [guestAlias, setGuestAliasState] = useState(readGuestName);
+  const setGuestAlias = useCallback((alias: string) => {
+    setGuestAliasState(alias);
+    writeGuestName(alias);
   }, []);
+  const [googleAliases, setGoogleAliases] = useState(readGoogleAliases);
+  const setGoogleAlias = useCallback((alias: string) => {
+    if (!currentUser) return;
+    setGoogleAliases(aliases => ({ ...aliases, [currentUser.id]: alias }));
+    writeGoogleAlias(currentUser.id, alias);
+  }, [currentUser]);
   const [appMode, setAppMode] = useState<AppMode>('home');
   // Re-fetch whenever the player lands on the home/select screen (including on
   // first load) so a scenario published while this tab was open — or before
@@ -346,9 +384,8 @@ export default function App() {
           handleBlockAction, handleBlockTarget, handleBlockOutcomeChoice, handlePushChoice }
     = useGameState(makeEmptyState());
 
-  const identityName = currentUser?.displayName ?? guestName;
+  const identityName = currentUser ? googleAliases[currentUser.id] ?? '' : guestAlias;
   const identityReady = Boolean(identityName.trim());
-  const identityAvatarUrl = currentUser?.avatarUrl;
   // Empty ADMIN_EMAILS (unset in this environment) means "show to everyone" —
   // matches the server-side fallback in requireAdminGoogleUser, keeping local
   // dev usable without any Google OAuth/admin config.
@@ -404,15 +441,15 @@ export default function App() {
     if (currentUser) {
       signOut();
     } else {
-      setGuestName('');
+      setGuestAlias('');
     }
     setAppMode('home');
-  }, [currentUser, signOut, setGuestName]);
+  }, [currentUser, signOut, setGuestAlias]);
 
   const archiveControls = (
     <div className="app__account-controls">
       {reportButton('header')}
-      <UserMenu name={identityName} avatarUrl={identityAvatarUrl} onSignOut={handleSignOut} />
+      <UserMenu name={identityName} onSignOut={handleSignOut} />
     </div>
   );
 
@@ -730,9 +767,11 @@ export default function App() {
       <div className="app app--home app--landing app--playbook">
         <IdentityGate
           authConfigured={authConfigured}
+          googleSignedIn={Boolean(currentUser)}
           onGoogleSignIn={signIn}
-          onGuest={setGuestName}
+          onAlias={currentUser ? setGoogleAlias : setGuestAlias}
         />
+        <AppFooter />
       </div>
     );
   }
@@ -751,12 +790,13 @@ export default function App() {
           progress={progress}
           userId={currentUser?.id}
           isAdmin={isAdmin}
-          userMenu={<UserMenu name={identityName} avatarUrl={identityAvatarUrl} onSignOut={handleSignOut} />}
+          userMenu={<UserMenu name={identityName} onSignOut={handleSignOut} />}
           reportButton={reportButton('header')}
           version={__BBT_VERSION__}
         />
         {notice}
         {reportModal}
+        <AppFooter />
       </div>
     );
   }
@@ -771,7 +811,8 @@ export default function App() {
             onBack={() => setSelectedSeriesEntry(undefined)}
           />
           {notice}
-        {reportModal}
+          {reportModal}
+          <AppFooter />
         </div>
       );
     }
@@ -788,6 +829,7 @@ export default function App() {
         />
         {notice}
         {reportModal}
+        <AppFooter />
       </div>
     );
   }
@@ -795,13 +837,14 @@ export default function App() {
   if (effectiveAppMode === 'admin') {
     return (
       <div className="app app--home app--admin app--playbook">
-        <UserMenu name={identityName} avatarUrl={identityAvatarUrl} onSignOut={handleSignOut} />
+        <UserMenu name={identityName} onSignOut={handleSignOut} />
         <PuzzleEditor
           onBack={() => setAppMode('home')}
           onPlay={previewPuzzle}
           previewScenario={editorPreviewScenario}
           idToken={idToken}
         />
+        <AppFooter />
       </div>
     );
   }
@@ -816,7 +859,8 @@ export default function App() {
             onBack={() => setSelectedEntry(undefined)}
           />
           {notice}
-        {reportModal}
+          {reportModal}
+          <AppFooter />
         </div>
       );
     }
@@ -834,6 +878,7 @@ export default function App() {
         />
         {notice}
         {reportModal}
+        <AppFooter />
       </div>
     );
   }
@@ -923,7 +968,7 @@ export default function App() {
         <button className="hud__restart" onClick={handleRestartTurn}>↺ Restart</button>
 
         {reportButton('hud')}
-        <UserMenu name={identityName} avatarUrl={identityAvatarUrl} onSignOut={handleSignOut} />
+        <UserMenu name={identityName} onSignOut={handleSignOut} />
       </header>
 
       <div className="game-legends">

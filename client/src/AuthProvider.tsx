@@ -15,8 +15,15 @@ function loadStoredAuth(): StoredAuth | null {
     const raw = window.localStorage.getItem(AUTH_STORAGE_KEY);
     if (!raw) return null;
     const parsed = JSON.parse(raw) as Partial<StoredAuth> | null;
-    if (!parsed?.user?.id || !parsed.idToken) return null;
-    return { user: parsed.user, idToken: parsed.idToken };
+    if (!parsed?.user?.id || parsed.user.provider !== 'google' || !parsed.idToken) return null;
+    return {
+      user: {
+        id: parsed.user.id,
+        provider: 'google',
+        ...(typeof parsed.user.email === 'string' ? { email: parsed.user.email } : {}),
+      },
+      idToken: parsed.idToken,
+    };
   } catch {
     return null;
   }
@@ -101,9 +108,7 @@ function userFromCredential(credential: string): AuthUser | null {
     return {
       id: payload.sub,
       provider: 'google',
-      displayName: payload.name || payload.email || 'Google Player',
       email: payload.email,
-      avatarUrl: payload.picture,
     };
   } catch {
     return null;

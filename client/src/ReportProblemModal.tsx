@@ -56,8 +56,8 @@ export function ReportProblemModal({ defaultReporterName, context, idToken, onCl
   };
 
   function validate(): string | undefined {
-    if (!input.reporterName) return 'Enter your name.';
-    if (input.reporterName.length > MAX_REPORTER_NAME) return `Name must be ${MAX_REPORTER_NAME} characters or fewer.`;
+    if (!input.reporterName) return 'Enter your public alias.';
+    if (input.reporterName.length > MAX_REPORTER_NAME) return `Alias must be ${MAX_REPORTER_NAME} characters or fewer.`;
     if (!input.title) return 'Enter a short title.';
     if (input.title.length > MAX_TITLE) return `Title must be ${MAX_TITLE} characters or fewer.`;
     if (!input.description) return 'Describe the issue or feature request.';
@@ -130,7 +130,7 @@ export function ReportProblemModal({ defaultReporterName, context, idToken, onCl
           </fieldset>
 
           <label className="report-problem-form__field" htmlFor="reporter-name">
-            Your name
+            Your public alias
             <input id="reporter-name" maxLength={MAX_REPORTER_NAME} value={reporterName} onChange={event => setReporterName(event.target.value)} />
           </label>
 

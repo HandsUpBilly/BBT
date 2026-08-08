@@ -58,7 +58,7 @@ export default async function handler(req) {
   let reporterName;
   try {
     report = validateReportPayload(payload);
-    reporterName = resolveReporterName(report, user);
+    reporterName = resolveReporterName(report);
   } catch (error) {
     if (error instanceof ReportValidationError) return json({ error: error.message }, 400);
     throw error;

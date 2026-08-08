@@ -98,11 +98,7 @@ export function Leaderboard({ scenario, onBack, highlightId, initialEntries, onE
                   {i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : i + 1}
                 </td>
                 <td className="lb-table__avatar-cell">
-                  {e.avatarUrl ? (
-                    <img className="lb-table__avatar" src={e.avatarUrl} alt={e.name} referrerPolicy="no-referrer" />
-                  ) : (
-                    <span className="lb-table__avatar lb-table__avatar--fallback">{initials(e.name)}</span>
-                  )}
+                  <span className="lb-table__avatar lb-table__avatar--fallback">{initials(e.name)}</span>
                 </td>
                 <td className="lb-table__name">{e.name}</td>
                 <td className="lb-table__prob">{pct(e.probability)}</td>
