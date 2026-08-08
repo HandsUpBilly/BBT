@@ -16,7 +16,7 @@ import {
   blockDiceCount,
   blockCombinedProbability,
   blockOutcomeProbabilities,
-  countAdjacentAssists,
+  countEligibleAssists,
   pushBackCandidates,
 } from './bfs';
 import type { Position } from './types';
@@ -216,14 +216,27 @@ describe('block dice', () => {
     expect(total).toBeCloseTo(1, 10);
   });
 
-  it('counts standing adjacent teammates as assists', () => {
+  it('counts only unmarked standing teammates adjacent to the opposing block player', () => {
     const teammates = [
-      { id: 'self', position: at(5, 5) },
-      { id: 'near', position: at(5, 6) },
-      { id: 'downed', position: at(6, 5), down: true },
+      { id: 'self', position: at(5, 6) },
+      { id: 'near', position: at(6, 5) },
+      { id: 'downed', position: at(4, 5), down: true },
+      { id: 'near-own-player-only', position: at(5, 7) },
       { id: 'far', position: at(1, 1) },
     ];
-    expect(countAdjacentAssists(at(5, 5), teammates, 'self')).toBe(1);
+    const opponents = [
+      { id: 'block-opponent', position: at(5, 5) },
+      { id: 'marker', position: at(7, 5) },
+    ];
+
+    expect(countEligibleAssists(at(5, 5), teammates, 'self', opponents, 'block-opponent')).toBe(0);
+    expect(countEligibleAssists(
+      at(5, 5),
+      teammates,
+      'self',
+      opponents.map(opponent => opponent.id === 'marker' ? { ...opponent, down: true } : opponent),
+      'block-opponent',
+    )).toBe(1);
   });
 });
 
