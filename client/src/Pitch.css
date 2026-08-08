@@ -218,11 +218,24 @@
   box-shadow: inset 0 0 0 2px rgba(95, 182, 148, 0.85);
 }
 
-/* Pass range bands — subtle tints, receiver highlight on top */
-.square--range-quick .square__overlay { background: rgba(199, 150, 61, 0.12); }
-.square--range-short .square__overlay { background: rgba(127, 168, 75, 0.12); }
-.square--range-long  .square__overlay { background: rgba(192, 122, 53, 0.14); }
-.square--range-bomb  .square__overlay { background: rgba(196, 74, 55, 0.14); }
+/* Pass range bands — distinct, high-contrast tints so the distance rings are
+   apparent before the player reads the labelled range key above the pitch. */
+.square--range-quick .square__overlay {
+  background: rgba(199, 150, 61, 0.34);
+  box-shadow: inset 0 0 0 1px rgba(244, 205, 112, 0.44);
+}
+.square--range-short .square__overlay {
+  background: rgba(127, 168, 75, 0.34);
+  box-shadow: inset 0 0 0 1px rgba(184, 220, 121, 0.44);
+}
+.square--range-long .square__overlay {
+  background: rgba(192, 122, 53, 0.38);
+  box-shadow: inset 0 0 0 1px rgba(228, 164, 94, 0.48);
+}
+.square--range-bomb .square__overlay {
+  background: rgba(196, 74, 55, 0.40);
+  box-shadow: inset 0 0 0 1px rgba(238, 128, 106, 0.50);
+}
 
 .square--pass-receiver .square__overlay {
   background: rgba(114, 78, 150, 0.4);

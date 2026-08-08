@@ -341,12 +341,32 @@
   border-left-color: var(--color-success);
 }
 
-.app--game .legend__item--gfi,
-.app--game .legend__item--range-long,
-.app--game .legend__item--range-bomb {
+.app--game .legend__item--gfi {
   color: #92aec5;
   border-left-color: var(--team-human);
 }
+
+.app--game .legend__item--range-long {
+  color: #d0a878;
+  border-left-color: #c07a35;
+}
+
+.app--game .legend__item--range-bomb {
+  color: #cf9b90;
+  border-left-color: var(--color-danger);
+}
+
+.app--game .legend__item--pass-range {
+  border-left-width: 5px;
+  font-size: 0.66rem;
+  letter-spacing: 0.02em;
+  text-transform: none;
+}
+
+.app--game .legend__item--range-quick { background: rgba(199, 150, 61, 0.22); }
+.app--game .legend__item--range-short { background: rgba(127, 168, 75, 0.22); }
+.app--game .legend__item--range-long  { background: rgba(192, 122, 53, 0.24); }
+.app--game .legend__item--range-bomb  { background: rgba(196, 74, 55, 0.24); }
 
 .app--game .game-area {
   gap: 8px;
