@@ -3153,7 +3153,7 @@ a real pass/fail dice roll.
 
 # Block and Blitz Actions
 
-**Status:** Shipped, with rules simplifications. Live. Two rules gaps were closed afterwards: a knocked-down carrier now drops the ball, and a Blitz block costs a square of movement. Still simplified: flat assist counting (no Guard, no marked-assister exclusion), no armour/injury rolls, and no chain pushes.
+**Status:** Shipped, with rules simplifications. Live. Later fixes made a knocked-down carrier drop the ball, made a Blitz block cost a square of movement, and excluded marked assisters. Still simplified: no Guard, no armour/injury rolls, and no chain pushes.
 
 ## Problem Statement
 
@@ -3187,9 +3187,10 @@ the Block and Blitz actions to the PieceMenu.
 - Defender ST > Attacker ST → **2 dice**, defender picks
 - Defender ST > 2× Attacker ST → **3 dice**, defender picks
 
-**Assists** — each adjacent teammate of the blocking player adds +1 to
-that side's effective Strength for this comparison (both attacker and
-defender count their own assists).
+**Assists** — each standing teammate adjacent to the opposing block participant
+adds +1 to that side's effective Strength, unless another standing opponent
+marks the candidate. The two players directly involved in the block do not
+cancel assists. Both attacker and defender count their own eligible assists.
 
 **The block die (6 faces, standard weighting)**:
 
@@ -3341,9 +3342,10 @@ shows "which physical die," only the resulting chance.
 
 ### Rules engine (`client/src/bfs.ts`)
 
-- Add `countAdjacentAssists(pos, teamPositions, excludeId)` — flat count of
-  adjacent teammates (per the "flat adjacency count" decision — no
-  exclusion for teammates who are themselves marked, no Guard doubling).
+- Add `countEligibleAssists(opposingPlayerPos, teammates, excludeTeammateId,
+  opponents, opposingBlockPlayerId)` — count standing teammates adjacent to
+  the opposing block participant, excluding candidates marked by another
+  standing opponent. Guard remains out of scope.
 - Add `blockDiceCount(attackerSt, attackerAssists, defenderSt,
   defenderAssists): { diceCount: 1|2|3, picker: 'attacker'|'defender' }`
   implementing the ST comparison table above.
@@ -3448,8 +3450,8 @@ shows "which physical die," only the resulting chance.
 2. Declaring Blitz allows movement (using the piece's MA) before the block
    is thrown; declaring plain Block does not move the piece.
 3. Targeting a defender computes and displays all 5 outcome faces with
-   individually correct probabilities, based on the ST/assist comparison
-   (flat adjacency count) and correct attacker-picks/defender-picks dice
+   individually correct probabilities, based on the effective ST/eligible-assist
+   comparison and correct attacker-picks/defender-picks dice
    math.
 4. Checking one outcome and confirming resolves directly to that outcome's
    board effect (falls / pushes marked correctly, `down` flags set per the
@@ -3487,7 +3489,7 @@ shows "which physical die," only the resulting chance.
    `ActionLogEntry`, `RiskyMove`; extend `GameState` with `blitzUsed`,
    `pendingBlock`, `isBlockTargeting`, `blockTargets`, `blockChoice`,
    `pushTargetKeys`.
-2. **Rules math** (`client/src/bfs.ts`) — `countAdjacentAssists`,
+2. **Rules math** (`client/src/bfs.ts`) — `countEligibleAssists`,
    `blockDiceCount`, `blockOutcomeProbabilities`, `pushBackCandidates`;
    update all existing tackle-zone-counting helpers to skip `down` pieces.
 3. **Game state** (`client/src/useGameState.ts`) — `handleBlockAction`,

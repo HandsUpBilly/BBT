@@ -120,6 +120,65 @@ describe('plain Block (no movement)', () => {
     expect(blockChoice!.picker).toBe('attacker');
   });
 
+  it('does not count an assister marked by another standing opponent', () => {
+    const state = makeState([
+      blocker(),
+      orc(),
+      blocker({ id: 'human2', name: 'Sera Quickhand', position: { col: 8, row: 9 } }),
+      orc({ id: 'orc2', name: 'Rukbad Bootsnappa', position: { col: 9, row: 9 } }),
+    ]);
+    const { result } = renderHook(() => useGameState(state));
+
+    act(() => result.current.handleBlockAction('human1', false));
+    act(() => result.current.handleBlockTarget(7, 9));
+
+    expect(result.current.state.blockChoice!.diceCount).toBe(1);
+  });
+
+  it('applies marked-assister eligibility to the defending side too', () => {
+    const state = makeState([
+      blocker(),
+      orc({ st: 2 }),
+      orc({ id: 'orc2', name: 'Rukbad Bootsnappa', position: { col: 8, row: 10 } }),
+      blocker({ id: 'human2', name: 'Sera Quickhand', position: { col: 9, row: 10 } }),
+    ]);
+    const { result } = renderHook(() => useGameState(state));
+
+    act(() => result.current.handleBlockAction('human1', false));
+    act(() => result.current.handleBlockTarget(7, 9));
+
+    expect(result.current.state.blockChoice!.diceCount).toBe(2);
+    expect(result.current.state.blockChoice!.picker).toBe('attacker');
+  });
+
+  it('counts an assister when only the block opponent marks them', () => {
+    const state = makeState([
+      blocker(),
+      orc(),
+      blocker({ id: 'human2', name: 'Sera Quickhand', position: { col: 8, row: 9 } }),
+    ]);
+    const { result } = renderHook(() => useGameState(state));
+
+    act(() => result.current.handleBlockAction('human1', false));
+    act(() => result.current.handleBlockTarget(7, 9));
+
+    expect(result.current.state.blockChoice!.diceCount).toBe(2);
+  });
+
+  it('does not count a teammate adjacent only to the blocking player', () => {
+    const state = makeState([
+      blocker(),
+      orc(),
+      blocker({ id: 'human2', name: 'Sera Quickhand', position: { col: 8, row: 11 } }),
+    ]);
+    const { result } = renderHook(() => useGameState(state));
+
+    act(() => result.current.handleBlockAction('human1', false));
+    act(() => result.current.handleBlockTarget(7, 9));
+
+    expect(result.current.state.blockChoice!.diceCount).toBe(1);
+  });
+
   it('an assisting teammate who is down does not count', () => {
     const state = makeState([
       blocker(),

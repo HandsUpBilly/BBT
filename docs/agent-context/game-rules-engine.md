@@ -86,8 +86,11 @@ Regression tests: `client/src/activationRollback.test.ts`.
   runs the same `computeReachable` contact check as `handleBlockAction`, not
   just "does a standing opponent exist anywhere on the pitch"). A plain Block
   remains available afterward.
-- Effective Strength includes eligible adjacent assists. Downed players neither
-  assist nor exert tackle zones and cannot be selected or targeted.
+- Effective Strength includes eligible assists adjacent to the opposing block
+  participant. An assister marked by any other standing opponent is ineligible;
+  the two players directly involved in the block do not cancel assists.
+  Downed players neither assist nor exert tackle zones and cannot be selected
+  or targeted.
 - Block dice use 1–3 dice from the effective-Strength comparison. The player
   chooses acceptable faces; probability is combined according to whether the
   attacker or defender picks the result.
@@ -115,9 +118,7 @@ Regression tests: `client/src/activationRollback.test.ts`.
 
 Deliberate, and worth knowing before "fixing" them:
 
-- Assists are a flat adjacency count — no Guard doubling, and no exclusion of
-  assisters who are themselves marked. This makes dice counts optimistic in
-  crowded positions.
+- Guard is not modelled, so a marked player with Guard cannot assist.
 - No armour or injury rolls; `down` is the only knocked-over state.
 - No chain pushes: if every push-back square is occupied, the defender stays
   put and still falls.

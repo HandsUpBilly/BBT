@@ -391,14 +391,26 @@ interface AssistCandidate {
 }
 
 /**
- * Flat count of adjacent teammates who can assist a block (excludes the
- * blocking player itself and any teammate who is `down`). No exclusion for
- * teammates who are themselves in an opponent's tackle zone, and no Guard
- * doubling — a simplified "flat adjacency count" per this project's scope.
+ * Count teammates adjacent to the opposing block participant who can assist.
+ * A standing candidate is ineligible when any standing opponent other than
+ * that block participant marks them. Guard is not currently modelled.
  */
-export function countAdjacentAssists(pos: Position, teammates: AssistCandidate[], excludeId: string): number {
+export function countEligibleAssists(
+  opposingPlayerPos: Position,
+  teammates: AssistCandidate[],
+  excludeTeammateId: string,
+  opponents: AssistCandidate[],
+  opposingBlockPlayerId: string,
+): number {
   return teammates.filter(t =>
-    t.id !== excludeId && !t.down && neighbours(pos).some(n => n.col === t.position.col && n.row === t.position.row)
+    t.id !== excludeTeammateId
+      && !t.down
+      && neighbours(opposingPlayerPos).some(n => n.col === t.position.col && n.row === t.position.row)
+      && !opponents.some(opponent =>
+        opponent.id !== opposingBlockPlayerId
+          && !opponent.down
+          && neighbours(opponent.position).some(n => n.col === t.position.col && n.row === t.position.row)
+      )
   ).length;
 }
 

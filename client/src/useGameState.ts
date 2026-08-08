@@ -2,7 +2,7 @@ import { useState, useCallback } from 'react';
 import type { GameState, PlayerPiece, Position, ActionLogEntry, Scenario, BlockOutcomeFace } from './types';
 import {
   computeReachable, findShortestPath, key, neighbours, catchTargetAt, passTargetAt, computePassRange,
-  countAdjacentAssists, blockDiceCount, blockOutcomeProbabilities, blockCombinedProbability, pushBackCandidates,
+  countEligibleAssists, blockDiceCount, blockOutcomeProbabilities, blockCombinedProbability, pushBackCandidates,
 } from './bfs';
 
 /**
@@ -956,8 +956,20 @@ export function useGameState(initialState: GameState) {
       const defenderTeammates = pieces.filter(p => p.team === defender.team)
         .map(p => ({ id: p.id, position: p.position, down: p.down }));
 
-      const attackerAssists = countAdjacentAssists(positionedAttacker.position, attackerTeammates, positionedAttacker.id);
-      const defenderAssists = countAdjacentAssists(defender.position, defenderTeammates, defender.id);
+      const attackerAssists = countEligibleAssists(
+        defender.position,
+        attackerTeammates,
+        positionedAttacker.id,
+        defenderTeammates,
+        defender.id,
+      );
+      const defenderAssists = countEligibleAssists(
+        positionedAttacker.position,
+        defenderTeammates,
+        defender.id,
+        attackerTeammates,
+        positionedAttacker.id,
+      );
 
       const { diceCount, picker } = blockDiceCount(positionedAttacker.st, attackerAssists, defender.st, defenderAssists);
       const outcomeProbs = blockOutcomeProbabilities(diceCount, picker);
