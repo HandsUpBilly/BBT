@@ -7,7 +7,16 @@ interface Props {
 }
 
 function pct(p: number) { return `${(p * 100).toFixed(1)}%`; }
-function gcd(a: number, b: number): number { return b === 0 ? a : gcd(b, a % b); }
+
+/** Odds out of 100, e.g. "39/100" — an exact reduced fraction can have a huge
+ * coprime numerator/denominator (e.g. "702595369/1800000000") and convey
+ * nothing useful, so round to a percentage-shaped fraction instead. */
+function oddsFraction(prob: number): string {
+  const rounded = Math.round(prob * 100);
+  if (prob > 0 && rounded === 0) return '<1/100';
+  if (prob < 1 && rounded === 100) return '>99/100';
+  return `${rounded}/100`;
+}
 const BAND_LABEL: Record<string, string> = {
   quick: 'Quick', short: 'Short', long: 'Long', bomb: 'Bomb',
 };
@@ -19,19 +28,6 @@ const FACE_LABEL: Record<string, string> = {
   'defender-down': 'Defender Down',
 };
 
-function cumFraction(moves: LeaderboardEntry['moves']): string {
-  let num = 1, den = 1;
-  for (const m of moves) {
-    if (m.resolvedFace !== undefined) { num *= Math.round(m.actionProb * 1000); den *= 1000; continue; }
-    if (m.passTarget !== undefined)  { num *= (7 - m.passTarget);  den *= 6; continue; }
-    if (m.catchTarget !== undefined) { num *= (7 - m.catchTarget); den *= 6; continue; }
-    if (m.isGfi) { num *= 5; den *= 6; }
-    if (m.dodgeTarget !== null) { num *= (7 - m.dodgeTarget); den *= 6; }
-    if (m.pickupTarget) { num *= (7 - m.pickupTarget); den *= 6; }
-  }
-  const g = gcd(num, den);
-  return `${num / g}/${den / g}`;
-}
 function colLabel(col: number) { return String.fromCharCode(65 + col); }
 function posLabel(p: { col: number; row: number }) { return `${colLabel(p.col)}${p.row + 1}`; }
 function actionLabel(m: LeaderboardEntry['moves'][number]): string {
@@ -97,7 +93,7 @@ export function ScoreSummary({ entry, onBack }: Props) {
           <div className="score-summary__cum-row">
             <span className="score-summary__cum-label">Cumulative probability</span>
             <span className={`score-summary__cum-value${cumProb < 0.5 ? ' score-summary__cum-value--risky' : ''}`}>
-              {cumFraction(moves)} <span className="score-summary__cum-pct">({pct(cumProb)})</span>
+              {oddsFraction(cumProb)} <span className="score-summary__cum-pct">({pct(cumProb)})</span>
             </span>
           </div>
         </div>
