@@ -428,6 +428,14 @@ export function Pitch({ state, onSquareClick, onPieceClick, onSquareHover, onSqu
       const isPreviewDodge    = !!previewStep?.requiresDodge && !isGhost;
       const isPreviewFree     = !!previewStep && !previewStep.requiresDodge && !previewStep.isGfi && !isGhost;
       const isReachable       = state.reachableKeys.has(k) && !previewStep && k !== ghostKey;
+      // Reachable squares beyond the player's remaining MA require one of the
+      // two Go For It rolls. Mark the outer rings immediately, rather than
+      // only revealing that cost after the player hovers a destination.
+      const isGfiRange = isReachable && selectedPiece != null
+        && Math.max(
+          Math.abs(pCol - selectedPiece.position.col),
+          Math.abs(pRow - selectedPiece.position.row),
+        ) > state.remainingMa;
       const tzCount           = tzCounts.get(k) ?? 0;
       const isInTZ            = tzCount > 0;
       const walkedStep        = walkedMap.get(k);
@@ -448,6 +456,7 @@ export function Pitch({ state, onSquareClick, onPieceClick, onSquareHover, onSqu
         isWideZone     ? 'square--wide-zone'     : '',
         isScrimmage    ? 'square--scrimmage'     : '',
         isReachable    ? 'square--reachable'     : '',
+        isGfiRange     ? 'square--reachable-gfi' : '',
         isPreviewFree                       ? 'square--preview-free'      : '',
         isPreviewGfi  && !isPreviewDodge    ? 'square--preview-gfi'       : '',
         isPreviewDodge && !isPreviewGfi     ? 'square--preview-dodge'     : '',
@@ -504,7 +513,7 @@ export function Pitch({ state, onSquareClick, onPieceClick, onSquareHover, onSqu
             describedPiece?.skills ?? EMPTY_SKILLS, !piece && !!showGhost,
             describedPiece?.down ?? false, describedPiece?.hasBall ?? false, describedPiece?.activated ?? false,
             isReachable, previewStep?.requiresDodge ? previewStep.dodgeTarget : null,
-            previewStep?.isGfi ?? false, previewStep?.pickupTarget ?? null,
+            (previewStep?.isGfi ?? false) || isGfiRange, previewStep?.pickupTarget ?? null,
             isLooseBall, targetDescription,
           )}
           pieceTeam={piece?.team ?? null}

@@ -975,7 +975,7 @@ export default function App() {
         <div className="legend" role="list" aria-label="Pitch state legend">
           <span className="legend__item legend__item--tz" role="listitem">Tackle Zone</span>
           <span className="legend__item legend__item--free" role="listitem">Free Move</span>
-          <span className="legend__item legend__item--gfi" role="listitem">Go For It</span>
+          <span className="legend__item legend__item--gfi" role="listitem">Go For It · outer 2 squares</span>
           <span className="legend__item legend__item--dodge" role="listitem">Dodge Required</span>
           {state.isPassTargeting && <>
             <span className="legend__item legend__item--pass-range legend__item--range-quick" role="listitem">Quick Pass · 0–3 squares</span>
