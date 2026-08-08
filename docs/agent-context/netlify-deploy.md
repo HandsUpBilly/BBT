@@ -127,14 +127,19 @@ never be read still converges instead of rejecting every submission forever.
 Blobs is also not immediately read-consistent after a write — that is handled
 client-side by the delayed refetch in `App.tsx`.
 
-`netlify/functions/editorStore.js` self-heals a Blobs `scenarios`/`series-default`
-key (draft or published) that was first seeded before a new scenario existed in
-`STATIC_SCENARIOS`: on every read it appends any shipped scenario missing
-entirely from the stored array, and separately swaps a still-present editor
-placeholder for the shipped seed. Add a new scenario's id to both
-`repairScenario006Placeholder`-style checks if this pattern needs to repeat —
-otherwise an old Blobs snapshot can silently hide a newly shipped puzzle from
-Admin Mode and players.
+`netlify/functions/editorStore.js` used to self-heal a Blobs `scenarios`/
+`series-default` key that was first seeded before Scenario 006 existed, by
+matching stored entries against the placeholder name/description every admin
+editor draft starts with (`repairScenario006Placeholder`/
+`repairScenario006Series`). That match was too loose: a brand-new, unrelated
+puzzle saved without being renamed from "New Puzzle" matched the same check and
+had its real content silently overwritten by the Scenario 006 seed on the next
+read — an unconditional write from a read path, with no undo. Production was
+already repaired by the time this was caught, so the migration was deleted
+outright rather than tightened. Don't reintroduce a read-path repair that
+writes unconditionally; if a Blobs snapshot needs a one-off fix, do it as an
+explicit, single-run operation, not a check that fires on every read
+indefinitely.
 
 ## Current Production Capabilities
 
