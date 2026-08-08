@@ -83,6 +83,77 @@ test('a verified Google name overrides the supplied one and names are capped', (
   );
 });
 
+test('sanitizes a move down to whitelisted fields, discarding everything else', () => {
+  const move = {
+    actionProb: 0.5,
+    cumulativeProb: 0.5,
+    pieceName: 'Aldric Swiftfoot',
+    pieceRole: 'thrower',
+    receiverName: 'Sera Quickhand',
+    receiverRole: 'catcher',
+    from: { col: 7, row: 10 },
+    to: { col: 7, row: 9 },
+    dodgeTarget: 3,
+    isGfi: false,
+    pickupTarget: 2,
+    catchTarget: 4,
+    passTarget: 3,
+    rangeBand: 'short',
+    isBlitz: true,
+    diceCount: 2,
+    picker: 'attacker',
+    acceptedFaces: ['push', 'defender-down'],
+    resolvedFace: 'defender-down',
+    // Not part of RiskyMove at all — must not survive sanitization.
+    maliciousPayload: 'x'.repeat(50_000),
+  };
+
+  const score = validateScoreSubmission({ name: 'Coach', probability: 0.5, diceCount: 1, moves: [move] });
+  const [sanitized] = score.moves;
+
+  assert.deepEqual(Object.keys(sanitized).sort(), [
+    'acceptedFaces', 'actionProb', 'catchTarget', 'cumulativeProb', 'diceCount', 'dodgeTarget',
+    'from', 'isBlitz', 'isGfi', 'passTarget', 'pickupTarget', 'pieceName', 'pieceRole', 'picker',
+    'rangeBand', 'receiverName', 'receiverRole', 'resolvedFace', 'to',
+  ].sort());
+  assert.equal(sanitized.pieceName, 'Aldric Swiftfoot');
+  assert.deepEqual(sanitized.from, { col: 7, row: 10 });
+  assert.deepEqual(sanitized.acceptedFaces, ['push', 'defender-down']);
+  assert.equal(sanitized.resolvedFace, 'defender-down');
+  assert.equal('maliciousPayload' in sanitized, false);
+});
+
+test('sanitizes a move with junk/out-of-range field values rather than trusting them', () => {
+  const move = {
+    actionProb: 1,
+    pieceName: 'y'.repeat(500),
+    from: { col: 'not-a-number', row: null },
+    dodgeTarget: 99,
+    catchTarget: -5,
+    rangeBand: 'not-a-real-band',
+    diceCount: 7,
+    picker: 'referee',
+    resolvedFace: 'coin-flip',
+    acceptedFaces: 'not-an-array',
+    cumulativeProb: -3,
+  };
+
+  const score = validateScoreSubmission({ name: 'Coach', probability: 1, diceCount: 1, moves: [move] });
+  const [sanitized] = score.moves;
+
+  assert.equal(sanitized.pieceName.length, 40);
+  assert.deepEqual(sanitized.from, { col: 0, row: 0 });
+  assert.equal(sanitized.dodgeTarget, null);
+  assert.equal('catchTarget' in sanitized, false);
+  assert.equal('rangeBand' in sanitized, false);
+  assert.equal('diceCount' in sanitized, false);
+  assert.equal('picker' in sanitized, false);
+  assert.equal('resolvedFace' in sanitized, false);
+  assert.equal('acceptedFaces' in sanitized, false);
+  // Invalid cumulativeProb falls back to the validated actionProb.
+  assert.equal(sanitized.cumulativeProb, 1);
+});
+
 test('series submissions must average their puzzles and total their dice', () => {
   const puzzles = [
     { scenarioId: 'a', scenarioName: 'A', probability: 0.5, diceCount: 1, moves: [{ actionProb: 0.5 }] },
