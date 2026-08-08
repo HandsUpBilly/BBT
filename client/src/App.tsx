@@ -978,10 +978,10 @@ export default function App() {
           <span className="legend__item legend__item--gfi" role="listitem">Go For It</span>
           <span className="legend__item legend__item--dodge" role="listitem">Dodge Required</span>
           {state.isPassTargeting && <>
-            <span className="legend__item legend__item--range-quick" role="listitem">Quick (0–3)</span>
-            <span className="legend__item legend__item--range-short" role="listitem">Short (4–6)</span>
-            <span className="legend__item legend__item--range-long" role="listitem">Long (7–9)</span>
-            <span className="legend__item legend__item--range-bomb" role="listitem">Bomb (10–13)</span>
+            <span className="legend__item legend__item--pass-range legend__item--range-quick" role="listitem">Quick Pass · 0–3 squares</span>
+            <span className="legend__item legend__item--pass-range legend__item--range-short" role="listitem">Short Pass · 4–6 squares</span>
+            <span className="legend__item legend__item--pass-range legend__item--range-long" role="listitem">Long Pass · 7–9 squares</span>
+            <span className="legend__item legend__item--pass-range legend__item--range-bomb" role="listitem">Long Bomb · 10–13 squares</span>
           </>}
           {state.isBlockTargeting && (
             <span className="legend__item legend__item--block-target" role="listitem">Block Target</span>
