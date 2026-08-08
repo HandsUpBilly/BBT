@@ -97,6 +97,9 @@ const entries = (await readdir(functionsDir))
   .filter(file => file.endsWith('.js'))
   // Generated data module, not a function.
   .filter(file => file !== 'scenarioSeed.js')
+  // Test files import node:test, which isn't resolvable in a deployed
+  // function bundle — and don't need to be, since Netlify never invokes them.
+  .filter(file => !file.endsWith('.test.js'))
   .sort();
 
 let failed = 0;

@@ -6,6 +6,7 @@ Primary files:
 - `client/package.json`, `client/vitest.config.ts`
 - `client/src/*.test.ts`, `client/src/test/gameState.ts`
 - `shared/*.test.js`
+- `netlify/functions/*.test.js`
 - `AGENTS.md`
 
 ## Standard Checks
@@ -23,7 +24,7 @@ Individually:
 
 ```bash
 npm run lint             # eslint over client/
-npm test                 # node --test over shared/, then vitest over client/
+npm test                 # node --test over shared/ and netlify/functions/, then vitest over client/
 npm run build            # regenerates the scenario seed, then tsc -b && vite build
 npm run check:functions  # bundles the Netlify functions as the deploy does
 ```
@@ -43,6 +44,8 @@ check `git diff --stat` and file paths.
 |---|---|---|
 | `shared/*.test.js` | `node --test` | scenario validation, score validation, Google auth gating, rate limiting, report formatting |
 | `shared/statistics.test.js` | `node --test` | anonymous personal-best aggregation, identity deduplication, empty boards |
+| `netlify/functions/blobEntries.test.js` | `node --test` | `updateEntries` etag retry loop, unconditional final-attempt write, `readEntries` corrupt/non-array handling |
+| `netlify/functions/editorStore.test.js` | `node --test` | `toPublicView` published-only narrowing and dangling series id removal |
 | `client/src/bfs.test.ts` | vitest | pathfinding, reachability, roll targets, pass ranges, block dice, pushes, zoom bounds |
 | `client/src/useGameState.test.ts` | vitest | pass/handoff regressions, loose-ball pickup, touchdowns |
 | `client/src/blockBlitz.test.ts` | vitest | block/blitz targeting, assists, outcomes, follow-ups |
