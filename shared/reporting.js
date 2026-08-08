@@ -73,9 +73,9 @@ export function validateReportPayload(payload) {
   };
 }
 
-/** A verified Google name always wins over the browser-supplied one. */
-export function resolveReporterName(report, user) {
-  return requiredText(user?.name ?? report.reporterName, 'reporterName', REPORT_LIMITS.reporterName);
+/** Reports identify the player by their chosen public alias, not a Google profile name. */
+export function resolveReporterName(report) {
+  return requiredText(report.reporterName, 'reporterName', REPORT_LIMITS.reporterName);
 }
 
 export function buildIssueDraft(report, reporterName, submittedAt = new Date().toISOString()) {

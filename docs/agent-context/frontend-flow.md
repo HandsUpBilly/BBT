@@ -34,11 +34,15 @@ to `home` for non-admins as defence in depth.
 
 Identity can be:
 
-- Google user from `useAuth()`.
-- Guest name from localStorage key `bbt.guestName.v1`.
+- Google user from `useAuth()`, who must choose a public alias before entering
+  the app.
+- Guest alias from localStorage key `bbt.guestName.v1` (the legacy key remains
+  for compatibility).
 
-`UserMenu` appears on normal non-game screens after identity is ready. Signing
-out clears Google auth if signed in, otherwise clears guest name.
+`UserMenu` and leaderboards display the public alias, never a Google profile
+name or avatar. Google identity is retained only as a stable account key and
+for the server-side admin email allowlist. Signing out clears Google auth if
+signed in, otherwise clears the guest alias.
 
 ## Home Screen
 
@@ -77,6 +81,9 @@ The identity gate and `home` mode use the tabletop-playbook visual shell:
 - Existing `bbt.*` localStorage keys are compatibility identifiers, not
   player-facing branding. Do not rename them and invalidate saved sessions,
   guest names, or local score history as part of a visual rebrand.
+- The footer states that Turn 16 is an unofficial independent training tool,
+  is not affiliated with or endorsed by Games Workshop, and that Blood Bowl
+  intellectual property belongs to its respective owners.
 
 ## Whole-App Rulebook Theme
 

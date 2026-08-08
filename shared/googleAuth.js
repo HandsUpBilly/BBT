@@ -101,11 +101,9 @@ export function createGoogleAuth({ verifyIdToken, adminEmails, allowUnauthentica
     return {
       provider: 'google',
       providerUserId: payload.sub,
-      name: payload.name,
       // Only trust the address Google says it has verified — the admin
       // allowlist is matched against this.
       email: payload.email_verified ? payload.email : undefined,
-      picture: payload.picture,
     };
   }
 
@@ -139,13 +137,11 @@ export function createGoogleAuth({ verifyIdToken, adminEmails, allowUnauthentica
   };
 }
 
-/** Verified identity fields copied onto a leaderboard entry. */
+/** Verified account fields used to associate a signed-in player's best scores. */
 export function entryAuthFields(user) {
   if (!user) return {};
   return {
     userId: user.providerUserId,
     authProvider: user.provider,
-    displayName: user.name,
-    avatarUrl: user.picture,
   };
 }

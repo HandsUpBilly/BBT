@@ -46,9 +46,7 @@ export function isTokenExpired(token: string | null, now = Date.now()): boolean 
 export interface AuthUser {
   id: string;
   provider: 'google';
-  displayName: string;
   email?: string;
-  avatarUrl?: string;
 }
 
 export interface AuthContextValue {

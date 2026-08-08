@@ -1,0 +1,12 @@
+import './AppFooter.css';
+
+export function AppFooter() {
+  return (
+    <footer className="app-footer">
+      <span>© 2026 Turn 16</span>
+      <span>Turn 16 is an unofficial independent training tool.</span>
+      <span>Not affiliated with or endorsed by Games Workshop.</span>
+      <span>Blood Bowl and related intellectual property belong to their respective owners.</span>
+    </footer>
+  );
+}

@@ -67,12 +67,12 @@ test('keeps NaN, Infinity, and out-of-range values out of the sort key', () => {
   );
 });
 
-test('a verified Google name overrides the supplied one and names are capped', () => {
+test('keeps the supplied public alias for a signed-in player and caps names', () => {
   const score = validateScoreSubmission(
     { name: 'Impostor', probability: 1, diceCount: 0, moves: [] },
     { name: 'Verified Coach' },
   );
-  assert.equal(score.name, 'Verified Coach');
+  assert.equal(score.name, 'Impostor');
 
   const long = validateScoreSubmission({ name: 'x'.repeat(200), probability: 1, diceCount: 0, moves: [] });
   assert.equal(long.name.length, 32);

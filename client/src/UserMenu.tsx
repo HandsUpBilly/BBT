@@ -3,7 +3,6 @@ import './UserMenu.css';
 
 interface Props {
   name: string;
-  avatarUrl?: string;
   onSignOut?: () => void;
 }
 
@@ -16,7 +15,7 @@ function initials(name: string): string {
   return (first + last).toUpperCase();
 }
 
-export function UserMenu({ name, avatarUrl, onSignOut }: Props) {
+export function UserMenu({ name, onSignOut }: Props) {
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
 
@@ -48,11 +47,7 @@ export function UserMenu({ name, avatarUrl, onSignOut }: Props) {
         aria-label={`Player menu for ${name}`}
         title={name}
       >
-        {avatarUrl ? (
-          <img className="user-menu__avatar" src={avatarUrl} alt={name} referrerPolicy="no-referrer" />
-        ) : (
-          <span className="user-menu__avatar user-menu__avatar--fallback">{initials(name)}</span>
-        )}
+        <span className="user-menu__avatar user-menu__avatar--fallback">{initials(name)}</span>
         <span className="user-menu__name">{name}</span>
         <span className="user-menu__caret">▾</span>
       </button>
@@ -60,11 +55,7 @@ export function UserMenu({ name, avatarUrl, onSignOut }: Props) {
       {open && (
         <div className="user-menu__dropdown" role="menu">
           <div className="user-menu__dropdown-header">
-            {avatarUrl ? (
-              <img className="user-menu__avatar user-menu__avatar--lg" src={avatarUrl} alt={name} referrerPolicy="no-referrer" />
-            ) : (
-              <span className="user-menu__avatar user-menu__avatar--lg user-menu__avatar--fallback">{initials(name)}</span>
-            )}
+            <span className="user-menu__avatar user-menu__avatar--lg user-menu__avatar--fallback">{initials(name)}</span>
             <span className="user-menu__dropdown-name">{name}</span>
           </div>
           <button className="user-menu__item" role="menuitem" disabled title="Coming soon">
