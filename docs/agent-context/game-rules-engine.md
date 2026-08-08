@@ -98,8 +98,9 @@ Regression tests: `client/src/activationRollback.test.ts`.
   the ball at all.
 - **A Blitz block costs one square of movement**, deducted from `remainingMa`
   (or `remainingGfi`). Without it a blitzing piece effectively had MA + 1.
-- Push outcomes require a legal push-back square. Defender Down also offers the
-  attacker a follow-up into the vacated square.
+- Push outcomes require a legal push-back square. All three push-back results
+  (Push, Defender Stumbles, Defender Down) offer the attacker a follow-up into
+  the vacated square, since the attacker stays standing in each case.
 - `blockActionAvailability` only offers Blitz when a standing opponent is
   actually reachable — checking merely that one exists left an enabled menu
   button that silently did nothing.

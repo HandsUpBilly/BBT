@@ -1118,7 +1118,10 @@ export function useGameState(initialState: GameState) {
           resolvedFace,
           defenderFalls,
           defenderFrom: defender.position,
-          offerFollowUp: resolvedFace === 'defender-down',
+          // The attacker stays standing for all three push-back outcomes
+          // (push, defender-stumbles, defender-down), so a follow-up into
+          // the vacated square is always offered.
+          offerFollowUp: true,
           isBlitz,
         },
       };

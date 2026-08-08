@@ -216,12 +216,12 @@ describe('Block outcome resolution', () => {
     expect(after.pendingBlockResolution).not.toBeNull();
     expect(after.pendingBlockResolution!.resolvedFace).toBe('push');
     expect(after.pendingBlockResolution!.defenderFalls).toBe(false);
-    expect(after.pendingBlockResolution!.offerFollowUp).toBe(false);
+    expect(after.pendingBlockResolution!.offerFollowUp).toBe(true);
     // Attacker at (7,10), defender at (7,9): push direction is straight back (dy=-1).
     expect(after.pushTargetKeys.has('7,8')).toBe(true);
   });
 
-  it('push: finalizes the defender position and ends the attacker activation on square choice', () => {
+  it('push: declining the follow-up leaves the attacker in place', () => {
     const state = makeState([blocker(), orc()]);
     const { result } = renderHook(() => useGameState(state));
 
@@ -236,9 +236,43 @@ describe('Block outcome resolution', () => {
     expect(defender.position).toEqual({ col: 7, row: 8 });
     expect(defender.down).toBe(false);
     expect(attacker.activated).toBe(true);
-    expect(attacker.position).toEqual({ col: 7, row: 10 }); // no follow-up for plain push
+    expect(attacker.position).toEqual({ col: 7, row: 10 }); // follow-up declined
     expect(after.pendingBlockResolution).toBeNull();
     expect(after.pushTargetKeys.size).toBe(0);
+  });
+
+  it('push: choosing the follow-up moves the attacker into the vacated square', () => {
+    const state = makeState([blocker(), orc()]);
+    const { result } = renderHook(() => useGameState(state));
+
+    act(() => result.current.handleBlockAction('human1', false));
+    act(() => result.current.handleBlockTarget(7, 9));
+    act(() => result.current.handleBlockOutcomeChoice(['push'], 'push'));
+    act(() => result.current.handlePushChoice(7, 8, true));
+
+    const { state: after } = result.current;
+    const defender = after.pieces.find(p => p.id === 'orc1')!;
+    const attacker = after.pieces.find(p => p.id === 'human1')!;
+    expect(defender.position).toEqual({ col: 7, row: 8 });
+    expect(attacker.position).toEqual({ col: 7, row: 9 }); // moved into the vacated square
+    expect(attacker.activated).toBe(true);
+  });
+
+  it('defender-stumbles: offers a follow-up like push and defender-down', () => {
+    const state = makeState([blocker(), orc()]);
+    const { result } = renderHook(() => useGameState(state));
+
+    act(() => result.current.handleBlockAction('human1', false));
+    act(() => result.current.handleBlockTarget(7, 9));
+    act(() => result.current.handleBlockOutcomeChoice(['defender-stumbles'], 'defender-stumbles'));
+
+    expect(result.current.state.pendingBlockResolution!.offerFollowUp).toBe(true);
+
+    act(() => result.current.handlePushChoice(7, 8, true));
+
+    const { state: after } = result.current;
+    const attacker = after.pieces.find(p => p.id === 'human1')!;
+    expect(attacker.position).toEqual({ col: 7, row: 9 }); // moved into the vacated square
   });
 
   it('defender-down: falls, offers a follow-up, and moving in occupies the vacated square', () => {
