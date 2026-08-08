@@ -44,6 +44,7 @@ editor accepted drafts the server then rejected).
 | `githubIssues.js` | both `/api/reports` implementations (server-only) |
 | `scoreValidation.js` | both leaderboard implementations |
 | `rateLimit.js` | both `/api/reports` implementations |
+| `statistics.js` | `server/index.js`, `editor-statistics.js` |
 
 They are plain ESM `.js` with hand-written `.d.ts` siblings so TypeScript can
 consume them. **Do not fork these into a package-local copy.** Vite is
