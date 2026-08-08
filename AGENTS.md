@@ -110,7 +110,7 @@ Individually:
 
 ```bash
 npm run lint             # ESLint over client/
-npm test                 # node --test over shared/, then vitest over client/
+npm test                 # node --test over shared/ and netlify/functions/, then vitest over client/
 npm run build            # regenerates the scenario seed, then tsc -b && vite build
 npm run check:functions  # bundles the Netlify functions as the deploy does
 ```
