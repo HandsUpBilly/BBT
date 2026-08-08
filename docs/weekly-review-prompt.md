@@ -38,7 +38,11 @@ production, and a build break that passed every local check.
 > Also confirm the live site is serving current code: `curl -s -o /dev/null -w "%{http_code}" https://bb-trainer.netlify.app/api/progress`
 > should return 200. GitHub reports no check-runs for `main` (Netlify only posts
 > those for PR previews), so an empty status list is not evidence of success —
-> probe the site.
+> probe the site. If the sandbox's network policy blocks the request (a `000`
+> status, or a proxy `CONNECT`/403 error rather than an HTTP response from
+> Netlify), that is a blocked probe, not a down site — report deploy health for
+> this run as explicitly **inconclusive** rather than inferring success or
+> failure from it, and say so in the summary.
 >
 > **2. Has `shared/` drifted or grown a dependency?**
 > `shared/` exists because scenario validation, Google auth, and report
