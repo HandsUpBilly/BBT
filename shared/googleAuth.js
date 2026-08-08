@@ -73,6 +73,16 @@ export function makeGoogleTokenVerifier(OAuth2Client, clientId) {
 export function createGoogleAuth({ verifyIdToken, adminEmails, allowUnauthenticated = true }) {
   const allowlist = parseAdminEmails(adminEmails);
 
+  // Visible at cold start so an accidentally-cleared/typo'd ADMIN_EMAILS in
+  // production isn't a silent, indefinite fail-open — there is no other
+  // log line or health check that would reveal it.
+  if (allowlist.size === 0 && allowUnauthenticated) {
+    console.warn(
+      '[auth] ADMIN_EMAILS is empty — every /api/editor/* route is unrestricted. ' +
+      'Set EDITOR_ALLOW_UNAUTHENTICATED=false to fail closed instead.',
+    );
+  }
+
   /** Verifies the Bearer token if one is present. Returns null for guests. */
   async function verifyOptionalGoogleUser(getHeader) {
     const token = bearerToken(getHeader);
