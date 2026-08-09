@@ -1,9 +1,9 @@
 import { memo, useCallback, useMemo } from 'react';
 import type { CSSProperties } from 'react';
-import type { GameState, Position, Team } from './types';
+import type { GameState, Team } from './types';
 import { key, neighbours } from './bfs';
 import type { ZoomBounds } from './bfs';
-import { buildMovementTrailMap } from './movementTrail';
+import { buildMovementTrailMap, trailPolylinePoints } from './movementTrail';
 import type { PathTrail } from './movementTrail';
 import { skillGroupsFor, skillMarkersFor } from './skillPresentation';
 import './Pitch.css';
@@ -259,27 +259,11 @@ const Square = memo(function Square({
       data-row={pRow}
     >
       <div className="square__overlay" />
-      {pathTrails.map((pathTrail, index) => {
-        // The polyline enters from the previous square, turns at this square's
-        // centre, then exits toward the next one. Which state axis runs across
-        // the screen depends on the orientation — landscape draws state rows
-        // horizontally, portrait draws state cols horizontally — so the trail
-        // has to transpose with the board or it points the wrong way.
-        const acrossHere = portrait ? pCol : pRow;
-        const downHere   = portrait ? pRow : pCol;
-        const acrossOf = (p: Position) => (portrait ? p.col : p.row);
-        const downOf   = (p: Position) => (portrait ? p.row : p.col);
-
-        const enterX = 50 - (acrossHere - acrossOf(pathTrail.from)) * 50;
-        const enterY = 50 - (downHere - downOf(pathTrail.from)) * 50;
-        const exitX = pathTrail.to ? 50 + (acrossOf(pathTrail.to) - acrossHere) * 50 : 50;
-        const exitY = pathTrail.to ? 50 + (downOf(pathTrail.to) - downHere) * 50 : 50;
-        return (
-          <svg key={index} className="square__path-trail" viewBox="0 0 100 100" aria-hidden="true">
-            <polyline points={`${enterX},${enterY} 50,50 ${exitX},${exitY}`} />
-          </svg>
-        );
-      })}
+      {pathTrails.map((pathTrail, index) => (
+        <svg key={index} className="square__path-trail" viewBox="0 0 100 100" aria-hidden="true">
+          <polyline points={trailPolylinePoints(pathTrail, pCol, pRow, portrait)} />
+        </svg>
+      ))}
       {!pieceTeam && looseBall && <BallIcon loose />}
       {inTackleZone && <div className="square__tz-overlay" />}
       {pieceTeam && (
