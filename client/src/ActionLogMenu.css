@@ -62,24 +62,25 @@
   padding: 8px;
 }
 
-.action-log-menu__empty {
-  color: var(--color-text-muted);
-  font-size: 0.82rem;
-  padding: 10px 6px;
-}
-
 /* The log supplies its own heading inside the panel, so the dropdown does not
    repeat it. */
 .action-log-menu__dropdown .dice-log {
   min-width: 0;
 }
 
+/* Hit target — pointer precision only. */
 @media (pointer: coarse) {
   .action-log-menu__trigger {
     min-height: 44px;
     min-width: 44px;
     justify-content: center;
     padding: 0 8px;
+  }
+}
+
+/* Room — the narrow header cannot afford the word. */
+@media (max-width: 1024px) {
+  .action-log-menu__trigger {
     font-size: 1rem;
   }
 

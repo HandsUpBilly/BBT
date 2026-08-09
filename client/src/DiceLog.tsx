@@ -37,7 +37,20 @@ function entryClass(e: ActionLogEntry): string {
 
 
 export function DiceLog({ log }: Props) {
-  if (log.length === 0) return null;
+  // The side column reserves its width regardless, so rendering nothing left
+  // roughly 220px of blank rail at the start of every puzzle — until the
+  // first move appeared out of it. Saying so costs the same space and reads
+  // as a panel waiting for input rather than a layout bug.
+  if (log.length === 0) {
+    return (
+      <div className="dice-log dice-log--empty">
+        <div className="dice-log__title">Action Log</div>
+        <p className="dice-log__empty">
+          Moves and rolls appear here as you commit them.
+        </p>
+      </div>
+    );
+  }
 
   // The last entry's cumulativeProb is the product of every roll committed
   // this turn, and is exactly what gets submitted as the score.

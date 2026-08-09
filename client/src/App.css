@@ -766,13 +766,21 @@ body,
   .game-legends__summary::before { transition: none; }
 }
 
-/* ── Touch: hide side panels, stack vertically ───────────────────────────
-   Branching on pointer type rather than width. `max-width: 768px` treated a
-   phone held sideways (812px wide, 375px tall) as a desktop: the side columns
-   came back, the HUD and legend ate 191px of the 375, and the pitch overflowed
-   a 154px wrapper with overflow: hidden — 40% of the board became invisible
-   and unclickable. Pointer type is what this branch always meant. */
-@media (pointer: coarse) {
+/* ── Compact: hide side panels, stack vertically ─────────────────────────
+   A size question, answered by a size query — and 1024px, not 768px.
+
+   Both earlier attempts got this wrong in opposite directions. `max-width:
+   768px` treated a phone held sideways (812×375) as a desktop: the side
+   columns came back, HUD and legend ate 191px of the 375, and the pitch
+   overflowed a 154px wrapper with overflow: hidden — 40% of the board
+   invisible and unclickable. Replacing it with `(pointer: coarse)` then went
+   the other way, giving a 1280px touchscreen the phone layout: columns
+   hidden, ~740px of dead space beside a small board.
+
+   The columns cost at least 320px, so the honest threshold is where the board
+   still has room left over: ~27px squares at 1024px, ~16px at 768px. Touch
+   ergonomics are a separate question and live in their own block below. */
+@media (max-width: 1024px) {
   .app {
     padding: 6px;
     gap: 4px;
@@ -826,7 +834,19 @@ body,
   }
 }
 
-/* ── Touch, landscape: put the chrome beside the board ───────────────────
+/* ── Touch ergonomics ────────────────────────────────────────────────────
+   Deliberately separate from the size query above, and deliberately not
+   gated by it: a fingertip does not get more precise because the screen got
+   bigger, so a 1280px touchscreen still needs 44px targets even though it
+   keeps the full three-column layout. */
+@media (pointer: coarse) {
+  .commit-bar .btn,
+  .info-sheet__tab {
+    min-height: 44px;
+  }
+}
+
+/* ── Compact, landscape: put the chrome beside the board ─────────────────
    A phone held sideways is wide and very short — 750×340, of which stacked
    chrome took 140px, leaving 180px for fifteen rows of pitch: 11px squares.
    Meanwhile 558px of the wrapper's width sat empty, because the board is
@@ -836,7 +856,7 @@ body,
    back most of the chrome's height and takes squares to about 17px. Excluded
    above 600px tall so tablets in landscape, which have height to spare, keep
    the simpler stacked layout. */
-@media (pointer: coarse) and (orientation: landscape) and (max-height: 600px) {
+@media (max-width: 1024px) and (orientation: landscape) and (max-height: 600px) {
   .app--game {
     display: grid;
     grid-template-columns: minmax(0, 1fr) minmax(150px, 26%);

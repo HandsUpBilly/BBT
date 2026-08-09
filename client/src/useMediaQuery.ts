@@ -3,15 +3,13 @@ import { useCallback, useSyncExternalStore } from 'react';
 /**
  * Subscribes to a CSS media query.
  *
- * Used for the layout decisions JavaScript has to make too — which way to
- * draw the board, whether to default zoom on — so the breakpoints stay in one
- * vocabulary with the stylesheets rather than being re-guessed from
- * window.innerWidth.
+ * Used for the layout decisions JavaScript has to make too, so the
+ * breakpoints stay in one vocabulary with the stylesheets rather than being
+ * re-guessed from window.innerWidth.
  *
  * useSyncExternalStore rather than useState + useEffect: matchMedia is an
  * external store, and reading it through the proper primitive means the first
- * render already has the right answer. Callers can derive from it directly
- * instead of correcting themselves in an effect afterwards.
+ * render already has the right answer.
  */
 export function useMediaQuery(query: string): boolean {
   const subscribe = useCallback((onChange: () => void) => {
@@ -34,12 +32,52 @@ export function useMediaQuery(query: string): boolean {
 }
 
 /**
- * True on touch-primary devices.
+ * Three independent questions, three queries. Answering any of them with the
+ * wrong one produces a real defect, and this codebase has now shipped two:
  *
- * The mobile layout used to branch on `max-width: 768px`, which treats a
- * phone held sideways (812px wide) as a desktop — that is how the landscape
- * board ended up clipped and the side panels came back on a 375px-tall
- * screen. Pointer type is what those branches actually meant.
+ *   - Deciding layout by width alone called a phone held sideways (812px) a
+ *     desktop, and 40% of the board rendered outside a clipped container.
+ *   - Deciding layout by pointer alone gave a 1280px touchscreen the phone
+ *     layout: side columns hidden, ~740px of empty space beside a small
+ *     board, and no hover preview on a machine perfectly able to hover.
+ *
+ * Size, precision and hover are not proxies for each other. Keep them apart.
+ */
+
+/**
+ * Is there room for the full three-column layout?
+ *
+ * A space question, so it takes a size query — regardless of input device.
+ * Below this the side columns squeeze the board harder than they are worth:
+ * they cost at least 320px, so at 1024px the board still gets ~27px squares
+ * and at 768px only ~16px.
+ *
+ * Keep in sync with the same breakpoint in App.css / PlaybookTheme.css.
+ */
+export const COMPACT_MAX_WIDTH = 1024;
+
+export function useCompactLayout(): boolean {
+  return useMediaQuery(`(max-width: ${COMPACT_MAX_WIDTH}px)`);
+}
+
+/**
+ * Can the primary input hover?
+ *
+ * This, not "is it a phone", is what decides whether the path preview can
+ * follow the cursor. Anything that can hover keeps hover; only inputs that
+ * cannot need the two-stage tap, because for them preview and commit would
+ * otherwise land in the same gesture.
+ */
+export function useHoverCapable(): boolean {
+  return useMediaQuery('(hover: hover)');
+}
+
+/**
+ * Is the primary pointer imprecise?
+ *
+ * Governs hit-target sizing only. A fingertip does not get more precise
+ * because the screen got bigger, so this is deliberately independent of
+ * useCompactLayout.
  */
 export function useCoarsePointer(): boolean {
   return useMediaQuery('(pointer: coarse)');

@@ -1335,11 +1335,12 @@
   }
 }
 
-/* Game-screen chrome keys off pointer type, not width — a phone held
-   sideways is 812px wide and used to miss all of this. The status line is no
-   longer a wrapped second row of the HUD; it is mounted below the board (see
-   .status-strip), which is what gets the header down to one row. */
-@media (pointer: coarse) {
+/* Game-screen chrome on a compact viewport. A size question: these rules
+   shed labels and wrapping to fit a narrow header, which a wide screen has no
+   need of whatever is pointing at it. The status line is no longer a wrapped
+   second row of the HUD; it is mounted below the board (see .status-strip),
+   which is what gets the header down to one row. */
+@media (max-width: 1024px) {
   .app--game {
     padding: 5px;
   }
@@ -1348,9 +1349,8 @@
     min-height: 0;
   }
 
-  /* Icon-only, and every control clears the 44px tap minimum. The base rule
-     above sets 32px, which is fine for a cursor and not for a thumb. Five
-     labelled controls need 395px of a 310px row; the icons alone need 220. */
+  /* Icon-only. Five labelled controls need 395px of a 310px row; the icons
+     alone need 220. */
   .app--game .hud__btn-text {
     display: none;
   }
@@ -1372,25 +1372,6 @@
     display: none;
   }
 
-  .app--game .hud__back,
-  .app--game .hud__restart,
-  .app--game .hud__zoom {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    min-width: 44px;
-    min-height: 44px;
-    padding: 0 8px;
-    font-size: 1rem;
-  }
-
-  .app--game .hud .report-problem-button--hud,
-  .app--game .hud .user-menu__trigger {
-    min-width: 44px;
-    min-height: 44px;
-    padding: 6px;
-  }
-
   .app--game .hud__team {
     font-size: 0.78rem;
   }
@@ -1402,6 +1383,39 @@
 
   .app--game .pitch-wrapper {
     padding: 4px;
+  }
+}
+
+/* Hit targets. Keyed to pointer precision and nothing else — a touchscreen
+   laptop keeps its labels and its side columns but still needs 44px, and a
+   narrow mouse-driven window needs the compact layout but not fat buttons.
+   The base rule above sets 32px, which is right for a cursor. */
+@media (pointer: coarse) {
+  .app--game .hud__back,
+  .app--game .hud__restart,
+  .app--game .hud__zoom {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 44px;
+    min-height: 44px;
+    padding: 0 8px;
+  }
+
+  .app--game .hud .report-problem-button--hud,
+  .app--game .hud .user-menu__trigger {
+    min-width: 44px;
+    min-height: 44px;
+    padding: 6px;
+  }
+}
+
+/* Icon-only *and* touch: the glyph carries the whole button, so give it room. */
+@media (max-width: 1024px) and (pointer: coarse) {
+  .app--game .hud__back,
+  .app--game .hud__restart,
+  .app--game .hud__zoom {
+    font-size: 1rem;
   }
 }
 

@@ -65,11 +65,9 @@ export function ActionLogMenu({ log }: Props) {
 
       {open && (
         <div className="action-log-menu__dropdown" role="dialog" aria-label="Action log">
-          {log.length === 0 ? (
-            <p className="action-log-menu__empty">No actions yet this turn.</p>
-          ) : (
-            <DiceLog log={log} />
-          )}
+          {/* DiceLog carries its own empty state, so there is one wording for
+              "nothing yet" rather than two that can drift. */}
+          <DiceLog log={log} />
         </div>
       )}
     </div>

@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 import {
   startGame, boxOf, clippedSquares, hasHorizontalOverflow, undersizedTapTargets,
-  isPortrait, isTouch, MIN_SQUARE_SIZE_PORTRAIT, MIN_SQUARE_SIZE_LANDSCAPE, MIN_TAP_TARGET,
+  isPortrait, isTouch, isCompact, MIN_SQUARE_SIZE_PORTRAIT, MIN_SQUARE_SIZE_LANDSCAPE, MIN_TAP_TARGET,
 } from './helpers';
 
 /**
@@ -31,7 +31,7 @@ test.describe('game screen layout', () => {
   });
 
   test('squares are large enough to tap', async ({ page }) => {
-    test.skip(!(await isTouch(page)), 'tap-size floor applies to touch devices');
+    test.skip(!(await isCompact(page)), 'the size floor is about a cramped viewport');
 
     const floor = isPortrait(page) ? MIN_SQUARE_SIZE_PORTRAIT : MIN_SQUARE_SIZE_LANDSCAPE;
     const square = await boxOf(page.locator('.pitch__grid .square').first());
@@ -43,7 +43,7 @@ test.describe('game screen layout', () => {
   });
 
   test('the board spends nearly all the width available to it', async ({ page }) => {
-    test.skip(!isPortrait(page) || !(await isTouch(page)), 'portrait touch devices only');
+    test.skip(!isPortrait(page) || !(await isCompact(page)), 'compact portrait viewports only');
 
     // The absolute floor above cannot distinguish "laid out well on a small
     // screen" from "laid out badly on a large one" — 15 columns across a
@@ -84,7 +84,7 @@ test.describe('game screen layout', () => {
   });
 
   test('chrome stays within its budget', async ({ page }) => {
-    test.skip(!(await isTouch(page)), 'chrome budget is a mobile concern');
+    test.skip(!(await isCompact(page)), 'the chrome budget is a cramped-viewport concern');
 
     const hud = await boxOf(page.locator('.hud'));
     const grid = await boxOf(page.locator('.pitch__grid'));
@@ -107,7 +107,7 @@ test.describe('game screen layout', () => {
   });
 
   test('the board is rendered portrait on portrait screens', async ({ page }) => {
-    test.skip(!isPortrait(page) || !(await isTouch(page)), 'portrait touch devices only');
+    test.skip(!isPortrait(page) || !(await isCompact(page)), 'compact portrait viewports only');
 
     const grid = await boxOf(page.locator('.pitch__grid'));
     expect(

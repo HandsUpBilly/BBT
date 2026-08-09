@@ -134,7 +134,24 @@ export function isPortrait(page: Page): boolean {
   return size !== null && size.height >= size.width;
 }
 
-/** True when the project emulates touch (all phone/tablet projects do). */
+/**
+ * True when the project emulates touch.
+ *
+ * Use only for hit-target and interaction questions. It is NOT a stand-in for
+ * "small screen" — a touchscreen laptop is coarse and roomy at once, and
+ * treating the two as the same thing is what collapsed the phone layout onto
+ * a 1280px display.
+ */
 export async function isTouch(page: Page): Promise<boolean> {
   return page.evaluate(() => matchMedia('(pointer: coarse)').matches);
+}
+
+/** True when the viewport is too narrow for the three-column layout. */
+export async function isCompact(page: Page): Promise<boolean> {
+  return page.evaluate(() => matchMedia('(max-width: 1024px)').matches);
+}
+
+/** True when the primary pointer can hover, so the preview can follow it. */
+export async function canHover(page: Page): Promise<boolean> {
+  return page.evaluate(() => matchMedia('(hover: hover)').matches);
 }

@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { startGame, isTouch } from './helpers';
+import { startGame, isCompact } from './helpers';
 
 /**
  * The action log lives in the toolbar on touch, and must agree with itself.
@@ -12,7 +12,7 @@ import { startGame, isTouch } from './helpers';
  */
 test.describe('action log', () => {
   test.beforeEach(async ({ page }) => {
-    test.skip(!(await isTouch(page)), 'the toolbar log is the touch layout');
+    test.skip(!(await isCompact(page)), 'the toolbar log is the compact layout');
     await startGame(page);
   });
 
@@ -43,8 +43,8 @@ test.describe('action log', () => {
     const panel = page.locator('.action-log-menu__dropdown');
     await expect(panel).toBeVisible();
     // Nothing has happened yet, so the panel says so rather than showing an
-    // empty frame.
-    await expect(panel.locator('.action-log-menu__empty')).toBeVisible();
+    // empty frame. Same wording the desktop side column uses.
+    await expect(panel.locator('.dice-log__empty')).toBeVisible();
 
     // Tapping the board dismisses the panel, so reopen it after moving.
     await walkToExhaustion(page);
