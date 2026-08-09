@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildMovementTrailMap } from './movementTrail';
+import { buildMovementTrailMap, trailPolylinePoints } from './movementTrail';
 import type { MoveLogEntry } from './types';
 
 function move(fromRow: number, toRow: number): MoveLogEntry {
@@ -44,5 +44,58 @@ describe('buildMovementTrailMap', () => {
 
     expect(trails.get('7,8')).toHaveLength(2);
     expect(trails.get('7,9')).toHaveLength(2);
+  });
+});
+
+/**
+ * The trail geometry has to transpose with the board. Landscape draws state
+ * rows across the screen; portrait draws state cols across. Hardcoded to
+ * either one, half the trails point ninety degrees away from the route they
+ * describe — and a wrong trail still looks like a plausible trail, so nothing
+ * else would catch it.
+ */
+describe('trailPolylinePoints', () => {
+  const here = { col: 7, row: 9 };
+
+  it('draws a row-to-row run horizontally in landscape', () => {
+    const trail = { from: { col: 7, row: 8 }, to: { col: 7, row: 10 } };
+    expect(trailPolylinePoints(trail, here.col, here.row, false))
+      .toBe('0,50 50,50 100,50');
+  });
+
+  it('draws the same run vertically in portrait', () => {
+    const trail = { from: { col: 7, row: 8 }, to: { col: 7, row: 10 } };
+    expect(trailPolylinePoints(trail, here.col, here.row, true))
+      .toBe('50,0 50,50 50,100');
+  });
+
+  it('draws a col-to-col run vertically in landscape', () => {
+    const trail = { from: { col: 6, row: 9 }, to: { col: 8, row: 9 } };
+    expect(trailPolylinePoints(trail, here.col, here.row, false))
+      .toBe('50,0 50,50 50,100');
+  });
+
+  it('draws the same run horizontally in portrait', () => {
+    const trail = { from: { col: 6, row: 9 }, to: { col: 8, row: 9 } };
+    expect(trailPolylinePoints(trail, here.col, here.row, true))
+      .toBe('0,50 50,50 100,50');
+  });
+
+  it('stops at the centre where a route ends', () => {
+    const trail = { from: { col: 7, row: 8 }, to: null };
+    expect(trailPolylinePoints(trail, here.col, here.row, false))
+      .toBe('0,50 50,50 50,50');
+    expect(trailPolylinePoints(trail, here.col, here.row, true))
+      .toBe('50,0 50,50 50,50');
+  });
+
+  it('handles a diagonal step in both orientations', () => {
+    const trail = { from: { col: 6, row: 8 }, to: { col: 8, row: 10 } };
+    // Symmetric on the diagonal, so the corner coordinates match; what
+    // differs is which neighbour each end actually points at.
+    expect(trailPolylinePoints(trail, here.col, here.row, false))
+      .toBe('0,0 50,50 100,100');
+    expect(trailPolylinePoints(trail, here.col, here.row, true))
+      .toBe('0,0 50,50 100,100');
   });
 });

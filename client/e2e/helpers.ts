@@ -1,0 +1,140 @@
+import type { Page, Locator } from '@playwright/test';
+
+/** Apple's minimum is 44pt; Android's is 48dp. 44 is the value we hold to. */
+export const MIN_TAP_TARGET = 44;
+
+/**
+ * Minimum pitch square size, in CSS px, by viewport shape.
+ *
+ * Both are below the 44px tap-target minimum on purpose. A pitch square is a
+ * forgiving target — a mis-tap previews rather than commits, and the
+ * two-stage flow gives the player a chance to correct — and 44px is not
+ * reachable anyway: 15 columns at 44px needs a 660px-wide phone.
+ *
+ * The two numbers differ because a different axis binds in each case.
+ * Portrait is width-bound at 15 columns, so the ceiling is roughly
+ * viewportWidth ÷ 15 — about 20px on a 320px phone and 24px on a 375px one.
+ * Landscape is height-bound at 15 rows in a viewport barely 340px tall, and
+ * no layout recovers more than about 17px there.
+ *
+ * A single absolute floor cannot express that, and picking the lower of the
+ * two would stop the harness noticing a portrait regression. See also the
+ * relative width-usage assertion in layout.spec.ts, which is what actually
+ * catches wasted space; these are a backstop against outright collapse.
+ */
+export const MIN_SQUARE_SIZE_PORTRAIT = 19;
+export const MIN_SQUARE_SIZE_LANDSCAPE = 15;
+
+export interface Box {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  top: number;
+  bottom: number;
+  left: number;
+  right: number;
+}
+
+/** Read an element's viewport-relative box. Throws if the element is absent. */
+export async function boxOf(locator: Locator): Promise<Box> {
+  return locator.evaluate((el) => {
+    const r = el.getBoundingClientRect();
+    return {
+      x: r.x, y: r.y, width: r.width, height: r.height,
+      top: r.top, bottom: r.bottom, left: r.left, right: r.right,
+    };
+  });
+}
+
+/**
+ * Sign in as a guest and start the featured series, leaving the page on the
+ * game screen with the pitch rendered.
+ *
+ * Goes through the real UI rather than seeding state directly, so the
+ * geometry under test is the geometry a player actually gets.
+ */
+export async function startGame(page: Page, playerName = 'E2E Tester'): Promise<void> {
+  await page.goto('/');
+
+  await page.getByRole('button', { name: /play as guest/i }).click();
+
+  const nameInput = page.locator('.identity-gate__input');
+  await nameInput.fill(playerName);
+  await page.getByRole('button', { name: /^continue$/i }).click();
+
+  await page.getByRole('button', { name: /start series/i }).click();
+
+  // The pitch is the signal that the game screen has actually mounted.
+  await page.locator('.pitch__grid .square').first().waitFor({ state: 'visible' });
+}
+
+/**
+ * Every pitch square that renders outside its scroll container.
+ *
+ * `.pitch-wrapper` has `overflow: hidden`, so anything outside it is both
+ * invisible and unclickable — the failure mode that made landscape phones
+ * unplayable.
+ */
+export async function clippedSquares(page: Page): Promise<{ count: number; rows: string[] }> {
+  return page.evaluate(() => {
+    const wrapper = document.querySelector('.pitch-wrapper');
+    if (!wrapper) return { count: 0, rows: [] };
+    const w = wrapper.getBoundingClientRect();
+    const clipped = [...document.querySelectorAll('.square')].filter((s) => {
+      const r = s.getBoundingClientRect();
+      // 0.5px tolerance absorbs sub-pixel rounding on fractional-DPR devices.
+      return r.bottom > w.bottom + 0.5 || r.top < w.top - 0.5
+        || r.right > w.right + 0.5 || r.left < w.left - 0.5;
+    });
+    return {
+      count: clipped.length,
+      rows: [...new Set(clipped.map((s) => (s as HTMLElement).dataset.row ?? '?'))].sort(),
+    };
+  });
+}
+
+/** True when the document scrolls sideways — always a layout bug on mobile. */
+export async function hasHorizontalOverflow(page: Page): Promise<boolean> {
+  return page.evaluate(() =>
+    document.documentElement.scrollWidth > document.documentElement.clientWidth + 1);
+}
+
+/** Interactive elements smaller than the tap-target minimum, with their labels. */
+export async function undersizedTapTargets(
+  page: Page,
+  minimum: number = MIN_TAP_TARGET,
+): Promise<{ label: string; width: number; height: number }[]> {
+  return page.evaluate((min) => {
+    const selector = 'button, a[href], input:not([type=hidden]), select, [role=button]';
+    return [...document.querySelectorAll(selector)]
+      // Pitch squares are held to their own (lower) bar — see MIN_SQUARE_SIZE.
+      .filter((el) => !el.classList.contains('square'))
+      .filter((el) => {
+        const cs = getComputedStyle(el);
+        return cs.display !== 'none' && cs.visibility !== 'hidden' && cs.opacity !== '0';
+      })
+      .map((el) => {
+        const r = el.getBoundingClientRect();
+        return {
+          label: (el.getAttribute('aria-label') || el.textContent || el.tagName)
+            .trim().slice(0, 32),
+          width: Math.round(r.width),
+          height: Math.round(r.height),
+        };
+      })
+      .filter((m) => m.width > 0 && m.height > 0)
+      .filter((m) => m.width < min || m.height < min);
+  }, minimum);
+}
+
+/** True when the viewport is taller than it is wide. */
+export function isPortrait(page: Page): boolean {
+  const size = page.viewportSize();
+  return size !== null && size.height >= size.width;
+}
+
+/** True when the project emulates touch (all phone/tablet projects do). */
+export async function isTouch(page: Page): Promise<boolean> {
+  return page.evaluate(() => matchMedia('(pointer: coarse)').matches);
+}

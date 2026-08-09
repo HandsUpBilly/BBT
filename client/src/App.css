@@ -10,7 +10,12 @@ html,
 body,
 #root {
   height: 100%;
+  /* dvh tracks the viewport as mobile browser chrome slides in and out; vh is
+     the *large* viewport, so a 100vh layout sits partly under the URL bar for
+     as long as it is showing. vh first as the fallback for anything without
+     dvh support. */
   min-height: 100vh;
+  min-height: 100dvh;
   background-color: var(--color-bg);
   color: var(--color-text);
   font-family: var(--font-body);
@@ -22,6 +27,14 @@ body,
   height: 100%;
   padding: 10px;
   gap: 8px;
+}
+
+/* Keep the layout clear of the notch and the home indicator. Zero on every
+   device that has neither, so this needs no media query. */
+.app--game {
+  padding-left: max(10px, env(safe-area-inset-left));
+  padding-right: max(10px, env(safe-area-inset-right));
+  padding-bottom: max(10px, env(safe-area-inset-bottom));
 }
 
 /* Shared button structure and safe pre-theme fallbacks. The late-loaded
@@ -601,30 +614,160 @@ body,
   align-self: stretch;
 }
 
-/* ── Pitch sizing — always landscape 1653:951 ────────────────────────── */
+/* Pitch sizing lives in Pitch.css, which solves for a fit on both axes from
+   the visible column/row counts. Nothing here may set an explicit width on
+   .pitch or that calculation is overridden and the board clips again. */
 .pitch-wrapper {
   overflow: hidden;
 }
 
-.pitch-wrapper .pitch {
-  /* Fill available width; height follows 1653:951 aspect ratio */
-  width: 100%;
-  height: auto;
+/* ── Commit bar ──────────────────────────────────────────────────────────
+   The visible half of the two-stage tap. Without it the second tap is a
+   hidden mechanic, and there is no way to back out of an armed move except
+   tapping somewhere harmless and hoping. Sits at the bottom because that is
+   where the thumb already is. */
+.commit-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-shrink: 0;
+  flex-wrap: wrap;
+  padding: 8px 12px;
+  padding-bottom: max(8px, env(safe-area-inset-bottom));
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border-selected);
+  border-radius: var(--radius-panel);
+  box-shadow: var(--shadow-overlay);
 }
 
-/* Zoom mode: fit to the wrapper's height so cropped squares render larger,
-   rather than stretching to the full wrapper width. */
-.pitch-wrapper .pitch.pitch--zoomed {
-  width: auto;
-  height: 100%;
-  max-width: 100%;
+.commit-bar__detail {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  min-width: 0;
 }
 
-/* ── Mobile: hide side panels, stack vertically ──────────────────────── */
-@media (max-width: 768px) {
+.commit-bar__square {
+  color: var(--color-text-strong);
+  font-family: var(--font-display);
+  font-size: 0.92rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+.commit-bar__prob {
+  color: var(--color-text-muted);
+  font-size: 0.88rem;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.commit-bar__prob--risky {
+  color: var(--color-warning);
+}
+
+.commit-bar__actions {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.commit-bar .btn {
+  min-height: 44px;
+  padding-inline: 18px;
+}
+
+/* ── Status strip ────────────────────────────────────────────────────────
+   The activation guidance, mounted below the board on touch instead of
+   inside the HUD. Same element, one of two mount points — see App.tsx. */
+.status-strip {
+  flex-shrink: 0;
+  padding: 6px 10px;
+  background: var(--color-surface-1);
+  border-radius: var(--radius-card);
+}
+
+.status-strip .hud__status {
+  flex: none;
+  font-size: 0.8rem;
+  line-height: 1.35;
+}
+
+.status-strip .hud__prob-label--series {
+  color: var(--color-text);
+  font-weight: 600;
+}
+
+/* ── Legend disclosure ───────────────────────────────────────────────── */
+.game-legends--collapsible {
+  flex-shrink: 0;
+  background: var(--color-surface-1);
+  border-radius: var(--radius-card);
+}
+
+.game-legends__summary {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 34px;
+  padding: 0 10px;
+  color: var(--color-text-muted);
+  font-family: var(--font-display);
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  cursor: pointer;
+  list-style: none;
+}
+
+.game-legends__summary::-webkit-details-marker {
+  display: none;
+}
+
+/* Own marker so the control reads as a disclosure on every engine — Safari
+   hides the native one when list-style is cleared. */
+.game-legends__summary::before {
+  content: '▸';
+  font-size: 0.78rem;
+  transition: transform var(--transition-fast);
+}
+
+.game-legends--collapsible[open] .game-legends__summary::before {
+  transform: rotate(90deg);
+}
+
+.game-legends__body {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-height: 40vh;
+  overflow-y: auto;
+  padding: 4px 8px 8px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .game-legends__summary::before { transition: none; }
+}
+
+/* ── Touch: hide side panels, stack vertically ───────────────────────────
+   Branching on pointer type rather than width. `max-width: 768px` treated a
+   phone held sideways (812px wide, 375px tall) as a desktop: the side columns
+   came back, the HUD and legend ate 191px of the 375, and the pitch overflowed
+   a 154px wrapper with overflow: hidden — 40% of the board became invisible
+   and unclickable. Pointer type is what this branch always meant. */
+@media (pointer: coarse) {
   .app {
     padding: 6px;
     gap: 4px;
+  }
+
+  .app--game {
+    padding-left: max(6px, env(safe-area-inset-left));
+    padding-right: max(6px, env(safe-area-inset-right));
+    padding-bottom: max(6px, env(safe-area-inset-bottom));
   }
 
   .game-area {
@@ -635,5 +778,79 @@ body,
 
   .side-col {
     display: none;
+  }
+
+  /* One row, no wrapping. The HUD was 121px of an 812px screen — 15% spent
+     on a back button, a percentage and four icons, while the board got 204.
+     Labels go, icons stay, and every control clears 44px. */
+  .hud {
+    gap: 6px;
+    padding: 4px 6px;
+    flex-wrap: nowrap;
+    overflow: hidden;
+  }
+
+  /* Button sizing for touch lives in PlaybookTheme.css — it loads after this
+     file and its .app--game rules would otherwise win on specificity. */
+
+  .hud__prob {
+    min-width: 0;
+    flex-shrink: 1;
+  }
+
+  .hud__team {
+    /* The turn indicator is the dot; the words are the first thing to go
+       when a 320px row has to hold five controls. The dot itself must not
+       shrink — left shrinkable it was squeezed to zero width and the only
+       human/orc cue on the screen disappeared. */
+    flex-shrink: 0;
+    gap: 0;
+  }
+
+  .hud__team strong {
+    display: none;
+  }
+}
+
+/* ── Touch, landscape: put the chrome beside the board ───────────────────
+   A phone held sideways is wide and very short — 750×340, of which stacked
+   chrome took 140px, leaving 180px for fifteen rows of pitch: 11px squares.
+   Meanwhile 558px of the wrapper's width sat empty, because the board is
+   height-bound long before it is width-bound.
+
+   Moving the legend and status line into that empty column buys the board
+   back most of the chrome's height and takes squares to about 17px. Excluded
+   above 600px tall so tablets in landscape, which have height to spare, keep
+   the simpler stacked layout. */
+@media (pointer: coarse) and (orientation: landscape) and (max-height: 600px) {
+  .app--game {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(150px, 26%);
+    grid-template-rows: auto auto auto minmax(0, 1fr) auto;
+    grid-template-areas:
+      "hud     hud"
+      "board   legend"
+      "board   status"
+      "board   sheet"
+      "commit  commit";
+    column-gap: 6px;
+  }
+
+  .app--game .hud { grid-area: hud; }
+  .app--game .game-area { grid-area: board; }
+  .app--game .commit-bar { grid-area: commit; }
+  .app--game .game-legends { grid-area: legend; }
+  .app--game .status-strip { grid-area: status; }
+
+  .app--game .info-sheet {
+    grid-area: sheet;
+    /* The column already bounds it; a viewport-relative cap here would fight
+       the grid and leave the board short. */
+    max-height: none;
+    min-height: 0;
+  }
+
+  .app--game .game-legends__body {
+    max-height: 40vh;
   }
 }

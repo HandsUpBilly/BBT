@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react';
 import type { GameState, PlayerPiece, Position, ActionLogEntry, Scenario, BlockOutcomeFace } from './types';
+import type { PathStep } from './bfs';
 import {
   computeReachable, findShortestPath, key, neighbours, catchTargetAt, passTargetAt, computePassRange,
   countEligibleAssists, blockDiceCount, blockOutcomeProbabilities, blockCombinedProbability, pushBackCandidates,
@@ -75,6 +76,29 @@ export function makeScenarioState(scenario: Scenario): GameState {
 
 export function successChance(target: number): number {
   return Math.max(0, Math.min(1, (7 - target) / 6));
+}
+
+/**
+ * Combined success chance of every roll along a previewed path.
+ *
+ * The committed probability is only accumulated when a move is actually
+ * clicked, so before this the numeric odds of a planned route were not
+ * available anywhere — the board showed the dice faces but never the product.
+ * That was survivable with a mouse, where hovering costs nothing and the
+ * player can back out. On touch the commit bar has to state the odds it is
+ * asking the player to accept.
+ *
+ * Deliberately mirrors the per-step maths in handleSquareClick: GFI is a 2+,
+ * and GFI, dodge and pickup rolls on one square all stack.
+ */
+export function pathPreviewProb(path: readonly PathStep[]): number {
+  let prob = 1;
+  for (const step of path) {
+    if (step.isGfi) prob *= successChance(2);
+    if (step.dodgeTarget !== null) prob *= successChance(step.dodgeTarget);
+    if (step.pickupTarget !== null) prob *= successChance(step.pickupTarget);
+  }
+  return prob;
 }
 
 /** Recompute the full reachable set from `fromPos` with `ma` and `gfi` remaining. */

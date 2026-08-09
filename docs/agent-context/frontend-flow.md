@@ -107,12 +107,85 @@ their owning components.
 - Generic `.btn` markup is shared by the landing and editor. Its visual
   hierarchy belongs to the `app--playbook` layer; component CSS should own
   layout rather than reintroducing unrelated button colors.
-- On narrow screens, game side panels remain hidden by the existing layout.
+- On touch devices, game side panels remain hidden by the existing layout, and
+  their contents move into `MobileInfoSheet` (see Mobile Layout below).
   Legends, dense result tables, and the editor pitch scroll inside their own
   surfaces so the page itself does not overflow horizontally. Header/HUD report
   controls and the editor account trigger collapse to icon/avatar controls.
 - Decorative textures are CSS-only, ignore pointer events, and respect
   `prefers-reduced-motion`. Focus-visible uses the shared brass ring.
+
+## Mobile Layout
+
+The game screen has a distinct touch layout. It is selected by **pointer type
+and orientation, never by width** — `useMediaQuery.ts` exposes
+`useCoarsePointer()` and `usePortraitViewport()`, and the stylesheets use
+`(pointer: coarse)` to match. A `max-width` breakpoint classifies a phone held
+sideways (812px wide) as a desktop, which is how the landscape board once
+rendered 40% of its squares outside a wrapper with `overflow: hidden`.
+
+### The board rotates
+
+`<Pitch>` takes an `orientation` prop. Game state is always portrait
+(`col` 0–14, `row` 0–25); landscape rendering transposes it. On a portrait
+touch screen the transpose is skipped, so the board is 15 squares across
+instead of 26 — squares go from 11.2px to 23.4px on a 375px phone.
+
+- **Square names never change.** `13G` is the same square in both
+  orientations; only the axis each label is drawn on moves. `data-square`
+  exposes the name, and it is the stable handle for tests — `aria-label`
+  gains the preview's roll details when a square is armed.
+- `computeZoomBounds` returns **state** coordinates. The orientation
+  transform belongs to the renderer alone; it previously lived in two places.
+- End-zone classes are `--endzone-human` / `--endzone-orc`, named for the team
+  that scores there, because "left" and "right" stop being true.
+- Pitch sizing is one rule solving for a fit on both axes from
+  `--pitch-aspect` in container query units. Do not set an explicit width on
+  `.pitch` anywhere else — that overrides the calculation and the board clips.
+- `.pitch__row-labels` needs `contain: size`; without it the label column is
+  taller than the grid's aspect height and stretches the grid, producing
+  visibly non-square cells.
+- Coordinate gutters are hidden on touch — 8.8px text costing 12% of board
+  width. The coordinates stay in each square's `aria-label`.
+- Zoom defaults on for coarse pointers, derived from the media query rather
+  than stored, so the player's own choice still wins once they make one.
+
+### Two-stage tap
+
+There is no hover on touch, and a tap emits a synthetic `mouseenter` before
+its click — so preview and commit used to land in one gesture and the player
+accepted risk they were never shown. On coarse pointers:
+
+- hover-driven preview is disabled entirely;
+- the first tap on a reachable square arms and previews it;
+- the second tap, or the `.commit-bar` Confirm button, commits;
+- the armed key carries the piece id and squares already walked, so changing
+  selection or committing a step invalidates it without explicit clearing.
+
+`pathPreviewProb` (in `useGameState.ts`) gives the commit bar its odds. It
+mirrors the per-step maths in `handleSquareClick`, including GFI, dodge and
+pickup stacking on one square; keep the two together and keep
+`pathPreviewProb.test.ts` passing.
+
+### Chrome
+
+- HUD is one row of 44px controls, icon-only (`.hud__btn-text` is hidden). The
+  status line is mounted below the board in `.status-strip` instead, and the
+  series counter rides with it.
+- The legend goes behind a `<details>` disclosure (`LegendShell`).
+- `MobileInfoSheet` restores the player card and dice log, collapsed by
+  default so the board keeps the height.
+- In landscape under 600px tall, `.app--game` becomes a grid that puts legend,
+  status and sheet in a column beside the board, recovering the height the
+  board is starved of.
+
+### Regression coverage
+
+`client/e2e/` holds a Playwright harness across nine device profiles. jsdom has
+no layout engine, so vitest cannot catch any of this. Run it with
+`npm run test:e2e` after `npx playwright install`; it is deliberately **not**
+part of `npm run verify`, which must pass on a clean checkout without browser
+binaries.
 
 ## Issue and Feature Reporting
 

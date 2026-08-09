@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect } from 'react';
-import { useGameState, makeEmptyState, makeScenarioState } from './useGameState';
+import { useGameState, makeEmptyState, makeScenarioState, pathPreviewProb } from './useGameState';
 import { Pitch } from './Pitch';
+import type { PitchOrientation } from './Pitch';
 import { PieceMenu } from './PieceMenu';
 import type { PieceMenuAction } from './PieceMenu';
 import { PlayerPanel } from './PlayerPanel';
@@ -15,6 +16,8 @@ import { ConfirmDialog } from './ConfirmDialog';
 import { BlockOutcomePanel } from './BlockOutcomePanel';
 import { blockActionAvailability } from './blockActionAvailability';
 import { UserMenu } from './UserMenu';
+import { LegendShell } from './LegendShell';
+import { MobileInfoSheet } from './MobileInfoSheet';
 import { AppFooter } from './AppFooter';
 import { ReportProblemButton } from './ReportProblemButton';
 import { ReportProblemModal } from './ReportProblemModal';
@@ -34,6 +37,7 @@ import type {
 import { key, computeZoomBounds } from './bfs';
 import type { ZoomBounds } from './bfs';
 import { SKILL_GROUPS, SKILL_MARKERS } from './skillPresentation';
+import { useCoarsePointer, usePortraitViewport } from './useMediaQuery';
 import './App.css';
 import './PlaybookTheme.css';
 
@@ -357,11 +361,28 @@ export default function App() {
   // Non-blocking notice (e.g. a best-effort individual submit failed mid-series).
   const [submitNotice, setSubmitNotice] = useState<string | undefined>();
 
+  // ── Viewport shape ───────────────────────────────────────────────────────
+  // Touch and orientation, not width. A phone held sideways is 812px wide, so
+  // a width breakpoint calls it a desktop.
+  const coarsePointer = useCoarsePointer();
+  const portraitViewport = usePortraitViewport();
+  // Rotating the board is only worth it when the screen is actually taller
+  // than it is wide; on a landscape phone the pitch's own shape already fits.
+  const pitchOrientation: PitchOrientation =
+    coarsePointer && portraitViewport ? 'portrait' : 'landscape';
+
   // ── Zoom mode ────────────────────────────────────────────────────────────
   // Computed once when play starts (not recalculated as moves are made or
   // pieces are selected). Radius is the largest MA among the player's own
   // team's pieces, plus 2 for GFI/rush squares.
-  const [zoomEnabled, setZoomEnabled] = useState(false);
+  //
+  // On by default for touch: the full 26×15 board gives 11px squares on a
+  // phone, and the crop is the difference between a tappable board and one
+  // that needs a fingertip the size of a pea. Derived rather than stored, so
+  // a device that only reports coarse after first paint still gets the crop —
+  // until the player overrides it, after which their choice sticks.
+  const [zoomOverride, setZoomOverride] = useState<boolean | null>(null);
+  const zoomEnabled = zoomOverride ?? coarsePointer;
   const [zoomBounds, setZoomBounds] = useState<ZoomBounds | null>(null);
 
   const computeStartOfPlayZoom = useCallback((pieces: PlayerPiece[], activeTeam: string): ZoomBounds | null => {
@@ -482,6 +503,51 @@ export default function App() {
   // otherwise resolve immediately with followUp: false.
   const [pendingPushSquare, setPendingPushSquare] = useState<{ col: number; row: number } | null>(null);
 
+  // ── Two-stage tap ────────────────────────────────────────────────────────
+  // With a mouse the path preview follows hover, so the dodge rolls, the Go
+  // For It squares and the running success chance are all on screen before
+  // the player clicks. Touch has no hover: preview and commit arrived in the
+  // same tap, so the player accepted risk they were never shown. In a puzzle
+  // whose whole subject is evaluating risk, that is a broken game rather than
+  // an awkward one.
+  //
+  // So on touch the first tap on a reachable square previews it and the
+  // second commits. Tracked as an explicit "armed" square rather than
+  // inferred from pathPreview, because focus and synthetic mouse events can
+  // both move the preview without the player having tapped anything.
+  const [armedSquareKey, setArmedSquareKey] = useState<string | null>(null);
+  // Which player's card the side panel / bottom sheet is showing. Follows the
+  // cursor on a mouse and the last tapped square on touch.
+  const [hoveredPiece, setHoveredPiece] = useState<PlayerPiece | null>(null);
+
+  // The armed key carries the piece and how far it has already walked, so
+  // selecting a different piece or committing a step invalidates it without
+  // anything having to remember to clear it. A stale arm that survived into a
+  // new selection would commit on the player's first tap — the exact failure
+  // this whole mechanism exists to prevent.
+  const disarm = useCallback(() => setArmedSquareKey(null), []);
+
+  /**
+   * Handles the preview half of a two-stage tap.
+   * Returns true when the tap was consumed as a preview and must not commit.
+   */
+  const previewBeforeCommit = useCallback((col: number, row: number): boolean => {
+    if (!coarsePointer) return false;
+    if (!state.selectedPieceId) return false;
+    const k = key({ col, row });
+    if (!state.reachableKeys.has(k)) return false;
+    const arm = `${state.selectedPieceId}:${state.walkedSquares.length}:${k}`;
+    // Second tap on the same square — let it through to commit.
+    if (armedSquareKey === arm) return false;
+
+    setArmedSquareKey(arm);
+    hookSquareHover(col, row);
+    const piece = state.pieces.find(p => key(p.position) === k);
+    setHoveredPiece(piece ?? null);
+    return true;
+  }, [coarsePointer, state.selectedPieceId, state.reachableKeys, state.pieces,
+      state.walkedSquares.length, armedSquareKey, hookSquareHover]);
+
   // Route square clicks: targeting modes take priority over normal movement
   const handleSquareClick = useCallback((col: number, row: number) => {
     if (state.isHandoffTargeting) {
@@ -498,10 +564,13 @@ export default function App() {
         handlePushChoice(col, row, false);
       }
     } else {
+      if (previewBeforeCommit(col, row)) return;
+      disarm();
       hookSquareClick(col, row);
     }
   }, [state.isHandoffTargeting, state.isPassTargeting, state.isBlockTargeting, state.pendingBlockResolution,
-      state.pushTargetKeys, handleHandoffTarget, handlePassTarget, handleBlockTarget, handlePushChoice, hookSquareClick]);
+      state.pushTargetKeys, handleHandoffTarget, handlePassTarget, handleBlockTarget, handlePushChoice,
+      hookSquareClick, previewBeforeCommit, disarm]);
 
   // Escape cancels the current activation. Dialogs handle their own Escape via
   // useModalFocus and stop propagation, so this only fires on the board.
@@ -521,6 +590,11 @@ export default function App() {
     const k = key({ col, row });
     const piece = state.pieces.find(p => key(p.position) === k);
     if (!piece) return;
+
+    // Touch has no hover, so a tap is the only way the player card can learn
+    // which player to show — including opponents, whose skills are exactly
+    // what you need before deciding whether to block them.
+    if (coarsePointer) setHoveredPiece(piece);
 
     // During handoff targeting, clicking a highlighted receiver executes the handoff
     if (state.isHandoffTargeting) {
@@ -562,12 +636,15 @@ export default function App() {
 
     // If a piece is already selected and this is a reachable square — treat as a move waypoint
     if (state.selectedPieceId && state.reachableKeys.has(k)) {
+      if (previewBeforeCommit(col, row)) return;
+      disarm();
       hookSquareClick(col, row);
       return;
     }
 
     // Clicking the already-selected piece ends activation
     if (piece.id === state.selectedPieceId) {
+      disarm();
       hookSquareClick(col, row);
       return;
     }
@@ -583,7 +660,8 @@ export default function App() {
   }, [state.pieces, state.selectedPieceId, state.reachableKeys, state.activeTeam,
       state.isHandoffTargeting, state.handoffTargets, state.isPassTargeting, state.passReceiverKeys,
       state.isBlockTargeting, state.blockTargets, state.pendingBlockIsBlitz, state.blitzTargetId,
-      hookSquareClick, handleHandoffTarget, handlePassTarget, handleBlockTarget, handleCancelSelection]);
+      hookSquareClick, handleHandoffTarget, handlePassTarget, handleBlockTarget, handleCancelSelection,
+      previewBeforeCommit, disarm, coarsePointer]);
 
   const handleMenuAction = useCallback((actionKey: string, moveFirst: boolean) => {
     if (!pieceMenu) return;
@@ -611,19 +689,23 @@ export default function App() {
 
   const dismissMenu = useCallback(() => setPieceMenu(null), []);
 
-  // Hover state for the shared player card — combined with movement hover
-  const [hoveredPiece, setHoveredPiece] = useState<PlayerPiece | null>(null);
   const handleSquareHover = useCallback((col: number, row: number) => {
+    // Touch devices drive both of these from taps instead. A tap emits a
+    // synthetic mouseenter immediately before the click, so leaving hover
+    // wired up here would preview and commit in the same gesture — exactly
+    // the behaviour the two-stage tap exists to prevent.
+    if (coarsePointer) return;
     // Update movement preview in game state
     hookSquareHover(col, row);
     const k = key({ col, row });
     const piece = state.pieces.find(p => key(p.position) === k);
     setHoveredPiece(piece ?? null);
-  }, [hookSquareHover, state.pieces]);
+  }, [coarsePointer, hookSquareHover, state.pieces]);
   const handleSquareLeave = useCallback(() => {
+    if (coarsePointer) return;
     hookSquareLeave();
     setHoveredPiece(null);
-  }, [hookSquareLeave]);
+  }, [coarsePointer, hookSquareLeave]);
 
   // Submission handler (standalone puzzle mode)
   const handleSubmit = useCallback(async (name: string) => {
@@ -889,6 +971,14 @@ export default function App() {
     : null;
   const inspectedPiece = hoveredPiece ?? selectedPiece;
 
+  // A move is armed and previewed, waiting for the confirming tap. The bar
+  // below the board makes the second tap discoverable and gives the player a
+  // way out that isn't "tap somewhere harmless and hope".
+  const armedPreview = coarsePointer && armedSquareKey !== null
+    && state.pathPreview.length > 0
+    ? state.pathPreview[state.pathPreview.length - 1].pos
+    : null;
+
   const teamLabel = state.activeTeam === 'human' ? 'Human' : 'Orc';
   // Every piece on the active team has had its go. (This used to inspect only
   // the *first* piece on the team, so the status line was wrong the moment a
@@ -922,24 +1012,46 @@ export default function App() {
     ? `Planning — ${state.remainingMa} MA left · Esc to cancel`
     : 'Select your piece to move';
 
-  // Live probability: committed actions × pending rolls not yet committed
+  // Live probability: committed actions × pending rolls not yet committed ×
+  // the rolls on the route currently being previewed. The preview factor is
+  // new — the odds of a planned line used to appear only after it had been
+  // committed, which is the wrong order for a game about weighing risk.
   const lastCommittedProb = state.actionLog.length > 0
     ? state.actionLog[state.actionLog.length - 1].cumulativeProb : 1;
-  const liveProbPct = Math.round(lastCommittedProb * state.pendingProb * 100);
+  const previewProb = pathPreviewProb(state.pathPreview);
+  const liveProbPct = Math.round(lastCommittedProb * state.pendingProb * previewProb * 100);
   // Only meaningful once a dice roll is actually in play — hide the pointless 100% default.
   const showSuccessChance = liveProbPct < 100;
+
+  // Rendered in one place, mounted in one of two. On touch the status line
+  // moves out of the HUD to just above the commit bar: it is guidance about
+  // what to do next, so it belongs near the thumb, and pulling it out of the
+  // header is most of what gets the HUD from 121px down to one row.
+  const backLabel = editorPreviewScenario ? 'Designer' : 'Menu';
+  // Run progress rides with the HUD readout on a desktop and with the status
+  // text on touch, where a 310px control row has no 89px to spare for it.
+  const seriesCounter = seriesRun ? (
+    <span className="hud__prob-label hud__prob-label--series">
+      Puzzle {seriesRun.puzzleIndex + 1} / {seriesScenarios.length}
+    </span>
+  ) : null;
+  const statusLine = (
+    <div className="hud__status">
+      {coarsePointer && seriesCounter && <>{seriesCounter}{' · '}</>}
+      {activationStatus}
+    </div>
+  );
 
   return (
     <div className="app app--game app--playbook">
       <header className="hud">
-        <button className="hud__back" onClick={handleBackClick}>{editorPreviewScenario ? '← Designer' : '← Menu'}</button>
+        <button className="hud__back" onClick={handleBackClick} aria-label={`Back to ${backLabel}`}>
+          <span className="hud__btn-icon" aria-hidden="true">←</span>
+          <span className="hud__btn-text">{backLabel}</span>
+        </button>
 
         <div className="hud__prob">
-          {seriesRun && (
-            <span className="hud__prob-label">
-              Puzzle {seriesRun.puzzleIndex + 1} / {seriesScenarios.length} ·{' '}
-            </span>
-          )}
+          {!coarsePointer && seriesCounter && <>{seriesCounter}{' · '}</>}
           {showSuccessChance && (
             <>
               <span className="hud__prob-label">Success chance</span>
@@ -955,23 +1067,33 @@ export default function App() {
           <strong>{teamLabel}'s Turn</strong>
         </div>
 
-        <div className="hud__status">{activationStatus}</div>
+        {!coarsePointer && statusLine}
 
         <button
           className={`hud__zoom${zoomEnabled ? ' hud__zoom--active' : ''}`}
-          onClick={() => setZoomEnabled(z => !z)}
+          onClick={() => setZoomOverride(!zoomEnabled)}
           title="Zoom to legal moves"
+          aria-label={zoomEnabled ? 'Zoom on — show the whole pitch' : 'Zoom to legal moves'}
+          aria-pressed={zoomEnabled}
         >
-          {zoomEnabled ? '🔍 Zoom On' : '🔍 Zoom'}
+          <span className="hud__btn-icon" aria-hidden="true">🔍</span>
+          <span className="hud__btn-text">{zoomEnabled ? 'Zoom On' : 'Zoom'}</span>
         </button>
 
-        <button className="hud__restart" onClick={handleRestartTurn}>↺ Restart</button>
+        <button className="hud__restart" onClick={handleRestartTurn} aria-label="Restart turn">
+          <span className="hud__btn-icon" aria-hidden="true">↺</span>
+          <span className="hud__btn-text">Restart</span>
+        </button>
 
         {reportButton('hud')}
         <UserMenu name={identityName} onSignOut={handleSignOut} />
       </header>
 
-      <div className="game-legends">
+      {/* On touch the legend goes behind a disclosure. It costs 53-61px
+          permanently to explain colours, which is a fifth of what the board
+          gets on a phone — and it is reference material, consulted once,
+          not a running readout. */}
+      <LegendShell collapsible={coarsePointer}>
         <div className="legend" role="list" aria-label="Pitch state legend">
           <span className="legend__item legend__item--tz" role="listitem">Tackle Zone</span>
           <span className="legend__item legend__item--free" role="listitem">Free Move</span>
@@ -1014,7 +1136,7 @@ export default function App() {
             ))}
           </div>
         </div>
-      </div>
+      </LegendShell>
 
       <div className="game-area">
         <div className="side-col side-col--left">
@@ -1034,13 +1156,66 @@ export default function App() {
             onSquareHover={handleSquareHover}
             onSquareLeave={handleSquareLeave}
             zoomBounds={zoomEnabled ? zoomBounds : null}
+            orientation={pitchOrientation}
           />
         </main>
 
         <div className="side-col side-col--right">
           <PlayerPanel piece={inspectedPiece} side="right" />
         </div>
+
       </div>
+
+      {/* Both side columns are hidden on touch. Without this the player card
+          and the roll history simply vanish on a phone. A sibling of
+          .game-area rather than a child, so the landscape grid can move it
+          into the column beside the board instead of stacking it under one
+          that has no height to give. */}
+      {coarsePointer && (
+        <MobileInfoSheet
+          piece={inspectedPiece}
+          log={state.actionLog}
+          pendingProb={state.pendingProb}
+          pendingTargets={state.pendingDodgeTargets}
+        />
+      )}
+
+      {coarsePointer && <div className="status-strip">{statusLine}</div>}
+
+      {/* Confirm bar — the visible half of the two-stage tap. */}
+      {armedPreview && (
+        <div className="commit-bar" role="group" aria-label="Confirm move">
+          <div className="commit-bar__detail">
+            <span className="commit-bar__square">
+              Move to {String(armedPreview.row)}{String.fromCharCode(65 + armedPreview.col)}
+            </span>
+            {showSuccessChance && (
+              <span className={`commit-bar__prob${liveProbPct < 50 ? ' commit-bar__prob--risky' : ''}`}>
+                {liveProbPct}% success
+              </span>
+            )}
+          </div>
+          <div className="commit-bar__actions">
+            <button
+              type="button"
+              className="btn btn--secondary commit-bar__cancel"
+              onClick={() => { disarm(); hookSquareLeave(); }}
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              className="btn btn--primary commit-bar__confirm"
+              onClick={() => {
+                disarm();
+                hookSquareClick(armedPreview.col, armedPreview.row);
+              }}
+            >
+              Confirm
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Touchdown — show summary and submit score */}
       {state.phase === 'touchdown' && effectiveAppMode === 'series-puzzle' && seriesRun && (

@@ -267,15 +267,15 @@ describe('push-back candidates', () => {
 });
 
 describe('computeZoomBounds', () => {
-  it('transposes portrait squares into landscape and pads them', () => {
+  it('pads the enclosing box in state coordinates', () => {
     const bounds = computeZoomBounds([at(7, 10), at(7, 12)], 1);
-    // portrait row -> landscape col, portrait col -> landscape row
-    expect(bounds).toEqual({ minCol: 9, maxCol: 13, minRow: 6, maxRow: 8 });
+    // Stays in state space — <Pitch> owns the orientation transform.
+    expect(bounds).toEqual({ minCol: 6, maxCol: 8, minRow: 9, maxRow: 13 });
   });
 
   it('clamps to the pitch and returns null for no input', () => {
     expect(computeZoomBounds([], 2)).toBeNull();
     const bounds = computeZoomBounds([at(0, 0), at(14, 25)], 5);
-    expect(bounds).toEqual({ minCol: 0, maxCol: 25, minRow: 0, maxRow: 14 });
+    expect(bounds).toEqual({ minCol: 0, maxCol: 14, minRow: 0, maxRow: 25 });
   });
 });

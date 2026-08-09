@@ -11,6 +11,38 @@ function samePosition(a: Position, b: Position): boolean {
 }
 
 /**
+ * SVG polyline points for one square's slice of a movement trail, in a
+ * 0–100 viewBox: in from the previous square, turn at the centre, out toward
+ * the next.
+ *
+ * Orientation-aware because the board is. Landscape draws state rows across
+ * the screen and state cols down it; portrait transposes that. Left hardcoded
+ * to the landscape mapping, every trail on a portrait board points ninety
+ * degrees away from the route it describes.
+ *
+ * A pure function rather than inline JSX so both orientations can be asserted
+ * — this is silent when wrong, since a trail always looks like a plausible
+ * trail.
+ */
+export function trailPolylinePoints(
+  trail: PathTrail,
+  pCol: number,
+  pRow: number,
+  portrait: boolean,
+): string {
+  const across = (p: Position) => (portrait ? p.col : p.row);
+  const down = (p: Position) => (portrait ? p.row : p.col);
+  const here = { col: pCol, row: pRow };
+
+  const enterX = 50 - (across(here) - across(trail.from)) * 50;
+  const enterY = 50 - (down(here) - down(trail.from)) * 50;
+  const exitX = trail.to ? 50 + (across(trail.to) - across(here)) * 50 : 50;
+  const exitY = trail.to ? 50 + (down(trail.to) - down(here)) * 50 : 50;
+
+  return `${enterX},${enterY} 50,50 ${exitX},${exitY}`;
+}
+
+/**
  * Build a trail for every committed move in the action log. Using the log
  * keeps a route visible after its piece's activation has ended, while the
  * activation rollback already removes cancelled movement from the same log.
