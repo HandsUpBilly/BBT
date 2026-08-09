@@ -18,7 +18,7 @@ import { startGame, boxOf, MIN_TAP_TARGET, undersizedTapTargets } from './helper
 async function capabilities(page: import('@playwright/test').Page) {
   return page.evaluate(() => ({
     coarse: matchMedia('(pointer: coarse)').matches,
-    hover: matchMedia('(hover: hover)').matches,
+    hover: matchMedia('(any-hover: hover)').matches,
     compact: matchMedia('(max-width: 1024px)').matches,
     width: window.innerWidth,
   }));

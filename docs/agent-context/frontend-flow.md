@@ -129,7 +129,7 @@ directions — so keep them apart.
 | Question | Query | Hook | Governs |
 |---|---|---|---|
 | Is there room? | `(max-width: 1024px)` | `useCompactLayout()` | Side columns, board rotation, HUD labels, legend disclosure, coordinate gutters, default zoom |
-| Can it hover? | `(hover: hover)` | `useHoverCapable()` | Hover preview vs two-stage tap and the commit bar |
+| Can any connected input hover? | `(any-hover: hover)` | `useHoverCapable()` | Hover preview vs two-stage tap and the commit bar |
 | Is the pointer coarse? | `(pointer: coarse)` | *(CSS only)* | Hit-target sizes, nothing else |
 
 The two failures worth remembering:
@@ -141,8 +141,9 @@ The two failures worth remembering:
   preview on hardware perfectly able to hover.
 
 A big screen keeps its columns whatever is pointing at it; a fingertip needs
-44px however big the screen is; hover works wherever hover exists. No axis is
-a proxy for another. `1024px` is the compact threshold because the rails cost
+44px however big the screen is; hover works whenever a mouse or trackpad is
+available, even if touch is primary. No axis is a proxy for another. `1024px`
+is the compact threshold because the rails cost
 at least 320px, leaving ~27px squares there and only ~16px at 768px — keep the
 constant in `useMediaQuery.ts` in step with the stylesheets.
 
