@@ -1,7 +1,9 @@
 import { memo, useCallback, useMemo } from 'react';
-import type { GameState, Position, Team } from './types';
+import type { GameState, Team } from './types';
 import { key, neighbours } from './bfs';
 import type { ZoomBounds } from './bfs';
+import { buildMovementTrailMap } from './movementTrail';
+import type { PathTrail } from './movementTrail';
 import { skillGroupsFor, skillMarkersFor } from './skillPresentation';
 import './Pitch.css';
 
@@ -166,11 +168,6 @@ interface DiceInfo {
   pickupTarget: number | null;
 }
 
-interface PathTrail {
-  from: Position;
-  to: Position | null;
-}
-
 interface SquareProps {
   pCol: number;
   pRow: number;
@@ -188,7 +185,7 @@ interface SquareProps {
   actionLabel: string | null;
   displayStep: number | null;
   stepIsPreview: boolean;
-  pathTrail: PathTrail | null;
+  pathTrails: PathTrail[];
   dice: DiceInfo | null;
   ghost: { team: Team; role?: string; skills: readonly string[]; hasBall: boolean } | null;
   focusable: boolean;
@@ -207,7 +204,7 @@ interface SquareProps {
  */
 const Square = memo(function Square({
   pCol, pRow, lCol, lRow, classes, label, pieceTeam, pieceRole, pieceSkills, pieceClasses, pieceHasBall,
-  looseBall, inTackleZone, actionLabel, displayStep, stepIsPreview, pathTrail, dice, ghost, focusable,
+  looseBall, inTackleZone, actionLabel, displayStep, stepIsPreview, pathTrails, dice, ghost, focusable,
   onSquareClick, onPieceClick, onSquareHover, onSquareLeave,
 }: SquareProps) {
   const activate = useCallback((clientX: number, clientY: number) => {
@@ -243,7 +240,7 @@ const Square = memo(function Square({
       data-row={lRow}
     >
       <div className="square__overlay" />
-      {pathTrail && (() => {
+      {pathTrails.map((pathTrail, index) => {
         // Portrait rows run horizontally on the rendered pitch, while portrait
         // columns run vertically. The polyline enters from the previous square,
         // turns at this square's centre, then exits toward the next square.
@@ -252,11 +249,11 @@ const Square = memo(function Square({
         const exitX = pathTrail.to ? 50 + (pathTrail.to.row - pRow) * 50 : 50;
         const exitY = pathTrail.to ? 50 + (pathTrail.to.col - pCol) * 50 : 50;
         return (
-          <svg className="square__path-trail" viewBox="0 0 100 100" aria-hidden="true">
+          <svg key={index} className="square__path-trail" viewBox="0 0 100 100" aria-hidden="true">
             <polyline points={`${enterX},${enterY} 50,50 ${exitX},${exitY}`} />
           </svg>
         );
-      })()}
+      })}
       {!pieceTeam && looseBall && <BallIcon loose />}
       {inTackleZone && <div className="square__tz-overlay" />}
       {pieceTeam && (
@@ -328,14 +325,10 @@ export function Pitch({ state, onSquareClick, onPieceClick, onSquareHover, onSqu
     return map;
   }, [state.walkedSquares]);
 
-  const walkedTrailMap = useMemo(() => {
-    const map = new Map<string, PathTrail>();
-    state.walkedSquares.forEach((pos, index) => {
-      const from = index === 0 ? state.originPos : state.walkedSquares[index - 1];
-      if (from) map.set(key(pos), { from, to: state.walkedSquares[index + 1] ?? null });
-    });
-    return map;
-  }, [state.originPos, state.walkedSquares]);
+  const movementTrailMap = useMemo(
+    () => buildMovementTrailMap(state.actionLog),
+    [state.actionLog],
+  );
 
   // Committed dice: map from destination key -> dice info from actionLog.
   // Persists after a waypoint is set so dice remain visible on committed squares.
@@ -468,7 +461,7 @@ export function Pitch({ state, onSquareClick, onPieceClick, onSquareHover, onSqu
       const tzCount           = tzCounts.get(k) ?? 0;
       const isInTZ            = tzCount > 0;
       const walkedStep        = walkedMap.get(k);
-      const pathTrail         = walkedTrailMap.get(k) ?? null;
+      const pathTrails        = movementTrailMap.get(k) ?? [];
       const isCommitted       = walkedStep !== undefined && !piece && !isGhost;
       const isHandoffTarget   = state.handoffTargets.has(k);
       const passRangeBand     = state.passRangeKeys.get(k);
@@ -563,7 +556,7 @@ export function Pitch({ state, onSquareClick, onPieceClick, onSquareHover, onSqu
           actionLabel={isSelected ? actionLabel : null}
           displayStep={displayStep}
           stepIsPreview={!!previewStep}
-          pathTrail={pathTrail}
+          pathTrails={pathTrails}
           dice={previewDice ?? committedDice}
           ghost={showGhost && selectedPiece
             ? {
