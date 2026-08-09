@@ -27,10 +27,11 @@
   display: flex;
   align-items: center;
   gap: 8px;
+  min-height: 40px;
   background: var(--color-surface-2);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-button);
-  padding: 4px 10px 4px 4px;
+  padding: 5px 12px 5px 5px;
   cursor: pointer;
   color: var(--color-text);
   transition: border-color var(--transition-fast), background var(--transition-fast);
@@ -42,8 +43,8 @@
 }
 
 .user-menu__avatar {
-  width: 26px;
-  height: 26px;
+  width: 30px;
+  height: 30px;
   border-radius: 50%;
   object-fit: cover;
   flex-shrink: 0;
@@ -143,17 +144,18 @@
   color: #dfa094;
 }
 
-/* The menu's colours come from the shared system in PlaybookTheme.css. Only the
-   landing screen's tighter sizing lives here, because the trigger sits inside
-   the masthead rather than in a bar of its own. */
+/* The menu's colours come from the shared system in PlaybookTheme.css. The
+   landing account is intentionally more prominent than the secondary report
+   flag beside it. */
 .app--landing .user-menu__trigger {
-  min-height: 34px;
+  min-height: 46px;
+  padding: 5px 13px 5px 5px;
 }
 
 .app--landing .scenario-select__user .user-menu__avatar {
-  width: 22px;
-  height: 22px;
-  font-size: 0.62rem;
+  width: 34px;
+  height: 34px;
+  font-size: 0.78rem;
 }
 
 .app--landing .user-menu__name {
@@ -164,8 +166,8 @@
 }
 
 .app--landing .scenario-select__user .user-menu__name {
-  max-width: 100px;
-  font-size: 0.68rem;
+  max-width: 140px;
+  font-size: 0.8rem;
 }
 
 .app--landing .user-menu__dropdown {
@@ -175,12 +177,18 @@
 
 @media (max-width: 480px) {
   .app--landing .user-menu__trigger {
-    min-width: 42px;
-    padding-right: 4px;
+    min-width: 46px;
+    padding: 5px;
   }
 
   .app--landing .user-menu__name,
   .app--landing .user-menu__caret {
     display: none;
+  }
+}
+
+@media (pointer: coarse) {
+  .user-menu__trigger {
+    min-height: 44px;
   }
 }

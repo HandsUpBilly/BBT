@@ -71,6 +71,10 @@ The identity gate and `home` mode use the tabletop-playbook visual shell:
 - The home masthead uses `client/src/assets/matchday-clash.webp` behind a
   responsive contrast overlay. Off-canvas chalk decoration is contained by
   `app--landing` so 320 px and wider viewports do not scroll horizontally.
+- The shared `.app` shell uses viewport `min-height`, never a fixed viewport
+  height. This lets the flex layout pin `AppFooter` to the bottom on short
+  screens while growing normally on long pages instead of leaving the footer
+  floating inside a stale viewport-sized box.
 
 ## Player-Facing Brand
 
@@ -203,11 +207,11 @@ for manual filing through Ona or GitHub.
 
 The report launcher is a subdued flag icon with an accessible label and title;
 it expands to a 44px hit target on coarse pointers without gaining visual
-weight. On the home screen it and the compact user menu share the masthead's
-top-right control group; archive screens use the same compact group in the
-fixed top-right position. `__BBT_VERSION__` comes from the root package version
-at build time (or `VITE_APP_VERSION` when supplied) and is displayed in the
-home masthead.
+weight. On the home screen it sits beside a deliberately larger account
+trigger in a group anchored 10–12px from the masthead's top-right corner.
+Archive screens use the same control group in the fixed top-right position.
+`__BBT_VERSION__` comes from the root package version at build time (or
+`VITE_APP_VERSION` when supplied) and is displayed in the home masthead.
 
 ### Published roster portraits
 

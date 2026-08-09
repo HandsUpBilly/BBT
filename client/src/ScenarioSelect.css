@@ -84,7 +84,9 @@
 }
 
 .scenario-select__user {
-  justify-self: end;
+  position: absolute;
+  top: 12px;
+  right: 12px;
   display: flex;
   flex-direction: column;
   align-items: flex-end;
@@ -512,9 +514,12 @@
   }
 
   .scenario-select__user {
-    position: absolute;
-    top: 16px;
-    right: 16px;
+    top: 10px;
+    right: 10px;
+  }
+
+  .scenario-select__version {
+    display: none;
   }
 
   .scenario-select__eyebrow {
