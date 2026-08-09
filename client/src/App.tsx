@@ -19,6 +19,7 @@ import { UserMenu } from './UserMenu';
 import { LegendShell } from './LegendShell';
 import { MobileInfoSheet } from './MobileInfoSheet';
 import { AppFooter } from './AppFooter';
+import { CommitBar } from './CommitBar';
 import { ReportProblemButton } from './ReportProblemButton';
 import { ReportProblemModal } from './ReportProblemModal';
 import { submitScore, fetchLeaderboard, submitSeriesScore, fetchSeriesLeaderboard, fetchProgress, ApiError } from './api';
@@ -1182,39 +1183,20 @@ export default function App() {
 
       {coarsePointer && <div className="status-strip">{statusLine}</div>}
 
-      {/* Confirm bar — the visible half of the two-stage tap. */}
-      {armedPreview && (
-        <div className="commit-bar" role="group" aria-label="Confirm move">
-          <div className="commit-bar__detail">
-            <span className="commit-bar__square">
-              Move to {String(armedPreview.row)}{String.fromCharCode(65 + armedPreview.col)}
-            </span>
-            {showSuccessChance && (
-              <span className={`commit-bar__prob${liveProbPct < 50 ? ' commit-bar__prob--risky' : ''}`}>
-                {liveProbPct}% success
-              </span>
-            )}
-          </div>
-          <div className="commit-bar__actions">
-            <button
-              type="button"
-              className="btn btn--secondary commit-bar__cancel"
-              onClick={() => { disarm(); hookSquareLeave(); }}
-            >
-              Cancel
-            </button>
-            <button
-              type="button"
-              className="btn btn--primary commit-bar__confirm"
-              onClick={() => {
-                disarm();
-                hookSquareClick(armedPreview.col, armedPreview.row);
-              }}
-            >
-              Confirm
-            </button>
-          </div>
-        </div>
+      {/* Keep the touch confirm slot mounted so arming a preview never takes
+          height away from the pitch. Fine pointers do not use two-stage tap. */}
+      {coarsePointer && (
+        <CommitBar
+          destination={armedPreview}
+          probability={liveProbPct}
+          showProbability={showSuccessChance}
+          onCancel={() => { disarm(); hookSquareLeave(); }}
+          onConfirm={() => {
+            if (!armedPreview) return;
+            disarm();
+            hookSquareClick(armedPreview.col, armedPreview.row);
+          }}
+        />
       )}
 
       {/* Touchdown — show summary and submit score */}

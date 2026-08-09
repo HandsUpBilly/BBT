@@ -641,6 +641,13 @@ body,
   box-shadow: var(--shadow-overlay);
 }
 
+/* The idle bar occupies exactly the same layout slot as the armed bar. It is
+   hidden visually and from assistive technology by CommitBar, but retaining
+   its box stops the pitch from shrinking when a touch preview is armed. */
+.commit-bar--placeholder {
+  visibility: hidden;
+}
+
 .commit-bar__detail {
   display: flex;
   align-items: baseline;
@@ -666,6 +673,13 @@ body,
 
 .commit-bar__prob--risky {
   color: var(--color-warning);
+}
+
+/* Safe routes still reserve the wider probability label. This keeps the bar
+   on the same number of flex lines when switching between safe and risky
+   destinations on narrow screens. */
+.commit-bar__prob--placeholder {
+  visibility: hidden;
 }
 
 .commit-bar__actions {

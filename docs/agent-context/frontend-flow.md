@@ -277,6 +277,11 @@ Blocking failures on the touchdown submit go to `SubmitModal`'s `error` prop
 instead, which keeps the dialog open with a retry button so the player doesn't
 silently lose a run.
 
+On touch devices, the move-confirm bar below the pitch remains mounted as an
+invisible placeholder while no square is armed. Its probability label also
+keeps its space for safe routes. This holds the bar to the same height in idle,
+safe-preview, and risky-preview states so the pitch never resizes between taps.
+
 ## Accessibility
 
 - Pitch squares are `role="button"` with `aria-label`s describing the square,
