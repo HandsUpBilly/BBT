@@ -20,16 +20,6 @@ interface Props {
 
 function pct(p: number) { return `${(p * 100).toFixed(1)}%`; }
 
-/** Odds out of 100, e.g. "39/100" — an exact reduced fraction can have a huge
- * coprime numerator/denominator (e.g. "702595369/1800000000") and convey
- * nothing useful, so round to a percentage-shaped fraction instead. */
-function oddsFraction(prob: number): string {
-  const rounded = Math.round(prob * 100);
-  if (prob > 0 && rounded === 0) return '<1/100';
-  if (prob < 1 && rounded === 100) return '>99/100';
-  return `${rounded}/100`;
-}
-
 const BAND_LABEL: Record<string, string> = {
   quick: 'Quick', short: 'Short', long: 'Long', bomb: 'Bomb',
 };
@@ -120,7 +110,7 @@ export function SubmitModal({ actionLog, onSubmit, onDismiss, seriesMode, contin
             <div className="submit-modal__cum-row">
               <span className="submit-modal__cum-label">Cumulative probability</span>
               <span className={`submit-modal__cum-value${cumulativeProb < 0.5 ? ' submit-modal__cum-value--risky' : ''}`}>
-                {oddsFraction(cumulativeProb)} <span className="submit-modal__cum-pct">({pct(cumulativeProb)})</span>
+                {pct(cumulativeProb)}
               </span>
             </div>
           </div>
