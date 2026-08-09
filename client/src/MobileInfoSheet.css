@@ -50,20 +50,6 @@
   color: var(--color-text-strong);
 }
 
-.info-sheet__count {
-  display: inline-grid;
-  place-items: center;
-  min-width: 18px;
-  height: 18px;
-  padding: 0 5px;
-  border-radius: 9px;
-  background: var(--color-surface-3);
-  color: var(--color-text-muted);
-  font-family: var(--font-mono);
-  font-size: 0.62rem;
-  font-variant-numeric: tabular-nums;
-}
-
 .info-sheet__panel {
   min-height: 0;
   overflow-y: auto;
@@ -92,12 +78,6 @@
 
 .info-sheet__panel--player .panel__portrait-wrap {
   grid-row: span 2;
-}
-
-.info-sheet__panel--log .dice-log {
-  border: none;
-  background: transparent;
-  padding: 4px 2px;
 }
 
 @media (prefers-reduced-motion: reduce) {

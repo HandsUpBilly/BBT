@@ -80,6 +80,22 @@ export default defineConfig({
       name: 'desktop',
       use: { ...devices['Desktop Chrome'], viewport: { width: 1440, height: 900 } },
     },
+
+    // A big screen that reports coarse pointer and no hover — a touchscreen
+    // laptop, a Surface, a kiosk. There was no such project here, which is
+    // why nothing caught the mobile layout collapsing onto a 1280px display:
+    // side columns hidden, ~740px of dead space, no hover preview on a
+    // machine with room for everything. Screen size and input type are
+    // independent, and only a device that mixes them proves it.
+    {
+      name: 'desktop-touch',
+      use: {
+        ...devices['Desktop Chrome'],
+        viewport: { width: 1280, height: 800 },
+        hasTouch: true,
+        isMobile: false,
+      },
+    },
   ],
   webServer: {
     command: 'npm run dev',

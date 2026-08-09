@@ -18,6 +18,7 @@ import { blockActionAvailability } from './blockActionAvailability';
 import { UserMenu } from './UserMenu';
 import { LegendShell } from './LegendShell';
 import { MobileInfoSheet } from './MobileInfoSheet';
+import { ActionLogMenu } from './ActionLogMenu';
 import { AppFooter } from './AppFooter';
 import { CommitBar } from './CommitBar';
 import { ReportProblemButton } from './ReportProblemButton';
@@ -38,7 +39,7 @@ import type {
 import { key, computeZoomBounds } from './bfs';
 import type { ZoomBounds } from './bfs';
 import { SKILL_GROUPS, SKILL_MARKERS } from './skillPresentation';
-import { useCoarsePointer, usePortraitViewport } from './useMediaQuery';
+import { useCompactLayout, useHoverCapable, usePortraitViewport } from './useMediaQuery';
 import './App.css';
 import './PlaybookTheme.css';
 
@@ -363,27 +364,36 @@ export default function App() {
   const [submitNotice, setSubmitNotice] = useState<string | undefined>();
 
   // ── Viewport shape ───────────────────────────────────────────────────────
-  // Touch and orientation, not width. A phone held sideways is 812px wide, so
-  // a width breakpoint calls it a desktop.
-  const coarsePointer = useCoarsePointer();
+  // Three separate questions — see useMediaQuery.ts for why none of them is a
+  // proxy for the others.
+  //   compact  — is there room for the side columns?  (size)
+  //   hover    — can the preview follow a cursor?     (input capability)
+  //
+  // The third, pointer precision, decides hit-target sizes and is answered
+  // entirely in CSS — no component needs to branch on it.
+  const compact = useCompactLayout();
+  const hoverCapable = useHoverCapable();
   const portraitViewport = usePortraitViewport();
-  // Rotating the board is only worth it when the screen is actually taller
-  // than it is wide; on a landscape phone the pitch's own shape already fits.
+  // Rotating the board is worth it whenever the viewport is tall and narrow,
+  // whatever is pointing at it — a narrow desktop window benefits just as
+  // much as a phone. In landscape the pitch's own shape already fits.
   const pitchOrientation: PitchOrientation =
-    coarsePointer && portraitViewport ? 'portrait' : 'landscape';
+    compact && portraitViewport ? 'portrait' : 'landscape';
 
   // ── Zoom mode ────────────────────────────────────────────────────────────
   // Computed once when play starts (not recalculated as moves are made or
   // pieces are selected). Radius is the largest MA among the player's own
   // team's pieces, plus 2 for GFI/rush squares.
   //
-  // On by default for touch: the full 26×15 board gives 11px squares on a
-  // phone, and the crop is the difference between a tappable board and one
-  // that needs a fingertip the size of a pea. Derived rather than stored, so
-  // a device that only reports coarse after first paint still gets the crop —
-  // until the player overrides it, after which their choice sticks.
+  // On by default on a compact viewport: the full 26×15 board gives 11px
+  // squares on a phone, and the crop is the difference between a tappable
+  // board and one that needs a fingertip the size of a pea. Keyed to size
+  // rather than pointer — a 1280px touchscreen has ample room and should
+  // start with the whole pitch. Derived rather than stored, so the default
+  // still applies if the media query resolves after first paint, until the
+  // player overrides it and their choice sticks.
   const [zoomOverride, setZoomOverride] = useState<boolean | null>(null);
-  const zoomEnabled = zoomOverride ?? coarsePointer;
+  const zoomEnabled = zoomOverride ?? compact;
   const [zoomBounds, setZoomBounds] = useState<ZoomBounds | null>(null);
 
   const computeStartOfPlayZoom = useCallback((pieces: PlayerPiece[], activeTeam: string): ZoomBounds | null => {
@@ -533,7 +543,10 @@ export default function App() {
    * Returns true when the tap was consumed as a preview and must not commit.
    */
   const previewBeforeCommit = useCallback((col: number, row: number): boolean => {
-    if (!coarsePointer) return false;
+    // Only where the cursor cannot preview on its own. Anything that hovers
+    // keeps the one-click flow — a second confirming click on a machine that
+    // already showed you the route is friction with nothing bought for it.
+    if (hoverCapable) return false;
     if (!state.selectedPieceId) return false;
     const k = key({ col, row });
     if (!state.reachableKeys.has(k)) return false;
@@ -546,7 +559,7 @@ export default function App() {
     const piece = state.pieces.find(p => key(p.position) === k);
     setHoveredPiece(piece ?? null);
     return true;
-  }, [coarsePointer, state.selectedPieceId, state.reachableKeys, state.pieces,
+  }, [hoverCapable, state.selectedPieceId, state.reachableKeys, state.pieces,
       state.walkedSquares.length, armedSquareKey, hookSquareHover]);
 
   // Route square clicks: targeting modes take priority over normal movement
@@ -595,7 +608,7 @@ export default function App() {
     // Touch has no hover, so a tap is the only way the player card can learn
     // which player to show — including opponents, whose skills are exactly
     // what you need before deciding whether to block them.
-    if (coarsePointer) setHoveredPiece(piece);
+    if (!hoverCapable) setHoveredPiece(piece);
 
     // During handoff targeting, clicking a highlighted receiver executes the handoff
     if (state.isHandoffTargeting) {
@@ -662,7 +675,7 @@ export default function App() {
       state.isHandoffTargeting, state.handoffTargets, state.isPassTargeting, state.passReceiverKeys,
       state.isBlockTargeting, state.blockTargets, state.pendingBlockIsBlitz, state.blitzTargetId,
       hookSquareClick, handleHandoffTarget, handlePassTarget, handleBlockTarget, handleCancelSelection,
-      previewBeforeCommit, disarm, coarsePointer]);
+      previewBeforeCommit, disarm, hoverCapable]);
 
   const handleMenuAction = useCallback((actionKey: string, moveFirst: boolean) => {
     if (!pieceMenu) return;
@@ -691,22 +704,23 @@ export default function App() {
   const dismissMenu = useCallback(() => setPieceMenu(null), []);
 
   const handleSquareHover = useCallback((col: number, row: number) => {
-    // Touch devices drive both of these from taps instead. A tap emits a
-    // synthetic mouseenter immediately before the click, so leaving hover
-    // wired up here would preview and commit in the same gesture — exactly
-    // the behaviour the two-stage tap exists to prevent.
-    if (coarsePointer) return;
+    // Suppressed only where hover does not really exist. A tap on such a
+    // device still emits a synthetic mouseenter immediately before the click,
+    // so leaving this wired up would preview and commit in one gesture —
+    // exactly what the two-stage tap exists to prevent. Anywhere a cursor can
+    // genuinely hover, this is the primary way the route is previewed.
+    if (!hoverCapable) return;
     // Update movement preview in game state
     hookSquareHover(col, row);
     const k = key({ col, row });
     const piece = state.pieces.find(p => key(p.position) === k);
     setHoveredPiece(piece ?? null);
-  }, [coarsePointer, hookSquareHover, state.pieces]);
+  }, [hoverCapable, hookSquareHover, state.pieces]);
   const handleSquareLeave = useCallback(() => {
-    if (coarsePointer) return;
+    if (!hoverCapable) return;
     hookSquareLeave();
     setHoveredPiece(null);
-  }, [coarsePointer, hookSquareLeave]);
+  }, [hoverCapable, hookSquareLeave]);
 
   // Submission handler (standalone puzzle mode)
   const handleSubmit = useCallback(async (name: string) => {
@@ -975,7 +989,7 @@ export default function App() {
   // A move is armed and previewed, waiting for the confirming tap. The bar
   // below the board makes the second tap discoverable and gives the player a
   // way out that isn't "tap somewhere harmless and hope".
-  const armedPreview = coarsePointer && armedSquareKey !== null
+  const armedPreview = !hoverCapable && armedSquareKey !== null
     && state.pathPreview.length > 0
     ? state.pathPreview[state.pathPreview.length - 1].pos
     : null;
@@ -1020,7 +1034,11 @@ export default function App() {
   const lastCommittedProb = state.actionLog.length > 0
     ? state.actionLog[state.actionLog.length - 1].cumulativeProb : 1;
   const previewProb = pathPreviewProb(state.pathPreview);
-  const liveProbPct = Math.round(lastCommittedProb * state.pendingProb * previewProb * 100);
+  // Not multiplied by state.pendingProb: that resets per activation and
+  // accumulates the same per-step values, so it is always already inside
+  // lastCommittedProb. Including it counted the current piece's rolls twice
+  // and made the HUD disagree with the score that gets submitted.
+  const liveProbPct = Math.round(lastCommittedProb * previewProb * 100);
   // Only meaningful once a dice roll is actually in play — hide the pointless 100% default.
   const showSuccessChance = liveProbPct < 100;
 
@@ -1038,7 +1056,7 @@ export default function App() {
   ) : null;
   const statusLine = (
     <div className="hud__status">
-      {coarsePointer && seriesCounter && <>{seriesCounter}{' · '}</>}
+      {compact && seriesCounter && <>{seriesCounter}{' · '}</>}
       {activationStatus}
     </div>
   );
@@ -1052,7 +1070,7 @@ export default function App() {
         </button>
 
         <div className="hud__prob">
-          {!coarsePointer && seriesCounter && <>{seriesCounter}{' · '}</>}
+          {!compact && seriesCounter && <>{seriesCounter}{' · '}</>}
           {showSuccessChance && (
             <>
               <span className="hud__prob-label">Success chance</span>
@@ -1068,7 +1086,7 @@ export default function App() {
           <strong>{teamLabel}'s Turn</strong>
         </div>
 
-        {!coarsePointer && statusLine}
+        {!compact && statusLine}
 
         <button
           className={`hud__zoom${zoomEnabled ? ' hud__zoom--active' : ''}`}
@@ -1086,6 +1104,12 @@ export default function App() {
           <span className="hud__btn-text">Restart</span>
         </button>
 
+        {/* Touch only — the pointer-fine layout keeps the log in its side
+            column, where it is always visible and costs nothing. */}
+        {compact && (
+          <ActionLogMenu log={state.actionLog} />
+        )}
+
         {reportButton('hud')}
         <UserMenu name={identityName} onSignOut={handleSignOut} />
       </header>
@@ -1094,7 +1118,7 @@ export default function App() {
           permanently to explain colours, which is a fifth of what the board
           gets on a phone — and it is reference material, consulted once,
           not a running readout. */}
-      <LegendShell collapsible={coarsePointer}>
+      <LegendShell collapsible={compact}>
         <div className="legend" role="list" aria-label="Pitch state legend">
           <span className="legend__item legend__item--tz" role="listitem">Tackle Zone</span>
           <span className="legend__item legend__item--free" role="listitem">Free Move</span>
@@ -1141,11 +1165,7 @@ export default function App() {
 
       <div className="game-area">
         <div className="side-col side-col--left">
-          <DiceLog
-            log={state.actionLog}
-            pendingProb={state.pendingProb}
-            pendingTargets={state.pendingDodgeTargets}
-          />
+          <DiceLog log={state.actionLog} />
 
         </div>
 
@@ -1167,25 +1187,20 @@ export default function App() {
 
       </div>
 
-      {/* Both side columns are hidden on touch. Without this the player card
-          and the roll history simply vanish on a phone. A sibling of
-          .game-area rather than a child, so the landscape grid can move it
-          into the column beside the board instead of stacking it under one
-          that has no height to give. */}
-      {coarsePointer && (
-        <MobileInfoSheet
-          piece={inspectedPiece}
-          log={state.actionLog}
-          pendingProb={state.pendingProb}
-          pendingTargets={state.pendingDodgeTargets}
-        />
-      )}
+      {/* Both side columns are hidden on touch, so without this the player
+          card vanishes on a phone. The roll history that used to share this
+          sheet now lives in the toolbar. A sibling of .game-area rather than
+          a child, so the landscape grid can move it into the column beside
+          the board instead of stacking it under one that has no height. */}
+      {compact && <MobileInfoSheet piece={inspectedPiece} />}
 
-      {coarsePointer && <div className="status-strip">{statusLine}</div>}
+      {compact && <div className="status-strip">{statusLine}</div>}
 
-      {/* Keep the touch confirm slot mounted so arming a preview never takes
-          height away from the pitch. Fine pointers do not use two-stage tap. */}
-      {coarsePointer && (
+      {/* Keep the confirm slot mounted so arming a preview never takes height
+          away from the pitch. Gated on the same condition as armedPreview: a
+          touchscreen that can hover uses the one-click flow, and would
+          otherwise reserve a bar that can never fill. */}
+      {!hoverCapable && (
         <CommitBar
           destination={armedPreview}
           probability={liveProbPct}

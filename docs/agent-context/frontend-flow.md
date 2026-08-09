@@ -111,8 +111,9 @@ their owning components.
 - Generic `.btn` markup is shared by the landing and editor. Its visual
   hierarchy belongs to the `app--playbook` layer; component CSS should own
   layout rather than reintroducing unrelated button colors.
-- On touch devices, game side panels remain hidden by the existing layout, and
-  their contents move into `MobileInfoSheet` (see Mobile Layout below).
+- On compact viewports, game side panels are hidden; the player card moves into
+  `MobileInfoSheet` and the action log into the toolbar (see Mobile Layout
+  below). Wide viewports keep the rails whatever the pointer type.
   Legends, dense result tables, and the editor pitch scroll inside their own
   surfaces so the page itself does not overflow horizontally. Header/HUD report
   controls and the editor account trigger collapse to icon/avatar controls.
@@ -121,18 +122,39 @@ their owning components.
 
 ## Mobile Layout
 
-The game screen has a distinct touch layout. It is selected by **pointer type
-and orientation, never by width** — `useMediaQuery.ts` exposes
-`useCoarsePointer()` and `usePortraitViewport()`, and the stylesheets use
-`(pointer: coarse)` to match. A `max-width` breakpoint classifies a phone held
-sideways (812px wide) as a desktop, which is how the landscape board once
-rendered 40% of its squares outside a wrapper with `overflow: hidden`.
+The game screen adapts along **three independent axes**. Answering any of them
+with the wrong query has already produced a shipped defect, twice, in opposite
+directions — so keep them apart.
+
+| Question | Query | Hook | Governs |
+|---|---|---|---|
+| Is there room? | `(max-width: 1024px)` | `useCompactLayout()` | Side columns, board rotation, HUD labels, legend disclosure, coordinate gutters, default zoom |
+| Can it hover? | `(hover: hover)` | `useHoverCapable()` | Hover preview vs two-stage tap and the commit bar |
+| Is the pointer coarse? | `(pointer: coarse)` | *(CSS only)* | Hit-target sizes, nothing else |
+
+The two failures worth remembering:
+
+- **Width alone** classified a phone held sideways (812px) as a desktop, and
+  40% of the board rendered outside a wrapper with `overflow: hidden`.
+- **Pointer alone** then gave a 1280px touchscreen the phone layout: side
+  columns hidden, ~740px of dead space beside a shrunken board, and no hover
+  preview on hardware perfectly able to hover.
+
+A big screen keeps its columns whatever is pointing at it; a fingertip needs
+44px however big the screen is; hover works wherever hover exists. No axis is
+a proxy for another. `1024px` is the compact threshold because the rails cost
+at least 320px, leaving ~27px squares there and only ~16px at 768px — keep the
+constant in `useMediaQuery.ts` in step with the stylesheets.
+
+Pointer precision is settled entirely in CSS: no component branches on it. The
+`desktop-touch` Playwright project (1280×800, `hasTouch`) is the regression
+guard, and its absence is why nothing caught the second failure.
 
 ### The board rotates
 
 `<Pitch>` takes an `orientation` prop. Game state is always portrait
 (`col` 0–14, `row` 0–25); landscape rendering transposes it. On a portrait
-touch screen the transpose is skipped, so the board is 15 squares across
+compact viewport the transpose is skipped, so the board is 15 squares across
 instead of 26 — squares go from 11.2px to 23.4px on a 375px phone.
 
 - **Square names never change.** `13G` is the same square in both
@@ -178,15 +200,40 @@ pickup stacking on one square; keep the two together and keep
   status line is mounted below the board in `.status-strip` instead, and the
   series counter rides with it.
 - The legend goes behind a `<details>` disclosure (`LegendShell`).
-- `MobileInfoSheet` restores the player card and dice log, collapsed by
-  default so the board keeps the height.
+- The action log is a toolbar dropdown (`ActionLogMenu`), following
+  `UserMenu`'s pattern so the neighbouring controls behave alike. Its badge
+  shows `rollCount(log)` — rolls, not steps — because that count is what the
+  score is built from. It is touch-only; the pointer-fine layout keeps
+  `DiceLog` in its always-visible side column.
+- `MobileInfoSheet` restores the player card, collapsed by default so the
+  board keeps the height.
 - In landscape under 600px tall, `.app--game` becomes a grid that puts legend,
   status and sheet in a column beside the board, recovering the height the
   board is starved of.
 
+### Reporting committed probability
+
+One number, three places: the action log footer, the HUD percentage, and the
+score submitted to the leaderboard. All of them are the last log entry's
+`cumulativeProb`, which already contains every roll committed this turn.
+
+**Do not multiply it by `state.pendingProb`.** That field resets on each
+activation and accumulates the same per-step values, so it is always a subset
+of `cumulativeProb`; multiplying counted the active piece's rolls twice and
+reported 0.833⁴ where the truth was 0.833². The submitted score was always
+correct, so the interface was under-reporting the player's own line. The only
+legitimate extra factor is `pathPreviewProb(state.pathPreview)`, for a route
+previewed but not yet committed.
+
+`actionLogDisplay.ts` owns the log's display shaping. `compactDisplayLog`
+folds a straight unbroken walk into one line but never merges roll-bearing
+steps — a merge keeps only one entry's roll fields, so folding two rushes
+together dropped one from the log while the cumulative still counted it.
+`actionLogProbability.test.ts` pins the display and the score together.
+
 ### Regression coverage
 
-`client/e2e/` holds a Playwright harness across nine device profiles. jsdom has
+`client/e2e/` holds a Playwright harness across ten device profiles. jsdom has
 no layout engine, so vitest cannot catch any of this. Run it with
 `npm run test:e2e` after `npx playwright install`; it is deliberately **not**
 part of `npm run verify`, which must pass on a clean checkout without browser

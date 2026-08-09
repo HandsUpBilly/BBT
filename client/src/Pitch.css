@@ -97,10 +97,17 @@
 /* Zoom mode needs no sizing rules of its own: cropping changes
    --pitch-aspect, and the fit rule above re-solves from that. */
 
-/* ── Touch: compact coordinate gutters ──────────────────────────────────
-   Keep the grid references visible on phones, but use narrow rails so the
-   playable squares still receive nearly all of the viewport. */
-@media (pointer: coarse) {
+/* ── Compact: narrow coordinate gutters ──────────────────────────────────
+   Keep the grid references visible, but on narrow rails so the playable
+   squares still receive nearly all of the viewport. An earlier pass hid them
+   outright; they were restored because a coordinate grid you cannot read is
+   worse than a few pixels of board.
+
+   Keyed to width rather than pointer: how much room the rails may take is a
+   question about the viewport, not about what is pointing at it. A 1280px
+   touchscreen has space for the full gutters and keeps them; a narrow
+   mouse-driven window needs the narrow ones just as much as a phone does. */
+@media (max-width: 1024px) {
   .pitch {
     --pitch-gutter-w: 0.75rem;
     --pitch-gutter-h: 1.1rem;

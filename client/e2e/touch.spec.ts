@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { startGame, isTouch } from './helpers';
+import { startGame, canHover } from './helpers';
 
 /**
  * The two-stage tap contract.
@@ -13,7 +13,7 @@ import { startGame, isTouch } from './helpers';
  */
 test.describe('touch: preview before commit', () => {
   test.beforeEach(async ({ page }) => {
-    test.skip(!(await isTouch(page)), 'two-stage tap is a touch-only affordance');
+    test.skip(await canHover(page), 'the two-stage tap is for pointers that cannot hover');
     await startGame(page);
   });
 
