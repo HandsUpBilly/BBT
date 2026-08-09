@@ -1,6 +1,26 @@
 import { test, expect } from '@playwright/test';
 import { boxOf, hasHorizontalOverflow } from './helpers';
 
+async function footerPlacement(page: import('@playwright/test').Page) {
+  return page.locator('.app-footer').evaluate((footer) => {
+    const rect = footer.getBoundingClientRect();
+    const pageBottom = Math.max(document.documentElement.scrollHeight, document.documentElement.clientHeight);
+    return {
+      bottom: rect.bottom + window.scrollY,
+      pageBottom,
+      viewportHeight: document.documentElement.clientHeight,
+    };
+  });
+}
+
+function expectFooterAtPageBottom(footer: Awaited<ReturnType<typeof footerPlacement>>) {
+  // Non-landing shells retain up to 10px of safe outer padding below the
+  // footer; touch landing shells retain 6px.
+  expect(footer.bottom, 'footer must not float above the viewport bottom')
+    .toBeGreaterThanOrEqual(footer.viewportHeight - 12);
+  expect(Math.abs(footer.pageBottom - footer.bottom), 'gap below footer').toBeLessThanOrEqual(12);
+}
+
 test.describe('home account controls', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/');
@@ -24,4 +44,20 @@ test.describe('home account controls', () => {
     }
     expect(await hasHorizontalOverflow(page)).toBe(false);
   });
+
+  test('the footer stays at the bottom of the page', async ({ page }) => {
+    expectFooterAtPageBottom(await footerPlacement(page));
+  });
+
+  test('the archive footer stays at the bottom of the page', async ({ page }) => {
+    await page.getByRole('button', { name: 'Rankings' }).click();
+    await page.locator('.leaderboard').waitFor({ state: 'visible' });
+
+    expectFooterAtPageBottom(await footerPlacement(page));
+  });
+});
+
+test('the signed-out footer stays at the bottom of the page', async ({ page }) => {
+  await page.goto('/');
+  expectFooterAtPageBottom(await footerPlacement(page));
 });
