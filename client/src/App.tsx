@@ -1196,9 +1196,11 @@ export default function App() {
 
       {compact && <div className="status-strip">{statusLine}</div>}
 
-      {/* Keep the touch confirm slot mounted so arming a preview never takes
-          height away from the pitch. Fine pointers do not use two-stage tap. */}
-      {coarsePointer && (
+      {/* Keep the confirm slot mounted so arming a preview never takes height
+          away from the pitch. Gated on the same condition as armedPreview: a
+          touchscreen that can hover uses the one-click flow, and would
+          otherwise reserve a bar that can never fill. */}
+      {!hoverCapable && (
         <CommitBar
           destination={armedPreview}
           probability={liveProbPct}

@@ -421,7 +421,12 @@
   font-weight: 600;
 }
 
-@media (pointer: coarse) {
+/* Pairs with the narrow gutters in Pitch.css, which shrink these labels to
+   0.5rem — so it has to match that rule's query. Left on (pointer: coarse) it
+   brightened full-size labels on a roomy touchscreen while leaving the tiny
+   ones in a narrow mouse-driven window at the dim default, which is the case
+   the contrast bump exists for. */
+@media (max-width: 1024px) {
   .app--game .pitch__col-label,
   .app--game .pitch__row-label {
     color: rgba(255, 255, 255, 0.82);
