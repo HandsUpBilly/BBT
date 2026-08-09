@@ -97,21 +97,24 @@
 /* Zoom mode needs no sizing rules of its own: cropping changes
    --pitch-aspect, and the fit rule above re-solves from that. */
 
-/* ── Touch: drop the coordinate gutters ──────────────────────────────────
-   The labels render at 8.8px on a phone — not really readable — and the four
-   gutters cost 2.8rem of a 360px viewport, about 12% of the board's width.
-   Spent on the squares instead they are worth roughly 3px per square. The
-   coordinates stay in every square's aria-label, which is where they carry
-   their weight for screen-reader users. */
+/* ── Touch: compact coordinate gutters ──────────────────────────────────
+   Keep the grid references visible on phones, but use narrow rails so the
+   playable squares still receive nearly all of the viewport. */
 @media (pointer: coarse) {
   .pitch {
-    --pitch-gutter-w: 0rem;
-    --pitch-gutter-h: 0rem;
+    --pitch-gutter-w: 0.75rem;
+    --pitch-gutter-h: 1.1rem;
   }
 
-  .pitch__col-labels,
   .pitch__row-labels {
-    display: none;
+    width: 0.375rem;
+  }
+
+  .pitch__col-label,
+  .pitch__row-label {
+    color: rgba(255, 255, 255, 0.82);
+    font-size: 0.5rem;
+    line-height: 1.1em;
   }
 }
 

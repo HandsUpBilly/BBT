@@ -70,6 +70,19 @@ test.describe('game screen layout', () => {
     ).toEqual([]);
   });
 
+  test('the report launcher stays visually tucked away', async ({ page }) => {
+    const reportButton = page.getByRole('button', { name: 'Report a problem' });
+    const box = await boxOf(reportButton);
+    const background = await reportButton.evaluate((button) => getComputedStyle(button).backgroundColor);
+
+    if (await isTouch(page)) {
+      expect(Math.min(box.width, box.height), 'touch hit target').toBeGreaterThanOrEqual(MIN_TAP_TARGET);
+    } else {
+      expect(Math.max(box.width, box.height), 'pointer-sized launcher').toBeLessThanOrEqual(32);
+    }
+    expect(background, 'idle launcher background').toBe('rgba(0, 0, 0, 0)');
+  });
+
   test('chrome stays within its budget', async ({ page }) => {
     test.skip(!(await isTouch(page)), 'chrome budget is a mobile concern');
 
@@ -110,6 +123,23 @@ test.describe('game screen layout', () => {
     const label = await page.locator('.square[data-col="7"][data-row="7"]')
       .first().getAttribute('aria-label');
     expect(label).toMatch(/^7H,/);
+  });
+
+  test('grid coordinates remain visible around the pitch', async ({ page }) => {
+    const portraitPitch = await page.locator('.pitch').evaluate((pitch) =>
+      pitch.classList.contains('pitch--portrait'),
+    );
+    const topLabels = page.locator('.pitch__col-labels--top .pitch__col-label');
+    const leftLabels = page.locator('.pitch__middle > .pitch__row-labels:first-child .pitch__row-label');
+
+    await expect(topLabels.first()).toBeVisible();
+    await expect(leftLabels.first()).toBeVisible();
+    await expect(topLabels).toHaveText(portraitPitch
+      ? Array.from({ length: 15 }, (_, index) => String.fromCharCode(65 + index))
+      : Array.from({ length: 26 }, (_, index) => String(index)));
+    await expect(leftLabels).toHaveText(portraitPitch
+      ? Array.from({ length: 26 }, (_, index) => String(index))
+      : Array.from({ length: 15 }, (_, index) => String.fromCharCode(65 + index)));
   });
 });
 

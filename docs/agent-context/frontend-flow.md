@@ -145,8 +145,9 @@ instead of 26 — squares go from 11.2px to 23.4px on a 375px phone.
 - `.pitch__row-labels` needs `contain: size`; without it the label column is
   taller than the grid's aspect height and stretches the grid, producing
   visibly non-square cells.
-- Coordinate gutters are hidden on touch — 8.8px text costing 12% of board
-  width. The coordinates stay in each square's `aria-label`.
+- Coordinate gutters remain visible on touch in compact, high-contrast rails.
+  Portrait boards show A–O across the top and 0–25 down the sides; landscape
+  boards transpose those axes while square names remain unchanged.
 - Zoom defaults on for coarse pointers, derived from the media query rather
   than stored, so the player's own choice still wins once they make one.
 
@@ -200,11 +201,13 @@ prefilled but editable; the server uses the verified Google name when present.
 If delivery fails, the dialog retains the text and offers a Markdown download
 for manual filing through Ona or GitHub.
 
-On the home screen, the report launcher and compact user menu share the
-masthead's top-right control group; archive screens use the same compact group
-in the fixed top-right position. `__BBT_VERSION__` comes from the root package
-version at build time (or `VITE_APP_VERSION` when supplied) and is displayed in
-the home masthead.
+The report launcher is a subdued flag icon with an accessible label and title;
+it expands to a 44px hit target on coarse pointers without gaining visual
+weight. On the home screen it and the compact user menu share the masthead's
+top-right control group; archive screens use the same compact group in the
+fixed top-right position. `__BBT_VERSION__` comes from the root package version
+at build time (or `VITE_APP_VERSION` when supplied) and is displayed in the
+home masthead.
 
 ### Published roster portraits
 
