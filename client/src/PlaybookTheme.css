@@ -421,6 +421,13 @@
   font-weight: 600;
 }
 
+@media (pointer: coarse) {
+  .app--game .pitch__col-label,
+  .app--game .pitch__row-label {
+    color: rgba(255, 255, 255, 0.82);
+  }
+}
+
 .app--game .piece__action-label {
   color: var(--color-text-strong);
   background: rgba(13, 15, 15, 0.9);

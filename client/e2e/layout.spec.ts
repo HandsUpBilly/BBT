@@ -111,6 +111,23 @@ test.describe('game screen layout', () => {
       .first().getAttribute('aria-label');
     expect(label).toMatch(/^7H,/);
   });
+
+  test('grid coordinates remain visible around the pitch', async ({ page }) => {
+    const portraitPitch = await page.locator('.pitch').evaluate((pitch) =>
+      pitch.classList.contains('pitch--portrait'),
+    );
+    const topLabels = page.locator('.pitch__col-labels--top .pitch__col-label');
+    const leftLabels = page.locator('.pitch__middle > .pitch__row-labels:first-child .pitch__row-label');
+
+    await expect(topLabels.first()).toBeVisible();
+    await expect(leftLabels.first()).toBeVisible();
+    await expect(topLabels).toHaveText(portraitPitch
+      ? Array.from({ length: 15 }, (_, index) => String.fromCharCode(65 + index))
+      : Array.from({ length: 26 }, (_, index) => String(index)));
+    await expect(leftLabels).toHaveText(portraitPitch
+      ? Array.from({ length: 26 }, (_, index) => String(index))
+      : Array.from({ length: 15 }, (_, index) => String.fromCharCode(65 + index)));
+  });
 });
 
 test.describe('modals fit the viewport', () => {

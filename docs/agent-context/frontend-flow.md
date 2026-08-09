@@ -145,8 +145,9 @@ instead of 26 — squares go from 11.2px to 23.4px on a 375px phone.
 - `.pitch__row-labels` needs `contain: size`; without it the label column is
   taller than the grid's aspect height and stretches the grid, producing
   visibly non-square cells.
-- Coordinate gutters are hidden on touch — 8.8px text costing 12% of board
-  width. The coordinates stay in each square's `aria-label`.
+- Coordinate gutters remain visible on touch in compact, high-contrast rails.
+  Portrait boards show A–O across the top and 0–25 down the sides; landscape
+  boards transpose those axes while square names remain unchanged.
 - Zoom defaults on for coarse pointers, derived from the media query rather
   than stored, so the player's own choice still wins once they make one.
 
