@@ -799,9 +799,7 @@
 }
 
 .app--playbook .submit-modal__cum-label,
-.app--playbook .submit-modal__cum-pct,
-.app--playbook .score-summary__cum-label,
-.app--playbook .score-summary__cum-pct {
+.app--playbook .score-summary__cum-label {
   color: var(--color-text-muted);
 }
 

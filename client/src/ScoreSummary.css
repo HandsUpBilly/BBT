@@ -90,4 +90,3 @@
 .score-summary__cum-label { font-size: 0.75rem; color: var(--color-text-muted); }
 .score-summary__cum-value { font-size: 1rem; font-weight: 700; color: var(--color-success); font-variant-numeric: tabular-nums; }
 .score-summary__cum-value--risky { color: var(--color-warning); }
-.score-summary__cum-pct { font-weight: 400; color: var(--color-text-muted); }
