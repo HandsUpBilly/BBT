@@ -6,14 +6,17 @@ export const MIN_TAP_TARGET = 44;
 /**
  * Minimum pitch square size, in CSS px.
  *
- * Below the 44px tap-target minimum on purpose: a pitch square is a
- * forgiving target because a mis-tap previews rather than commits, and the
- * two-stage tap flow gives the player a chance to correct. 28px is what the
- * portrait board plus the zoom crop actually achieves on the narrowest
- * supported phone, and it is roughly 2.5× the 11.2px the landscape board
- * managed there.
+ * Below the 44px tap-target minimum on purpose, for two reasons. A pitch
+ * square is a forgiving target — a mis-tap previews rather than commits, and
+ * the two-stage flow gives the player a chance to correct. And 44px is not
+ * reachable: the pitch is 15 squares across, so a 360px phone would need
+ * 660px of width. The real ceiling is 360 ÷ 15 ≈ 24px once padding is paid.
+ *
+ * 22 is that ceiling with a little slack, and roughly double the 11.2px the
+ * landscape board managed on the same device. Raising this without changing
+ * the crop is asking for arithmetic that cannot be satisfied.
  */
-export const MIN_SQUARE_SIZE = 28;
+export const MIN_SQUARE_SIZE = 22;
 
 export interface Box {
   x: number;

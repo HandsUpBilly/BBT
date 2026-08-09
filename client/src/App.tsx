@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import { useGameState, makeEmptyState, makeScenarioState } from './useGameState';
 import { Pitch } from './Pitch';
+import type { PitchOrientation } from './Pitch';
 import { PieceMenu } from './PieceMenu';
 import type { PieceMenuAction } from './PieceMenu';
 import { PlayerPanel } from './PlayerPanel';
@@ -34,6 +35,7 @@ import type {
 import { key, computeZoomBounds } from './bfs';
 import type { ZoomBounds } from './bfs';
 import { SKILL_GROUPS, SKILL_MARKERS } from './skillPresentation';
+import { useCoarsePointer, usePortraitViewport } from './useMediaQuery';
 import './App.css';
 import './PlaybookTheme.css';
 
@@ -357,11 +359,28 @@ export default function App() {
   // Non-blocking notice (e.g. a best-effort individual submit failed mid-series).
   const [submitNotice, setSubmitNotice] = useState<string | undefined>();
 
+  // ── Viewport shape ───────────────────────────────────────────────────────
+  // Touch and orientation, not width. A phone held sideways is 812px wide, so
+  // a width breakpoint calls it a desktop.
+  const coarsePointer = useCoarsePointer();
+  const portraitViewport = usePortraitViewport();
+  // Rotating the board is only worth it when the screen is actually taller
+  // than it is wide; on a landscape phone the pitch's own shape already fits.
+  const pitchOrientation: PitchOrientation =
+    coarsePointer && portraitViewport ? 'portrait' : 'landscape';
+
   // ── Zoom mode ────────────────────────────────────────────────────────────
   // Computed once when play starts (not recalculated as moves are made or
   // pieces are selected). Radius is the largest MA among the player's own
   // team's pieces, plus 2 for GFI/rush squares.
-  const [zoomEnabled, setZoomEnabled] = useState(false);
+  //
+  // On by default for touch: the full 26×15 board gives 11px squares on a
+  // phone, and the crop is the difference between a tappable board and one
+  // that needs a fingertip the size of a pea. Derived rather than stored, so
+  // a device that only reports coarse after first paint still gets the crop —
+  // until the player overrides it, after which their choice sticks.
+  const [zoomOverride, setZoomOverride] = useState<boolean | null>(null);
+  const zoomEnabled = zoomOverride ?? coarsePointer;
   const [zoomBounds, setZoomBounds] = useState<ZoomBounds | null>(null);
 
   const computeStartOfPlayZoom = useCallback((pieces: PlayerPiece[], activeTeam: string): ZoomBounds | null => {
@@ -959,7 +978,7 @@ export default function App() {
 
         <button
           className={`hud__zoom${zoomEnabled ? ' hud__zoom--active' : ''}`}
-          onClick={() => setZoomEnabled(z => !z)}
+          onClick={() => setZoomOverride(!zoomEnabled)}
           title="Zoom to legal moves"
         >
           {zoomEnabled ? '🔍 Zoom On' : '🔍 Zoom'}
@@ -1034,6 +1053,7 @@ export default function App() {
             onSquareHover={handleSquareHover}
             onSquareLeave={handleSquareLeave}
             zoomBounds={zoomEnabled ? zoomBounds : null}
+            orientation={pitchOrientation}
           />
         </main>
 

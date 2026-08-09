@@ -19,8 +19,14 @@ export function fromKey(k: string): Position {
 }
 
 /**
- * Bounding box in *landscape* grid coordinates (col 0-25 left→right, row 0-14 top→bottom),
- * used by <Pitch> to crop the rendered grid to a sub-region.
+ * Bounding box in *state* coordinates (col 0-14, row 0-25) — the same space
+ * GameState and every rules function use. <Pitch> crops the rendered grid to
+ * this sub-region and transposes it when drawing the board landscape.
+ *
+ * This used to be expressed in landscape grid coordinates, which meant the
+ * orientation transform lived in two places: here and in <Pitch>. Rendering
+ * the board portrait on phones made that a bug waiting to happen, so the
+ * transform now belongs to the renderer alone.
  */
 export interface ZoomBounds {
   minCol: number;
@@ -29,33 +35,26 @@ export interface ZoomBounds {
   maxRow: number;
 }
 
-const LANDSCAPE_COLS = 26;
-const LANDSCAPE_ROWS = 15;
-
 /**
- * Computes a landscape-coordinate bounding box that encloses the given
- * portrait-coordinate squares, expanded by `padding` squares on each side
- * and clamped to the pitch edges. Portrait { col, row } maps to landscape
- * { col: row, row: col } (see <Pitch> for the same transform).
+ * Computes a state-coordinate bounding box that encloses the given squares,
+ * expanded by `padding` squares on each side and clamped to the pitch edges.
  */
 export function computeZoomBounds(positions: Position[], padding: number): ZoomBounds | null {
   if (positions.length === 0) return null;
 
   let minCol = Infinity, maxCol = -Infinity, minRow = Infinity, maxRow = -Infinity;
   for (const p of positions) {
-    const lCol = p.row; // portrait row -> landscape col
-    const lRow = p.col; // portrait col -> landscape row
-    if (lCol < minCol) minCol = lCol;
-    if (lCol > maxCol) maxCol = lCol;
-    if (lRow < minRow) minRow = lRow;
-    if (lRow > maxRow) maxRow = lRow;
+    if (p.col < minCol) minCol = p.col;
+    if (p.col > maxCol) maxCol = p.col;
+    if (p.row < minRow) minRow = p.row;
+    if (p.row > maxRow) maxRow = p.row;
   }
 
   return {
     minCol: Math.max(0, minCol - padding),
-    maxCol: Math.min(LANDSCAPE_COLS - 1, maxCol + padding),
+    maxCol: Math.min(COLS - 1, maxCol + padding),
     minRow: Math.max(0, minRow - padding),
-    maxRow: Math.min(LANDSCAPE_ROWS - 1, maxRow + padding),
+    maxRow: Math.min(ROWS - 1, maxRow + padding),
   };
 }
 

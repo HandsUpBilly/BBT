@@ -601,27 +601,20 @@ body,
   align-self: stretch;
 }
 
-/* ── Pitch sizing — always landscape 1653:951 ────────────────────────── */
+/* Pitch sizing lives in Pitch.css, which solves for a fit on both axes from
+   the visible column/row counts. Nothing here may set an explicit width on
+   .pitch or that calculation is overridden and the board clips again. */
 .pitch-wrapper {
   overflow: hidden;
 }
 
-.pitch-wrapper .pitch {
-  /* Fill available width; height follows 1653:951 aspect ratio */
-  width: 100%;
-  height: auto;
-}
-
-/* Zoom mode: fit to the wrapper's height so cropped squares render larger,
-   rather than stretching to the full wrapper width. */
-.pitch-wrapper .pitch.pitch--zoomed {
-  width: auto;
-  height: 100%;
-  max-width: 100%;
-}
-
-/* ── Mobile: hide side panels, stack vertically ──────────────────────── */
-@media (max-width: 768px) {
+/* ── Touch: hide side panels, stack vertically ───────────────────────────
+   Branching on pointer type rather than width. `max-width: 768px` treated a
+   phone held sideways (812px wide, 375px tall) as a desktop: the side columns
+   came back, the HUD and legend ate 191px of the 375, and the pitch overflowed
+   a 154px wrapper with overflow: hidden — 40% of the board became invisible
+   and unclickable. Pointer type is what this branch always meant. */
+@media (pointer: coarse) {
   .app {
     padding: 6px;
     gap: 4px;

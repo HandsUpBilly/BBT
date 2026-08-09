@@ -1,17 +1,43 @@
 /* ── Pitch container ────────────────────────────────────────────────── */
 .pitch {
+  /* Label gutters, in the same units the label elements use: two 1.4em
+     row-label columns across, two 0.55rem × 1.4 line-height rows down. */
+  --pitch-gutter-w: 2.8rem;
+  --pitch-gutter-h: 1.54rem;
+
   width: 100%;
   user-select: none;
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
+  margin: 0 auto;
+}
+
+/* Fit the board inside the wrapper on whichever axis binds first.
+   `width: 100%` alone only ever fits the width — which is why the board used
+   to overflow a short viewport and get clipped, and why zoom mode (which fit
+   to height instead) shrank the squares on a tall one. Solving for the width
+   at which the derived height still fits handles both, in one rule, for both
+   orientations. --pitch-aspect is set inline by <Pitch> from the visible
+   column and row counts, so it already accounts for the zoom crop. */
+@supports (width: 1cqw) {
+  .pitch-wrapper {
+    container-type: size;
+  }
+
+  .pitch-wrapper .pitch {
+    width: min(
+      100cqw,
+      calc((100cqh - var(--pitch-gutter-h)) * var(--pitch-aspect) + var(--pitch-gutter-w))
+    );
+  }
 }
 
 /* ── Label rows (top / bottom) ──────────────────────────────────────── */
+/* Track counts are set inline by <Pitch> — they depend on the orientation and
+   on the zoom crop, so the component is the only honest source for them. */
 .pitch__col-labels {
   display: grid;
-  /* corner + 26 cols + corner */
-  grid-template-columns: 1.4em repeat(26, 1fr) 1.4em;
 }
 
 .pitch__corner {
@@ -39,6 +65,12 @@
   flex-direction: column;
   width: 1.4em;
   flex-shrink: 0;
+  /* Size containment so the stacked labels contribute no intrinsic height.
+     Without it a 26-label column is taller than the grid's aspect height, and
+     `align-items: stretch` then stretches the grid to match the labels —
+     overriding aspect-ratio and rendering visibly non-square cells. The grid
+     alone decides how tall the middle row is; the labels stretch to it. */
+  contain: size;
 }
 
 .pitch__row-label {
@@ -56,24 +88,31 @@
 /* ── The field grid ─────────────────────────────────────────────────── */
 .pitch__grid {
   flex: 1;
-  aspect-ratio: 26 / 15;
   display: grid;
-  grid-template-columns: repeat(26, 1fr);
-  grid-template-rows:    repeat(15, 1fr);
+  /* aspect-ratio and both track lists come from <Pitch> as inline styles. */
   border: 2px solid rgba(222, 217, 203, 0.4);
   box-sizing: border-box;
 }
 
-/* ── Zoom mode: crop to a sub-region, rendered at a larger cell size ── */
-.pitch--zoomed {
-  width: auto;
-  height: 100%;
-  margin: 0 auto;
-}
+/* Zoom mode needs no sizing rules of its own: cropping changes
+   --pitch-aspect, and the fit rule above re-solves from that. */
 
-.pitch--zoomed .pitch__grid {
-  height: 100%;
-  width: auto;
+/* ── Touch: drop the coordinate gutters ──────────────────────────────────
+   The labels render at 8.8px on a phone — not really readable — and the four
+   gutters cost 2.8rem of a 360px viewport, about 12% of the board's width.
+   Spent on the squares instead they are worth roughly 3px per square. The
+   coordinates stay in every square's aria-label, which is where they carry
+   their weight for screen-reader users. */
+@media (pointer: coarse) {
+  .pitch {
+    --pitch-gutter-w: 0rem;
+    --pitch-gutter-h: 0rem;
+  }
+
+  .pitch__col-labels,
+  .pitch__row-labels {
+    display: none;
+  }
 }
 
 /* ── Base square ────────────────────────────────────────────────────── */
@@ -92,51 +131,66 @@
 .square--dark  { background: #355729; }
 
 /* ── End zones ──────────────────────────────────────────────────────── */
-.square--endzone-left.square--dark   { background: #22405a; }
-.square--endzone-left.square--light  { background: #294c69; }
-.square--endzone-right.square--dark  { background: #562c25; }
-.square--endzone-right.square--light { background: #63352c; }
+/* Named for the team that scores there (state row 0 / row 25) rather than for
+   a screen edge, because which edge that is depends on the orientation. */
+.square--endzone-human.square--dark  { background: #22405a; }
+.square--endzone-human.square--light { background: #294c69; }
+.square--endzone-orc.square--dark    { background: #562c25; }
+.square--endzone-orc.square--light   { background: #63352c; }
 
-/* End zone boundary lines — right edge of col 0, left edge of col 25 */
-.square--endzone-left::before {
+/* ── Pitch markings ──────────────────────────────────────────────────────
+   The three marking lines are facts about the pitch — the two end-zone
+   boundaries, the two wide-zone lines, and halfway. Only the edge each one is
+   drawn on changes with the orientation, so the shared paint lives here and
+   each orientation block below places it. */
+.square--endzone-human::before,
+.square--endzone-orc::before,
+.square--scrimmage::before {
   content: '';
   position: absolute;
-  right: 0; top: 0; bottom: 0;
-  width: 2px;
-  background: rgba(222, 217, 203, 0.62);
-  pointer-events: none;
-  z-index: 1;
-}
-.square--endzone-right::before {
-  content: '';
-  position: absolute;
-  left: 0; top: 0; bottom: 0;
-  width: 2px;
   background: rgba(222, 217, 203, 0.62);
   pointer-events: none;
   z-index: 1;
 }
 
-/* ── Wide zone lines — horizontal, top border of rows 4 and 11 ──────── */
+.square--scrimmage::before {
+  background: rgba(222, 217, 203, 0.68);
+}
+
 .square--wide-zone::after {
   content: '';
   position: absolute;
-  left: 0; right: 0; top: 0;
-  height: 1px;
   background: rgba(222, 217, 203, 0.4);
   pointer-events: none;
   z-index: 1;
 }
 
-/* ── Scrimmage line — vertical, left border of col 13 ───────────────── */
-.square--scrimmage::before {
-  content: '';
-  position: absolute;
-  left: 0; top: 0; bottom: 0;
-  width: 2px;
-  background: rgba(222, 217, 203, 0.68);
-  pointer-events: none;
-  z-index: 1;
+/* ── Landscape: state rows run left→right, state cols run top→bottom ── */
+.pitch--landscape .square--endzone-human::before {
+  right: 0; top: 0; bottom: 0; width: 2px;
+}
+.pitch--landscape .square--endzone-orc::before {
+  left: 0; top: 0; bottom: 0; width: 2px;
+}
+.pitch--landscape .square--scrimmage::before {
+  left: 0; top: 0; bottom: 0; width: 2px;
+}
+.pitch--landscape .square--wide-zone::after {
+  left: 0; right: 0; top: 0; height: 1px;
+}
+
+/* ── Portrait: state cols run left→right, state rows run top→bottom ─── */
+.pitch--portrait .square--endzone-human::before {
+  left: 0; right: 0; bottom: 0; height: 2px;
+}
+.pitch--portrait .square--endzone-orc::before {
+  left: 0; right: 0; top: 0; height: 2px;
+}
+.pitch--portrait .square--scrimmage::before {
+  left: 0; right: 0; top: 0; height: 2px;
+}
+.pitch--portrait .square--wide-zone::after {
+  top: 0; bottom: 0; left: 0; width: 1px;
 }
 
 /* ── Overlays ───────────────────────────────────────────────────────── */

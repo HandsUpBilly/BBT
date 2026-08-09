@@ -1,5 +1,6 @@
 import { memo, useCallback, useMemo } from 'react';
-import type { GameState, Team } from './types';
+import type { CSSProperties } from 'react';
+import type { GameState, Position, Team } from './types';
 import { key, neighbours } from './bfs';
 import type { ZoomBounds } from './bfs';
 import { buildMovementTrailMap } from './movementTrail';
@@ -153,14 +154,29 @@ function PickupFace({ target }: { target: number }) {
   );
 }
 
-// Landscape layout: 26 cols (left→right) × 15 rows (top→bottom)
-// Col 0 = left end zone (human), col 25 = right end zone (orc)
-// Scrimmage between col 12 and col 13
-const COLS = 26;
-const ROWS = 15;
+// Game state is stored portrait: col 0-14, row 0-25.
+//   row 0  = one end zone, row 25 = the other
+//   row 13 = the scrimmage line
+//   col 4 and col 11 = the wide-zone lines
+// Those are facts about the pitch, not about how it is drawn. `orientation`
+// decides only which screen axis each one runs along.
+const STATE_COLS = 15;
+const STATE_ROWS = 26;
 
-function colLabel(landscapeCol: number) { return String(landscapeCol); }
-function rowLabel(landscapeRow: number) { return String.fromCharCode(65 + landscapeRow); }
+export type PitchOrientation = 'landscape' | 'portrait';
+
+// A square's name is fixed to its state coordinates, so "13G" means the same
+// square whichever way the board is drawn — written solutions, bug reports and
+// the accessible label all stay valid across the rotation.
+function squareNumber(stateRow: number) { return String(stateRow); }
+function squareLetter(stateCol: number) { return String.fromCharCode(65 + stateCol); }
+function squareName(stateCol: number, stateRow: number) {
+  return `${squareNumber(stateRow)}${squareLetter(stateCol)}`;
+}
+
+function range(from: number, to: number): number[] {
+  return Array.from({ length: to - from + 1 }, (_, i) => from + i);
+}
 
 interface DiceInfo {
   isGfi: boolean;
@@ -171,8 +187,10 @@ interface DiceInfo {
 interface SquareProps {
   pCol: number;
   pRow: number;
-  lCol: number;
-  lRow: number;
+  /** Stable square name ("13G"), independent of how the board is drawn. */
+  name: string;
+  /** Needed for the movement trail, whose geometry transposes with the board. */
+  portrait: boolean;
   classes: string;
   label: string;
   pieceTeam: Team | null;
@@ -203,7 +221,7 @@ interface SquareProps {
  * primitives or stable callbacks so the shallow comparison is meaningful.
  */
 const Square = memo(function Square({
-  pCol, pRow, lCol, lRow, classes, label, pieceTeam, pieceRole, pieceSkills, pieceClasses, pieceHasBall,
+  pCol, pRow, name, portrait, classes, label, pieceTeam, pieceRole, pieceSkills, pieceClasses, pieceHasBall,
   looseBall, inTackleZone, actionLabel, displayStep, stepIsPreview, pathTrails, dice, ghost, focusable,
   onSquareClick, onPieceClick, onSquareHover, onSquareLeave,
 }: SquareProps) {
@@ -236,18 +254,26 @@ const Square = memo(function Square({
       onBlur={onSquareLeave}
       onMouseEnter={() => onSquareHover(pCol, pRow)}
       onMouseLeave={onSquareLeave}
-      data-col={lCol}
-      data-row={lRow}
+      data-square={name}
+      data-col={pCol}
+      data-row={pRow}
     >
       <div className="square__overlay" />
       {pathTrails.map((pathTrail, index) => {
-        // Portrait rows run horizontally on the rendered pitch, while portrait
-        // columns run vertically. The polyline enters from the previous square,
-        // turns at this square's centre, then exits toward the next square.
-        const enterX = 50 - (pRow - pathTrail.from.row) * 50;
-        const enterY = 50 - (pCol - pathTrail.from.col) * 50;
-        const exitX = pathTrail.to ? 50 + (pathTrail.to.row - pRow) * 50 : 50;
-        const exitY = pathTrail.to ? 50 + (pathTrail.to.col - pCol) * 50 : 50;
+        // The polyline enters from the previous square, turns at this square's
+        // centre, then exits toward the next one. Which state axis runs across
+        // the screen depends on the orientation — landscape draws state rows
+        // horizontally, portrait draws state cols horizontally — so the trail
+        // has to transpose with the board or it points the wrong way.
+        const acrossHere = portrait ? pCol : pRow;
+        const downHere   = portrait ? pRow : pCol;
+        const acrossOf = (p: Position) => (portrait ? p.col : p.row);
+        const downOf   = (p: Position) => (portrait ? p.row : p.col);
+
+        const enterX = 50 - (acrossHere - acrossOf(pathTrail.from)) * 50;
+        const enterY = 50 - (downHere - downOf(pathTrail.from)) * 50;
+        const exitX = pathTrail.to ? 50 + (acrossOf(pathTrail.to) - acrossHere) * 50 : 50;
+        const exitY = pathTrail.to ? 50 + (downOf(pathTrail.to) - downHere) * 50 : 50;
         return (
           <svg key={index} className="square__path-trail" viewBox="0 0 100 100" aria-hidden="true">
             <polyline points={`${enterX},${enterY} 50,50 ${exitX},${exitY}`} />
@@ -294,11 +320,22 @@ interface Props {
   onPieceClick: (col: number, row: number, x: number, y: number) => void;
   onSquareHover: (col: number, row: number) => void;
   onSquareLeave: () => void;
-  /** When set, only this landscape-coordinate sub-region of the pitch is rendered. */
+  /** When set, only this state-coordinate sub-region of the pitch is rendered. */
   zoomBounds?: ZoomBounds | null;
+  /**
+   * Which screen axis the pitch's long side runs along. Portrait puts the end
+   * zones top and bottom, which roughly doubles the square size on a phone —
+   * a 26-wide board squeezed into a 360px viewport gives 11px squares, and
+   * 15 wide gives 24px.
+   */
+  orientation?: PitchOrientation;
 }
 
-export function Pitch({ state, onSquareClick, onPieceClick, onSquareHover, onSquareLeave, zoomBounds }: Props) {
+export function Pitch({
+  state, onSquareClick, onPieceClick, onSquareHover, onSquareLeave, zoomBounds,
+  orientation = 'landscape',
+}: Props) {
+  const portrait = orientation === 'portrait';
   const pieceMap = useMemo(
     () => new Map(state.pieces.map(p => [key(p.position), p])),
     [state.pieces],
@@ -381,27 +418,38 @@ export function Pitch({ state, onSquareClick, onPieceClick, onSquareHover, onSqu
     return counts;
   }, [isSelecting, state.pieces, state.activeTeam]);
 
-  // Landscape grid: COLS=26 (left→right = portrait rows 0→25),
-  //                 ROWS=15  (top→bottom  = portrait cols 0→14)
-  // Portrait game state uses { col: 0-14, row: 0-25 }
-  // Mapping: landscape col = portrait row, landscape row = portrait col
-  const colStart = zoomBounds ? zoomBounds.minCol : 0;
-  const colEnd   = zoomBounds ? zoomBounds.maxCol : COLS - 1;
-  const rowStart = zoomBounds ? zoomBounds.minRow : 0;
-  const rowEnd   = zoomBounds ? zoomBounds.maxRow : ROWS - 1;
-  const visibleCols = colEnd - colStart + 1;
-  const visibleRows = rowEnd - rowStart + 1;
+  // Visible sub-region, in state coordinates.
+  const stateColStart = zoomBounds ? zoomBounds.minCol : 0;
+  const stateColEnd   = zoomBounds ? zoomBounds.maxCol : STATE_COLS - 1;
+  const stateRowStart = zoomBounds ? zoomBounds.minRow : 0;
+  const stateRowEnd   = zoomBounds ? zoomBounds.maxRow : STATE_ROWS - 1;
+
+  // Screen axes. Portrait draws state cols across and state rows down;
+  // landscape transposes, so state rows run across and state cols run down.
+  const acrossValues = portrait
+    ? range(stateColStart, stateColEnd)
+    : range(stateRowStart, stateRowEnd);
+  const downValues = portrait
+    ? range(stateRowStart, stateRowEnd)
+    : range(stateColStart, stateColEnd);
+  const visibleCols = acrossValues.length;
+  const visibleRows = downValues.length;
+
+  // Labels follow the axis, not the orientation: the letter always names the
+  // state col and the number always names the state row.
+  const acrossLabel = portrait ? squareLetter : squareNumber;
+  const downLabel   = portrait ? squareNumber : squareLetter;
 
   /** Screen-reader description of a square: position, occupant, and what it offers. */
   function describeSquare(
-    lCol: number, lRow: number,
+    stateCol: number, stateRow: number,
     pieceName: string | null, pieceTeam: Team | null, pieceRole: string | undefined,
     pieceSkills: readonly string[], pieceIsPreview: boolean,
     pieceDown: boolean, pieceHasBall: boolean, pieceActivated: boolean,
     reachable: boolean, dodge: number | null, gfi: boolean, pickup: number | null,
     looseBall: boolean, isTarget: string | null,
   ): string {
-    const parts = [`${colLabel(lCol)}${rowLabel(lRow)}`];
+    const parts = [squareName(stateCol, stateRow)];
     if (pieceName) {
       parts.push(`${pieceIsPreview ? 'movement preview for ' : ''}${pieceName}, ${pieceTeam} ${pieceRole ?? ''}`.trim());
       const groups = skillGroupsFor(pieceSkills);
@@ -425,24 +473,25 @@ export function Pitch({ state, onSquareClick, onPieceClick, onSquareHover, onSqu
   }
 
   const squares = [];
-  for (let lRow = rowStart; lRow <= rowEnd; lRow++) {
-    for (let lCol = colStart; lCol <= colEnd; lCol++) {
-      // Translate to portrait coordinates used by game state
-      const pCol = lRow;       // portrait col = landscape row
-      const pRow = lCol;       // portrait row = landscape col
+  for (const down of downValues) {
+    for (const across of acrossValues) {
+      const pCol = portrait ? across : down;
+      const pRow = portrait ? down : across;
       const k = `${pCol},${pRow}`;
 
       const piece      = pieceMap.get(k);
       const isSelected = piece?.id === state.selectedPieceId;
 
-      // End zones: 1 col each side
-      const isLeftEndZone  = lCol === 0;
-      const isRightEndZone = lCol === COLS - 1;
+      // End zones — one row deep at each end. Named for the team that scores
+      // there (see isTouchdown in useGameState) rather than for a screen edge,
+      // since which edge that is depends on the orientation.
+      const isHumanEndZone = pRow === 0;
+      const isOrcEndZone   = pRow === STATE_ROWS - 1;
 
-      // Wide zone lines: horizontal, 4 rows from each edge → top border of rows 4 and 11
-      const isWideZone  = lRow === 4 || lRow === 11;
-      // Scrimmage: centre of 26-col field → left border of col 13
-      const isScrimmage = lCol === 13;
+      // Wide-zone lines: 4 squares in from each touchline.
+      const isWideZone  = pCol === 4 || pCol === 11;
+      // Scrimmage: the halfway line.
+      const isScrimmage = pRow === 13;
 
       const previewStep       = previewStepMap.get(k);
       const isGhost           = ghostKey === k && !piece;
@@ -473,9 +522,9 @@ export function Pitch({ state, onSquareClick, onPieceClick, onSquareHover, onSqu
 
       const classes = [
         'square',
-        (lCol + lRow) % 2 === 0 ? 'square--light' : 'square--dark',
-        isLeftEndZone  ? 'square--endzone-left'  : '',
-        isRightEndZone ? 'square--endzone-right' : '',
+        (pCol + pRow) % 2 === 0 ? 'square--light' : 'square--dark',
+        isHumanEndZone ? 'square--endzone-human' : '',
+        isOrcEndZone   ? 'square--endzone-orc'   : '',
         isWideZone     ? 'square--wide-zone'     : '',
         isScrimmage    ? 'square--scrimmage'     : '',
         isReachable    ? 'square--reachable'     : '',
@@ -527,11 +576,11 @@ export function Pitch({ state, onSquareClick, onPieceClick, onSquareHover, onSqu
           key={k}
           pCol={pCol}
           pRow={pRow}
-          lCol={lCol}
-          lRow={lRow}
+          name={squareName(pCol, pRow)}
+          portrait={portrait}
           classes={classes}
           label={describeSquare(
-            lCol, lRow,
+            pCol, pRow,
             describedPiece?.name ?? null, describedPiece?.team ?? null, describedPiece?.role,
             describedPiece?.skills ?? EMPTY_SKILLS, !piece && !!showGhost,
             describedPiece?.down ?? false, describedPiece?.hasBall ?? false, describedPiece?.activated ?? false,
@@ -581,28 +630,39 @@ export function Pitch({ state, onSquareClick, onPieceClick, onSquareHover, onSqu
     }
   }
 
-  const colLabels = Array.from({ length: visibleCols }, (_, i) => (
-    <div key={colStart + i} className="pitch__col-label">{colLabel(colStart + i)}</div>
+  const colLabels = acrossValues.map(v => (
+    <div key={v} className="pitch__col-label">{acrossLabel(v)}</div>
   ));
 
-  const rowLabels = Array.from({ length: visibleRows }, (_, i) => (
-    <div key={rowStart + i} className="pitch__row-label">{rowLabel(rowStart + i)}</div>
+  const rowLabels = downValues.map(v => (
+    <div key={v} className="pitch__row-label">{downLabel(v)}</div>
   ));
 
-  const gridStyle = zoomBounds
-    ? {
-        aspectRatio: `${visibleCols} / ${visibleRows}`,
-        gridTemplateColumns: `repeat(${visibleCols}, 1fr)`,
-        gridTemplateRows: `repeat(${visibleRows}, 1fr)`,
-      }
-    : undefined;
+  // Always inline rather than only when zoomed: the track counts depend on the
+  // orientation as well as the crop, so leaving a 26-column default in the
+  // stylesheet would just be a second place to keep in sync.
+  const gridStyle = {
+    aspectRatio: `${visibleCols} / ${visibleRows}`,
+    gridTemplateColumns: `repeat(${visibleCols}, 1fr)`,
+    gridTemplateRows: `repeat(${visibleRows}, 1fr)`,
+  };
 
-  const colLabelsStyle = zoomBounds
-    ? { gridTemplateColumns: `1.4em repeat(${visibleCols}, 1fr) 1.4em` }
-    : undefined;
+  const colLabelsStyle = { gridTemplateColumns: `1.4em repeat(${visibleCols}, 1fr) 1.4em` };
+
+  const classes = [
+    'pitch',
+    `pitch--${orientation}`,
+    zoomBounds ? 'pitch--zoomed' : '',
+  ].filter(Boolean).join(' ');
+
+  // Drives the fit-to-container calc in Pitch.css. A custom property rather
+  // than a width, so the stylesheet keeps ownership of the layout maths.
+  const pitchStyle = {
+    '--pitch-aspect': visibleCols / visibleRows,
+  } as CSSProperties;
 
   return (
-    <div className={`pitch${zoomBounds ? ' pitch--zoomed' : ''}`}>
+    <div className={classes} style={pitchStyle}>
       {/* Column labels — top */}
       <div className="pitch__col-labels pitch__col-labels--top" style={colLabelsStyle} aria-hidden="true">
         <div className="pitch__corner" />
