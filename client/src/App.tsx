@@ -18,6 +18,7 @@ import { blockActionAvailability } from './blockActionAvailability';
 import { UserMenu } from './UserMenu';
 import { LegendShell } from './LegendShell';
 import { MobileInfoSheet } from './MobileInfoSheet';
+import { ActionLogMenu } from './ActionLogMenu';
 import { AppFooter } from './AppFooter';
 import { CommitBar } from './CommitBar';
 import { ReportProblemButton } from './ReportProblemButton';
@@ -1020,7 +1021,11 @@ export default function App() {
   const lastCommittedProb = state.actionLog.length > 0
     ? state.actionLog[state.actionLog.length - 1].cumulativeProb : 1;
   const previewProb = pathPreviewProb(state.pathPreview);
-  const liveProbPct = Math.round(lastCommittedProb * state.pendingProb * previewProb * 100);
+  // Not multiplied by state.pendingProb: that resets per activation and
+  // accumulates the same per-step values, so it is always already inside
+  // lastCommittedProb. Including it counted the current piece's rolls twice
+  // and made the HUD disagree with the score that gets submitted.
+  const liveProbPct = Math.round(lastCommittedProb * previewProb * 100);
   // Only meaningful once a dice roll is actually in play — hide the pointless 100% default.
   const showSuccessChance = liveProbPct < 100;
 
@@ -1086,6 +1091,12 @@ export default function App() {
           <span className="hud__btn-text">Restart</span>
         </button>
 
+        {/* Touch only — the pointer-fine layout keeps the log in its side
+            column, where it is always visible and costs nothing. */}
+        {coarsePointer && (
+          <ActionLogMenu log={state.actionLog} />
+        )}
+
         {reportButton('hud')}
         <UserMenu name={identityName} onSignOut={handleSignOut} />
       </header>
@@ -1141,11 +1152,7 @@ export default function App() {
 
       <div className="game-area">
         <div className="side-col side-col--left">
-          <DiceLog
-            log={state.actionLog}
-            pendingProb={state.pendingProb}
-            pendingTargets={state.pendingDodgeTargets}
-          />
+          <DiceLog log={state.actionLog} />
 
         </div>
 
@@ -1167,19 +1174,12 @@ export default function App() {
 
       </div>
 
-      {/* Both side columns are hidden on touch. Without this the player card
-          and the roll history simply vanish on a phone. A sibling of
-          .game-area rather than a child, so the landscape grid can move it
-          into the column beside the board instead of stacking it under one
-          that has no height to give. */}
-      {coarsePointer && (
-        <MobileInfoSheet
-          piece={inspectedPiece}
-          log={state.actionLog}
-          pendingProb={state.pendingProb}
-          pendingTargets={state.pendingDodgeTargets}
-        />
-      )}
+      {/* Both side columns are hidden on touch, so without this the player
+          card vanishes on a phone. The roll history that used to share this
+          sheet now lives in the toolbar. A sibling of .game-area rather than
+          a child, so the landscape grid can move it into the column beside
+          the board instead of stacking it under one that has no height. */}
+      {coarsePointer && <MobileInfoSheet piece={inspectedPiece} />}
 
       {coarsePointer && <div className="status-strip">{statusLine}</div>}
 

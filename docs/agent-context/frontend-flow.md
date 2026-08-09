@@ -107,8 +107,9 @@ their owning components.
 - Generic `.btn` markup is shared by the landing and editor. Its visual
   hierarchy belongs to the `app--playbook` layer; component CSS should own
   layout rather than reintroducing unrelated button colors.
-- On touch devices, game side panels remain hidden by the existing layout, and
-  their contents move into `MobileInfoSheet` (see Mobile Layout below).
+- On touch devices, game side panels remain hidden by the existing layout; the
+  player card moves into `MobileInfoSheet` and the action log into the toolbar
+  (see Mobile Layout below).
   Legends, dense result tables, and the editor pitch scroll inside their own
   surfaces so the page itself does not overflow horizontally. Header/HUD report
   controls and the editor account trigger collapse to icon/avatar controls.
@@ -174,11 +175,36 @@ pickup stacking on one square; keep the two together and keep
   status line is mounted below the board in `.status-strip` instead, and the
   series counter rides with it.
 - The legend goes behind a `<details>` disclosure (`LegendShell`).
-- `MobileInfoSheet` restores the player card and dice log, collapsed by
-  default so the board keeps the height.
+- The action log is a toolbar dropdown (`ActionLogMenu`), following
+  `UserMenu`'s pattern so the neighbouring controls behave alike. Its badge
+  shows `rollCount(log)` — rolls, not steps — because that count is what the
+  score is built from. It is touch-only; the pointer-fine layout keeps
+  `DiceLog` in its always-visible side column.
+- `MobileInfoSheet` restores the player card, collapsed by default so the
+  board keeps the height.
 - In landscape under 600px tall, `.app--game` becomes a grid that puts legend,
   status and sheet in a column beside the board, recovering the height the
   board is starved of.
+
+### Reporting committed probability
+
+One number, three places: the action log footer, the HUD percentage, and the
+score submitted to the leaderboard. All of them are the last log entry's
+`cumulativeProb`, which already contains every roll committed this turn.
+
+**Do not multiply it by `state.pendingProb`.** That field resets on each
+activation and accumulates the same per-step values, so it is always a subset
+of `cumulativeProb`; multiplying counted the active piece's rolls twice and
+reported 0.833⁴ where the truth was 0.833². The submitted score was always
+correct, so the interface was under-reporting the player's own line. The only
+legitimate extra factor is `pathPreviewProb(state.pathPreview)`, for a route
+previewed but not yet committed.
+
+`actionLogDisplay.ts` owns the log's display shaping. `compactDisplayLog`
+folds a straight unbroken walk into one line but never merges roll-bearing
+steps — a merge keeps only one entry's roll fields, so folding two rushes
+together dropped one from the log while the cumulative still counted it.
+`actionLogProbability.test.ts` pins the display and the score together.
 
 ### Regression coverage
 

@@ -1,10 +1,9 @@
 import type { ActionLogEntry } from './types';
+import { compactDisplayLog, entryHasRoll } from './actionLogDisplay';
 import './DiceLog.css';
 
 interface Props {
   log: ActionLogEntry[];
-  pendingProb: number;
-  pendingTargets: number[];
 }
 
 function pct(p: number): string { return `${(p * 100).toFixed(1)}%`; }
@@ -36,45 +35,21 @@ function entryClass(e: ActionLogEntry): string {
   return 'dice-log__entry--move';
 }
 
-function movementDirection(e: ActionLogEntry): string | null {
-  if (e.kind !== 'move' || e.isGfi || e.dodgeTarget !== null) return null;
-  return `${Math.sign(e.to.col - e.from.col)},${Math.sign(e.to.row - e.from.row)}`;
-}
 
-function compactDisplayLog(log: ActionLogEntry[]): ActionLogEntry[] {
-  return log.reduce<ActionLogEntry[]>((entries, entry) => {
-    const previous = entries[entries.length - 1];
-    if (
-      previous?.kind === 'move' &&
-      entry.kind === 'move' &&
-      previous.pieceName === entry.pieceName &&
-      previous.pieceRole === entry.pieceRole &&
-      previous.to.col === entry.from.col &&
-      previous.to.row === entry.from.row &&
-      movementDirection(previous) === movementDirection(entry)
-    ) {
-      entries[entries.length - 1] = {
-        ...previous,
-        to: entry.to,
-        steps: previous.steps + entry.steps,
-        cumulativeProb: entry.cumulativeProb,
-      };
-      return entries;
-    }
-    entries.push(entry);
-    return entries;
-  }, []);
-}
-
-export function DiceLog({ log, pendingProb }: Props) {
+export function DiceLog({ log }: Props) {
   if (log.length === 0) return null;
 
-  const lastCumProb = log[log.length - 1].cumulativeProb;
-  const overallProb = lastCumProb * pendingProb;
-  const hasRoll = log.some(e =>
-    e.kind === 'handoff' || e.kind === 'pass' || e.kind === 'pass-catch' || e.kind === 'block' ||
-    e.isGfi || e.dodgeTarget !== null || (e.kind === 'move' && !!e.pickupTarget)
-  );
+  // The last entry's cumulativeProb is the product of every roll committed
+  // this turn, and is exactly what gets submitted as the score.
+  //
+  // This used to be multiplied by state.pendingProb as well. pendingProb
+  // resets on each activation and accumulates the same per-step values, so it
+  // is always a subset of what cumulativeProb already holds — the current
+  // piece's rolls were counted twice. Two Go For It rushes reported 48.2%
+  // (0.833⁴) where the honest figure, and the score actually recorded, was
+  // 69.4% (0.833²).
+  const overallProb = log[log.length - 1].cumulativeProb;
+  const hasRoll = log.some(entryHasRoll);
   const displayLog = compactDisplayLog(log);
 
   return (
