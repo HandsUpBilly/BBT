@@ -141,7 +141,9 @@
 .app--game .hud::after {
   content: 'MATCH DAY · COACH\'S BOARD';
   position: absolute;
-  right: 14px;
+  /* Keep the decorative caption out of the account control's footprint. The
+     trigger can be about 210px wide once it includes a long public alias. */
+  right: 224px;
   bottom: 3px;
   color: rgba(222, 217, 203, 0.14);
   font-family: var(--font-display);

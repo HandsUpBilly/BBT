@@ -151,7 +151,7 @@ export async function isCompact(page: Page): Promise<boolean> {
   return page.evaluate(() => matchMedia('(max-width: 1024px)').matches);
 }
 
-/** True when the primary pointer can hover, so the preview can follow it. */
+/** True when any connected input can hover, so the preview can follow it. */
 export async function canHover(page: Page): Promise<boolean> {
-  return page.evaluate(() => matchMedia('(hover: hover)').matches);
+  return page.evaluate(() => matchMedia('(any-hover: hover)').matches);
 }
