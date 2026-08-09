@@ -70,6 +70,19 @@ test.describe('game screen layout', () => {
     ).toEqual([]);
   });
 
+  test('the report launcher stays visually tucked away', async ({ page }) => {
+    const reportButton = page.getByRole('button', { name: 'Report a problem' });
+    const box = await boxOf(reportButton);
+    const background = await reportButton.evaluate((button) => getComputedStyle(button).backgroundColor);
+
+    if (await isTouch(page)) {
+      expect(Math.min(box.width, box.height), 'touch hit target').toBeGreaterThanOrEqual(MIN_TAP_TARGET);
+    } else {
+      expect(Math.max(box.width, box.height), 'pointer-sized launcher').toBeLessThanOrEqual(32);
+    }
+    expect(background, 'idle launcher background').toBe('rgba(0, 0, 0, 0)');
+  });
+
   test('chrome stays within its budget', async ({ page }) => {
     test.skip(!(await isTouch(page)), 'chrome budget is a mobile concern');
 

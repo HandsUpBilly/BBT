@@ -976,6 +976,12 @@
   box-shadow: none;
 }
 
+.app--playbook .report-problem-button {
+  color: var(--color-text-muted);
+  background: transparent;
+  border-color: transparent;
+}
+
 .app--playbook .user-menu__trigger:hover,
 .app--playbook .report-problem-button:hover {
   color: var(--color-text-strong);
@@ -1034,9 +1040,9 @@
 
 .app--playbook .report-problem-button--header,
 .app--playbook .report-problem-button--hud {
-  color: #c5c1b7;
-  background: var(--color-surface-2);
-  border-color: var(--color-border);
+  color: var(--color-text-muted);
+  background: transparent;
+  border-color: transparent;
   box-shadow: none;
 }
 
@@ -1267,36 +1273,6 @@
 @media (max-width: 680px) {
   .app--playbook .btn {
     min-height: 44px;
-  }
-
-  .app--landing .report-problem-button--header {
-    width: 34px;
-    min-width: 34px;
-    min-height: 34px;
-    padding: 6px;
-    gap: 0;
-    overflow: hidden;
-    font-size: 0;
-    white-space: nowrap;
-  }
-
-  .app--landing .report-problem-button--header span {
-    font-size: 0.92rem;
-  }
-
-  .app--game .report-problem-button--hud {
-    width: 34px;
-    min-width: 34px;
-    min-height: 34px;
-    padding: 6px;
-    gap: 0;
-    overflow: hidden;
-    font-size: 0;
-    white-space: nowrap;
-  }
-
-  .app--game .report-problem-button--hud span {
-    font-size: 0.92rem;
   }
 
   .app--admin .editor {

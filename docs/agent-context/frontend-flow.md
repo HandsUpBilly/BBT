@@ -201,11 +201,13 @@ prefilled but editable; the server uses the verified Google name when present.
 If delivery fails, the dialog retains the text and offers a Markdown download
 for manual filing through Ona or GitHub.
 
-On the home screen, the report launcher and compact user menu share the
-masthead's top-right control group; archive screens use the same compact group
-in the fixed top-right position. `__BBT_VERSION__` comes from the root package
-version at build time (or `VITE_APP_VERSION` when supplied) and is displayed in
-the home masthead.
+The report launcher is a subdued flag icon with an accessible label and title;
+it expands to a 44px hit target on coarse pointers without gaining visual
+weight. On the home screen it and the compact user menu share the masthead's
+top-right control group; archive screens use the same compact group in the
+fixed top-right position. `__BBT_VERSION__` comes from the root package version
+at build time (or `VITE_APP_VERSION` when supplied) and is displayed in the
+home masthead.
 
 ### Published roster portraits
 

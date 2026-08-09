@@ -10,10 +10,11 @@ export function ReportProblemButton({ onClick, variant = 'header' }: Props) {
     <button
       className={`report-problem-button report-problem-button--${variant}`}
       type="button"
+      aria-label="Report a problem"
+      title="Report a problem"
       onClick={onClick}
     >
       <span aria-hidden="true">⚑</span>
-      Report a problem
     </button>
   );
 }
