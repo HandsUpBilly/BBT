@@ -92,6 +92,21 @@ test.describe('touch: preview before commit', () => {
     await expect(bar.getByRole('button', { name: /cancel/i })).toBeVisible();
   });
 
+  test('arming the confirm bar does not resize the pitch', async ({ page }) => {
+    await selectAndMove(page);
+    const bar = page.locator('.commit-bar');
+    const pitch = page.locator('.pitch-wrapper');
+
+    await expect(bar).toBeHidden();
+    const before = await pitch.boundingBox();
+
+    await page.locator('.square--reachable').last().tap();
+
+    await expect(bar).toBeVisible();
+    const after = await pitch.boundingBox();
+    expect(after, 'the pitch moved or resized when the confirm bar appeared').toEqual(before);
+  });
+
   test('cancelling an armed move commits nothing', async ({ page }) => {
     await selectAndMove(page);
     const maBefore = await remainingMa(page);
