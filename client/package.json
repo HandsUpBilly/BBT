@@ -9,7 +9,9 @@
     "generate:seed": "node ../scripts/generate-scenario-seed.mjs",
     "lint": "eslint .",
     "preview": "vite preview",
-    "test": "vitest run"
+    "test": "vitest run",
+    "test:e2e": "playwright test",
+    "test:e2e:mobile": "playwright test --project=galaxy-s8 --project=iphone-se --project=iphone-14 --project=iphone-14-landscape"
   },
   "dependencies": {
     "react": "^19.2.5",
@@ -17,6 +19,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
+    "@playwright/test": "^1.62.1",
     "@testing-library/react": "^16.3.2",
     "@types/node": "^24.12.2",
     "@types/react": "^19.2.14",
