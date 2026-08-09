@@ -223,8 +223,22 @@
   box-shadow: inset 0 0 0 2px rgba(160, 128, 196, 0.9);
 }
 
-.square--path .square__overlay {
-  background: var(--move-safe);
+.square__path-trail {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.square__path-trail polyline {
+  fill: none;
+  stroke: rgba(255, 255, 255, 0.96);
+  stroke-width: 7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 11 10;
+  filter: drop-shadow(0 0 2px rgba(0, 0, 0, 0.9));
 }
 
 .square--handoff-target .square__overlay {
