@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect } from 'react';
-import { useGameState, makeEmptyState, makeScenarioState } from './useGameState';
+import { useGameState, makeEmptyState, makeScenarioState, pathPreviewProb } from './useGameState';
 import { Pitch } from './Pitch';
 import type { PitchOrientation } from './Pitch';
 import { PieceMenu } from './PieceMenu';
@@ -501,6 +501,51 @@ export default function App() {
   // otherwise resolve immediately with followUp: false.
   const [pendingPushSquare, setPendingPushSquare] = useState<{ col: number; row: number } | null>(null);
 
+  // ── Two-stage tap ────────────────────────────────────────────────────────
+  // With a mouse the path preview follows hover, so the dodge rolls, the Go
+  // For It squares and the running success chance are all on screen before
+  // the player clicks. Touch has no hover: preview and commit arrived in the
+  // same tap, so the player accepted risk they were never shown. In a puzzle
+  // whose whole subject is evaluating risk, that is a broken game rather than
+  // an awkward one.
+  //
+  // So on touch the first tap on a reachable square previews it and the
+  // second commits. Tracked as an explicit "armed" square rather than
+  // inferred from pathPreview, because focus and synthetic mouse events can
+  // both move the preview without the player having tapped anything.
+  const [armedSquareKey, setArmedSquareKey] = useState<string | null>(null);
+  // Which player's card the side panel / bottom sheet is showing. Follows the
+  // cursor on a mouse and the last tapped square on touch.
+  const [hoveredPiece, setHoveredPiece] = useState<PlayerPiece | null>(null);
+
+  // The armed key carries the piece and how far it has already walked, so
+  // selecting a different piece or committing a step invalidates it without
+  // anything having to remember to clear it. A stale arm that survived into a
+  // new selection would commit on the player's first tap — the exact failure
+  // this whole mechanism exists to prevent.
+  const disarm = useCallback(() => setArmedSquareKey(null), []);
+
+  /**
+   * Handles the preview half of a two-stage tap.
+   * Returns true when the tap was consumed as a preview and must not commit.
+   */
+  const previewBeforeCommit = useCallback((col: number, row: number): boolean => {
+    if (!coarsePointer) return false;
+    if (!state.selectedPieceId) return false;
+    const k = key({ col, row });
+    if (!state.reachableKeys.has(k)) return false;
+    const arm = `${state.selectedPieceId}:${state.walkedSquares.length}:${k}`;
+    // Second tap on the same square — let it through to commit.
+    if (armedSquareKey === arm) return false;
+
+    setArmedSquareKey(arm);
+    hookSquareHover(col, row);
+    const piece = state.pieces.find(p => key(p.position) === k);
+    setHoveredPiece(piece ?? null);
+    return true;
+  }, [coarsePointer, state.selectedPieceId, state.reachableKeys, state.pieces,
+      state.walkedSquares.length, armedSquareKey, hookSquareHover]);
+
   // Route square clicks: targeting modes take priority over normal movement
   const handleSquareClick = useCallback((col: number, row: number) => {
     if (state.isHandoffTargeting) {
@@ -517,10 +562,13 @@ export default function App() {
         handlePushChoice(col, row, false);
       }
     } else {
+      if (previewBeforeCommit(col, row)) return;
+      disarm();
       hookSquareClick(col, row);
     }
   }, [state.isHandoffTargeting, state.isPassTargeting, state.isBlockTargeting, state.pendingBlockResolution,
-      state.pushTargetKeys, handleHandoffTarget, handlePassTarget, handleBlockTarget, handlePushChoice, hookSquareClick]);
+      state.pushTargetKeys, handleHandoffTarget, handlePassTarget, handleBlockTarget, handlePushChoice,
+      hookSquareClick, previewBeforeCommit, disarm]);
 
   // Escape cancels the current activation. Dialogs handle their own Escape via
   // useModalFocus and stop propagation, so this only fires on the board.
@@ -581,12 +629,15 @@ export default function App() {
 
     // If a piece is already selected and this is a reachable square — treat as a move waypoint
     if (state.selectedPieceId && state.reachableKeys.has(k)) {
+      if (previewBeforeCommit(col, row)) return;
+      disarm();
       hookSquareClick(col, row);
       return;
     }
 
     // Clicking the already-selected piece ends activation
     if (piece.id === state.selectedPieceId) {
+      disarm();
       hookSquareClick(col, row);
       return;
     }
@@ -602,7 +653,8 @@ export default function App() {
   }, [state.pieces, state.selectedPieceId, state.reachableKeys, state.activeTeam,
       state.isHandoffTargeting, state.handoffTargets, state.isPassTargeting, state.passReceiverKeys,
       state.isBlockTargeting, state.blockTargets, state.pendingBlockIsBlitz, state.blitzTargetId,
-      hookSquareClick, handleHandoffTarget, handlePassTarget, handleBlockTarget, handleCancelSelection]);
+      hookSquareClick, handleHandoffTarget, handlePassTarget, handleBlockTarget, handleCancelSelection,
+      previewBeforeCommit, disarm]);
 
   const handleMenuAction = useCallback((actionKey: string, moveFirst: boolean) => {
     if (!pieceMenu) return;
@@ -630,19 +682,23 @@ export default function App() {
 
   const dismissMenu = useCallback(() => setPieceMenu(null), []);
 
-  // Hover state for the shared player card — combined with movement hover
-  const [hoveredPiece, setHoveredPiece] = useState<PlayerPiece | null>(null);
   const handleSquareHover = useCallback((col: number, row: number) => {
+    // Touch devices drive both of these from taps instead. A tap emits a
+    // synthetic mouseenter immediately before the click, so leaving hover
+    // wired up here would preview and commit in the same gesture — exactly
+    // the behaviour the two-stage tap exists to prevent.
+    if (coarsePointer) return;
     // Update movement preview in game state
     hookSquareHover(col, row);
     const k = key({ col, row });
     const piece = state.pieces.find(p => key(p.position) === k);
     setHoveredPiece(piece ?? null);
-  }, [hookSquareHover, state.pieces]);
+  }, [coarsePointer, hookSquareHover, state.pieces]);
   const handleSquareLeave = useCallback(() => {
+    if (coarsePointer) return;
     hookSquareLeave();
     setHoveredPiece(null);
-  }, [hookSquareLeave]);
+  }, [coarsePointer, hookSquareLeave]);
 
   // Submission handler (standalone puzzle mode)
   const handleSubmit = useCallback(async (name: string) => {
@@ -908,6 +964,14 @@ export default function App() {
     : null;
   const inspectedPiece = hoveredPiece ?? selectedPiece;
 
+  // A move is armed and previewed, waiting for the confirming tap. The bar
+  // below the board makes the second tap discoverable and gives the player a
+  // way out that isn't "tap somewhere harmless and hope".
+  const armedPreview = coarsePointer && armedSquareKey !== null
+    && state.pathPreview.length > 0
+    ? state.pathPreview[state.pathPreview.length - 1].pos
+    : null;
+
   const teamLabel = state.activeTeam === 'human' ? 'Human' : 'Orc';
   // Every piece on the active team has had its go. (This used to inspect only
   // the *first* piece on the team, so the status line was wrong the moment a
@@ -941,10 +1005,14 @@ export default function App() {
     ? `Planning — ${state.remainingMa} MA left · Esc to cancel`
     : 'Select your piece to move';
 
-  // Live probability: committed actions × pending rolls not yet committed
+  // Live probability: committed actions × pending rolls not yet committed ×
+  // the rolls on the route currently being previewed. The preview factor is
+  // new — the odds of a planned line used to appear only after it had been
+  // committed, which is the wrong order for a game about weighing risk.
   const lastCommittedProb = state.actionLog.length > 0
     ? state.actionLog[state.actionLog.length - 1].cumulativeProb : 1;
-  const liveProbPct = Math.round(lastCommittedProb * state.pendingProb * 100);
+  const previewProb = pathPreviewProb(state.pathPreview);
+  const liveProbPct = Math.round(lastCommittedProb * state.pendingProb * previewProb * 100);
   // Only meaningful once a dice roll is actually in play — hide the pointless 100% default.
   const showSuccessChance = liveProbPct < 100;
 
@@ -1061,6 +1129,41 @@ export default function App() {
           <PlayerPanel piece={inspectedPiece} side="right" />
         </div>
       </div>
+
+      {/* Confirm bar — the visible half of the two-stage tap. */}
+      {armedPreview && (
+        <div className="commit-bar" role="group" aria-label="Confirm move">
+          <div className="commit-bar__detail">
+            <span className="commit-bar__square">
+              Move to {String(armedPreview.row)}{String.fromCharCode(65 + armedPreview.col)}
+            </span>
+            {showSuccessChance && (
+              <span className={`commit-bar__prob${liveProbPct < 50 ? ' commit-bar__prob--risky' : ''}`}>
+                {liveProbPct}% success
+              </span>
+            )}
+          </div>
+          <div className="commit-bar__actions">
+            <button
+              type="button"
+              className="btn btn--secondary commit-bar__cancel"
+              onClick={() => { disarm(); hookSquareLeave(); }}
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              className="btn btn--primary commit-bar__confirm"
+              onClick={() => {
+                disarm();
+                hookSquareClick(armedPreview.col, armedPreview.row);
+              }}
+            >
+              Confirm
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Touchdown — show summary and submit score */}
       {state.phase === 'touchdown' && effectiveAppMode === 'series-puzzle' && seriesRun && (

@@ -608,6 +608,64 @@ body,
   overflow: hidden;
 }
 
+/* ── Commit bar ──────────────────────────────────────────────────────────
+   The visible half of the two-stage tap. Without it the second tap is a
+   hidden mechanic, and there is no way to back out of an armed move except
+   tapping somewhere harmless and hoping. Sits at the bottom because that is
+   where the thumb already is. */
+.commit-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-shrink: 0;
+  flex-wrap: wrap;
+  padding: 8px 12px;
+  padding-bottom: max(8px, env(safe-area-inset-bottom));
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border-selected);
+  border-radius: var(--radius-panel);
+  box-shadow: var(--shadow-overlay);
+}
+
+.commit-bar__detail {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  min-width: 0;
+}
+
+.commit-bar__square {
+  color: var(--color-text-strong);
+  font-family: var(--font-display);
+  font-size: 0.92rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+.commit-bar__prob {
+  color: var(--color-text-muted);
+  font-size: 0.88rem;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.commit-bar__prob--risky {
+  color: var(--color-warning);
+}
+
+.commit-bar__actions {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.commit-bar .btn {
+  min-height: 44px;
+  padding-inline: 18px;
+}
+
 /* ── Touch: hide side panels, stack vertically ───────────────────────────
    Branching on pointer type rather than width. `max-width: 768px` treated a
    phone held sideways (812px wide, 375px tall) as a desktop: the side columns
