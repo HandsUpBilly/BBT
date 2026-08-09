@@ -359,6 +359,15 @@ body,
   flex-direction: column;
   gap: 1px;
 }
+.hud__success {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: max-content;
+}
+.hud__success--placeholder {
+  visibility: hidden;
+}
 .hud__prob-label {
   font-size: 0.65rem;
   text-transform: uppercase;

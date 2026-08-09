@@ -21,6 +21,7 @@ import { MobileInfoSheet } from './MobileInfoSheet';
 import { ActionLogMenu } from './ActionLogMenu';
 import { AppFooter } from './AppFooter';
 import { CommitBar } from './CommitBar';
+import { SuccessChanceReadout } from './SuccessChanceReadout';
 import { ReportProblemButton } from './ReportProblemButton';
 import { ReportProblemModal } from './ReportProblemModal';
 import { submitScore, fetchLeaderboard, submitSeriesScore, fetchSeriesLeaderboard, fetchProgress, ApiError } from './api';
@@ -1071,14 +1072,7 @@ export default function App() {
 
         <div className="hud__prob">
           {!compact && seriesCounter && <>{seriesCounter}{' · '}</>}
-          {showSuccessChance && (
-            <>
-              <span className="hud__prob-label">Success chance</span>
-              <span className={`hud__prob-value ${liveProbPct < 50 ? 'hud__prob-value--risky' : ''}`}>
-                {liveProbPct}%
-              </span>
-            </>
-          )}
+          <SuccessChanceReadout probability={liveProbPct} visible={showSuccessChance} />
         </div>
 
         <div className="hud__team">

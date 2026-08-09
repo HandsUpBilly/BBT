@@ -336,6 +336,10 @@ invisible placeholder while no square is armed. Its probability label also
 keeps its space for safe routes. This holds the bar to the same height in idle,
 safe-preview, and risky-preview states so the pitch never resizes between taps.
 
+The game HUD keeps the success-chance readout mounted as an invisible 100%
+placeholder until a roll is involved. Reserving the readout's final dimensions
+prevents the HUD and pitch from resizing when a risky move is confirmed.
+
 ## Accessibility
 
 - Pitch squares are `role="button"` with `aria-label`s describing the square,
