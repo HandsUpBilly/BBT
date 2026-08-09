@@ -35,6 +35,39 @@ module-resolution break that still fails the deploy — a package imported from
 resolve above the repo root, so a stray `node_modules` in a parent directory
 can't hide the problem locally.
 
+## Mobile Layout Harness (Playwright)
+
+```bash
+npx playwright install     # once — fetches Chromium and WebKit
+npm --prefix client run test:e2e          # full nine-device matrix
+npm --prefix client run test:e2e:mobile   # the four phone profiles
+```
+
+`client/e2e/` asserts on measured geometry: square size, tap targets, HUD
+budget, no clipping, no horizontal overflow, and the two-stage tap contract.
+
+**Not wired into `npm run verify`, deliberately.** The specs need browser
+binaries that `npm install` does not fetch, so including them would fail a
+clean checkout for a reason unrelated to the change under test. Run them by
+hand when touching game-screen layout, `Pitch.tsx`, or anything under a
+`(pointer: coarse)` media query.
+
+Why it exists: vitest runs in jsdom, which has no layout engine and measures
+every box as 0×0. It cannot catch a single sizing regression. When the harness
+was added it found 11.2px pitch squares, a 420px dialog on a 360px screen, and
+260 squares rendered outside a wrapper with `overflow: hidden`.
+
+Notes:
+
+- Workers are capped and the timeout raised to 60s. Nine projects share one
+  Vite dev server, and uncapped workers contend on it hard enough to time out
+  `startGame()` and report failures that pass when run serially.
+- Address squares by `data-square` ("13G"), not `aria-label` — the label gains
+  the preview's roll details the moment a square is armed.
+- "Did the piece move?" is not a valid commit assertion. A piece keeps its
+  board position for the whole activation and is relocated only when the
+  activation is finalised. Assert on spent MA and `.square--path`.
+
 For docs-only changes, build/lint/test are not usually necessary, but at least
 check `git diff --stat` and file paths.
 

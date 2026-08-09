@@ -1,5 +1,10 @@
 .block-outcome {
-  min-width: 420px;
+  /* min-width beats the width: calc(100vw - 20px) override the small-screen
+     rules apply, so a flat 420px pushed the panel's right edge 30px off a
+     360px screen — inside a fixed backdrop, so it could not even be scrolled
+     to. The probability column was unreachable during a block, which is a
+     mandatory decision point. */
+  min-width: min(420px, 100%);
   max-width: 480px;
 }
 
@@ -15,13 +20,25 @@
 
 .block-outcome__row {
   display: grid;
-  grid-template-columns: auto 34px 1fr auto;
+  grid-template-columns: auto 34px minmax(0, 1fr) auto;
   align-items: center;
   gap: 10px;
   padding: 6px 0;
   border-bottom: 1px solid var(--color-border-subtle);
   cursor: pointer;
   font-size: 0.9rem;
+}
+
+/* Each row is a choice the player taps, so it carries the tap minimum. */
+@media (pointer: coarse) {
+  .block-outcome__row {
+    min-height: 44px;
+    gap: 8px;
+  }
+
+  .block-outcome__continue-option {
+    min-height: 44px;
+  }
 }
 
 .block-outcome__row--disabled {

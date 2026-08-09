@@ -4,19 +4,26 @@ import type { Page, Locator } from '@playwright/test';
 export const MIN_TAP_TARGET = 44;
 
 /**
- * Minimum pitch square size, in CSS px.
+ * Minimum pitch square size, in CSS px, by viewport shape.
  *
- * Below the 44px tap-target minimum on purpose, for two reasons. A pitch
- * square is a forgiving target — a mis-tap previews rather than commits, and
- * the two-stage flow gives the player a chance to correct. And 44px is not
- * reachable: the pitch is 15 squares across, so a 360px phone would need
- * 660px of width. The real ceiling is 360 ÷ 15 ≈ 24px once padding is paid.
+ * Both are below the 44px tap-target minimum on purpose. A pitch square is a
+ * forgiving target — a mis-tap previews rather than commits, and the
+ * two-stage flow gives the player a chance to correct — and 44px is not
+ * reachable anyway: 15 columns at 44px needs a 660px-wide phone.
  *
- * 22 is that ceiling with a little slack, and roughly double the 11.2px the
- * landscape board managed on the same device. Raising this without changing
- * the crop is asking for arithmetic that cannot be satisfied.
+ * The two numbers differ because a different axis binds in each case.
+ * Portrait is width-bound at 15 columns, so the ceiling is roughly
+ * viewportWidth ÷ 15 — about 20px on a 320px phone and 24px on a 375px one.
+ * Landscape is height-bound at 15 rows in a viewport barely 340px tall, and
+ * no layout recovers more than about 17px there.
+ *
+ * A single absolute floor cannot express that, and picking the lower of the
+ * two would stop the harness noticing a portrait regression. See also the
+ * relative width-usage assertion in layout.spec.ts, which is what actually
+ * catches wasted space; these are a backstop against outright collapse.
  */
-export const MIN_SQUARE_SIZE = 22;
+export const MIN_SQUARE_SIZE_PORTRAIT = 19;
+export const MIN_SQUARE_SIZE_LANDSCAPE = 15;
 
 export interface Box {
   x: number;

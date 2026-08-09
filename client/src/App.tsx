@@ -16,6 +16,8 @@ import { ConfirmDialog } from './ConfirmDialog';
 import { BlockOutcomePanel } from './BlockOutcomePanel';
 import { blockActionAvailability } from './blockActionAvailability';
 import { UserMenu } from './UserMenu';
+import { LegendShell } from './LegendShell';
+import { MobileInfoSheet } from './MobileInfoSheet';
 import { AppFooter } from './AppFooter';
 import { ReportProblemButton } from './ReportProblemButton';
 import { ReportProblemModal } from './ReportProblemModal';
@@ -589,6 +591,11 @@ export default function App() {
     const piece = state.pieces.find(p => key(p.position) === k);
     if (!piece) return;
 
+    // Touch has no hover, so a tap is the only way the player card can learn
+    // which player to show — including opponents, whose skills are exactly
+    // what you need before deciding whether to block them.
+    if (coarsePointer) setHoveredPiece(piece);
+
     // During handoff targeting, clicking a highlighted receiver executes the handoff
     if (state.isHandoffTargeting) {
       if (state.handoffTargets.has(k)) {
@@ -654,7 +661,7 @@ export default function App() {
       state.isHandoffTargeting, state.handoffTargets, state.isPassTargeting, state.passReceiverKeys,
       state.isBlockTargeting, state.blockTargets, state.pendingBlockIsBlitz, state.blitzTargetId,
       hookSquareClick, handleHandoffTarget, handlePassTarget, handleBlockTarget, handleCancelSelection,
-      previewBeforeCommit, disarm]);
+      previewBeforeCommit, disarm, coarsePointer]);
 
   const handleMenuAction = useCallback((actionKey: string, moveFirst: boolean) => {
     if (!pieceMenu) return;
@@ -1016,17 +1023,35 @@ export default function App() {
   // Only meaningful once a dice roll is actually in play — hide the pointless 100% default.
   const showSuccessChance = liveProbPct < 100;
 
+  // Rendered in one place, mounted in one of two. On touch the status line
+  // moves out of the HUD to just above the commit bar: it is guidance about
+  // what to do next, so it belongs near the thumb, and pulling it out of the
+  // header is most of what gets the HUD from 121px down to one row.
+  const backLabel = editorPreviewScenario ? 'Designer' : 'Menu';
+  // Run progress rides with the HUD readout on a desktop and with the status
+  // text on touch, where a 310px control row has no 89px to spare for it.
+  const seriesCounter = seriesRun ? (
+    <span className="hud__prob-label hud__prob-label--series">
+      Puzzle {seriesRun.puzzleIndex + 1} / {seriesScenarios.length}
+    </span>
+  ) : null;
+  const statusLine = (
+    <div className="hud__status">
+      {coarsePointer && seriesCounter && <>{seriesCounter}{' · '}</>}
+      {activationStatus}
+    </div>
+  );
+
   return (
     <div className="app app--game app--playbook">
       <header className="hud">
-        <button className="hud__back" onClick={handleBackClick}>{editorPreviewScenario ? '← Designer' : '← Menu'}</button>
+        <button className="hud__back" onClick={handleBackClick} aria-label={`Back to ${backLabel}`}>
+          <span className="hud__btn-icon" aria-hidden="true">←</span>
+          <span className="hud__btn-text">{backLabel}</span>
+        </button>
 
         <div className="hud__prob">
-          {seriesRun && (
-            <span className="hud__prob-label">
-              Puzzle {seriesRun.puzzleIndex + 1} / {seriesScenarios.length} ·{' '}
-            </span>
-          )}
+          {!coarsePointer && seriesCounter && <>{seriesCounter}{' · '}</>}
           {showSuccessChance && (
             <>
               <span className="hud__prob-label">Success chance</span>
@@ -1042,23 +1067,33 @@ export default function App() {
           <strong>{teamLabel}'s Turn</strong>
         </div>
 
-        <div className="hud__status">{activationStatus}</div>
+        {!coarsePointer && statusLine}
 
         <button
           className={`hud__zoom${zoomEnabled ? ' hud__zoom--active' : ''}`}
           onClick={() => setZoomOverride(!zoomEnabled)}
           title="Zoom to legal moves"
+          aria-label={zoomEnabled ? 'Zoom on — show the whole pitch' : 'Zoom to legal moves'}
+          aria-pressed={zoomEnabled}
         >
-          {zoomEnabled ? '🔍 Zoom On' : '🔍 Zoom'}
+          <span className="hud__btn-icon" aria-hidden="true">🔍</span>
+          <span className="hud__btn-text">{zoomEnabled ? 'Zoom On' : 'Zoom'}</span>
         </button>
 
-        <button className="hud__restart" onClick={handleRestartTurn}>↺ Restart</button>
+        <button className="hud__restart" onClick={handleRestartTurn} aria-label="Restart turn">
+          <span className="hud__btn-icon" aria-hidden="true">↺</span>
+          <span className="hud__btn-text">Restart</span>
+        </button>
 
         {reportButton('hud')}
         <UserMenu name={identityName} onSignOut={handleSignOut} />
       </header>
 
-      <div className="game-legends">
+      {/* On touch the legend goes behind a disclosure. It costs 53-61px
+          permanently to explain colours, which is a fifth of what the board
+          gets on a phone — and it is reference material, consulted once,
+          not a running readout. */}
+      <LegendShell collapsible={coarsePointer}>
         <div className="legend" role="list" aria-label="Pitch state legend">
           <span className="legend__item legend__item--tz" role="listitem">Tackle Zone</span>
           <span className="legend__item legend__item--free" role="listitem">Free Move</span>
@@ -1101,7 +1136,7 @@ export default function App() {
             ))}
           </div>
         </div>
-      </div>
+      </LegendShell>
 
       <div className="game-area">
         <div className="side-col side-col--left">
@@ -1128,7 +1163,24 @@ export default function App() {
         <div className="side-col side-col--right">
           <PlayerPanel piece={inspectedPiece} side="right" />
         </div>
+
       </div>
+
+      {/* Both side columns are hidden on touch. Without this the player card
+          and the roll history simply vanish on a phone. A sibling of
+          .game-area rather than a child, so the landscape grid can move it
+          into the column beside the board instead of stacking it under one
+          that has no height to give. */}
+      {coarsePointer && (
+        <MobileInfoSheet
+          piece={inspectedPiece}
+          log={state.actionLog}
+          pendingProb={state.pendingProb}
+          pendingTargets={state.pendingDodgeTargets}
+        />
+      )}
+
+      {coarsePointer && <div className="status-strip">{statusLine}</div>}
 
       {/* Confirm bar — the visible half of the two-stage tap. */}
       {armedPreview && (

@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 import {
   startGame, boxOf, clippedSquares, hasHorizontalOverflow, undersizedTapTargets,
-  isPortrait, isTouch, MIN_SQUARE_SIZE, MIN_TAP_TARGET,
+  isPortrait, isTouch, MIN_SQUARE_SIZE_PORTRAIT, MIN_SQUARE_SIZE_LANDSCAPE, MIN_TAP_TARGET,
 } from './helpers';
 
 /**
@@ -33,11 +33,30 @@ test.describe('game screen layout', () => {
   test('squares are large enough to tap', async ({ page }) => {
     test.skip(!(await isTouch(page)), 'tap-size floor applies to touch devices');
 
+    const floor = isPortrait(page) ? MIN_SQUARE_SIZE_PORTRAIT : MIN_SQUARE_SIZE_LANDSCAPE;
     const square = await boxOf(page.locator('.pitch__grid .square').first());
     expect(
       Math.min(square.width, square.height),
-      `squares measure ${square.width.toFixed(1)}×${square.height.toFixed(1)}px`,
-    ).toBeGreaterThanOrEqual(MIN_SQUARE_SIZE);
+      `squares measure ${square.width.toFixed(1)}×${square.height.toFixed(1)}px `
+      + `(floor ${floor} for this orientation)`,
+    ).toBeGreaterThanOrEqual(floor);
+  });
+
+  test('the board spends nearly all the width available to it', async ({ page }) => {
+    test.skip(!isPortrait(page) || !(await isTouch(page)), 'portrait touch devices only');
+
+    // The absolute floor above cannot distinguish "laid out well on a small
+    // screen" from "laid out badly on a large one" — 15 columns across a
+    // 320px phone can never beat ~20px however good the layout is. This is
+    // the assertion that actually catches wasted space: the old landscape
+    // board used 85% of the width and then threw two thirds of the height
+    // away centring a squashed pitch inside it.
+    const viewport = page.viewportSize()!;
+    const grid = await boxOf(page.locator('.pitch__grid'));
+    expect(
+      grid.width / viewport.width,
+      `board is ${grid.width.toFixed(0)}px wide in a ${viewport.width}px viewport`,
+    ).toBeGreaterThan(0.9);
   });
 
   test('interactive controls meet the tap-target minimum', async ({ page }) => {
@@ -51,20 +70,27 @@ test.describe('game screen layout', () => {
     ).toEqual([]);
   });
 
-  test('the board gets the majority of the screen height', async ({ page }) => {
+  test('chrome stays within its budget', async ({ page }) => {
     test.skip(!(await isTouch(page)), 'chrome budget is a mobile concern');
 
-    const viewport = page.viewportSize()!;
     const hud = await boxOf(page.locator('.hud'));
     const grid = await boxOf(page.locator('.pitch__grid'));
 
-    // The HUD used to take 121px of 812 (15%) while the board took 204px.
-    expect(hud.height, `HUD is ${hud.height.toFixed(0)}px tall`)
-      .toBeLessThanOrEqual(viewport.height * 0.12);
+    // One row of 44px controls plus padding. The HUD used to be 121px — 15%
+    // of an 812px screen — for a back button, a percentage and four icons,
+    // while the board got 204px. An absolute budget rather than a percentage
+    // of viewport height: the row costs the same on every phone, so a share
+    // of the height would just be stricter on small screens for no reason.
+    expect(hud.height, `HUD is ${hud.height.toFixed(0)}px tall`).toBeLessThanOrEqual(68);
+
+    // Whatever the chrome costs, the board outweighs all of it put together.
+    const legend = await boxOf(page.locator('.game-legends'));
+    const status = await boxOf(page.locator('.status-strip'));
+    const chrome = hud.height + legend.height + status.height;
     expect(
       grid.height,
-      `board is ${grid.height.toFixed(0)}px of ${viewport.height}px viewport`,
-    ).toBeGreaterThan(viewport.height * 0.5);
+      `board ${grid.height.toFixed(0)}px vs ${chrome.toFixed(0)}px of chrome`,
+    ).toBeGreaterThan(chrome);
   });
 
   test('the board is rendered portrait on portrait screens', async ({ page }) => {

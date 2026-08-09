@@ -19,6 +19,13 @@ export default defineConfig({
   // the harness itself.
   retries: 0,
   fullyParallel: true,
+  // Nine projects share one Vite dev server. Left uncapped, the workers
+  // contend on it hard enough that startGame() exceeds the default 30s and
+  // reports failures that pass immediately when run serially — false alarms
+  // from a harness whose whole job is to be believed. Capped workers plus a
+  // longer ceiling costs about a minute on a full run and removes them.
+  workers: process.env.CI ? 2 : 4,
+  timeout: 60_000,
   reporter: process.env.CI ? 'line' : 'list',
   use: {
     baseURL: 'http://localhost:5173',

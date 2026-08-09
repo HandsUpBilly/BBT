@@ -59,16 +59,17 @@ export function PieceMenu({ piece, x, y, actions, onAction, onDismiss }: Props) 
     return () => window.removeEventListener('resize', placeMenu);
   }, [x, y]);
 
-  // Dismiss on outside click
+  // Dismiss on outside press. pointerdown rather than mousedown so touch is
+  // handled first-hand rather than via the synthesised mouse event, matching
+  // UserMenu. Capture, so it runs before any other press handler.
   useEffect(() => {
-    const handler = (e: MouseEvent) => {
+    const handler = (e: PointerEvent) => {
       if (ref.current && !ref.current.contains(e.target as Node)) {
         onDismiss();
       }
     };
-    // Use capture so it fires before any other click handlers
-    document.addEventListener('mousedown', handler, true);
-    return () => document.removeEventListener('mousedown', handler, true);
+    document.addEventListener('pointerdown', handler, true);
+    return () => document.removeEventListener('pointerdown', handler, true);
   }, [onDismiss]);
 
   // Dismiss on Escape

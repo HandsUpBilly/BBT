@@ -3,7 +3,10 @@
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- viewport-fit=cover so env(safe-area-inset-*) reports real values on
+         notched phones; without it the insets are always zero and the padding
+         that keeps the commit bar clear of the home indicator does nothing. -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta
       name="description"
       content="Turn 16 is a tactical Blood Bowl puzzle game about finding the touchdown when only one turn remains."

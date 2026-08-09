@@ -124,6 +124,10 @@
   cursor: pointer;
   box-sizing: border-box;
   overflow: hidden;
+  /* Kills the 300ms tap delay and stops double-tap-to-zoom firing during
+     quick play — two taps in a row on one square is the commit gesture. */
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
 }
 
 /* Subtle checkerboard so squares are countable */
