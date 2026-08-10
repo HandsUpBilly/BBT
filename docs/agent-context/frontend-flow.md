@@ -81,6 +81,10 @@ public avatars).
   and is therefore gated on `currentUser` — a guest has no verified identity to
   attach it to for the server-side Phase 2 version, so the local version stays
   consistent with that gate from the start rather than reworking it later.
+- **Token-style choices use matched pitch previews.** Detailed, Tactical, and
+  Plain show the same six-token formation, pitch, and team colours so the
+  settings screen compares information density without changing the scene.
+  The generated WebP assets live in `client/src/assets/token-style-previews/`.
 - **`UserMenu`'s avatar falls back to initials on load failure**, not just on
   absence — a corrupted or future-format data URL degrades the same way a
   missing one does, rather than rendering a broken image icon.
