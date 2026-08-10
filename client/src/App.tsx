@@ -27,6 +27,7 @@ import { ReportProblemModal } from './ReportProblemModal';
 import { submitScore, fetchLeaderboard, submitSeriesScore, fetchSeriesLeaderboard, fetchProgress, ApiError } from './api';
 import type { ProgressData } from './api';
 import { recordAttempt } from './attemptStore';
+import { playerComparison } from './playerComparison';
 import { resolveSeriesScenarios } from './series';
 import { loadScenarioData } from './scenarios/runtime';
 import type { ScenarioData } from './scenarios/runtime';
@@ -1009,7 +1010,11 @@ export default function App() {
   const selectedPiece = state.selectedPieceId
     ? state.pieces.find(p => p.id === state.selectedPieceId) ?? null
     : null;
-  const inspectedPiece = hoveredPiece ?? selectedPiece;
+  // One card normally; two while a block, blitz, pass or hand-off is being
+  // aimed, so the attacker's stats stay on screen next to the defender's
+  // instead of being replaced by them. See playerComparison.ts.
+  const { primary: inspectedPiece, secondary: comparisonPiece } =
+    playerComparison(state, selectedPiece, hoveredPiece);
 
   // A move is armed and previewed, waiting for the confirming tap. The bar
   // below the board makes the second tap discoverable and gives the player a
@@ -1158,8 +1163,18 @@ export default function App() {
           />
         </main>
 
-        <div className="side-col side-col--right">
-          <PlayerPanel piece={inspectedPiece} side="right" />
+        {/* Two cards while a two-player action is being aimed. The rail
+            scrolls rather than squeezing the board, and the cards go compact
+            (see .side-col--comparing) so both usually fit without it. */}
+        <div className={`side-col side-col--right${comparisonPiece ? ' side-col--comparing' : ''}`}>
+          <PlayerPanel
+            piece={inspectedPiece}
+            side="right"
+            role={comparisonPiece ? 'acting' : undefined}
+          />
+          {comparisonPiece && (
+            <PlayerPanel piece={comparisonPiece} side="right" role="target" />
+          )}
         </div>
 
       </div>
@@ -1169,7 +1184,7 @@ export default function App() {
           sheet now lives in the toolbar. A sibling of .game-area rather than
           a child, so the landscape grid can move it into the column beside
           the board instead of stacking it under one that has no height. */}
-      {compact && <MobileInfoSheet piece={inspectedPiece} />}
+      {compact && <MobileInfoSheet piece={inspectedPiece} comparisonPiece={comparisonPiece} />}
 
       {compact && <div className="status-strip">{statusLine}</div>}
 

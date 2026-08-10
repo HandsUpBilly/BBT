@@ -22,6 +22,60 @@
   width: 100%;
 }
 
+/* ── Two-player comparison ───────────────────────────────────
+   Which half of a block, blitz, pass or hand-off each stacked card is. Two
+   cards of identical shape, one above the other, are otherwise a guessing game
+   about which player is doing the thing. */
+.panel__role-tag {
+  padding: 3px 8px;
+  font-family: var(--font-display);
+  font-size: 0.58rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  border-bottom: 1px solid var(--color-border-subtle);
+}
+
+.panel__role-tag--acting {
+  color: #d8cfa8;
+  background: rgba(199, 150, 61, 0.16);
+}
+
+.panel__role-tag--target {
+  color: #cf9b90;
+  background: rgba(196, 74, 55, 0.16);
+}
+
+/* Both cards have to fit a rail that held one. The portrait is the only part
+   worth most of its height — a square one at a 210px rail is 210px on its own —
+   so while comparing it gives up its aspect ratio and the rest of the card,
+   which is the part being read, keeps full size. */
+.side-col--comparing {
+  /* .game-area aligns its columns to flex-start, so the rail is normally as
+     tall as its content and could never scroll — it would simply grow past the
+     board. Stretching it to the row height is what gives overflow something to
+     overflow, on the rare pairing that still does not fit. */
+  align-self: stretch;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+}
+
+.side-col--comparing .panel__portrait-wrap {
+  aspect-ratio: auto;
+  height: clamp(64px, 12vh, 108px);
+}
+
+.side-col--comparing .panel__portrait {
+  object-position: top center;
+}
+
+/* A watermark is the first thing to drop when two cards are competing. */
+.side-col--comparing .panel__crest {
+  display: none;
+}
+
 .panel--human {
   box-shadow: inset 3px 0 0 var(--team-human);
 }

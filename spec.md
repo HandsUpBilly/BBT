@@ -3980,3 +3980,60 @@ If it is ever wanted server-side, the shape to reuse is the leaderboard's:
 - The chart plots one point per run against a fixed 0-100% axis.
 - A storage failure — quota, private browsing, no Storage API — costs the
   history and nothing else.
+
+---
+
+# Two-Player Card Comparison
+
+**Status:** Shipped. Requested directly: "any action that involves a second
+character, and I mouse over that character, the player card should show below
+the original card, so that I now see two cards ... so that I can compare stats."
+
+## Problem Statement
+
+Block, blitz, pass and hand-off are all decisions about two players. Whether to
+throw the block depends on the attacker's Strength against the defender's, plus
+assists; whether to throw the pass depends on the receiver's Agility against the
+range band. The right rail showed one card, and hovering *replaced* it — so
+reading the target's stats destroyed the attacker's. Comparing two players meant
+memorising one of them.
+
+## What ships
+
+`playerComparison(state, selected, hovered)` returns `{ primary, secondary }`.
+While `isTwoPlayerAction(state)` holds and the cursor is on a piece other than
+the acting one, `primary` is the acting piece and `secondary` is the hovered
+one; otherwise `secondary` is null and the single-card behaviour is exactly what
+it was.
+
+`isTwoPlayerAction` covers more than the three targeting flags. `pendingBlock`
+is a declared Blitz during its movement step — the attacker is already committed
+to hitting someone, so sizing up candidates while walking is the point.
+`blockChoice` and `pendingBlockResolution` cover the outcome checklist and the
+push-back choice, which are still about the same two players.
+
+Each card carries an **Acting** or **Target** tag when paired. Two cards of
+identical shape stacked vertically are otherwise a guessing game about which
+player is doing the thing.
+
+Fitting two cards in a rail sized for one: `.side-col--comparing` drops the
+portrait's square aspect ratio (a square portrait in a 210px rail is 210px of
+height on its own) and hides the crest watermark. The stats, which are the part
+being read, keep full size. The rail stretches to the row height and scrolls as
+a backstop.
+
+## Non-goals
+
+- **No stat diffing.** The cards do not highlight which player wins each stat.
+  The request was to see both; inferring "who wins" for Strength is not a
+  straight comparison anyway once assists are involved, and a green arrow that
+  ignored them would be worse than no arrow.
+- **No pinning.** The second card follows the cursor and disappears with it.
+
+## Acceptance Criteria
+
+- Aiming a block, blitz, pass or hand-off and hovering another player shows two
+  cards, acting on top.
+- Hovering the acting piece itself, or a piece with no action under way, shows
+  one card exactly as before.
+- The pair never widens the page or shrinks the board.

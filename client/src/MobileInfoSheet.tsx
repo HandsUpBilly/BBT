@@ -5,6 +5,12 @@ import './MobileInfoSheet.css';
 
 interface Props {
   piece: PlayerPiece | null;
+  /**
+   * The other half of a two-player action, when one is under way. Touch has no
+   * hover, but tapping a piece sets the same inspected piece the cursor would,
+   * so the comparison reaches this sheet by the same route.
+   */
+  comparisonPiece?: PlayerPiece | null;
 }
 
 /**
@@ -22,7 +28,7 @@ interface Props {
  * follows whichever piece was last tapped, so it reads better as a panel that
  * sits under the board it refers to.
  */
-export function MobileInfoSheet({ piece }: Props) {
+export function MobileInfoSheet({ piece, comparisonPiece }: Props) {
   // Collapsed by default. Open, the panel competes with the board for height,
   // and on a 320×568 phone the board loses — squares drop from 20px to 17px.
   // The board is the game, so it keeps the space until the player asks for
@@ -43,7 +49,9 @@ export function MobileInfoSheet({ piece }: Props) {
           className={`info-sheet__tab${open ? ' info-sheet__tab--active' : ''}`}
           onClick={() => setOpen(o => !o)}
         >
-          {piece ? piece.name : 'Player'}
+          {comparisonPiece && piece
+            ? `${piece.name} vs ${comparisonPiece.name}`
+            : piece ? piece.name : 'Player'}
         </button>
       </div>
 
@@ -53,7 +61,8 @@ export function MobileInfoSheet({ piece }: Props) {
         hidden={!open}
         className="info-sheet__panel info-sheet__panel--player"
       >
-        <PlayerPanel piece={piece} side="right" />
+        <PlayerPanel piece={piece} side="right" role={comparisonPiece ? 'acting' : undefined} />
+        {comparisonPiece && <PlayerPanel piece={comparisonPiece} side="right" role="target" />}
       </div>
     </section>
   );

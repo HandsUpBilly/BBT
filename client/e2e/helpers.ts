@@ -70,6 +70,31 @@ export async function startGame(page: Page, playerName = 'E2E Tester'): Promise<
 }
 
 /**
+ * Starts one named puzzle from Single Plays rather than the series.
+ *
+ * Some behaviour needs a specific board — a Block, for instance, needs the two
+ * teams already in contact, which only "Loose Ball on the Goal Line" gives you
+ * without moving first.
+ */
+export async function startScenario(
+  page: Page,
+  scenarioName: string,
+  playerName = 'E2E Tester',
+): Promise<void> {
+  await page.goto('/');
+
+  await page.getByRole('button', { name: /play as guest/i }).click();
+  await page.locator('.identity-gate__input').fill(playerName);
+  await page.getByRole('button', { name: /^continue$/i }).click();
+
+  await page.getByRole('tab', { name: /single plays/i }).click();
+  await page.locator('.challenge-tile', { hasText: scenarioName })
+    .getByRole('button', { name: /^play$/i }).click();
+
+  await page.locator('.pitch__grid .square').first().waitFor({ state: 'visible' });
+}
+
+/**
  * Every pitch square that renders outside its scroll container.
  *
  * `.pitch-wrapper` has `overflow: hidden`, so anything outside it is both

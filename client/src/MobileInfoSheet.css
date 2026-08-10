@@ -54,6 +54,11 @@
   min-height: 0;
   overflow-y: auto;
   padding: 0 6px 6px;
+  /* A column so a two-player comparison gets a gap between its cards rather
+     than two panels flush against each other. */
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
 }
 
 .info-sheet__panel[hidden] {
@@ -78,6 +83,12 @@
 
 .info-sheet__panel--player .panel__portrait-wrap {
   grid-row: span 2;
+}
+
+/* The card is a grid here, so the role tag would otherwise be dropped into the
+   portrait's column as a cell. It is a caption for the whole card. */
+.info-sheet__panel--player .panel__role-tag {
+  grid-column: 1 / -1;
 }
 
 @media (prefers-reduced-motion: reduce) {
