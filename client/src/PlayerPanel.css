@@ -15,6 +15,13 @@
   align-self: flex-start;
 }
 
+/* The desktop rail is responsive, so its player card must be too. Keeping the
+   old fixed 130px card left a blank strip down the right of wider rails. The
+   mobile sheet has its own full-width grid treatment below. */
+.side-col--right .panel {
+  width: 100%;
+}
+
 .panel--human {
   box-shadow: inset 3px 0 0 var(--team-human);
 }
@@ -164,4 +171,3 @@
   opacity: 0.18;
   margin: 6px auto 0;
 }
-
