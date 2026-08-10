@@ -19,7 +19,7 @@ describe('Pitch token style', () => {
     expect(container.querySelector('.piece__portrait')).toBeTruthy();
   });
 
-  it('adds pitch--simple for high contrast without removing the skill-marker/ring layer', () => {
+  it('adds the tactical class with a positional glyph without removing the skill-marker/ring layer', () => {
     const { container } = render(
       <Pitch
         state={state}
@@ -35,6 +35,7 @@ describe('Pitch token style', () => {
     // The role code is always rendered — CSS (not a second render path) decides
     // whether it or the portrait is visible — see the note in Pitch.tsx.
     expect(container.querySelector('.piece__role-code')?.textContent).toBe('LI');
+    expect(container.querySelector('.piece__role-glyph--shield')).toBeTruthy();
     expect(container.querySelector('.piece__portrait')).toBeTruthy();
     expect(container.querySelector('.piece__portrait-frame')).toBeTruthy();
   });

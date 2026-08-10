@@ -2,6 +2,7 @@ import { useRef, useState } from 'react';
 import { ConfirmDialog } from './ConfirmDialog';
 import { encodeAvatarFile, validateAvatarFile, AVATAR_ALLOWED_TYPES } from './avatarImage';
 import type { TokenStyle } from './prefs';
+import { RoleGlyph } from './RoleGlyph';
 import './SettingsScreen.css';
 
 interface Props {
@@ -187,12 +188,18 @@ export function SettingsScreen({
             onClick={() => onTokenStyleChange('simple')}
           >
             <span className="settings-screen__token-preview" aria-hidden="true">
-              <span className="settings-screen__sample-token settings-screen__sample-token--clear settings-screen__sample-token--human">LI</span>
-              <span className="settings-screen__sample-token settings-screen__sample-token--clear settings-screen__sample-token--orc">BL</span>
+              <span className="settings-screen__sample-token settings-screen__sample-token--clear settings-screen__sample-token--human">
+                <RoleGlyph role="blitzer" fallback="lineman" />
+                <span>BL</span>
+              </span>
+              <span className="settings-screen__sample-token settings-screen__sample-token--clear settings-screen__sample-token--orc">
+                <RoleGlyph role="thrower" fallback="blocker" />
+                <span>TH</span>
+              </span>
             </span>
             <span className="settings-screen__token-copy">
-              <strong>High contrast</strong>
-              <span>Team discs and role codes, with skill markers</span>
+              <strong>Tactical</strong>
+              <span>Position symbols and role codes, with skill markers</span>
             </span>
           </button>
           <button

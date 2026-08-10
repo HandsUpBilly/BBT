@@ -413,10 +413,11 @@ or bake ring, tint, or badge labels into portrait bitmaps.
 
 The Settings screen offers three player-token detail levels (`prefs.ts`'s
 `tokenStyle`, default `'portrait'`): Detailed uses portrait art, skill rings,
-and badges; High contrast (`'simple'`, retained for stored-preference
-compatibility) uses team-coloured role-code discs with rings and badges; Plain
-uses the same clear discs but removes the rings and badges. The two-letter disc
-matches the puzzle editor's own `.editor-piece` marker.
+and badges; Tactical (`'simple'`, retained for stored-preference compatibility)
+uses team-coloured discs with a role-specific positional glyph, role code,
+rings, and badges; Plain uses clear role-code discs without the glyphs, rings,
+or badges. Plain's two-letter disc matches the puzzle editor's own
+`.editor-piece` marker.
 
 Implemented as pitch-level `pitch--simple` and `pitch--plain` classes on
 `<Pitch>`'s outer element, not props threaded through `Square`. `PieceIcon`

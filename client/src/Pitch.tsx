@@ -7,6 +7,8 @@ import { buildMovementTrailMap, trailPolylinePoints } from './movementTrail';
 import type { PathTrail } from './movementTrail';
 import { skillGroupsFor, skillMarkersFor } from './skillPresentation';
 import type { TokenStyle } from './prefs';
+import { RoleGlyph } from './RoleGlyph';
+import { roleCodeFor } from './rolePresentation';
 import './Pitch.css';
 
 function BallIcon({ ghost, loose }: { ghost?: boolean; loose?: boolean }) {
@@ -73,12 +75,13 @@ function PieceIcon({ team, role, skills }: { team: Team; role?: string; skills: 
   // choices belong in the stylesheet rather than a second render path here.
   // The disc keeps the skill-group ring and letter-badge layers below
   // unchanged; only the portrait bitmap and its team tint are swapped out.
-  const roleCode = (role ?? DEFAULT_ROLE[team]).slice(0, 2).toUpperCase();
+  const roleCode = roleCodeFor(role, DEFAULT_ROLE[team]);
 
   let portrait = (
     <div className="piece__portrait-frame">
       <img className={portraitClass} src={src} alt="" draggable={false} />
       <span className="piece__team-tint" />
+      <RoleGlyph role={role} fallback={DEFAULT_ROLE[team]} />
       <span className="piece__role-code">{roleCode}</span>
       <span className="piece__state-overlay" />
     </div>
