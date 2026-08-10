@@ -9,6 +9,7 @@ import { skillGroupsFor, skillMarkersFor } from './skillPresentation';
 import type { TokenStyle } from './prefs';
 import { RoleGlyph } from './RoleGlyph';
 import { roleCodeFor } from './rolePresentation';
+import { DEFAULT_PLAYER_ROLE, playerPortraitFor } from './playerPortraits';
 import './Pitch.css';
 
 function BallIcon({ ghost, loose }: { ghost?: boolean; loose?: boolean }) {
@@ -30,40 +31,10 @@ function BallIcon({ ghost, loose }: { ghost?: boolean; loose?: boolean }) {
   );
 }
 
-// Keep in sync with the same map in PlayerPanel.tsx.
-// `halfling`, `ogre`, `goblin`, and `troll` have no art yet and fall through to
-// the team default below.
-const PORTRAITS: Record<Team, Record<string, string>> = {
-  human: {
-    thrower: '/human-thrower-gritty.webp',
-    catcher: '/human-catcher-gritty.webp',
-    lineman:  '/human-lineman-gritty.webp',
-    blitzer:  '/human-tackle.png',
-    blocker:  '/human-blocker.png',
-    guard:    '/human-guard.png',
-    tackle:   '/human-tackle.png',
-  },
-  orc: {
-    thrower:   '/orc-thrower.png',
-    catcher:   '/orc-catcher.png',
-    lineman:   '/orc-lineman-gritty.webp',
-    'black-orc': '/orc-black-orc.png',
-    blocker:   '/orc-blocker-gritty.webp',
-    blitzer:   '/orc-blitzer-gritty.webp',
-    'big-un':  '/orc-big-un.png',
-  },
-};
-
-const DEFAULT_ROLE: Record<Team, string> = {
-  human: 'lineman',
-  orc:   'blocker',
-};
-
 const EMPTY_SKILLS: readonly string[] = [];
 
 function PieceIcon({ team, role, skills }: { team: Team; role?: string; skills: readonly string[] }) {
-  const map = PORTRAITS[team];
-  const src = map[role ?? DEFAULT_ROLE[team]] ?? map[DEFAULT_ROLE[team]];
+  const src = playerPortraitFor(team, role);
   const portraitClass = src.includes('-gritty.')
     ? 'piece__portrait'
     : 'piece__portrait piece__portrait--legacy';
@@ -75,13 +46,13 @@ function PieceIcon({ team, role, skills }: { team: Team; role?: string; skills: 
   // choices belong in the stylesheet rather than a second render path here.
   // The disc keeps the skill-group ring and letter-badge layers below
   // unchanged; only the portrait bitmap and its team tint are swapped out.
-  const roleCode = roleCodeFor(role, DEFAULT_ROLE[team]);
+  const roleCode = roleCodeFor(role, DEFAULT_PLAYER_ROLE[team]);
 
   let portrait = (
     <div className="piece__portrait-frame">
       <img className={portraitClass} src={src} alt="" draggable={false} />
       <span className="piece__team-tint" />
-      <RoleGlyph role={role} fallback={DEFAULT_ROLE[team]} />
+      <RoleGlyph role={role} fallback={DEFAULT_PLAYER_ROLE[team]} />
       <span className="piece__role-code">{roleCode}</span>
       <span className="piece__state-overlay" />
     </div>

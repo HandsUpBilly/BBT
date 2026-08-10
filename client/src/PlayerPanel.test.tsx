@@ -44,6 +44,14 @@ describe('PlayerPanel', () => {
     expect(value('AV')).toBe('9');
   });
 
+  it('uses the dedicated Human Blitzer portrait', () => {
+    const piece = humanBlocker({ role: 'blitzer' });
+    const { container } = render(<PlayerPanel piece={piece} side="right" />);
+
+    expect(container.querySelector<HTMLImageElement>('.panel__portrait')?.src)
+      .toContain('/human-blitzer-gritty.webp');
+  });
+
   it('renders the empty placeholder without a caption', () => {
     const { container } = render(<PlayerPanel piece={null} side="right" role="target" />);
 
