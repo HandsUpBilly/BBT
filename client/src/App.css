@@ -684,57 +684,6 @@ body,
   font-weight: 600;
 }
 
-/* ── Legend disclosure ───────────────────────────────────────────────── */
-.game-legends--collapsible {
-  flex-shrink: 0;
-  background: var(--color-surface-1);
-  border-radius: var(--radius-card);
-}
-
-.game-legends__summary {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  min-height: 34px;
-  padding: 0 10px;
-  color: var(--color-text-muted);
-  font-family: var(--font-display);
-  font-size: 0.7rem;
-  font-weight: 600;
-  letter-spacing: 0.09em;
-  text-transform: uppercase;
-  cursor: pointer;
-  list-style: none;
-}
-
-.game-legends__summary::-webkit-details-marker {
-  display: none;
-}
-
-/* Own marker so the control reads as a disclosure on every engine — Safari
-   hides the native one when list-style is cleared. */
-.game-legends__summary::before {
-  content: '▸';
-  font-size: 0.78rem;
-  transition: transform var(--transition-fast);
-}
-
-.game-legends--collapsible[open] .game-legends__summary::before {
-  transform: rotate(90deg);
-}
-
-.game-legends__body {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  max-height: 40vh;
-  overflow-y: auto;
-  padding: 4px 8px 8px;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .game-legends__summary::before { transition: none; }
-}
 
 /* ── Compact: hide side panels, stack vertically ─────────────────────────
    A size question, answered by a size query — and 1024px, not 768px.
@@ -830,10 +779,9 @@ body,
   .app--game {
     display: grid;
     grid-template-columns: minmax(0, 1fr) minmax(150px, 26%);
-    grid-template-rows: auto auto auto minmax(0, 1fr) auto;
+    grid-template-rows: auto auto minmax(0, 1fr) auto;
     grid-template-areas:
       "hud     hud"
-      "board   legend"
       "board   status"
       "board   sheet"
       "commit  commit";
@@ -843,7 +791,6 @@ body,
   .app--game .hud { grid-area: hud; }
   .app--game .game-area { grid-area: board; }
   .app--game .commit-bar { grid-area: commit; }
-  .app--game .game-legends { grid-area: legend; }
   .app--game .status-strip { grid-area: status; }
 
   .app--game .info-sheet {
@@ -854,7 +801,4 @@ body,
     min-height: 0;
   }
 
-  .app--game .game-legends__body {
-    max-height: 40vh;
-  }
 }

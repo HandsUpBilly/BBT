@@ -16,7 +16,7 @@ import { ConfirmDialog } from './ConfirmDialog';
 import { BlockOutcomePanel } from './BlockOutcomePanel';
 import { blockActionAvailability } from './blockActionAvailability';
 import { UserMenu } from './UserMenu';
-import { LegendShell } from './LegendShell';
+import { LegendMenu } from './LegendMenu';
 import { MobileInfoSheet } from './MobileInfoSheet';
 import { ActionLogMenu } from './ActionLogMenu';
 import { AppFooter } from './AppFooter';
@@ -40,7 +40,6 @@ import type {
 } from './types';
 import { key, computeZoomBounds } from './bfs';
 import type { ZoomBounds } from './bfs';
-import { SKILL_GROUPS, SKILL_MARKERS } from './skillPresentation';
 import { useCompactLayout, useHoverCapable, usePortraitViewport } from './useMediaQuery';
 import './App.css';
 import './PlaybookTheme.css';
@@ -1123,6 +1122,14 @@ export default function App() {
           <span className="hud__btn-text">Restart</span>
         </button>
 
+        {/* The key is reference material on every screen size, so it is behind
+            this button on every screen size — see LegendMenu. */}
+        <LegendMenu
+          isPassTargeting={state.isPassTargeting}
+          isBlockTargeting={state.isBlockTargeting}
+          hasPushTargets={!!state.pendingBlockResolution}
+        />
+
         {/* Touch only — the pointer-fine layout keeps the log in its side
             column, where it is always visible and costs nothing. */}
         {compact && (
@@ -1132,55 +1139,6 @@ export default function App() {
         {reportButton('hud')}
         <UserMenu name={identityName} onSignOut={handleSignOut} />
       </header>
-
-      {/* On touch the legend goes behind a disclosure. It costs 53-61px
-          permanently to explain colours, which is a fifth of what the board
-          gets on a phone — and it is reference material, consulted once,
-          not a running readout. */}
-      <LegendShell collapsible={compact}>
-        <div className="legend" role="list" aria-label="Pitch state legend">
-          <span className="legend__item legend__item--tz" role="listitem">Tackle Zone</span>
-          <span className="legend__item legend__item--free" role="listitem">Free Move</span>
-          <span className="legend__item legend__item--gfi" role="listitem">Go For It · outer 2 squares</span>
-          <span className="legend__item legend__item--dodge" role="listitem">Dodge Required</span>
-          {state.isPassTargeting && <>
-            <span className="legend__item legend__item--pass-range legend__item--range-quick" role="listitem">Quick Pass · 0–3 squares</span>
-            <span className="legend__item legend__item--pass-range legend__item--range-short" role="listitem">Short Pass · 4–6 squares</span>
-            <span className="legend__item legend__item--pass-range legend__item--range-long" role="listitem">Long Pass · 7–9 squares</span>
-            <span className="legend__item legend__item--pass-range legend__item--range-bomb" role="listitem">Long Bomb · 10–13 squares</span>
-          </>}
-          {state.isBlockTargeting && (
-            <span className="legend__item legend__item--block-target" role="listitem">Block Target</span>
-          )}
-          {state.pendingBlockResolution && (
-            <span className="legend__item legend__item--push-target" role="listitem">Push-Back Square</span>
-          )}
-        </div>
-
-        <div className="skill-keys">
-          <div className="legend legend--skill-key" role="list" aria-label="Skill group color key">
-            <span className="legend__key-title" aria-hidden="true">Skill groups</span>
-            {SKILL_GROUPS.map(group => (
-              <span className="legend__item legend__item--skill" role="listitem" key={group.id}>
-                <span className={`legend__skill-swatch legend__skill-swatch--${group.id}`} aria-hidden="true" />
-                {group.label}
-              </span>
-            ))}
-          </div>
-
-          <div className="legend legend--skill-key" role="list" aria-label="Exact skill marker key">
-            <span className="legend__key-title" aria-hidden="true">Skill markers</span>
-            {SKILL_MARKERS.map(marker => (
-              <span className="legend__item legend__item--skill" role="listitem" key={marker.skill}>
-                <span className={`legend__skill-marker legend__skill-marker--${marker.className}`} aria-hidden="true">
-                  {marker.letter}
-                </span>
-                {marker.skill}
-              </span>
-            ))}
-          </div>
-        </div>
-      </LegendShell>
 
       <div className="game-area">
         <div className="side-col side-col--left">

@@ -47,7 +47,9 @@ npm --prefix client run test:e2e:mobile   # the four phone profiles
 ```
 
 `client/e2e/` asserts on measured geometry: square size, tap targets, HUD
-budget, no clipping, no horizontal overflow, and the two-stage tap contract.
+budget, no clipping, no horizontal overflow, the two-stage tap contract, and
+that the toolbar panels (`legend.spec.ts`, `actionLog.spec.ts`) fit their
+viewport and do not resize the board when opened.
 
 **Not wired into `npm run verify`, deliberately.** The specs need browser
 binaries that `npm install` does not fetch, so including them would fail a
@@ -91,6 +93,7 @@ check `git diff --stat` and file paths.
 | `client/src/editor/editorValidation.test.ts` | vitest | client/server validation parity, series resolution |
 | `client/src/editor/AdminStatistics.test.tsx` | vitest | admin statistics loading and personal-best labeling |
 | `client/src/blockControls.test.tsx` | vitest | menu placement, outcome selectability |
+| `client/src/LegendMenu.test.tsx` | vitest | key panel open/close/Escape-containment, contextual entries and the trigger count |
 | `client/src/attemptStore.test.ts` | vitest | attempt recording, the per-puzzle cap, damaged/absent storage, trend maths |
 | `client/src/AttemptHistory.test.tsx` | vitest | run table order, best marking, chart points, the chart's spoken label, clear-with-confirm |
 

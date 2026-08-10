@@ -97,9 +97,10 @@ test.describe('game screen layout', () => {
     expect(hud.height, `HUD is ${hud.height.toFixed(0)}px tall`).toBeLessThanOrEqual(68);
 
     // Whatever the chrome costs, the board outweighs all of it put together.
-    const legend = await boxOf(page.locator('.game-legends'));
+    // The key used to be counted here as a permanent row; it is behind a
+    // toolbar button now and costs nothing until it is opened.
     const status = await boxOf(page.locator('.status-strip'));
-    const chrome = hud.height + legend.height + status.height;
+    const chrome = hud.height + status.height;
     expect(
       grid.height,
       `board ${grid.height.toFixed(0)}px vs ${chrome.toFixed(0)}px of chrome`,
