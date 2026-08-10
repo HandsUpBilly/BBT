@@ -4,6 +4,12 @@ import './PlayerPanel.css';
 interface Props {
   piece: PlayerPiece | null;
   side: 'left' | 'right';
+  /**
+   * Which half of a two-player action this card is, when two are stacked.
+   * Omitted for the ordinary single card — one card needs no label saying it
+   * is the one card.
+   */
+  role?: 'acting' | 'target';
 }
 
 // Keep in sync with the same map in Pitch.tsx.
@@ -74,7 +80,7 @@ function StatBadge({ team, stat, label, value }: StatProps) {
   );
 }
 
-export function PlayerPanel({ piece, side }: Props) {
+export function PlayerPanel({ piece, side, role }: Props) {
   if (!piece) {
     return <div className={`panel panel--${side} panel--empty`} />;
   }
@@ -87,7 +93,20 @@ export function PlayerPanel({ piece, side }: Props) {
     : 'panel__portrait panel__portrait--legacy';
 
   return (
-    <div className={`panel panel--${side} panel--${piece.team}`}>
+    <div
+      className={[
+        'panel',
+        `panel--${side}`,
+        `panel--${piece.team}`,
+        role ? `panel--${role}` : '',
+      ].filter(Boolean).join(' ')}
+    >
+      {role && (
+        <div className={`panel__role-tag panel__role-tag--${role}`}>
+          {role === 'acting' ? 'Acting' : 'Target'}
+        </div>
+      )}
+
       {/* Portrait */}
       <div className="panel__portrait-wrap">
         <img

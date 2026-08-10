@@ -94,6 +94,8 @@ check `git diff --stat` and file paths.
 | `client/src/editor/AdminStatistics.test.tsx` | vitest | admin statistics loading and personal-best labeling |
 | `client/src/blockControls.test.tsx` | vitest | menu placement, outcome selectability |
 | `client/src/LegendMenu.test.tsx` | vitest | key panel open/close/Escape-containment, contextual entries and the trigger count |
+| `client/src/playerComparison.test.ts` | vitest | when the rail shows two cards, which is the acting one, and the single-card fallbacks |
+| `client/src/PlayerPanel.test.tsx` | vitest | the Acting/Target captions and that both cards keep their stats |
 | `client/src/attemptStore.test.ts` | vitest | attempt recording, the per-puzzle cap, damaged/absent storage, trend maths |
 | `client/src/AttemptHistory.test.tsx` | vitest | run table order, best marking, chart points, the chart's spoken label, clear-with-confirm |
 

@@ -120,6 +120,37 @@ their owning components.
 - Decorative textures are CSS-only, ignore pointer events, and respect
   `prefers-reduced-motion`. Focus-visible uses the shared brass ring.
 
+### Two player cards during a two-player action
+
+`playerComparison(state, selected, hovered)` decides what the right rail shows.
+Normally one card — the hovered piece, falling back to the selected one. But
+while a block, blitz, pass or hand-off is being aimed, the acting piece keeps
+its card and the hovered player gets a second one below it, tagged **Acting**
+and **Target**.
+
+The reason is that those actions *are* comparisons — attacker ST against
+defender ST, receiver AG against the range — and a single card that swapped on
+hover made that a memory test: look at the attacker, move the cursor, the
+attacker is gone.
+
+`isTwoPlayerAction` deliberately includes more than the three targeting flags:
+`pendingBlock` covers a declared Blitz during its movement step (the attacker is
+already committed to hitting someone), and `blockChoice` /
+`pendingBlockResolution` cover the outcome checklist and the push-back choice,
+which are still about the same two players.
+
+Two cards have to fit a rail sized for one. `.side-col--comparing` drops the
+portrait's square aspect ratio and hides the crest watermark — the portrait is
+the only part worth most of its height, and the stats are the part being read.
+The rail also gets `align-self: stretch` and `overflow-y: auto` as a backstop:
+`.game-area` aligns its columns to `flex-start`, so without the stretch the rail
+is only as tall as its content and could never scroll — it would simply grow
+past the board.
+
+Touch has no hover, but `handlePieceClick` sets the same inspected piece a
+cursor would, so the comparison reaches `MobileInfoSheet` by the same route; its
+tab reads "A vs B" while a pair is showing.
+
 ### The pitch key is a toolbar panel, at every size
 
 `LegendMenu` — the pitch-state chips (tackle zone, free move, GFI, dodge) and
