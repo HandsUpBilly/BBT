@@ -867,7 +867,8 @@
 }
 
 .app--archive .leaderboard,
-.app--archive .score-summary {
+.app--archive .score-summary,
+.app--archive .settings-screen {
   position: relative;
   width: min(900px, calc(100% - 40px));
   max-width: 900px;
@@ -882,18 +883,21 @@
 }
 
 .app--archive .leaderboard__header,
-.app--archive .score-summary__header {
+.app--archive .score-summary__header,
+.app--archive .settings-screen__header {
   padding-bottom: 18px;
   border-bottom: 1px solid var(--color-border-subtle);
 }
 
 .app--archive .leaderboard__header > div,
-.app--archive .score-summary__header > div {
+.app--archive .score-summary__header > div,
+.app--archive .settings-screen__header > div {
   flex: 1;
 }
 
 .app--archive .leaderboard__title,
-.app--archive .score-summary__name {
+.app--archive .score-summary__name,
+.app--archive .settings-screen__title {
   color: var(--color-text-strong);
   font-family: var(--font-display);
   font-size: clamp(1.4rem, 4vw, 2rem);
@@ -906,8 +910,19 @@
 .app--archive .leaderboard__subtitle,
 .app--archive .score-summary__meta,
 .app--archive .leaderboard__state,
-.app--archive .score-summary__empty {
+.app--archive .score-summary__empty,
+.app--archive .settings-screen__subtitle {
   color: var(--color-text-muted);
+}
+
+.app--archive .settings-screen__section-title {
+  font-family: var(--font-display);
+  letter-spacing: 0.02em;
+}
+
+.app--archive .settings-screen__token-option--selected {
+  font-family: var(--font-display);
+  letter-spacing: 0.03em;
 }
 
 .app--archive .leaderboard__state--error {
@@ -1347,7 +1362,8 @@
   }
 
   .app--archive .leaderboard,
-  .app--archive .score-summary {
+  .app--archive .score-summary,
+  .app--archive .settings-screen {
     width: calc(100% - 28px);
     margin: 28px auto;
     padding: 26px 22px;
@@ -1456,7 +1472,8 @@
   }
 
   .app--archive .leaderboard,
-  .app--archive .score-summary {
+  .app--archive .score-summary,
+  .app--archive .settings-screen {
     width: calc(100% - 24px);
     min-height: calc(100vh - 48px);
     margin: 20px auto;
@@ -1464,7 +1481,8 @@
   }
 
   .app--archive .leaderboard__header,
-  .app--archive .score-summary__header {
+  .app--archive .score-summary__header,
+  .app--archive .settings-screen__header {
     gap: 9px;
   }
 
@@ -1512,12 +1530,14 @@
   }
 
   .app--archive .leaderboard__header,
-  .app--archive .score-summary__header {
+  .app--archive .score-summary__header,
+  .app--archive .settings-screen__header {
     flex-wrap: wrap;
   }
 
   .app--archive .leaderboard__header > div,
-  .app--archive .score-summary__header > div {
+  .app--archive .score-summary__header > div,
+  .app--archive .settings-screen__header > div {
     min-width: calc(100% - 92px);
   }
 }

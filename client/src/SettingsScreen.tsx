@@ -1,0 +1,199 @@
+import { useRef, useState } from 'react';
+import { ConfirmDialog } from './ConfirmDialog';
+import { encodeAvatarFile, validateAvatarFile, AVATAR_ALLOWED_TYPES } from './avatarImage';
+import type { TokenStyle } from './prefs';
+import './SettingsScreen.css';
+
+interface Props {
+  identityName: string;
+  isGuest: boolean;
+  onRename: (name: string) => void;
+  avatar: string | undefined;
+  onAvatarChange: (dataUrl: string | undefined) => void;
+  tokenStyle: TokenStyle;
+  onTokenStyleChange: (style: TokenStyle) => void;
+  onBack: () => void;
+}
+
+function initials(name: string): string {
+  const trimmed = name.trim();
+  if (!trimmed) return '?';
+  const parts = trimmed.split(/\s+/);
+  const first = parts[0]?.[0] ?? '';
+  const last = parts.length > 1 ? parts[parts.length - 1]?.[0] ?? '' : '';
+  return (first + last).toUpperCase();
+}
+
+const AVATAR_ACCEPT = AVATAR_ALLOWED_TYPES.join(',');
+
+export function SettingsScreen({
+  identityName, isGuest, onRename,
+  avatar, onAvatarChange,
+  tokenStyle, onTokenStyleChange,
+  onBack,
+}: Props) {
+  const [name, setName] = useState(identityName);
+  const [pendingRename, setPendingRename] = useState<string | null>(null);
+  const [avatarError, setAvatarError] = useState<string>();
+  const [avatarBusy, setAvatarBusy] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const trimmedName = name.trim();
+  const nameChanged = trimmedName.length > 0 && trimmedName !== identityName;
+
+  function commitRename(newName: string) {
+    onRename(newName);
+    setName(newName);
+  }
+
+  function handleSaveName() {
+    if (!nameChanged) return;
+    // A guest's personal best is matched by name, not by an account id (see
+    // docs/agent-context/leaderboard-and-auth.md), so renaming here strands it
+    // under the old name. A signed-in player is matched by their Google
+    // subject id and keeps their history regardless of what they're called.
+    if (isGuest) {
+      setPendingRename(trimmedName);
+    } else {
+      commitRename(trimmedName);
+    }
+  }
+
+  async function handleAvatarFile(file: File) {
+    setAvatarError(undefined);
+    const invalidReason = validateAvatarFile(file);
+    if (invalidReason) {
+      setAvatarError(invalidReason);
+      return;
+    }
+    setAvatarBusy(true);
+    try {
+      const dataUrl = await encodeAvatarFile(file);
+      onAvatarChange(dataUrl);
+    } catch (error) {
+      setAvatarError(error instanceof Error ? error.message : 'Could not process that image.');
+    } finally {
+      setAvatarBusy(false);
+    }
+  }
+
+  return (
+    <div className="settings-screen">
+      <div className="settings-screen__header">
+        <button className="lb-back-btn" onClick={onBack}>← Back</button>
+        <div>
+          <h2 className="settings-screen__title">Settings</h2>
+          <p className="settings-screen__subtitle">Your profile and display preferences</p>
+        </div>
+      </div>
+
+      <section className="settings-screen__section">
+        <h3 className="settings-screen__section-title">Display name</h3>
+        <p className="settings-screen__section-help">
+          This is the name shown on leaderboards and reports.
+          {isGuest && ' Changing it starts a new personal best — your current one stays under the old name.'}
+        </p>
+        <div className="settings-screen__name-row">
+          <input
+            className="settings-screen__name-input"
+            type="text"
+            maxLength={32}
+            value={name}
+            onChange={e => setName(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && handleSaveName()}
+            aria-label="Display name"
+          />
+          <button className="btn btn--primary" disabled={!nameChanged} onClick={handleSaveName}>
+            Save
+          </button>
+        </div>
+      </section>
+
+      <section className="settings-screen__section">
+        <h3 className="settings-screen__section-title">Avatar</h3>
+        {isGuest ? (
+          <p className="settings-screen__section-help">Sign in with Google to set a profile photo.</p>
+        ) : (
+          <>
+            <p className="settings-screen__section-help">
+              Shown only to you, on this device — not on leaderboards.
+            </p>
+            <div className="settings-screen__avatar-row">
+              <span className="settings-screen__avatar-preview">
+                {avatar ? (
+                  <img src={avatar} alt="" />
+                ) : (
+                  <span className="settings-screen__avatar-fallback">{initials(identityName)}</span>
+                )}
+              </span>
+              <div className="settings-screen__avatar-actions">
+                <input
+                  ref={fileInputRef}
+                  className="settings-screen__file-input"
+                  type="file"
+                  accept={AVATAR_ACCEPT}
+                  onChange={e => {
+                    const file = e.target.files?.[0];
+                    e.target.value = '';
+                    if (file) void handleAvatarFile(file);
+                  }}
+                />
+                <button
+                  className="btn btn--secondary"
+                  disabled={avatarBusy}
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  {avatarBusy ? 'Processing…' : avatar ? 'Change photo' : 'Upload photo'}
+                </button>
+                {avatar && (
+                  <button className="btn btn--ghost" onClick={() => onAvatarChange(undefined)}>
+                    Remove
+                  </button>
+                )}
+              </div>
+            </div>
+            {avatarError && <p className="settings-screen__error" role="alert">{avatarError}</p>}
+          </>
+        )}
+      </section>
+
+      <section className="settings-screen__section">
+        <h3 className="settings-screen__section-title">Player tokens</h3>
+        <p className="settings-screen__section-help">
+          Choose how players are drawn on the pitch. Skill rings and badges stay either way.
+        </p>
+        <div className="settings-screen__token-toggle" role="radiogroup" aria-label="Player token style">
+          <button
+            type="button"
+            role="radio"
+            aria-checked={tokenStyle === 'portrait'}
+            className={`settings-screen__token-option${tokenStyle === 'portrait' ? ' settings-screen__token-option--selected' : ''}`}
+            onClick={() => onTokenStyleChange('portrait')}
+          >
+            Portrait art
+          </button>
+          <button
+            type="button"
+            role="radio"
+            aria-checked={tokenStyle === 'simple'}
+            className={`settings-screen__token-option${tokenStyle === 'simple' ? ' settings-screen__token-option--selected' : ''}`}
+            onClick={() => onTokenStyleChange('simple')}
+          >
+            Simplified icons
+          </button>
+        </div>
+      </section>
+
+      {pendingRename !== null && (
+        <ConfirmDialog
+          title="Change display name?"
+          message={`Your personal bests are tracked under "${identityName}". Renaming to "${pendingRename}" starts fresh — the old name's scores stay on the board under that name.`}
+          confirmLabel="Change Name"
+          cancelLabel="Keep Current Name"
+          onConfirm={() => { commitRename(pendingRename); setPendingRename(null); }}
+          onCancel={() => setPendingRename(null)}
+        />
+      )}
+    </div>
+  );
+}

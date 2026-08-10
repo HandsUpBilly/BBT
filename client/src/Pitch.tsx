@@ -6,6 +6,7 @@ import type { ZoomBounds } from './bfs';
 import { buildMovementTrailMap, trailPolylinePoints } from './movementTrail';
 import type { PathTrail } from './movementTrail';
 import { skillGroupsFor, skillMarkersFor } from './skillPresentation';
+import type { TokenStyle } from './prefs';
 import './Pitch.css';
 
 function BallIcon({ ghost, loose }: { ghost?: boolean; loose?: boolean }) {
@@ -67,10 +68,18 @@ function PieceIcon({ team, role, skills }: { team: Team; role?: string; skills: 
   const groups = skillGroupsFor(skills);
   const markers = skillMarkersFor(skills);
 
+  // Always rendered, hidden by CSS unless .pitch--simple is active — see the
+  // note above useMediaQuery's compact/hover hooks on why presentation
+  // choices belong in the stylesheet rather than a second render path here.
+  // The disc keeps the skill-group ring and letter-badge layers below
+  // unchanged; only the portrait bitmap and its team tint are swapped out.
+  const roleCode = (role ?? DEFAULT_ROLE[team]).slice(0, 2).toUpperCase();
+
   let portrait = (
     <div className="piece__portrait-frame">
       <img className={portraitClass} src={src} alt="" draggable={false} />
       <span className="piece__team-tint" />
+      <span className="piece__role-code">{roleCode}</span>
       <span className="piece__state-overlay" />
     </div>
   );
@@ -313,11 +322,13 @@ interface Props {
    * 15 wide gives 24px.
    */
   orientation?: PitchOrientation;
+  /** 'simple' swaps the portrait art for a team-coloured role disc; skill rings and badges are unaffected. */
+  tokenStyle?: TokenStyle;
 }
 
 export function Pitch({
   state, onSquareClick, onPieceClick, onSquareHover, onSquareLeave, zoomBounds,
-  orientation = 'landscape',
+  orientation = 'landscape', tokenStyle = 'portrait',
 }: Props) {
   const portrait = orientation === 'portrait';
   const pieceMap = useMemo(
@@ -644,6 +655,7 @@ export function Pitch({
     'pitch',
     `pitch--${orientation}`,
     zoomBounds ? 'pitch--zoomed' : '',
+    tokenStyle === 'simple' ? 'pitch--simple' : '',
   ].filter(Boolean).join(' ');
 
   // Drives the fit-to-container calc in Pitch.css. A custom property rather

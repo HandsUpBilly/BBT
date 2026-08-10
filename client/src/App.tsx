@@ -24,9 +24,12 @@ import { CommitBar } from './CommitBar';
 import { SuccessChanceReadout } from './SuccessChanceReadout';
 import { ReportProblemButton } from './ReportProblemButton';
 import { ReportProblemModal } from './ReportProblemModal';
+import { SettingsScreen } from './SettingsScreen';
 import { submitScore, fetchLeaderboard, submitSeriesScore, fetchSeriesLeaderboard, fetchProgress, ApiError } from './api';
 import type { ProgressData } from './api';
 import { recordAttempt } from './attemptStore';
+import { readAllPrefs, writePrefs, GUEST_PREFS_KEY } from './prefs';
+import type { PlayerPrefs } from './prefs';
 import { playerComparison } from './playerComparison';
 import { resolveSeriesScenarios } from './series';
 import { loadScenarioData } from './scenarios/runtime';
@@ -319,6 +322,21 @@ export default function App() {
     setGoogleAliases(aliases => ({ ...aliases, [currentUser.id]: alias }));
     writeGoogleAlias(currentUser.id, alias);
   }, [currentUser]);
+  // Per-account display prefs (avatar, player token style) — same keyed-map
+  // shape as googleAliases above, with guests sharing the fixed key
+  // GUEST_PREFS_KEY rather than being keyed by name, since name is itself
+  // editable on the same screen. See prefs.ts.
+  const identityKey = currentUser?.id ?? GUEST_PREFS_KEY;
+  const [allPrefs, setAllPrefs] = useState(readAllPrefs);
+  const prefs = allPrefs[identityKey] ?? {};
+  const setPrefs = useCallback((patch: Partial<PlayerPrefs>) => {
+    setAllPrefs(all => ({ ...all, [identityKey]: { ...all[identityKey], ...patch } }));
+    writePrefs(identityKey, patch);
+  }, [identityKey]);
+  // Which screen "Back" returns to from Settings — it can be opened from the
+  // game HUD, so it must not always land on home, and mid-puzzle game state
+  // lives above appMode and survives the round trip untouched.
+  const [settingsReturnMode, setSettingsReturnMode] = useState<AppMode>('home');
   const [appMode, setAppMode] = useState<AppMode>('home');
   // Re-fetch whenever the player lands on the home/select screen (including on
   // first load) so a scenario published while this tab was open — or before
@@ -480,10 +498,17 @@ export default function App() {
     setAppMode('home');
   }, [currentUser, signOut, setGuestAlias]);
 
+  // Opened from the account menu on every screen it appears on, so it must
+  // remember which one to return to rather than always landing on home.
+  const openSettings = useCallback(() => {
+    setSettingsReturnMode(current => (appMode === 'settings' ? current : appMode));
+    setAppMode('settings');
+  }, [appMode]);
+
   const archiveControls = (
     <div className="app__account-controls">
       {reportButton('header')}
-      <UserMenu name={identityName} onSignOut={handleSignOut} />
+      <UserMenu name={identityName} avatar={prefs.avatar} onSettings={openSettings} onSignOut={handleSignOut} />
     </div>
   );
 
@@ -913,7 +938,7 @@ export default function App() {
           progress={progress}
           userId={currentUser?.id}
           isAdmin={isAdmin}
-          userMenu={<UserMenu name={identityName} onSignOut={handleSignOut} />}
+          userMenu={<UserMenu name={identityName} avatar={prefs.avatar} onSettings={openSettings} onSignOut={handleSignOut} />}
           reportButton={reportButton('header')}
           version={__BBT_VERSION__}
         />
@@ -960,13 +985,34 @@ export default function App() {
   if (effectiveAppMode === 'admin') {
     return (
       <div className="app app--home app--admin app--playbook">
-        <UserMenu name={identityName} onSignOut={handleSignOut} />
+        <UserMenu name={identityName} avatar={prefs.avatar} onSettings={openSettings} onSignOut={handleSignOut} />
         <PuzzleEditor
           onBack={() => setAppMode('home')}
           onPlay={previewPuzzle}
           previewScenario={editorPreviewScenario}
           idToken={idToken}
         />
+        <AppFooter />
+      </div>
+    );
+  }
+
+  if (effectiveAppMode === 'settings') {
+    return (
+      <div className="app app--home app--archive app--playbook">
+        {archiveControls}
+        <SettingsScreen
+          identityName={identityName}
+          isGuest={!currentUser}
+          onRename={currentUser ? setGoogleAlias : setGuestAlias}
+          avatar={prefs.avatar}
+          onAvatarChange={avatar => setPrefs({ avatar })}
+          tokenStyle={prefs.tokenStyle ?? 'portrait'}
+          onTokenStyleChange={tokenStyle => setPrefs({ tokenStyle })}
+          onBack={() => setAppMode(settingsReturnMode)}
+        />
+        {notice}
+        {reportModal}
         <AppFooter />
       </div>
     );
@@ -1142,7 +1188,7 @@ export default function App() {
         )}
 
         {reportButton('hud')}
-        <UserMenu name={identityName} onSignOut={handleSignOut} />
+        <UserMenu name={identityName} avatar={prefs.avatar} onSettings={openSettings} onSignOut={handleSignOut} />
       </header>
 
       <div className="game-area">
@@ -1160,6 +1206,7 @@ export default function App() {
             onSquareLeave={handleSquareLeave}
             zoomBounds={zoomEnabled ? zoomBounds : null}
             orientation={pitchOrientation}
+            tokenStyle={prefs.tokenStyle ?? 'portrait'}
           />
         </main>
 

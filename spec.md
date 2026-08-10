@@ -27,6 +27,7 @@ carries a **Status** line — read it before treating a section as work to do.
 | Block and Blitz Actions | Shipped (with rules simplifications) |
 | BB Tactics — Tabletop Playbook Home Redesign | Shipped |
 | Leaderboard and Report Integrity | **Planned** |
+| Player Config Screen | Phase 1 Shipped, Phase 2 **Planned** |
 
 Durable behavior that has already shipped belongs in `docs/agent-context/`, not
 here. When a plan below ships, move the facts worth keeping into the matching
@@ -4037,3 +4038,109 @@ a backstop.
 - Hovering the acting piece itself, or a piece with no action under way, shows
   one card exactly as before.
 - The pair never widens the page or shrinks the board.
+
+---
+
+# Player Config Screen
+
+**Status:** Phase 1 shipped, local-only. Requested directly: a config screen,
+logged-in-user dependent, starting with avatar upload, display name, and a
+toggle from the current portrait player tokens to something closer to the
+puzzle editor's simplified markers.
+
+## Problem Statement
+
+`UserMenu` already had a "Settings" item — disabled, "Coming soon" — with
+nowhere to send it. Three settings were requested: an uploaded avatar, a
+display-name change, and a simplified alternative to the gameplay portrait
+tokens for players who find the gritty art busy or want a cleaner board.
+
+Two of the three fork immediately on where they're stored. Display name and
+token style are pure client preferences, no different in kind from the guest
+alias or the token color rings already in `localStorage`. An avatar meant to
+appear on a *leaderboard* is public, user-generated content visible to every
+other player — that needs a server, validation independent of the client,
+and a moderation story, none of which exists yet. Building both halves in one
+pass would have meant either shipping the local half now and reworking it once
+the server exists, or blocking the whole screen on the larger piece.
+
+## What ships (Phase 1)
+
+- **Display name.** Reuses the identity gate's existing `setGoogleAlias` /
+  `setGuestAlias` — no new storage. A guest rename is confirmed first (see
+  below); a signed-in rename commits immediately, since it's matched by
+  `userId` and keeps its history either way.
+- **Avatar — local only.** `client/src/avatarImage.ts` validates type
+  (PNG/JPEG/WebP) and source size (≤8MB), then decodes, center-crops, and
+  downsamples to a fixed 256×256 WebP data URL before anything is stored.
+  Held in `client/src/prefs.ts` (`bbt.prefs.v1`), visible in `UserMenu` and the
+  Settings screen on this device only — **not** on leaderboards, which is
+  exactly the boundary that keeps it out of moderation/reporting territory for
+  now. Gated on being signed in, even though nothing about local storage
+  strictly requires it, so the gate doesn't move once Phase 2 (below) makes it
+  a real requirement.
+- **Player token style.** A `tokenStyle: 'portrait' | 'simple'` preference,
+  also in `prefs.ts`. `'simple'` swaps the portrait bitmap and team tint for a
+  team-coloured disc with the two-letter role code — the puzzle editor's own
+  `.editor-piece` marker — while leaving the skill-group rings and letter
+  badges untouched. See "Simplified player token style" in
+  `docs/agent-context/frontend-flow.md` for why this is a single CSS class on
+  `<Pitch>` rather than a prop threaded through the memoized `Square`.
+- **New `'settings'` AppMode.** Opened from `UserMenu` on every screen that
+  renders it (home, archive screens, Admin Mode, game HUD) and returns to
+  whichever one opened it via a tracked `settingsReturnMode`, not always home
+  — see "Settings Screen and Player Prefs" in `frontend-flow.md`.
+
+### Guest rename orphans a personal best — the screen says so
+
+Guests are matched by `name` on the leaderboard (`upsertPersonalBest`), not by
+an account id. Renaming a guest is therefore indistinguishable from a new
+player showing up: their existing best stays on the board under the old name,
+unreachable from the new one. `SettingsScreen` shows a `ConfirmDialog`
+explaining this before committing a guest rename. A signed-in rename has no
+such cost — matched by `userId` regardless of display name — so it commits
+immediately.
+
+## Non-goals (Phase 1)
+
+- **No public avatar.** Not shown on any leaderboard row, not uploaded
+  anywhere, not tied to `LeaderboardEntry`.
+- **No cross-device sync.** Same posture as the guest alias and attempt
+  history: `localStorage`, per browser.
+- **No avatar for guests.** No verified identity to attach one to under the
+  Phase 2 design below; gating it now avoids a second migration later.
+
+## Future Enhancements — Phase 2 (public avatar)
+
+Making the avatar visible to other players is a materially larger feature,
+deliberately deferred rather than folded in:
+
+- **Storage + read path.** Netlify Blobs keyed by Google subject id, behind a
+  new authenticated `PUT` and a public `GET /api/avatar/:userId` — mirrored in
+  `server/index.js` for local dev, same split as every other endpoint in
+  `netlify-deploy.md`.
+- **Independent server-side validation.** The client-side resize is a
+  convenience, not a control — same posture as `shared/scoreValidation.js`.
+  The endpoint must re-check content type, byte length, and decoded dimensions
+  itself.
+- **Rendering needs no new field.** `LeaderboardEntry` already carries
+  `userId` via `entryAuthFields()`; `Leaderboard.tsx` and
+  `SeriesLeaderboard.tsx` could request `/api/avatar/{userId}` with a fallback
+  to initials on error, with no change to what's stored in an entry.
+- **Moderation.** Public user-uploaded images need a report path and an admin
+  removal action — the single largest piece of work in this phase, and the
+  reason it stayed out of Phase 1 rather than riding along as a rider.
+- **Rate limiting.** The existing `shared/rateLimit.js` bucket-by-verified-user
+  approach applies directly to the upload endpoint.
+
+## Acceptance Criteria (Phase 1)
+
+- Settings is reachable from the account menu on every screen it appears on,
+  and Back returns to that same screen, including mid-puzzle.
+- Changing the display name updates it everywhere `identityName` is used,
+  immediately for a signed-in player, after confirmation for a guest.
+- Uploading a non-image or oversized file shows an error and leaves the
+  existing avatar and preference state untouched.
+- The token style toggle changes gameplay pitch tokens app-wide immediately;
+  skill-group rings and letter badges are visible in both styles.
+- Nothing added in this phase makes a network request.

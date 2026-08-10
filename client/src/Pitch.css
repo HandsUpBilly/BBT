@@ -463,6 +463,47 @@
   background: rgba(207, 83, 64, 0.3);
 }
 
+/* Simplified token style — a team-coloured role disc in place of the portrait
+   bitmap, matching the puzzle editor's marker (see .editor-piece). Skill-group
+   rings and letter badges are separate layers around/on top of this frame and
+   are unaffected; only the art inside the frame changes. Always in the DOM
+   (see PieceIcon in Pitch.tsx) and toggled here so no component re-renders
+   390 memoized squares just to switch style. */
+.piece__role-code {
+  display: none;
+}
+
+.pitch--simple .piece__portrait {
+  display: none;
+}
+
+.pitch--simple .piece__team-tint {
+  display: none;
+}
+
+.pitch--simple .piece--human .piece__portrait-frame { background: var(--team-human-deep); }
+.pitch--simple .piece--orc .piece__portrait-frame { background: var(--team-orc-deep); }
+
+.pitch--simple .piece__role-code {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  font-family: var(--font-mono);
+  font-weight: 900;
+  font-size: 30cqi;
+  color: rgba(244, 238, 227, 0.92);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.75);
+}
+
+@supports not (font-size: 1cqi) {
+  .pitch--simple .piece__role-code {
+    font-size: 0.62rem;
+  }
+}
+
 .piece__state-overlay {
   z-index: 2;
   background: transparent;
