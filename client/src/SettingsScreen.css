@@ -207,11 +207,45 @@
 .settings-screen__sample-token--clear {
   border: 5px solid #214f91;
   background: var(--sample-team);
+  position: relative;
+  overflow: hidden;
   box-shadow: inset 0 0 0 1px rgba(244, 238, 227, 0.45), 0 2px 5px rgba(0, 0, 0, 0.55);
 }
 
 .settings-screen__sample-token--clear.settings-screen__sample-token--orc {
   border-color: #52bdd4;
+}
+
+.settings-screen__sample-token--clear .piece__role-glyph {
+  display: block;
+  position: absolute;
+  width: 47%;
+  height: 47%;
+  top: 7%;
+  fill: #f4eee3;
+  stroke: #111614;
+  stroke-width: 1.2;
+  stroke-linejoin: round;
+}
+
+.settings-screen__sample-token--clear .piece__role-glyph-detail {
+  fill: none;
+  stroke: #111614;
+  stroke-width: 1.35;
+  stroke-linecap: round;
+}
+
+.settings-screen__sample-token--clear > span {
+  position: absolute;
+  left: 14%;
+  right: 14%;
+  bottom: 5%;
+  line-height: 1.05;
+  background: rgba(8, 11, 12, 0.72);
+  border: 1px solid rgba(244, 238, 227, 0.42);
+  border-radius: 2px;
+  text-align: center;
+  font-size: 0.52rem;
 }
 
 .settings-screen__sample-token--plain {

@@ -473,6 +473,10 @@
   display: none;
 }
 
+.piece__role-glyph {
+  display: none;
+}
+
 .pitch--simple .piece__portrait {
   display: none;
 }
@@ -489,17 +493,57 @@
   align-items: center;
   justify-content: center;
   position: absolute;
-  inset: 0;
+  left: 10%;
+  right: 10%;
+  bottom: 5%;
+  height: 29%;
   z-index: 1;
   font-family: var(--font-mono);
   font-weight: 900;
-  font-size: 30cqi;
+  font-size: 24cqi;
   color: rgba(244, 238, 227, 0.92);
+  background: rgba(8, 11, 12, 0.7);
+  border: 1px solid rgba(222, 217, 203, 0.42);
+  border-radius: 18%;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.75);
+}
+
+.pitch--simple:not(.pitch--plain) .piece__role-glyph {
+  display: block;
+  position: absolute;
+  z-index: 1;
+  width: 56%;
+  height: 56%;
+  top: 8%;
+  left: 22%;
+  fill: rgba(244, 238, 227, 0.94);
+  stroke: rgba(14, 16, 16, 0.8);
+  stroke-width: 1.2;
+  stroke-linejoin: round;
+  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.75));
+}
+
+.pitch--simple:not(.pitch--plain) .piece__role-glyph-detail {
+  fill: none;
+  stroke: rgba(14, 16, 16, 0.88);
+  stroke-width: 1.35;
+  stroke-linecap: round;
+}
+
+.pitch--plain .piece__role-code {
+  inset: 0;
+  height: auto;
+  font-size: 30cqi;
+  background: transparent;
+  border: 0;
 }
 
 @supports not (font-size: 1cqi) {
   .pitch--simple .piece__role-code {
+    font-size: 0.52rem;
+  }
+
+  .pitch--plain .piece__role-code {
     font-size: 0.62rem;
   }
 }
@@ -666,10 +710,10 @@
    carried ball clear of those letters instead of covering the middle of the
    token. Loose balls are square-level markers and do not use this rule. */
 .pitch--simple .piece > .ball-marker {
-  width: 48%;
-  height: 48%;
-  top: 24%;
-  left: 76%;
+  width: 38%;
+  height: 38%;
+  top: 12%;
+  left: 86%;
   filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.8));
 }
 
