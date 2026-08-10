@@ -9,11 +9,12 @@
 html,
 body,
 #root {
-  height: 100%;
-  /* dvh tracks the viewport as mobile browser chrome slides in and out; vh is
-     the *large* viewport, so a 100vh layout sits partly under the URL bar for
-     as long as it is showing. vh first as the fallback for anything without
-     dvh support. */
+  /* No explicit `height` here: on some browsers a `height: 100%` chain up
+     html/body/#root caps the document's scrollable area at the viewport,
+     clipping any content that overflows it instead of letting the page
+     grow and scroll — the same trap the `.app` comment below guards
+     against, one level higher up the tree. min-height alone gives content
+     room to grow past a short viewport. */
   min-height: 100vh;
   min-height: 100dvh;
   background-color: var(--color-bg);
