@@ -5,7 +5,6 @@ import type { PitchOrientation } from './Pitch';
 import { PieceMenu } from './PieceMenu';
 import type { PieceMenuAction } from './PieceMenu';
 import { PlayerPanel } from './PlayerPanel';
-import { DiceLog } from './DiceLog';
 import { ScenarioSelect } from './ScenarioSelect';
 import { SubmitModal } from './SubmitModal';
 import { Leaderboard } from './Leaderboard';
@@ -1181,22 +1180,13 @@ export default function App() {
           hasPushTargets={!!state.pendingBlockResolution}
         />
 
-        {/* Touch only — the pointer-fine layout keeps the log in its side
-            column, where it is always visible and costs nothing. */}
-        {compact && (
-          <ActionLogMenu log={state.actionLog} />
-        )}
+        <ActionLogMenu log={state.actionLog} />
 
         {reportButton('hud')}
         <UserMenu name={identityName} avatar={prefs.avatar} onSettings={openSettings} onSignOut={handleSignOut} />
       </header>
 
       <div className="game-area">
-        <div className="side-col side-col--left">
-          <DiceLog log={state.actionLog} />
-
-        </div>
-
         <main className="pitch-wrapper">
           <Pitch
             state={state}
