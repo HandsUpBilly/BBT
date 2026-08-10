@@ -736,12 +736,12 @@
   justify-content: center;
   gap: 4%;
   pointer-events: none;
-  z-index: 5;
+  /* Dice describe the risk already committed on this square, so they must
+     remain readable even after the moving token arrives there. */
+  z-index: 7;
 }
 
-.gfi-die,
-.dodge-die,
-.pickup-die {
+.square__roll-die {
   /* Scale with the square — fill most of it when alone, share when stacked */
   width: 70%;
   height: 70%;
@@ -751,6 +751,15 @@
   flex-shrink: 1;
   min-width: 0;
   min-height: 0;
+  pointer-events: auto;
+}
+
+.gfi-die,
+.dodge-die,
+.pickup-die {
+  width: 100%;
+  height: 100%;
+  display: block;
 }
 
 /* ── Step numbers ───────────────────────────────────────────────────── */

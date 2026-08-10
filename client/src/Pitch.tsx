@@ -97,28 +97,40 @@ const DOT_POSITIONS: Record<number, [number, number][]> = {
   6: [[5, 4], [15, 4], [5, 10], [15, 10], [5, 16], [15, 16]],
 };
 
+function RollDie({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <span className="square__roll-die" title={label} aria-hidden="true">
+      {children}
+    </span>
+  );
+}
+
 function DiceFace({ target }: { target: number }) {
   const dots = DOT_POSITIONS[target] ?? DOT_POSITIONS[6];
   return (
-    <svg className="dodge-die" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-      <rect x="1" y="1" width="18" height="18" rx="3" ry="3"
-        fill="rgba(30,20,10,0.75)" stroke="rgba(255,160,0,0.9)" strokeWidth="1.5" />
-      {dots.map(([cx, cy], i) => (
-        <circle key={i} cx={cx} cy={cy} r="2" fill="rgba(255,200,80,0.95)" />
-      ))}
-    </svg>
+    <RollDie label={`Dodge roll: ${target}+`}>
+      <svg className="dodge-die" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+        <rect x="1" y="1" width="18" height="18" rx="3" ry="3"
+          fill="rgba(30,20,10,0.75)" stroke="rgba(255,160,0,0.9)" strokeWidth="1.5" />
+        {dots.map(([cx, cy], i) => (
+          <circle key={i} cx={cx} cy={cy} r="2" fill="rgba(255,200,80,0.95)" />
+        ))}
+      </svg>
+    </RollDie>
   );
 }
 
 function GfiFace() {
   // Die showing face 2 — blue tint to distinguish from dodge dice
   return (
-    <svg className="gfi-die" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-      <rect x="1" y="1" width="18" height="18" rx="3" ry="3"
-        fill="rgba(10,20,40,0.80)" stroke="rgba(80,160,255,0.95)" strokeWidth="1.5" />
-      <circle cx="5" cy="5" r="2" fill="rgba(140,210,255,0.95)" />
-      <circle cx="15" cy="15" r="2" fill="rgba(140,210,255,0.95)" />
-    </svg>
+    <RollDie label="Go For It roll: 2+">
+      <svg className="gfi-die" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+        <rect x="1" y="1" width="18" height="18" rx="3" ry="3"
+          fill="rgba(10,20,40,0.80)" stroke="rgba(80,160,255,0.95)" strokeWidth="1.5" />
+        <circle cx="5" cy="5" r="2" fill="rgba(140,210,255,0.95)" />
+        <circle cx="15" cy="15" r="2" fill="rgba(140,210,255,0.95)" />
+      </svg>
+    </RollDie>
   );
 }
 
@@ -127,13 +139,15 @@ function PickupFace({ target }: { target: number }) {
   // Agility test from a dodge Agility test when both dice are shown.
   const dots = DOT_POSITIONS[target] ?? DOT_POSITIONS[6];
   return (
-    <svg className="pickup-die" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-      <rect x="1" y="1" width="18" height="18" rx="3" ry="3"
-        fill="rgba(50,30,0,0.80)" stroke="rgba(255,210,74,0.95)" strokeWidth="1.5" />
-      {dots.map(([cx, cy], i) => (
-        <circle key={i} cx={cx} cy={cy} r="2" fill="rgba(255,224,140,0.95)" />
-      ))}
-    </svg>
+    <RollDie label={`Pick-up roll: ${target}+`}>
+      <svg className="pickup-die" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+        <rect x="1" y="1" width="18" height="18" rx="3" ry="3"
+          fill="rgba(50,30,0,0.80)" stroke="rgba(255,210,74,0.95)" strokeWidth="1.5" />
+        {dots.map(([cx, cy], i) => (
+          <circle key={i} cx={cx} cy={cy} r="2" fill="rgba(255,224,140,0.95)" />
+        ))}
+      </svg>
+    </RollDie>
   );
 }
 
@@ -527,7 +541,7 @@ export function Pitch({
           ? squaresWalked + previewStep.stepNum
           : (isCommitted ? walkedStep ?? null : null);
 
-      const committedDice = !previewStep && !piece ? committedDiceMap.get(k) ?? null : null;
+      const committedDice = !previewStep ? committedDiceMap.get(k) ?? null : null;
       const previewDice: DiceInfo | null = previewStep
         && (previewStep.isGfi || previewStep.requiresDodge || previewStep.pickupTarget !== null)
         ? {
@@ -536,6 +550,7 @@ export function Pitch({
             pickupTarget: previewStep.pickupTarget,
           }
         : null;
+      const displayedDice = previewDice ?? committedDice;
 
       const targetDescription = isHandoffTarget ? 'handoff target'
         : isPassReceiver ? 'pass target'
@@ -560,8 +575,8 @@ export function Pitch({
             describedPiece?.name ?? null, describedPiece?.team ?? null, describedPiece?.role,
             describedPiece?.skills ?? EMPTY_SKILLS, !piece && !!showGhost,
             describedPiece?.down ?? false, describedPiece?.hasBall ?? false, describedPiece?.activated ?? false,
-            isReachable, previewStep?.requiresDodge ? previewStep.dodgeTarget : null,
-            (previewStep?.isGfi ?? false) || isGfiRange, previewStep?.pickupTarget ?? null,
+            isReachable, displayedDice?.dodgeTarget ?? null,
+            (displayedDice?.isGfi ?? false) || isGfiRange, displayedDice?.pickupTarget ?? null,
             isLooseBall, targetDescription,
           )}
           pieceTeam={piece?.team ?? null}
@@ -582,7 +597,7 @@ export function Pitch({
           displayStep={displayStep}
           stepIsPreview={!!previewStep}
           pathTrails={pathTrails}
-          dice={previewDice ?? committedDice}
+          dice={displayedDice}
           ghost={showGhost && selectedPiece
             ? {
                 team: selectedPiece.team,
