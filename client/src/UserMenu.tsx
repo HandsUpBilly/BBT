@@ -3,6 +3,9 @@ import './UserMenu.css';
 
 interface Props {
   name: string;
+  /** A `data:image/...` avatar (see prefs.ts). Falls back to initials when absent or when it fails to load. */
+  avatar?: string;
+  onSettings?: () => void;
   onSignOut?: () => void;
 }
 
@@ -15,7 +18,19 @@ function initials(name: string): string {
   return (first + last).toUpperCase();
 }
 
-export function UserMenu({ name, onSignOut }: Props) {
+/** Renders the avatar image when one is set, falling back to initials on a load error. */
+function Avatar({ name, avatar, large }: { name: string; avatar?: string; large?: boolean }) {
+  const [failed, setFailed] = useState(false);
+  const className = `user-menu__avatar${large ? ' user-menu__avatar--lg' : ''}`;
+  if (avatar && !failed) {
+    // Keyed by the avatar URL so a new upload gets a fresh error state instead
+    // of staying stuck showing the previous failure's fallback.
+    return <img key={avatar} className={className} src={avatar} alt="" onError={() => setFailed(true)} />;
+  }
+  return <span className={`${className} user-menu__avatar--fallback`}>{initials(name)}</span>;
+}
+
+export function UserMenu({ name, avatar, onSettings, onSignOut }: Props) {
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
 
@@ -47,7 +62,7 @@ export function UserMenu({ name, onSignOut }: Props) {
         aria-label={`Player menu for ${name}`}
         title={name}
       >
-        <span className="user-menu__avatar user-menu__avatar--fallback">{initials(name)}</span>
+        <Avatar name={name} avatar={avatar} />
         <span className="user-menu__name">{name}</span>
         <span className="user-menu__caret">▾</span>
       </button>
@@ -55,12 +70,18 @@ export function UserMenu({ name, onSignOut }: Props) {
       {open && (
         <div className="user-menu__dropdown" role="menu">
           <div className="user-menu__dropdown-header">
-            <span className="user-menu__avatar user-menu__avatar--lg user-menu__avatar--fallback">{initials(name)}</span>
+            <Avatar name={name} avatar={avatar} large />
             <span className="user-menu__dropdown-name">{name}</span>
           </div>
-          <button className="user-menu__item" role="menuitem" disabled title="Coming soon">
-            Settings
-          </button>
+          {onSettings && (
+            <button
+              className="user-menu__item"
+              role="menuitem"
+              onClick={() => { close(); onSettings(); }}
+            >
+              Settings
+            </button>
+          )}
           {onSignOut && (
             <button
               className="user-menu__item user-menu__item--danger"

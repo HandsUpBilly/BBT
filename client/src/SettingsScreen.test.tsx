@@ -1,0 +1,112 @@
+import type { ComponentProps } from 'react';
+import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { SettingsScreen } from './SettingsScreen';
+
+afterEach(cleanup);
+
+function renderScreen(overrides: Partial<ComponentProps<typeof SettingsScreen>> = {}) {
+  const props = {
+    identityName: 'Endzone Expert',
+    isGuest: false,
+    onRename: vi.fn(),
+    avatar: undefined,
+    onAvatarChange: vi.fn(),
+    tokenStyle: 'portrait' as const,
+    onTokenStyleChange: vi.fn(),
+    onBack: vi.fn(),
+    ...overrides,
+  };
+  render(<SettingsScreen {...props} />);
+  return props;
+}
+
+describe('display name', () => {
+  it('disables Save until the name actually changes', () => {
+    renderScreen();
+    expect((screen.getByRole('button', { name: 'Save' }) as HTMLButtonElement).disabled).toBe(true);
+  });
+
+  it('renames a signed-in player immediately, with no confirmation', () => {
+    const props = renderScreen({ isGuest: false });
+    fireEvent.change(screen.getByLabelText('Display name'), { target: { value: 'New Name' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+
+    expect(props.onRename).toHaveBeenCalledWith('New Name');
+    expect(screen.queryByText(/starts fresh/)).toBeNull();
+  });
+
+  it('warns a guest that renaming strands their personal best, and waits for confirmation', () => {
+    const props = renderScreen({ isGuest: true, identityName: 'Old Name' });
+    fireEvent.change(screen.getByLabelText('Display name'), { target: { value: 'New Name' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+
+    expect(props.onRename).not.toHaveBeenCalled();
+    expect(screen.getByText(/starts fresh/)).toBeTruthy();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Change Name' }));
+    expect(props.onRename).toHaveBeenCalledWith('New Name');
+  });
+
+  it('lets the guest back out of a rename without calling onRename', () => {
+    const props = renderScreen({ isGuest: true, identityName: 'Old Name' });
+    fireEvent.change(screen.getByLabelText('Display name'), { target: { value: 'New Name' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Keep Current Name' }));
+
+    expect(props.onRename).not.toHaveBeenCalled();
+  });
+});
+
+describe('avatar', () => {
+  it('is unavailable for guests', () => {
+    renderScreen({ isGuest: true });
+    expect(screen.getByText(/Sign in with Google to set a profile photo/)).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Upload photo' })).toBeNull();
+  });
+
+  it('offers upload for a signed-in player with no avatar yet', () => {
+    renderScreen({ isGuest: false, avatar: undefined });
+    expect(screen.getByRole('button', { name: 'Upload photo' })).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Remove' })).toBeNull();
+  });
+
+  it('offers change and remove once an avatar is set', () => {
+    const props = renderScreen({ isGuest: false, avatar: 'data:image/webp;base64,AAAA' });
+    expect(screen.getByRole('button', { name: 'Change photo' })).toBeTruthy();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Remove' }));
+    expect(props.onAvatarChange).toHaveBeenCalledWith(undefined);
+  });
+
+  it('shows a validation error for an unsupported file type without touching onAvatarChange', async () => {
+    const props = renderScreen({ isGuest: false });
+    const input = document.querySelector('input[type="file"]') as HTMLInputElement;
+    const file = new File(['x'], 'avatar.gif', { type: 'image/gif' });
+
+    fireEvent.change(input, { target: { files: [file] } });
+
+    expect((await screen.findByRole('alert')).textContent).toMatch(/PNG, JPEG, or WebP/);
+    expect(props.onAvatarChange).not.toHaveBeenCalled();
+  });
+});
+
+describe('player token style', () => {
+  it('reflects the current selection', () => {
+    renderScreen({ tokenStyle: 'simple' });
+    expect(screen.getByRole('radio', { name: 'Simplified icons' }).getAttribute('aria-checked')).toBe('true');
+    expect(screen.getByRole('radio', { name: 'Portrait art' }).getAttribute('aria-checked')).toBe('false');
+  });
+
+  it('reports a choice without assuming it becomes the new selection', () => {
+    const props = renderScreen({ tokenStyle: 'portrait' });
+    fireEvent.click(screen.getByRole('radio', { name: 'Simplified icons' }));
+    expect(props.onTokenStyleChange).toHaveBeenCalledWith('simple');
+  });
+});
+
+it('calls onBack from the header', () => {
+  const props = renderScreen();
+  fireEvent.click(screen.getByRole('button', { name: '← Back' }));
+  expect(props.onBack).toHaveBeenCalledOnce();
+});

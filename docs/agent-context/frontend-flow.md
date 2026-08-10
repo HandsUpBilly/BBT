@@ -19,6 +19,8 @@ Current modes:
 - `admin`: puzzle editor, replacing old Sandbox-first Admin Mode.
 - `series-puzzle`: active series run.
 - `series-leaderboard`: aggregate series leaderboard and summary.
+- `settings`: display name, avatar, and player token style — see "Settings
+  Screen and Player Prefs" below.
 
 `freeplay` has been **removed** from the type. It was never assigned anywhere,
 and the multi-turn machinery it needed (End Turn, turn counters, halves, score)
@@ -43,6 +45,45 @@ Identity can be:
 name or avatar. Google identity is retained only as a stable account key and
 for the server-side admin email allowlist. Signing out clears Google auth if
 signed in, otherwise clears the guest alias.
+
+## Settings Screen and Player Prefs
+
+`SettingsScreen.tsx`, opened from `UserMenu`'s previously-disabled Settings
+item, on every screen that renders `UserMenu` (home, archive screens, Admin
+Mode, and the game HUD). Phase 1 covers display name, avatar, and player token
+style; see spec.md "Player Config Screen" for the Phase 2 plan (server-side,
+public avatars).
+
+- **Returns to whichever screen opened it, not always home.** `App.tsx` tracks
+  `settingsReturnMode` alongside `appMode`, set by `openSettings()` when the
+  menu item is clicked. Opening Settings from the game HUD must come back to
+  the puzzle in progress — safe because `useGameState` is instantiated once at
+  the top of `App.tsx`, independent of `appMode`, so switching to `'settings'`
+  and back does not unmount or reset it.
+- **`prefs.ts` stores avatar and token style**, one JSON object at
+  `bbt.prefs.v1` keyed by identity — the same keyed-map shape as
+  `bbt.googleAliases.v1`. A Google user is keyed by their subject id; a guest
+  uses the fixed key `GUEST_PREFS_KEY` (`'guest'`) rather than being keyed by
+  name, because name is itself editable on this same screen and keying by it
+  would strand every existing preference on the next rename.
+- **Renaming has a real cost the screen must say out loud.** A signed-in
+  player is matched by `userId` and keeps their leaderboard history under any
+  name. A guest is matched by `name` (see "Storage Rules" in
+  `leaderboard-and-auth.md`), so renaming orphans their personal best under the
+  old name — `SettingsScreen` shows a `ConfirmDialog` before committing a guest
+  rename, and commits a signed-in rename immediately with no confirmation.
+- **The avatar is local-only in Phase 1.** `avatarImage.ts` decodes a chosen
+  file, center-crops it to a square, and downsamples to a fixed 256×256 WebP
+  data URL before it ever reaches `prefs.ts` — bounding the bytes (this store
+  shares its quota with auth, guest name, and local scores) and stripping EXIF
+  as a side effect of redrawing through a canvas. It is visible only in this
+  browser's `UserMenu` and the Settings screen itself, never on a leaderboard,
+  and is therefore gated on `currentUser` — a guest has no verified identity to
+  attach it to for the server-side Phase 2 version, so the local version stays
+  consistent with that gate from the start rather than reworking it later.
+- **`UserMenu`'s avatar falls back to initials on load failure**, not just on
+  absence — a corrupted or future-format data URL degrades the same way a
+  missing one does, rather than rendering a broken image icon.
 
 ## Home Screen
 
@@ -367,6 +408,27 @@ metadata for rings or badges. Keep all mappings and stable display order in
 When adding or renaming a supported skill, update the centralized mapping and
 `skillPresentation.test.ts` together. Do not fetch palette metadata at runtime
 or bake ring, tint, or badge labels into portrait bitmaps.
+
+### Simplified player token style
+
+The Settings screen's player-token toggle (`prefs.ts`'s `tokenStyle`, default
+`'portrait'`) swaps the portrait bitmap and its team tint for a team-coloured
+disc showing the two-letter role code — matching the puzzle editor's own
+`.editor-piece` marker. Skill-group rings and letter badges are unchanged
+either way; only the art inside the frame changes.
+
+Implemented as a single `pitch--simple` class on `<Pitch>`'s outer element,
+not a prop threaded through `Square`. `PieceIcon` always renders both the
+portrait `<img>` and a `.piece__role-code` span; CSS decides which is visible.
+`Square` is memoized because hovering re-renders `<Pitch>` on every
+mouse-move, and a prop touching all 390 squares for a value that changes
+approximately never would be exactly the kind of presentation-in-a-component-
+prop coupling `useMediaQuery.ts` deliberately avoids for pointer precision —
+see the three-axis table above.
+
+Editor preview reuses the same `<Pitch>` call as normal play, so it inherits
+whichever token style the currently signed-in admin has chosen — there is no
+separate editor-only setting.
 
 ## Editor Preview
 

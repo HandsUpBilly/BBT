@@ -178,7 +178,25 @@ Two things to keep true:
   by-userId upsert and the home screen's "Best / Rank" display.
 - **`upsertPersonalBest` never lets a worse run replace a better one.** Equal
   probability with fewer dice counts as better.
-- Signed-in players are matched by `userId`; guests by `name`.
+- Signed-in players are matched by `userId`; guests by `name`. This is why the
+  Settings screen (`client/src/SettingsScreen.tsx`) confirms before a guest
+  rename but not a signed-in one — the guest's next submission is a new player
+  as far as `upsertPersonalBest` is concerned, and their old best is stranded
+  under the old name. See "Settings Screen and Player Prefs" in
+  `frontend-flow.md`.
+
+## Player Prefs (Avatar, Token Style)
+
+`client/src/prefs.ts` stores avatar and player-token-style preferences in
+`bbt.prefs.v1`, keyed by identity the same way `bbt.googleAliases.v1` is.
+Unlike everything else on this page, it is **entirely local and Phase 1
+only** — no server component, no endpoint, nothing sent anywhere. The avatar
+is visible only in the browser that uploaded it, never on a leaderboard. A
+server-backed, publicly-visible version is spec.md "Player Config Screen"'s
+Phase 2 and would need its own verified-identity and rate-limiting story akin
+to the report/leaderboard endpoints above — do not assume the local avatar
+data URL can simply be forwarded as-is; it is deliberately never sent over the
+network today.
 
 ## Home-Screen Progress
 
