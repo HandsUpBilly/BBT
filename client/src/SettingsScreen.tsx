@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react';
 import { ConfirmDialog } from './ConfirmDialog';
 import { encodeAvatarFile, validateAvatarFile, AVATAR_ALLOWED_TYPES } from './avatarImage';
-import type { TokenStyle } from './prefs';
+import type { PitchSurface, TokenStyle } from './prefs';
 import detailedPitchPreview from './assets/token-style-previews/detailed.webp';
 import tacticalPitchPreview from './assets/token-style-previews/tactical.webp';
 import plainPitchPreview from './assets/token-style-previews/plain.webp';
@@ -15,6 +15,10 @@ interface Props {
   onAvatarChange: (dataUrl: string | undefined) => void;
   tokenStyle: TokenStyle;
   onTokenStyleChange: (style: TokenStyle) => void;
+  pitchSurface: PitchSurface;
+  onPitchSurfaceChange: (surface: PitchSurface) => void;
+  showCoordinates: boolean;
+  onShowCoordinatesChange: (show: boolean) => void;
   onBack: () => void;
 }
 
@@ -33,6 +37,8 @@ export function SettingsScreen({
   identityName, isGuest, onRename,
   avatar, onAvatarChange,
   tokenStyle, onTokenStyleChange,
+  pitchSurface, onPitchSurfaceChange,
+  showCoordinates, onShowCoordinatesChange,
   onBack,
 }: Props) {
   const [name, setName] = useState(identityName);
@@ -110,6 +116,46 @@ export function SettingsScreen({
             Save
           </button>
         </div>
+      </section>
+
+      <section className="settings-screen__section">
+        <h3 className="settings-screen__section-title">Pitch</h3>
+        <p className="settings-screen__section-help">
+          Choose the playing surface and whether coordinate labels surround the board.
+        </p>
+        <div className="settings-screen__surface-toggle" role="radiogroup" aria-label="Pitch surface">
+          <button
+            type="button"
+            role="radio"
+            aria-checked={pitchSurface === 'grass'}
+            className={`settings-screen__surface-option${pitchSurface === 'grass' ? ' settings-screen__surface-option--selected' : ''}`}
+            onClick={() => onPitchSurfaceChange('grass')}
+          >
+            <span className="settings-screen__surface-swatch settings-screen__surface-swatch--grass" aria-hidden="true" />
+            <span><strong>Grass</strong><small>Worn match-day turf</small></span>
+          </button>
+          <button
+            type="button"
+            role="radio"
+            aria-checked={pitchSurface === 'slate'}
+            className={`settings-screen__surface-option${pitchSurface === 'slate' ? ' settings-screen__surface-option--selected' : ''}`}
+            onClick={() => onPitchSurfaceChange('slate')}
+          >
+            <span className="settings-screen__surface-swatch settings-screen__surface-swatch--slate" aria-hidden="true" />
+            <span><strong>Slate / tile</strong><small>Dark dungeon slabs</small></span>
+          </button>
+        </div>
+        <label className="settings-screen__coordinate-toggle">
+          <span>
+            <strong>Cell numbering</strong>
+            <small>Show letters and numbers around the pitch</small>
+          </span>
+          <input
+            type="checkbox"
+            checked={showCoordinates}
+            onChange={event => onShowCoordinatesChange(event.target.checked)}
+          />
+        </label>
       </section>
 
       <section className="settings-screen__section">

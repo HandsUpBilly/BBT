@@ -60,7 +60,7 @@ public avatars).
   the puzzle in progress — safe because `useGameState` is instantiated once at
   the top of `App.tsx`, independent of `appMode`, so switching to `'settings'`
   and back does not unmount or reset it.
-- **`prefs.ts` stores avatar and token style**, one JSON object at
+- **`prefs.ts` stores avatar and pitch display preferences**, one JSON object at
   `bbt.prefs.v1` keyed by identity — the same keyed-map shape as
   `bbt.googleAliases.v1`. A Google user is keyed by their subject id; a guest
   uses the fixed key `GUEST_PREFS_KEY` (`'guest'`) rather than being keyed by
@@ -88,6 +88,14 @@ public avatars).
   the live pitch as well as the Settings copy. Generated WebP comparisons live
   in `client/src/assets/token-style-previews/` and keep the formation fixed;
   `Pitch.css` owns the code-native live field treatments.
+- **Surface and coordinates are independent of token detail.** Grass and
+  slate/tile can be paired with any of the three token levels. Coordinate
+  labels default on and can be hidden without changing square names in DOM,
+  action logs, accessibility labels, or written solutions.
+- **The game HUD keeps the account menu near the front on compact screens.**
+  The toolbar is intentionally one row with overflow clipped; leaving the
+  account trigger at the far end made Settings unreachable on narrow iPhones.
+  The `?` control is the pitch/skill Key, not Settings.
 - **`UserMenu`'s avatar falls back to initials on load failure**, not just on
   absence — a corrupted or future-format data URL degrades the same way a
   missing one does, rather than rendering a broken image icon.

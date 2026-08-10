@@ -1008,6 +1008,10 @@ export default function App() {
           onAvatarChange={avatar => setPrefs({ avatar })}
           tokenStyle={prefs.tokenStyle ?? 'portrait'}
           onTokenStyleChange={tokenStyle => setPrefs({ tokenStyle })}
+          pitchSurface={prefs.pitchSurface ?? 'grass'}
+          onPitchSurfaceChange={pitchSurface => setPrefs({ pitchSurface })}
+          showCoordinates={prefs.showCoordinates ?? true}
+          onShowCoordinatesChange={showCoordinates => setPrefs({ showCoordinates })}
           onBack={() => setAppMode(settingsReturnMode)}
         />
         {notice}
@@ -1144,6 +1148,10 @@ export default function App() {
           <span className="hud__btn-text">{backLabel}</span>
         </button>
 
+        {/* Keep account/Settings ahead of optional tools on narrow one-row
+            HUDs, where controls at the far end are intentionally clipped. */}
+        <UserMenu name={identityName} avatar={prefs.avatar} onSettings={openSettings} onSignOut={handleSignOut} />
+
         <div className="hud__prob">
           {!compact && seriesCounter && <>{seriesCounter}{' · '}</>}
           <SuccessChanceReadout probability={liveProbPct} visible={showSuccessChance} />
@@ -1183,7 +1191,6 @@ export default function App() {
         <ActionLogMenu log={state.actionLog} />
 
         {reportButton('hud')}
-        <UserMenu name={identityName} avatar={prefs.avatar} onSettings={openSettings} onSignOut={handleSignOut} />
       </header>
 
       <div className="game-area">
@@ -1197,6 +1204,8 @@ export default function App() {
             zoomBounds={zoomEnabled ? zoomBounds : null}
             orientation={pitchOrientation}
             tokenStyle={prefs.tokenStyle ?? 'portrait'}
+            pitchSurface={prefs.pitchSurface ?? 'grass'}
+            showCoordinates={prefs.showCoordinates ?? true}
           />
         </main>
 

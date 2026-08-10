@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { buildMovementTrailMap, trailPolylinePoints } from './movementTrail';
+import { passTrajectoryPath } from './passTrajectory';
 import type { MoveLogEntry } from './types';
 
 function move(fromRow: number, toRow: number): MoveLogEntry {
@@ -97,5 +98,27 @@ describe('trailPolylinePoints', () => {
       .toBe('0,0 50,50 100,100');
     expect(trailPolylinePoints(trail, here.col, here.row, true))
       .toBe('0,0 50,50 100,100');
+  });
+});
+
+describe('passTrajectoryPath', () => {
+  it('draws a curved quadratic throw in landscape orientation', () => {
+    expect(passTrajectoryPath(
+      { col: 7, row: 8 },
+      { col: 7, row: 12 },
+      false,
+      0,
+      0,
+    )).toBe('M 8.5 7.5 Q 10.5 8.22 12.5 7.5');
+  });
+
+  it('transposes the same throw in portrait orientation', () => {
+    expect(passTrajectoryPath(
+      { col: 7, row: 8 },
+      { col: 7, row: 12 },
+      true,
+      0,
+      0,
+    )).toBe('M 7.5 8.5 Q 6.78 10.5 7.5 12.5');
   });
 });

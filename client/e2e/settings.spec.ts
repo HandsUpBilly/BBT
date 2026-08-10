@@ -29,3 +29,35 @@ test('token-style pitch previews stay clear and contained', async ({ page }) => 
   expect(firstPreview.right).toBeLessThanOrEqual(firstOption.right);
   expect(await hasHorizontalOverflow(page)).toBe(false);
 });
+
+test('game HUD keeps the account menu and Settings reachable', async ({ page }) => {
+  await page.getByRole('button', { name: '← Back' }).click();
+  await page.getByRole('button', { name: /start series/i }).click();
+  await page.locator('.pitch__grid .square').first().waitFor({ state: 'visible' });
+
+  const account = page.getByRole('button', { name: /player menu for/i });
+  await expect(account).toBeVisible();
+  const accountBox = await boxOf(account);
+  const viewport = page.viewportSize();
+  expect(accountBox.right).toBeLessThanOrEqual(viewport?.width ?? Number.POSITIVE_INFINITY);
+
+  await account.click();
+  await page.getByRole('menuitem', { name: 'Settings' }).click();
+  await expect(page.getByRole('heading', { name: 'Settings' })).toBeVisible();
+
+  await page.getByRole('radio', { name: /slate \/ tile/i }).click();
+  await page.getByRole('checkbox', { name: /cell numbering/i }).uncheck();
+  await page.getByRole('button', { name: '← Back' }).click();
+
+  const pitch = page.locator('.pitch');
+  const firstSquare = page.locator('.pitch__grid .square').first();
+  await expect(pitch).toHaveClass(/pitch--surface-slate/);
+  await expect(pitch).toHaveClass(/pitch--coordinates-hidden/);
+  await expect(page.locator('.pitch__col-labels, .pitch__row-labels')).toHaveCount(0);
+
+  const pitchBox = await boxOf(pitch);
+  const squareBox = await boxOf(firstSquare);
+  expect(pitchBox.width).toBeGreaterThan(100);
+  expect(squareBox.width).toBeGreaterThan(5);
+  expect(Math.abs(squareBox.width - squareBox.height)).toBeLessThan(1);
+});

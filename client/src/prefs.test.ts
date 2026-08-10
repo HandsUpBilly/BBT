@@ -44,6 +44,11 @@ describe('writing and reading back', () => {
     expect(readPrefs('user-1')).toEqual({ tokenStyle: 'plain' });
   });
 
+  it('persists pitch surface and coordinate preferences', () => {
+    writePrefs('user-1', { pitchSurface: 'slate', showCoordinates: false });
+    expect(readPrefs('user-1')).toEqual({ pitchSurface: 'slate', showCoordinates: false });
+  });
+
   it('persists an avatar data URL', () => {
     writePrefs('user-1', { avatar: VALID_AVATAR });
     expect(readPrefs('user-1')).toEqual({ avatar: VALID_AVATAR });
@@ -72,6 +77,11 @@ describe('writing and reading back', () => {
 describe('tolerating junk', () => {
   it('ignores an invalid token style value', () => {
     storage.setItem(KEY, JSON.stringify({ 'user-1': { tokenStyle: 'chrome' } }));
+    expect(readPrefs('user-1')).toEqual({});
+  });
+
+  it('drops invalid pitch display values', () => {
+    storage.setItem(KEY, JSON.stringify({ 'user-1': { pitchSurface: 'mud', showCoordinates: 'no' } }));
     expect(readPrefs('user-1')).toEqual({});
   });
 

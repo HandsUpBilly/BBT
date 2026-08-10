@@ -138,6 +138,11 @@ ends, disappears automatically when a cancelled activation rolls back its log,
 and uses every individual step (including diagonals) rather than only the
 waypoint destinations in `committedPath`.
 
+Completed passes are also derived from `actionLog`, but render as a single
+curved amber trajectory with an arrowhead across the pitch. The curve is
+orientation- and zoom-aware and deliberately differs from the segmented white
+movement trail, so a throw and a run remain distinguishable when they cross.
+
 ## Tests
 
 | File | Covers |

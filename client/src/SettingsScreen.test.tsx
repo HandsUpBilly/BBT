@@ -14,6 +14,10 @@ function renderScreen(overrides: Partial<ComponentProps<typeof SettingsScreen>> 
     onAvatarChange: vi.fn(),
     tokenStyle: 'portrait' as const,
     onTokenStyleChange: vi.fn(),
+    pitchSurface: 'grass' as const,
+    onPitchSurfaceChange: vi.fn(),
+    showCoordinates: true,
+    onShowCoordinatesChange: vi.fn(),
     onBack: vi.fn(),
     ...overrides,
   };
@@ -116,6 +120,20 @@ describe('player token style', () => {
     const props = renderScreen({ tokenStyle: 'portrait' });
     fireEvent.click(screen.getByRole('radio', { name: /Plain/ }));
     expect(props.onTokenStyleChange).toHaveBeenCalledWith('plain');
+  });
+});
+
+describe('pitch display', () => {
+  it('reports a slate surface choice', () => {
+    const props = renderScreen({ pitchSurface: 'grass' });
+    fireEvent.click(screen.getByRole('radio', { name: /Slate \/ tile/ }));
+    expect(props.onPitchSurfaceChange).toHaveBeenCalledWith('slate');
+  });
+
+  it('reports when cell numbering is turned off', () => {
+    const props = renderScreen({ showCoordinates: true });
+    fireEvent.click(screen.getByRole('checkbox', { name: /Cell numbering/ }));
+    expect(props.onShowCoordinatesChange).toHaveBeenCalledWith(false);
   });
 });
 

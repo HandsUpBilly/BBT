@@ -25,9 +25,12 @@ export const GUEST_PREFS_KEY = 'guest';
 const STORAGE_KEY = 'bbt.prefs.v1';
 
 export type TokenStyle = 'portrait' | 'simple' | 'plain';
+export type PitchSurface = 'grass' | 'slate';
 
 export interface PlayerPrefs {
   tokenStyle?: TokenStyle;
+  pitchSurface?: PitchSurface;
+  showCoordinates?: boolean;
   /** A `data:image/webp;base64,...` URL produced by avatarImage.ts. */
   avatar?: string;
 }
@@ -36,6 +39,10 @@ type PrefsMap = Record<string, PlayerPrefs>;
 
 function isTokenStyle(value: unknown): value is TokenStyle {
   return value === 'portrait' || value === 'simple' || value === 'plain';
+}
+
+function isPitchSurface(value: unknown): value is PitchSurface {
+  return value === 'grass' || value === 'slate';
 }
 
 function isAvatarDataUrl(value: unknown): value is string {
@@ -50,6 +57,8 @@ function sanitizePrefs(value: unknown): PlayerPrefs | null {
   const candidate = value as Partial<PlayerPrefs>;
   const prefs: PlayerPrefs = {};
   if (isTokenStyle(candidate.tokenStyle)) prefs.tokenStyle = candidate.tokenStyle;
+  if (isPitchSurface(candidate.pitchSurface)) prefs.pitchSurface = candidate.pitchSurface;
+  if (typeof candidate.showCoordinates === 'boolean') prefs.showCoordinates = candidate.showCoordinates;
   if (isAvatarDataUrl(candidate.avatar)) prefs.avatar = candidate.avatar;
   return prefs;
 }

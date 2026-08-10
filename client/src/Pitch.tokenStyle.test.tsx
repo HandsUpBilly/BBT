@@ -2,7 +2,7 @@ import { cleanup, render } from '@testing-library/react';
 import { afterEach, describe, expect, it } from 'vitest';
 import { Pitch } from './Pitch';
 import { humanBlocker, makeState } from './test/gameState';
-import type { MoveLogEntry } from './types';
+import type { MoveLogEntry, PassLogEntry } from './types';
 
 afterEach(cleanup);
 
@@ -57,6 +57,39 @@ describe('Pitch token style', () => {
     expect(container.querySelector('.pitch--plain.pitch--simple')).toBeTruthy();
     expect(container.querySelector('.piece__role-code')?.textContent).toBe('LI');
   });
+
+  it('applies the selected pitch surface independently of token detail', () => {
+    const { container } = render(
+      <Pitch
+        state={state}
+        onSquareClick={noop}
+        onPieceClick={noop}
+        onSquareHover={noop}
+        onSquareLeave={noop}
+        tokenStyle="plain"
+        pitchSurface="slate"
+      />,
+    );
+
+    expect(container.querySelector('.pitch--plain.pitch--surface-slate')).toBeTruthy();
+  });
+
+  it('removes visible coordinate gutters without changing square names', () => {
+    const { container } = render(
+      <Pitch
+        state={state}
+        onSquareClick={noop}
+        onPieceClick={noop}
+        onSquareHover={noop}
+        onSquareLeave={noop}
+        showCoordinates={false}
+      />,
+    );
+
+    expect(container.querySelector('.pitch--coordinates-hidden')).toBeTruthy();
+    expect(container.querySelector('.pitch__col-labels')).toBeNull();
+    expect(container.querySelector('[data-square="10H"]')).toBeTruthy();
+  });
 });
 
 describe('Pitch roll dice', () => {
@@ -108,5 +141,39 @@ describe('Pitch roll dice', () => {
     expect(getByTitle('Go For It roll: 2+')).toBeTruthy();
     expect(getByTitle('Dodge roll: 3+')).toBeTruthy();
     expect(getByTitle('Pick-up roll: 4+')).toBeTruthy();
+  });
+});
+
+describe('Pitch completed pass trajectory', () => {
+  it('keeps a curved throw line visible from the action log', () => {
+    const pass: PassLogEntry = {
+      kind: 'pass',
+      pieceName: 'Thrower',
+      pieceRole: 'thrower',
+      receiverName: 'Catcher',
+      receiverRole: 'catcher',
+      from: { col: 7, row: 8 },
+      to: { col: 7, row: 12 },
+      passTarget: 3,
+      rangeBand: 'short',
+      actionProb: 2 / 3,
+      cumulativeProb: 2 / 3,
+      dodgeTarget: null,
+      isGfi: false,
+    };
+
+    const { container } = render(
+      <Pitch
+        state={{ ...state, actionLog: [pass] }}
+        onSquareClick={noop}
+        onPieceClick={noop}
+        onSquareHover={noop}
+        onSquareLeave={noop}
+      />,
+    );
+
+    const path = container.querySelector('.pitch__pass-trajectory');
+    expect(path?.getAttribute('d')).toContain(' Q ');
+    expect(container.querySelector('.pitch__pass-trajectories marker')).toBeTruthy();
   });
 });

@@ -70,7 +70,7 @@ export function LegendMenu({ isPassTargeting, isBlockTargeting, hasPushTargets }
         }
         title="Pitch and skill key"
       >
-        <span className="legend-menu__icon" aria-hidden="true">🎨</span>
+        <span className="legend-menu__icon" aria-hidden="true">?</span>
         <span className="legend-menu__label">Key</span>
         {contextualCount > 0 && (
           <span className="legend-menu__count" aria-hidden="true">{contextualCount}</span>

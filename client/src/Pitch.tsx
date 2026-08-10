@@ -5,8 +5,9 @@ import { key, neighbours } from './bfs';
 import type { ZoomBounds } from './bfs';
 import { buildMovementTrailMap, trailPolylinePoints } from './movementTrail';
 import type { PathTrail } from './movementTrail';
+import { passTrajectoryPath } from './passTrajectory';
 import { skillGroupsFor, skillMarkersFor } from './skillPresentation';
-import type { TokenStyle } from './prefs';
+import type { PitchSurface, TokenStyle } from './prefs';
 import { RoleGlyph } from './RoleGlyph';
 import { roleCodeFor } from './rolePresentation';
 import { DEFAULT_PLAYER_ROLE, playerPortraitFor } from './playerPortraits';
@@ -317,11 +318,13 @@ interface Props {
   orientation?: PitchOrientation;
   /** Controls portrait/detail density without changing any gameplay information. */
   tokenStyle?: TokenStyle;
+  pitchSurface?: PitchSurface;
+  showCoordinates?: boolean;
 }
 
 export function Pitch({
   state, onSquareClick, onPieceClick, onSquareHover, onSquareLeave, zoomBounds,
-  orientation = 'landscape', tokenStyle = 'portrait',
+  orientation = 'landscape', tokenStyle = 'portrait', pitchSurface = 'grass', showCoordinates = true,
 }: Props) {
   const portrait = orientation === 'portrait';
   const pieceMap = useMemo(
@@ -429,6 +432,14 @@ export function Pitch({
     : range(stateColStart, stateColEnd);
   const visibleCols = acrossValues.length;
   const visibleRows = downValues.length;
+  const acrossStart = acrossValues[0] ?? 0;
+  const downStart = downValues[0] ?? 0;
+  const passTrajectories = state.actionLog
+    .filter(entry => entry.kind === 'pass')
+    .map((entry, index) => ({
+      key: `${entry.pieceName}-${entry.receiverName}-${index}`,
+      path: passTrajectoryPath(entry.from, entry.to, portrait, acrossStart, downStart),
+    }));
 
   // Labels follow the axis, not the orientation: the letter always names the
   // state col and the number always names the state row.
@@ -649,6 +660,8 @@ export function Pitch({
     'pitch',
     `pitch--${orientation}`,
     PITCH_DETAIL_CLASS[tokenStyle],
+    `pitch--surface-${pitchSurface}`,
+    showCoordinates ? '' : 'pitch--coordinates-hidden',
     zoomBounds ? 'pitch--zoomed' : '',
     tokenStyle !== 'portrait' ? 'pitch--simple' : '',
   ].filter(Boolean).join(' ');
@@ -662,29 +675,48 @@ export function Pitch({
   return (
     <div className={classes} style={pitchStyle}>
       {/* Column labels — top */}
-      <div className="pitch__col-labels pitch__col-labels--top" style={colLabelsStyle} aria-hidden="true">
+      {showCoordinates && <div className="pitch__col-labels pitch__col-labels--top" style={colLabelsStyle} aria-hidden="true">
         <div className="pitch__corner" />
         {colLabels}
         <div className="pitch__corner" />
-      </div>
+      </div>}
 
       <div className="pitch__middle">
         {/* Row labels — left */}
-        <div className="pitch__row-labels" aria-hidden="true">{rowLabels}</div>
+        {showCoordinates && <div className="pitch__row-labels" aria-hidden="true">{rowLabels}</div>}
 
         {/* The field */}
-        <div className="pitch__grid" style={gridStyle} role="group" aria-label="Pitch">{squares}</div>
+        <div className="pitch__grid" style={gridStyle} role="group" aria-label="Pitch">
+          {squares}
+          {passTrajectories.length > 0 && (
+            <svg
+              className="pitch__pass-trajectories"
+              viewBox={`0 0 ${visibleCols} ${visibleRows}`}
+              preserveAspectRatio="none"
+              aria-hidden="true"
+            >
+              <defs>
+                <marker id="pass-trajectory-arrow" markerWidth="5" markerHeight="5" refX="4" refY="2.5" orient="auto" markerUnits="strokeWidth">
+                  <path d="M 0 0 L 5 2.5 L 0 5 z" />
+                </marker>
+              </defs>
+              {passTrajectories.map(trajectory => (
+                <path key={trajectory.key} className="pitch__pass-trajectory" d={trajectory.path} />
+              ))}
+            </svg>
+          )}
+        </div>
 
         {/* Row labels — right */}
-        <div className="pitch__row-labels" aria-hidden="true">{rowLabels}</div>
+        {showCoordinates && <div className="pitch__row-labels" aria-hidden="true">{rowLabels}</div>}
       </div>
 
       {/* Column labels — bottom */}
-      <div className="pitch__col-labels pitch__col-labels--bottom" style={colLabelsStyle} aria-hidden="true">
+      {showCoordinates && <div className="pitch__col-labels pitch__col-labels--bottom" style={colLabelsStyle} aria-hidden="true">
         <div className="pitch__corner" />
         {colLabels}
         <div className="pitch__corner" />
-      </div>
+      </div>}
     </div>
   );
 }

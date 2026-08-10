@@ -13,24 +13,15 @@
   margin: 0 auto;
 }
 
-/* Fit the board inside the wrapper on whichever axis binds first.
-   `width: 100%` alone only ever fits the width — which is why the board used
-   to overflow a short viewport and get clipped, and why zoom mode (which fit
-   to height instead) shrank the squares on a tall one. Solving for the width
-   at which the derived height still fits handles both, in one rule, for both
-   orientations. --pitch-aspect is set inline by <Pitch> from the visible
-   column and row counts, so it already accounts for the zoom crop. */
-@supports (width: 1cqw) {
-  .pitch-wrapper {
-    container-type: size;
-  }
-
-  .pitch-wrapper .pitch {
-    width: min(
-      100cqw,
-      calc((100cqh - var(--pitch-gutter-h)) * var(--pitch-aspect) + var(--pitch-gutter-w))
-    );
-  }
+/* Fit the board inside the wrapper on whichever axis binds first. The pitch
+   takes the available width, while its preferred aspect ratio and max-height
+   let CSS transfer a short wrapper's height constraint back to the width.
+   --pitch-aspect comes from <Pitch> and already accounts for zoom cropping. */
+.pitch-wrapper .pitch {
+  width: 100%;
+  height: auto;
+  max-height: 100%;
+  aspect-ratio: var(--pitch-aspect);
 }
 
 /* ── Label rows (top / bottom) ──────────────────────────────────────── */
@@ -89,9 +80,32 @@
 .pitch__grid {
   flex: 1;
   display: grid;
+  position: relative;
   /* aspect-ratio and both track lists come from <Pitch> as inline styles. */
   border: 2px solid rgba(222, 217, 203, 0.4);
   box-sizing: border-box;
+}
+
+/* With no label tracks there is no intrinsic content outside the grid to
+   prop up the flex item, so give the board both available axes and let the
+   grid's own aspect-ratio choose the binding one. This also keeps the hidden
+   coordinate option from changing square proportions on short screens. */
+.pitch.pitch--coordinates-hidden {
+  width: 100%;
+  height: 100%;
+}
+
+.pitch--coordinates-hidden .pitch__middle {
+  height: 100%;
+  min-height: 0;
+  justify-content: center;
+}
+
+.pitch--coordinates-hidden .pitch__grid {
+  flex: 0 1 auto;
+  width: 100%;
+  height: auto;
+  max-height: 100%;
 }
 
 /* ── Pitch detail levels ────────────────────────────────────────────────
@@ -99,7 +113,7 @@
    worn tabletop turf, Tactical keeps a restrained checkerboard, and Plain is
    a clean diagram. These selectors deliberately outrank the safe theme
    fallbacks in PlaybookTheme.css without changing square geometry. */
-.pitch.pitch--detailed .pitch__grid {
+.pitch.pitch--surface-grass.pitch--detailed .pitch__grid {
   border-color: rgba(222, 217, 203, 0.58);
   box-shadow:
     inset 0 0 18px rgba(5, 8, 5, 0.32),
@@ -107,44 +121,48 @@
     0 5px 14px rgba(0, 0, 0, 0.38);
 }
 
-.pitch.pitch--detailed .square--light {
+.pitch.pitch--surface-grass.pitch--detailed .square--light {
   background:
-    radial-gradient(circle at 72% 24%, rgba(128, 139, 75, 0.13), transparent 42%),
-    repeating-linear-gradient(105deg, rgba(229, 222, 184, 0.028) 0 1px, transparent 1px 4px),
-    #3c6031;
-  box-shadow: inset 0 0 0 0.5px rgba(222, 217, 203, 0.16);
-}
-
-.pitch.pitch--detailed .square--dark {
-  background:
-    radial-gradient(circle at 28% 76%, rgba(20, 25, 13, 0.2), transparent 48%),
-    repeating-linear-gradient(76deg, rgba(229, 222, 184, 0.022) 0 1px, transparent 1px 5px),
-    #355729;
+    radial-gradient(circle at 22% 78%, rgba(91, 58, 25, 0.3), transparent 40%),
+    radial-gradient(circle at 78% 18%, rgba(145, 152, 83, 0.12), transparent 36%),
+    repeating-linear-gradient(103deg, rgba(229, 222, 184, 0.045) 0 1px, transparent 1px 3px),
+    linear-gradient(90deg, rgba(8, 15, 7, 0.18), transparent 35% 68%, rgba(8, 15, 7, 0.13)),
+    #304a28;
   box-shadow: inset 0 0 0 0.5px rgba(222, 217, 203, 0.14);
 }
 
-.pitch.pitch--detailed .square--endzone-human.square--light {
+.pitch.pitch--surface-grass.pitch--detailed .square--dark {
+  background:
+    radial-gradient(circle at 68% 72%, rgba(79, 50, 22, 0.32), transparent 44%),
+    radial-gradient(circle at 20% 16%, rgba(128, 137, 74, 0.1), transparent 34%),
+    repeating-linear-gradient(77deg, rgba(229, 222, 184, 0.035) 0 1px, transparent 1px 4px),
+    linear-gradient(90deg, rgba(6, 12, 5, 0.2), transparent 42% 70%, rgba(6, 12, 5, 0.16)),
+    #293f23;
+  box-shadow: inset 0 0 0 0.5px rgba(222, 217, 203, 0.12);
+}
+
+.pitch.pitch--surface-grass.pitch--detailed .square--endzone-human.square--light {
   background:
     radial-gradient(circle at 72% 24%, rgba(106, 169, 219, 0.13), transparent 42%),
     repeating-linear-gradient(105deg, rgba(229, 222, 184, 0.028) 0 1px, transparent 1px 4px),
     #294c69;
 }
 
-.pitch.pitch--detailed .square--endzone-human.square--dark {
+.pitch.pitch--surface-grass.pitch--detailed .square--endzone-human.square--dark {
   background:
     radial-gradient(circle at 28% 76%, rgba(8, 20, 30, 0.24), transparent 48%),
     repeating-linear-gradient(76deg, rgba(229, 222, 184, 0.022) 0 1px, transparent 1px 5px),
     #22405a;
 }
 
-.pitch.pitch--detailed .square--endzone-orc.square--light {
+.pitch.pitch--surface-grass.pitch--detailed .square--endzone-orc.square--light {
   background:
     radial-gradient(circle at 72% 24%, rgba(210, 105, 76, 0.12), transparent 42%),
     repeating-linear-gradient(105deg, rgba(229, 222, 184, 0.028) 0 1px, transparent 1px 4px),
     #63352c;
 }
 
-.pitch.pitch--detailed .square--endzone-orc.square--dark {
+.pitch.pitch--surface-grass.pitch--detailed .square--endzone-orc.square--dark {
   background:
     radial-gradient(circle at 28% 76%, rgba(32, 10, 8, 0.25), transparent 48%),
     repeating-linear-gradient(76deg, rgba(229, 222, 184, 0.022) 0 1px, transparent 1px 5px),
@@ -155,26 +173,66 @@
   box-shadow: inset 0 0 0 0.5px rgba(222, 217, 203, 0.1);
 }
 
-.pitch.pitch--plain .pitch__grid {
+.pitch.pitch--surface-grass.pitch--plain .pitch__grid {
   border-color: rgba(241, 237, 225, 0.72);
   box-shadow: none;
 }
 
-.pitch.pitch--plain .square--light,
-.pitch.pitch--plain .square--dark {
+.pitch.pitch--surface-grass.pitch--plain .square--light,
+.pitch.pitch--surface-grass.pitch--plain .square--dark {
   background: #365b2c;
   box-shadow: inset 0 0 0 0.5px rgba(241, 237, 225, 0.18);
 }
 
-.pitch.pitch--plain .square--endzone-human.square--light,
-.pitch.pitch--plain .square--endzone-human.square--dark {
+.pitch.pitch--surface-grass.pitch--plain .square--endzone-human.square--light,
+.pitch.pitch--surface-grass.pitch--plain .square--endzone-human.square--dark {
   background: #284b66;
 }
 
-.pitch.pitch--plain .square--endzone-orc.square--light,
-.pitch.pitch--plain .square--endzone-orc.square--dark {
+.pitch.pitch--surface-grass.pitch--plain .square--endzone-orc.square--light,
+.pitch.pitch--surface-grass.pitch--plain .square--endzone-orc.square--dark {
   background: #603229;
 }
+
+/* Slate is independent of information density: Detailed uses scratched,
+   stained dungeon slabs; Tactical keeps a quieter checkerboard; Plain is a
+   flat high-contrast diagram. End-zone colour remains a gameplay cue. */
+.pitch.pitch--surface-slate .pitch__grid {
+  border-color: rgba(180, 185, 179, 0.58);
+  box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.48), 0 4px 13px rgba(0, 0, 0, 0.42);
+}
+
+.pitch.pitch--surface-slate.pitch--detailed .square--light {
+  background:
+    linear-gradient(132deg, transparent 46%, rgba(205, 207, 194, 0.055) 47% 49%, transparent 50%),
+    radial-gradient(circle at 74% 22%, rgba(151, 158, 151, 0.13), transparent 39%),
+    radial-gradient(circle at 24% 78%, rgba(12, 14, 14, 0.36), transparent 45%),
+    #3b403e;
+  box-shadow: inset 0 0 0 0.7px rgba(214, 215, 203, 0.2), inset 0 0 9px rgba(0, 0, 0, 0.32);
+}
+
+.pitch.pitch--surface-slate.pitch--detailed .square--dark {
+  background:
+    linear-gradient(48deg, transparent 43%, rgba(205, 207, 194, 0.045) 44% 46%, transparent 47%),
+    radial-gradient(circle at 28% 24%, rgba(132, 139, 134, 0.1), transparent 36%),
+    radial-gradient(circle at 70% 76%, rgba(8, 10, 10, 0.38), transparent 44%),
+    #303533;
+  box-shadow: inset 0 0 0 0.7px rgba(214, 215, 203, 0.18), inset 0 0 9px rgba(0, 0, 0, 0.36);
+}
+
+.pitch.pitch--surface-slate.pitch--tactical .square--light { background: #3a3f3d; }
+.pitch.pitch--surface-slate.pitch--tactical .square--dark { background: #323735; }
+
+.pitch.pitch--surface-slate.pitch--plain .square--light,
+.pitch.pitch--surface-slate.pitch--plain .square--dark {
+  background: #353a38;
+  box-shadow: inset 0 0 0 0.5px rgba(234, 233, 222, 0.2);
+}
+
+.pitch.pitch--surface-slate .square--endzone-human.square--light,
+.pitch.pitch--surface-slate .square--endzone-human.square--dark { background-color: #2b4658; }
+.pitch.pitch--surface-slate .square--endzone-orc.square--light,
+.pitch.pitch--surface-slate .square--endzone-orc.square--dark { background-color: #58342e; }
 
 /* Zoom mode needs no sizing rules of its own: cropping changes
    --pitch-aspect, and the fit rule above re-solves from that. */
@@ -410,6 +468,33 @@
   stroke-linejoin: round;
   stroke-dasharray: 11 10;
   filter: drop-shadow(0 0 2px rgba(0, 0, 0, 0.9));
+}
+
+/* Completed throws use one amber arc over the whole board. Movement remains
+   a white square-by-square dotted trail, so the two actions cannot be
+   mistaken for one another even where their routes cross. */
+.pitch__pass-trajectories {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.pitch__pass-trajectory {
+  fill: none;
+  stroke: rgba(244, 190, 74, 0.96);
+  stroke-width: 0.13;
+  stroke-linecap: round;
+  stroke-dasharray: 0.34 0.2;
+  filter: drop-shadow(0 0 0.08px rgba(0, 0, 0, 0.95));
+  marker-end: url('#pass-trajectory-arrow');
+}
+
+.pitch__pass-trajectories marker path {
+  fill: rgba(244, 190, 74, 0.96);
 }
 
 .square--handoff-target .square__overlay {
@@ -740,7 +825,7 @@
   border-radius: 2cqi;
   color: #fff;
   font-family: var(--font-mono);
-  font-size: 12cqi;
+  font-size: 15cqi;
   font-weight: 900;
   line-height: 1;
   text-shadow: 0 1px 1px rgba(0, 0, 0, 0.9);
@@ -770,7 +855,7 @@
     width: 18%;
     height: auto;
     aspect-ratio: 1;
-    font-size: 0.42rem;
+    font-size: 0.5rem;
   }
 }
 
