@@ -11,7 +11,7 @@ import {
   ReportDeliveryError,
   createGitHubIssue,
 } from '../../shared/githubIssues.js';
-import { REPORT_RATE_LIMIT, createRateLimiter } from '../../shared/rateLimit.js';
+import { REPORT_RATE_LIMIT, createRateLimiter, rateLimitKey } from '../../shared/rateLimit.js';
 
 // Per-instance limiter. Netlify recycles function instances, so this throttles a
 // burst from one attacker rather than guaranteeing a global cap — see
@@ -25,13 +25,8 @@ function json(body, status, headers = {}) {
   });
 }
 
-function clientKey(req, user) {
-  if (user?.providerUserId) return user.providerUserId;
-  const forwarded = req.headers.get('x-nf-client-connection-ip')
-    ?? req.headers.get('x-forwarded-for')
-    ?? '';
-  return forwarded.split(',')[0].trim() || 'unknown';
-}
+const clientKey = (req, user) =>
+  rateLimitKey({ user, getHeader: name => req.headers.get(name) });
 
 export default async function handler(req) {
   if (req.method !== 'POST') return json({ error: 'Method not allowed' }, 405);

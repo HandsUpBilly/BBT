@@ -8,7 +8,7 @@ import {
   upsertPersonalBest,
   validateScoreSubmission,
 } from '../../shared/scoreValidation.js';
-import { LEADERBOARD_RATE_LIMIT, createRateLimiter } from '../../shared/rateLimit.js';
+import { LEADERBOARD_RATE_LIMIT, createRateLimiter, rateLimitKey } from '../../shared/rateLimit.js';
 
 // Rows returned to the client. The stored list is NOT trimmed — truncating the
 // store used to delete a player's personal best the moment they fell out of the
@@ -20,13 +20,8 @@ const TOP_N = 10;
 // trade-off on Netlify Functions.
 const takeLeaderboardToken = createRateLimiter(LEADERBOARD_RATE_LIMIT);
 
-function clientKey(req, user) {
-  if (user?.providerUserId) return user.providerUserId;
-  const forwarded = req.headers.get('x-nf-client-connection-ip')
-    ?? req.headers.get('x-forwarded-for')
-    ?? '';
-  return forwarded.split(',')[0].trim() || 'unknown';
-}
+const clientKey = (req, user) =>
+  rateLimitKey({ user, getHeader: name => req.headers.get(name) });
 
 function json(body, status, headers = {}) {
   return new Response(JSON.stringify(body), {

@@ -7,7 +7,7 @@ import {
   upsertPersonalBest,
   validateSeriesSubmission,
 } from '../../shared/scoreValidation.js';
-import { LEADERBOARD_RATE_LIMIT, createRateLimiter } from '../../shared/rateLimit.js';
+import { LEADERBOARD_RATE_LIMIT, createRateLimiter, rateLimitKey } from '../../shared/rateLimit.js';
 
 // See leaderboard.js — read-truncated only, the store keeps every entry.
 const TOP_N = 10;
@@ -16,13 +16,8 @@ const KEY = 'series';
 // Per-instance limiter — see shared/rateLimit.js and leaderboard.js.
 const takeLeaderboardToken = createRateLimiter(LEADERBOARD_RATE_LIMIT);
 
-function clientKey(req, user) {
-  if (user?.providerUserId) return user.providerUserId;
-  const forwarded = req.headers.get('x-nf-client-connection-ip')
-    ?? req.headers.get('x-forwarded-for')
-    ?? '';
-  return forwarded.split(',')[0].trim() || 'unknown';
-}
+const clientKey = (req, user) =>
+  rateLimitKey({ user, getHeader: name => req.headers.get(name) });
 
 function json(body, status, headers = {}) {
   return new Response(JSON.stringify(body), {

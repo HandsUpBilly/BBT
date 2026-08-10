@@ -118,7 +118,28 @@ trusted**. `shared/scoreValidation.js` (used by both targets):
 Both leaderboard POST routes (`/api/leaderboard/:scenarioId` and
 `/api/series-leaderboard`, in both `server/index.js` and the Netlify
 functions) are rate-limited with the same `shared/rateLimit.js` limiter used
-by `/api/reports`, keyed on the verified user id or client IP.
+by `/api/reports`.
+
+**The bucket key is `rateLimitKey`, in `shared/rateLimit.js`.** It answers
+"which caller is this" for all five call sites — three Netlify functions and
+three Express routes — and it used to be four hand-copied definitions that had
+already drifted in form (`req.ip` on Express, parsed forwarding headers on
+Netlify). It is a security control, so a tightening applied to one copy and not
+the others would leave the other endpoints bypassable while reading as fixed.
+
+It keys on the verified user id when there is one, so a shared IP doesn't
+penalise everyone behind it and a signed-in player can't dodge the limit by
+changing network. Otherwise it keys on a *trusted* address only:
+
+| Target | Trusted address | Why not a header adapter |
+|---|---|---|
+| Netlify | `x-nf-client-connection-ip` | set by the edge, always present |
+| Express | `req.ip` | not a header at all; respects `trust proxy` |
+
+`x-forwarded-for` is deliberately not consulted. It is client-supplied, so an
+attacker rotating it would get a fresh bucket per request — strictly worse than
+the shared `'unknown'` fallback, which at least throttles. Neither target should
+ever reach that fallback.
 
 **Be precise about what this is not.** It does not distinguish a forged clean
 run from a real one — `{probability: 1, diceCount: 0, moves: []}` is accepted,
