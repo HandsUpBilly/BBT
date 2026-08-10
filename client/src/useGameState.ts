@@ -1177,6 +1177,9 @@ export function useGameState(initialState: GameState) {
       const targetKey = key({ col, row });
       if (!prev.pushTargetKeys.has(targetKey)) return prev;
 
+      const attacker = prev.pieces.find(p => p.id === resolution.attackerId);
+      const attackerFollowsUp = resolution.offerFollowUp && followUp;
+
       const pushed = prev.pieces.map(p => {
         if (p.id === resolution.defenderId) {
           return { ...p, position: { col, row }, down: resolution.defenderFalls };
@@ -1184,7 +1187,7 @@ export function useGameState(initialState: GameState) {
         if (p.id === resolution.attackerId) {
           return {
             ...p,
-            position: resolution.offerFollowUp && followUp ? resolution.defenderFrom : p.position,
+            position: attackerFollowsUp ? resolution.defenderFrom : p.position,
             activated: !resolution.isBlitz,
           };
         }
@@ -1196,10 +1199,32 @@ export function useGameState(initialState: GameState) {
         pushed, prev.ballPosition, resolution.defenderFalls ? [resolution.defenderId] : [],
       );
 
+      // Log the follow-up as a free move step so the committed-movement
+      // trail extends into the vacated square, matching the attacker's
+      // actual final position.
+      const cumulativeProb = prev.actionLog.length > 0
+        ? prev.actionLog[prev.actionLog.length - 1].cumulativeProb : 1;
+      const actionLog = attackerFollowsUp && attacker
+        ? [...prev.actionLog, {
+            kind: 'move' as const,
+            pieceName: attacker.name,
+            pieceRole: attacker.role ?? attacker.team,
+            from: attacker.position,
+            to: resolution.defenderFrom,
+            steps: 1,
+            dodgeTarget: null,
+            isGfi: false,
+            pickupTarget: null,
+            actionProb: 1,
+            cumulativeProb,
+          }]
+        : prev.actionLog;
+
       const nextState = {
         ...prev,
         pieces,
         ballPosition,
+        actionLog,
         pendingBlockResolution: null,
         pushTargetKeys: new Set<string>(),
       };
