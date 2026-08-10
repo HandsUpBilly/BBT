@@ -19,7 +19,7 @@ describe('Pitch token style', () => {
     expect(container.querySelector('.piece__portrait')).toBeTruthy();
   });
 
-  it('adds pitch--simple without removing the skill-marker/ring layer', () => {
+  it('adds pitch--simple for high contrast without removing the skill-marker/ring layer', () => {
     const { container } = render(
       <Pitch
         state={state}
@@ -37,5 +37,21 @@ describe('Pitch token style', () => {
     expect(container.querySelector('.piece__role-code')?.textContent).toBe('LI');
     expect(container.querySelector('.piece__portrait')).toBeTruthy();
     expect(container.querySelector('.piece__portrait-frame')).toBeTruthy();
+  });
+
+  it('adds the plain modifier on top of the role-disc style', () => {
+    const { container } = render(
+      <Pitch
+        state={state}
+        onSquareClick={noop}
+        onPieceClick={noop}
+        onSquareHover={noop}
+        onSquareLeave={noop}
+        tokenStyle="plain"
+      />,
+    );
+
+    expect(container.querySelector('.pitch--simple.pitch--plain')).toBeTruthy();
+    expect(container.querySelector('.piece__role-code')?.textContent).toBe('LI');
   });
 });

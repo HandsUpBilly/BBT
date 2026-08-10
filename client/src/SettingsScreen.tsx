@@ -160,7 +160,7 @@ export function SettingsScreen({
       <section className="settings-screen__section">
         <h3 className="settings-screen__section-title">Player tokens</h3>
         <p className="settings-screen__section-help">
-          Choose how players are drawn on the pitch. Skill rings and badges stay either way.
+          Choose how much detail players show on the pitch.
         </p>
         <div className="settings-screen__token-toggle" role="radiogroup" aria-label="Player token style">
           <button
@@ -170,7 +170,14 @@ export function SettingsScreen({
             className={`settings-screen__token-option${tokenStyle === 'portrait' ? ' settings-screen__token-option--selected' : ''}`}
             onClick={() => onTokenStyleChange('portrait')}
           >
-            Portrait art
+            <span className="settings-screen__token-preview" aria-hidden="true">
+              <span className="settings-screen__sample-token settings-screen__sample-token--portrait settings-screen__sample-token--human" />
+              <span className="settings-screen__sample-token settings-screen__sample-token--portrait settings-screen__sample-token--orc" />
+            </span>
+            <span className="settings-screen__token-copy">
+              <strong>Detailed</strong>
+              <span>Full portraits, skill rings and badges</span>
+            </span>
           </button>
           <button
             type="button"
@@ -179,7 +186,30 @@ export function SettingsScreen({
             className={`settings-screen__token-option${tokenStyle === 'simple' ? ' settings-screen__token-option--selected' : ''}`}
             onClick={() => onTokenStyleChange('simple')}
           >
-            Simplified icons
+            <span className="settings-screen__token-preview" aria-hidden="true">
+              <span className="settings-screen__sample-token settings-screen__sample-token--clear settings-screen__sample-token--human">LI</span>
+              <span className="settings-screen__sample-token settings-screen__sample-token--clear settings-screen__sample-token--orc">BL</span>
+            </span>
+            <span className="settings-screen__token-copy">
+              <strong>High contrast</strong>
+              <span>Team discs and role codes, with skill markers</span>
+            </span>
+          </button>
+          <button
+            type="button"
+            role="radio"
+            aria-checked={tokenStyle === 'plain'}
+            className={`settings-screen__token-option${tokenStyle === 'plain' ? ' settings-screen__token-option--selected' : ''}`}
+            onClick={() => onTokenStyleChange('plain')}
+          >
+            <span className="settings-screen__token-preview" aria-hidden="true">
+              <span className="settings-screen__sample-token settings-screen__sample-token--plain settings-screen__sample-token--human">LI</span>
+              <span className="settings-screen__sample-token settings-screen__sample-token--plain settings-screen__sample-token--orc">BL</span>
+            </span>
+            <span className="settings-screen__token-copy">
+              <strong>Plain</strong>
+              <span>Team discs and role codes only</span>
+            </span>
           </button>
         </div>
       </section>

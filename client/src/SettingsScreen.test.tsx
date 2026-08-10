@@ -94,14 +94,20 @@ describe('avatar', () => {
 describe('player token style', () => {
   it('reflects the current selection', () => {
     renderScreen({ tokenStyle: 'simple' });
-    expect(screen.getByRole('radio', { name: 'Simplified icons' }).getAttribute('aria-checked')).toBe('true');
-    expect(screen.getByRole('radio', { name: 'Portrait art' }).getAttribute('aria-checked')).toBe('false');
+    expect(screen.getByRole('radio', { name: /High contrast/ }).getAttribute('aria-checked')).toBe('true');
+    expect(screen.getByRole('radio', { name: /Detailed/ }).getAttribute('aria-checked')).toBe('false');
   });
 
   it('reports a choice without assuming it becomes the new selection', () => {
     const props = renderScreen({ tokenStyle: 'portrait' });
-    fireEvent.click(screen.getByRole('radio', { name: 'Simplified icons' }));
+    fireEvent.click(screen.getByRole('radio', { name: /High contrast/ }));
     expect(props.onTokenStyleChange).toHaveBeenCalledWith('simple');
+  });
+
+  it('offers a plain role-disc option', () => {
+    const props = renderScreen({ tokenStyle: 'portrait' });
+    fireEvent.click(screen.getByRole('radio', { name: /Plain/ }));
+    expect(props.onTokenStyleChange).toHaveBeenCalledWith('plain');
   });
 });
 

@@ -24,7 +24,7 @@ export const GUEST_PREFS_KEY = 'guest';
 
 const STORAGE_KEY = 'bbt.prefs.v1';
 
-export type TokenStyle = 'portrait' | 'simple';
+export type TokenStyle = 'portrait' | 'simple' | 'plain';
 
 export interface PlayerPrefs {
   tokenStyle?: TokenStyle;
@@ -35,7 +35,7 @@ export interface PlayerPrefs {
 type PrefsMap = Record<string, PlayerPrefs>;
 
 function isTokenStyle(value: unknown): value is TokenStyle {
-  return value === 'portrait' || value === 'simple';
+  return value === 'portrait' || value === 'simple' || value === 'plain';
 }
 
 function isAvatarDataUrl(value: unknown): value is string {
