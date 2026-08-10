@@ -94,6 +94,88 @@
   box-sizing: border-box;
 }
 
+/* ── Pitch detail levels ────────────────────────────────────────────────
+   Token style is also the board's visual-density setting. Detailed reads as
+   worn tabletop turf, Tactical keeps a restrained checkerboard, and Plain is
+   a clean diagram. These selectors deliberately outrank the safe theme
+   fallbacks in PlaybookTheme.css without changing square geometry. */
+.pitch.pitch--detailed .pitch__grid {
+  border-color: rgba(222, 217, 203, 0.58);
+  box-shadow:
+    inset 0 0 18px rgba(5, 8, 5, 0.32),
+    0 0 0 1px rgba(9, 10, 8, 0.82),
+    0 5px 14px rgba(0, 0, 0, 0.38);
+}
+
+.pitch.pitch--detailed .square--light {
+  background:
+    radial-gradient(circle at 72% 24%, rgba(128, 139, 75, 0.13), transparent 42%),
+    repeating-linear-gradient(105deg, rgba(229, 222, 184, 0.028) 0 1px, transparent 1px 4px),
+    #3c6031;
+  box-shadow: inset 0 0 0 0.5px rgba(222, 217, 203, 0.16);
+}
+
+.pitch.pitch--detailed .square--dark {
+  background:
+    radial-gradient(circle at 28% 76%, rgba(20, 25, 13, 0.2), transparent 48%),
+    repeating-linear-gradient(76deg, rgba(229, 222, 184, 0.022) 0 1px, transparent 1px 5px),
+    #355729;
+  box-shadow: inset 0 0 0 0.5px rgba(222, 217, 203, 0.14);
+}
+
+.pitch.pitch--detailed .square--endzone-human.square--light {
+  background:
+    radial-gradient(circle at 72% 24%, rgba(106, 169, 219, 0.13), transparent 42%),
+    repeating-linear-gradient(105deg, rgba(229, 222, 184, 0.028) 0 1px, transparent 1px 4px),
+    #294c69;
+}
+
+.pitch.pitch--detailed .square--endzone-human.square--dark {
+  background:
+    radial-gradient(circle at 28% 76%, rgba(8, 20, 30, 0.24), transparent 48%),
+    repeating-linear-gradient(76deg, rgba(229, 222, 184, 0.022) 0 1px, transparent 1px 5px),
+    #22405a;
+}
+
+.pitch.pitch--detailed .square--endzone-orc.square--light {
+  background:
+    radial-gradient(circle at 72% 24%, rgba(210, 105, 76, 0.12), transparent 42%),
+    repeating-linear-gradient(105deg, rgba(229, 222, 184, 0.028) 0 1px, transparent 1px 4px),
+    #63352c;
+}
+
+.pitch.pitch--detailed .square--endzone-orc.square--dark {
+  background:
+    radial-gradient(circle at 28% 76%, rgba(32, 10, 8, 0.25), transparent 48%),
+    repeating-linear-gradient(76deg, rgba(229, 222, 184, 0.022) 0 1px, transparent 1px 5px),
+    #562c25;
+}
+
+.pitch.pitch--tactical .square {
+  box-shadow: inset 0 0 0 0.5px rgba(222, 217, 203, 0.1);
+}
+
+.pitch.pitch--plain .pitch__grid {
+  border-color: rgba(241, 237, 225, 0.72);
+  box-shadow: none;
+}
+
+.pitch.pitch--plain .square--light,
+.pitch.pitch--plain .square--dark {
+  background: #365b2c;
+  box-shadow: inset 0 0 0 0.5px rgba(241, 237, 225, 0.18);
+}
+
+.pitch.pitch--plain .square--endzone-human.square--light,
+.pitch.pitch--plain .square--endzone-human.square--dark {
+  background: #284b66;
+}
+
+.pitch.pitch--plain .square--endzone-orc.square--light,
+.pitch.pitch--plain .square--endzone-orc.square--dark {
+  background: #603229;
+}
+
 /* Zoom mode needs no sizing rules of its own: cropping changes
    --pitch-aspect, and the fit rule above re-solves from that. */
 
@@ -171,12 +253,33 @@
   background: rgba(222, 217, 203, 0.68);
 }
 
+.pitch--detailed .square--endzone-human::before,
+.pitch--detailed .square--endzone-orc::before,
+.pitch--detailed .square--scrimmage::before {
+  background: rgba(235, 229, 207, 0.72);
+  filter: drop-shadow(0 0 1px rgba(235, 229, 207, 0.25));
+}
+
+.pitch--plain .square--endzone-human::before,
+.pitch--plain .square--endzone-orc::before,
+.pitch--plain .square--scrimmage::before {
+  background: rgba(248, 245, 235, 0.84);
+}
+
 .square--wide-zone::after {
   content: '';
   position: absolute;
   background: rgba(222, 217, 203, 0.4);
   pointer-events: none;
   z-index: 1;
+}
+
+.pitch--detailed .square--wide-zone::after {
+  background: rgba(235, 229, 207, 0.48);
+}
+
+.pitch--plain .square--wide-zone::after {
+  background: rgba(248, 245, 235, 0.68);
 }
 
 /* ── Landscape: state rows run left→right, state cols run top→bottom ── */

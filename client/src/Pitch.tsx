@@ -32,6 +32,11 @@ function BallIcon({ ghost, loose }: { ghost?: boolean; loose?: boolean }) {
 }
 
 const EMPTY_SKILLS: readonly string[] = [];
+const PITCH_DETAIL_CLASS: Record<TokenStyle, string> = {
+  portrait: 'pitch--detailed',
+  simple: 'pitch--tactical',
+  plain: 'pitch--plain',
+};
 
 function PieceIcon({ team, role, skills }: { team: Team; role?: string; skills: readonly string[] }) {
   const src = playerPortraitFor(team, role);
@@ -643,9 +648,9 @@ export function Pitch({
   const classes = [
     'pitch',
     `pitch--${orientation}`,
+    PITCH_DETAIL_CLASS[tokenStyle],
     zoomBounds ? 'pitch--zoomed' : '',
     tokenStyle !== 'portrait' ? 'pitch--simple' : '',
-    tokenStyle === 'plain' ? 'pitch--plain' : '',
   ].filter(Boolean).join(' ');
 
   // Drives the fit-to-container calc in Pitch.css. A custom property rather

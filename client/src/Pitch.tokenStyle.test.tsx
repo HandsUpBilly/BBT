@@ -15,6 +15,7 @@ describe('Pitch token style', () => {
       <Pitch state={state} onSquareClick={noop} onPieceClick={noop} onSquareHover={noop} onSquareLeave={noop} />,
     );
 
+    expect(container.querySelector('.pitch--detailed')).toBeTruthy();
     expect(container.querySelector('.pitch--simple')).toBeNull();
     expect(container.querySelector('.piece__role-code')?.textContent).toBe('LI');
     expect(container.querySelector('.piece__portrait')).toBeTruthy();
@@ -32,7 +33,7 @@ describe('Pitch token style', () => {
       />,
     );
 
-    expect(container.querySelector('.pitch--simple')).toBeTruthy();
+    expect(container.querySelector('.pitch--tactical.pitch--simple')).toBeTruthy();
     // The role code is always rendered — CSS (not a second render path) decides
     // whether it or the portrait is visible — see the note in Pitch.tsx.
     expect(container.querySelector('.piece__role-code')?.textContent).toBe('LI');
@@ -53,7 +54,7 @@ describe('Pitch token style', () => {
       />,
     );
 
-    expect(container.querySelector('.pitch--simple.pitch--plain')).toBeTruthy();
+    expect(container.querySelector('.pitch--plain.pitch--simple')).toBeTruthy();
     expect(container.querySelector('.piece__role-code')?.textContent).toBe('LI');
   });
 });

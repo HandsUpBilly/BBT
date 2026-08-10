@@ -163,7 +163,7 @@ export function SettingsScreen({
       <section className="settings-screen__section">
         <h3 className="settings-screen__section-title">Player tokens</h3>
         <p className="settings-screen__section-help">
-          Choose how much detail players show on the pitch.
+          Choose how much detail the players and pitch show.
         </p>
         <div className="settings-screen__token-toggle" role="radiogroup" aria-label="Player token style">
           <button
@@ -178,7 +178,7 @@ export function SettingsScreen({
             </span>
             <span className="settings-screen__token-copy">
               <strong>Detailed</strong>
-              <span>Full portraits, skill rings and badges</span>
+              <span>Full portraits and textured tabletop turf</span>
             </span>
           </button>
           <button
@@ -193,7 +193,7 @@ export function SettingsScreen({
             </span>
             <span className="settings-screen__token-copy">
               <strong>Tactical</strong>
-              <span>Position symbols and role codes, with skill markers</span>
+              <span>Position symbols on a restrained tactical grid</span>
             </span>
           </button>
           <button
@@ -208,7 +208,7 @@ export function SettingsScreen({
             </span>
             <span className="settings-screen__token-copy">
               <strong>Plain</strong>
-              <span>Team discs and role codes only</span>
+              <span>Role codes on a clean diagrammatic pitch</span>
             </span>
           </button>
         </div>
