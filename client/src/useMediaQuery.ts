@@ -75,15 +75,13 @@ export function useHoverCapable(): boolean {
 }
 
 /**
- * Is the primary pointer imprecise?
- *
- * Governs hit-target sizing only. A fingertip does not get more precise
- * because the screen got bigger, so this is deliberately independent of
- * useCompactLayout.
+ * The third axis — pointer precision — has no hook on purpose. It settles
+ * hit-target sizing, which is a `(pointer: coarse)` media query in the
+ * stylesheets and nothing else; no component branches on it. A hook here
+ * would be an invitation to reintroduce the JS-branches-on-pointer coupling
+ * the note above records two shipped defects from. See the three-axis table
+ * in docs/agent-context/frontend-flow.md.
  */
-export function useCoarsePointer(): boolean {
-  return useMediaQuery('(pointer: coarse)');
-}
 
 /** True when the viewport is taller than it is wide. */
 export function usePortraitViewport(): boolean {

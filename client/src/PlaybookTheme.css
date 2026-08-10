@@ -255,10 +255,6 @@
   box-shadow: none;
 }
 
-.app--game .hud__divider {
-  background: var(--color-border);
-}
-
 /* ── Legend ───────────────────────────────────────────────────────────
    Each entry keeps its own hue — the colour is the key to the overlay it
    describes — but sits on a common dark chip instead of a paper tag. */
@@ -1178,9 +1174,7 @@
 }
 
 .app--admin .editor__puzzle-row,
-.app--admin .palette-piece,
-.app--admin .editor__stats span,
-.app--admin .editor__skills {
+.app--admin .palette-piece {
   color: var(--color-text);
   background: var(--color-surface-1);
   border: 1px solid var(--color-border-subtle);

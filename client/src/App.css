@@ -122,42 +122,6 @@ body,
   transform: skewX(-18deg) rotate(-8deg);
 }
 
-.admin-screen {
-  min-height: 100%;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  justify-content: center;
-  gap: 22px;
-  width: min(520px, calc(100% - 32px));
-  margin: 0 auto;
-}
-
-.admin-screen__header {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.admin-screen__title {
-  font-size: 2rem;
-  color: var(--color-text-strong);
-  font-family: var(--font-display);
-  font-weight: 600;
-  letter-spacing: 0.02em;
-  text-transform: uppercase;
-}
-
-.admin-screen__subtitle {
-  color: var(--color-text-muted);
-  line-height: 1.45;
-}
-
-.admin-screen__actions {
-  display: flex;
-  gap: 10px;
-}
-
 .identity-gate {
   min-height: 100%;
   display: grid;
@@ -381,13 +345,6 @@ body,
   font-variant-numeric: tabular-nums;
 }
 .hud__prob-value--risky { color: var(--color-warning); }
-
-/* Divider */
-.hud__divider {
-  width: 1px;
-  height: 28px;
-  background: var(--color-border);
-}
 
 /* Active team */
 .hud__team {
