@@ -1,0 +1,129 @@
+/* Deliberately parallel to ActionLogMenu.css — the two triggers sit next to
+   each other in the toolbar and must not read as different kinds of control. */
+.legend-menu {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.legend-menu__trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: transparent;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-button);
+  color: var(--color-text-muted);
+  padding: 4px 10px;
+  font-size: 0.78rem;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.legend-menu__trigger:hover {
+  color: var(--color-text);
+  border-color: #706e66;
+}
+
+.legend-menu__trigger--active {
+  background: #1b1d1b;
+  color: var(--color-text-strong);
+  border-color: var(--color-border-selected);
+}
+
+/* How many entries the key has gained for whatever is happening right now —
+   pass bands, block and push-back colours. They used to announce themselves by
+   appearing in an always-visible row; this is what replaces that. */
+.legend-menu__count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 17px;
+  height: 17px;
+  padding: 0 4px;
+  border-radius: 9px;
+  background: var(--color-accent);
+  color: #f4eee3;
+  font-size: 0.66rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+.legend-menu__dropdown {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 70;
+  width: max-content;
+  max-width: min(560px, calc(100vw - 20px));
+  max-height: min(60vh, 460px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-panel);
+  box-shadow: var(--shadow-overlay);
+  padding: 10px;
+}
+
+/* Inline, the key was one long row with the whole window to spread across, so
+   PlaybookTheme gives it `overflow-x: auto` and a sticky left-hand title. In a
+   panel it wraps instead, and both of those become wrong: a scrollbar the panel
+   does not need, and a title pinned to a left edge that no longer scrolls.
+   These are scoped under .app--game so they beat `.app--game .legend` on
+   specificity rather than on which stylesheet the bundler happened to emit
+   last — the two rules would otherwise be tied at (0,2,0). */
+.app--game .legend-menu__dropdown .legend {
+  flex-wrap: wrap;
+  gap: 6px 8px;
+  padding: 6px;
+  overflow-x: visible;
+}
+
+.app--game .legend-menu__dropdown .legend__key-title {
+  position: static;
+  /* Its own line above the chips it labels, now that they wrap. */
+  flex-basis: 100%;
+  padding: 0 2px;
+}
+
+.app--game .legend-menu__dropdown .skill-keys {
+  /* Stacked, not the inline two-column grid — side by side in a panel this
+     narrow would halve each key and wrap every label. */
+  grid-template-columns: minmax(0, 1fr);
+  gap: 8px;
+}
+
+.app--game .legend-menu__dropdown .game-legends {
+  gap: 8px;
+}
+
+/* Hit target — pointer precision only. */
+@media (pointer: coarse) {
+  .legend-menu__trigger {
+    min-height: 44px;
+    min-width: 44px;
+    justify-content: center;
+    padding: 0 8px;
+  }
+}
+
+/* Room — the narrow header cannot afford the word. */
+@media (max-width: 1024px) {
+  .legend-menu__trigger {
+    font-size: 1rem;
+  }
+
+  /* Icon and badge only; the button's accessible name carries the wording. */
+  .legend-menu__label {
+    display: none;
+  }
+
+  .legend-menu__dropdown {
+    /* Anchored to the toolbar but allowed the full width beneath it. */
+    right: auto;
+    left: 50%;
+    transform: translateX(-50%);
+    width: min(360px, calc(100vw - 16px));
+  }
+}

@@ -120,6 +120,35 @@ their owning components.
 - Decorative textures are CSS-only, ignore pointer events, and respect
   `prefers-reduced-motion`. Focus-visible uses the shared brass ring.
 
+### The pitch key is a toolbar panel, at every size
+
+`LegendMenu` — the pitch-state chips (tackle zone, free move, GFI, dodge) and
+both skill keys, behind a **Key** button in the HUD. It follows
+`ActionLogMenu`'s dropdown pattern, so the two neighbouring toolbar panels
+behave alike: pointerdown outside, Escape with `stopPropagation` so closing a
+panel does not also cancel the planned activation.
+
+It used to be a permanent block under the HUD, inline on desktop and behind a
+`<details>` on touch (`LegendShell`, now deleted along with the `legend` grid
+area and the `.game-legends--collapsible` rules). Two things to keep true if it
+ever moves back:
+
+- **The key is reference material, not a readout.** A player reads it once. It
+  was charging permanent rent — 36px on a 375×812 phone — in the one dimension
+  the board competes for.
+- **The trigger carries a count of the contextual entries.** Pass bands, block
+  target and push-back square appear only mid-decision, and they used to
+  announce themselves by materialising in a visible row. Behind a button they
+  would simply be invisible, so the badge says the key has something to add
+  about what is happening right now.
+
+`LegendMenu.css` re-scopes two inline-era rules under `.app--game
+.legend-menu__dropdown` — `overflow-x: auto` and the sticky left-hand
+`legend__key-title` both assume a single horizontally-scrolling row, and the
+panel wraps. They are scoped that deep to beat `.app--game .legend` on
+specificity rather than on stylesheet order, which the two would otherwise tie
+on at (0,2,0).
+
 ## Mobile Layout
 
 The game screen adapts along **three independent axes**. Answering any of them
@@ -128,7 +157,7 @@ directions — so keep them apart.
 
 | Question | Query | Hook | Governs |
 |---|---|---|---|
-| Is there room? | `(max-width: 1024px)` | `useCompactLayout()` | Side columns, board rotation, HUD labels, legend disclosure, coordinate gutters, default zoom |
+| Is there room? | `(max-width: 1024px)` | `useCompactLayout()` | Side columns, board rotation, HUD labels, coordinate gutters, default zoom |
 | Can any connected input hover? | `(any-hover: hover)` | `useHoverCapable()` | Hover preview vs two-stage tap and the commit bar |
 | Is the pointer coarse? | `(pointer: coarse)` | *(CSS only)* | Hit-target sizes, nothing else |
 
@@ -200,7 +229,6 @@ pickup stacking on one square; keep the two together and keep
 - HUD is one row of 44px controls, icon-only (`.hud__btn-text` is hidden). The
   status line is mounted below the board in `.status-strip` instead, and the
   series counter rides with it.
-- The legend goes behind a `<details>` disclosure (`LegendShell`).
 - The action log is a toolbar dropdown (`ActionLogMenu`), following
   `UserMenu`'s pattern so the neighbouring controls behave alike. Its badge
   shows `rollCount(log)` — rolls, not steps — because that count is what the
@@ -208,9 +236,9 @@ pickup stacking on one square; keep the two together and keep
   `DiceLog` in its always-visible side column.
 - `MobileInfoSheet` restores the player card, collapsed by default so the
   board keeps the height.
-- In landscape under 600px tall, `.app--game` becomes a grid that puts legend,
-  status and sheet in a column beside the board, recovering the height the
-  board is starved of.
+- In landscape under 600px tall, `.app--game` becomes a grid that puts status
+  and sheet in a column beside the board, recovering the height the board is
+  starved of.
 
 ### Reporting committed probability
 
