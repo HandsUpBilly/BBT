@@ -7,6 +7,47 @@
 // issues" hole without adding a datastore dependency. Move to a Blobs- or
 // KV-backed counter if abuse actually materializes.
 
+/**
+ * Which caller is this, for throttling purposes?
+ *
+ * This lived as four hand-copied definitions — three byte-identical ones in the
+ * Netlify functions and an inline `req.ip` variant repeated three times in
+ * Express — which had already drifted in form. It governs a security control,
+ * so a future tightening applied to one copy and not the others would leave the
+ * other endpoints bypassable while the code read as if they were fixed.
+ *
+ * The two targets identify a caller differently, so each passes what it has:
+ *
+ *   - Netlify sets `x-nf-client-connection-ip` on every request; it is set by
+ *     the edge, not the client, so it cannot be forged.
+ *   - Express has no such header. Its trusted answer is `req.ip`, which already
+ *     accounts for the app's `trust proxy` setting — a header adapter cannot
+ *     reach it, which is why `remoteAddress` is a separate parameter.
+ *
+ * `x-forwarded-for` is deliberately NOT consulted. It is client-supplied, so an
+ * attacker rotating it would mint a fresh bucket per request and turn the
+ * limiter into a no-op — strictly worse than the shared 'unknown' bucket, which
+ * at least throttles. Neither target should ever reach that fallback.
+ *
+ * @param options.user           verified user, or null for a guest
+ * @param options.getHeader      `(name) => string | null`, as in googleAuth.js
+ * @param options.remoteAddress  a trusted peer address, when the target has one
+ */
+export function rateLimitKey({ user, getHeader = () => null, remoteAddress = null } = {}) {
+  if (user?.providerUserId) return `user:${user.providerUserId}`;
+
+  const address =
+    trimmedOrNull(getHeader('x-nf-client-connection-ip')) ?? trimmedOrNull(remoteAddress);
+
+  return address ? `ip:${address}` : 'unknown';
+}
+
+function trimmedOrNull(value) {
+  if (typeof value !== 'string') return null;
+  const trimmed = value.trim();
+  return trimmed || null;
+}
+
 export function createRateLimiter({ limit, windowMs, now = () => Date.now() }) {
   const hits = new Map();
 

@@ -30,7 +30,12 @@ import {
   validateScoreSubmission,
   validateSeriesSubmission,
 } from '../shared/scoreValidation.js';
-import { LEADERBOARD_RATE_LIMIT, REPORT_RATE_LIMIT, createRateLimiter } from '../shared/rateLimit.js';
+import {
+  LEADERBOARD_RATE_LIMIT,
+  REPORT_RATE_LIMIT,
+  createRateLimiter,
+  rateLimitKey,
+} from '../shared/rateLimit.js';
 import { buildPlayerStatistics } from '../shared/statistics.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -65,6 +70,15 @@ async function identify(req, res) {
   }
 }
 
+/**
+ * Throttling bucket for a request — see rateLimitKey in shared/rateLimit.js,
+ * which both this and the Netlify functions now share.
+ *
+ * Express carries no `x-nf-client-connection-ip`, so `getHeader` is left at its
+ * default and the trusted address is `req.ip`, which respects `trust proxy`.
+ */
+const clientKey = (req, user) => rateLimitKey({ user, remoteAddress: req.ip });
+
 // ── In-memory leaderboard ────────────────────────────────────────────────────
 const takeLeaderboardToken = createRateLimiter(LEADERBOARD_RATE_LIMIT);
 const store = new Map();
@@ -91,8 +105,7 @@ app.post('/api/leaderboard/:scenarioId', async (req, res) => {
   }
 
   // Rate-limit after validation so malformed spam can't burn a caller's budget.
-  const leaderboardBucket = user?.providerUserId ?? req.ip ?? 'unknown';
-  const leaderboardLimit = takeLeaderboardToken(leaderboardBucket);
+  const leaderboardLimit = takeLeaderboardToken(clientKey(req, user));
   if (!leaderboardLimit.allowed) {
     res.set('Retry-After', String(leaderboardLimit.retryAfterSeconds));
     return res.status(429).json({ error: 'Too many submissions. Please wait a moment and try again.' });
@@ -143,8 +156,7 @@ app.post('/api/series-leaderboard', async (req, res) => {
   }
 
   // Rate-limit after validation so malformed spam can't burn a caller's budget.
-  const seriesLeaderboardBucket = user?.providerUserId ?? req.ip ?? 'unknown';
-  const seriesLeaderboardLimit = takeLeaderboardToken(seriesLeaderboardBucket);
+  const seriesLeaderboardLimit = takeLeaderboardToken(clientKey(req, user));
   if (!seriesLeaderboardLimit.allowed) {
     res.set('Retry-After', String(seriesLeaderboardLimit.retryAfterSeconds));
     return res.status(429).json({ error: 'Too many submissions. Please wait a moment and try again.' });
@@ -236,8 +248,7 @@ app.post('/api/reports', async (req, res) => {
   // Rate-limit after validation so a malformed flood can't consume a bucket,
   // and key on the verified user when we have one so a shared IP doesn't
   // penalize everyone behind it.
-  const bucket = user?.providerUserId ?? req.ip ?? 'unknown';
-  const { allowed, retryAfterSeconds } = takeReportToken(bucket);
+  const { allowed, retryAfterSeconds } = takeReportToken(clientKey(req, user));
   if (!allowed) {
     res.set('Retry-After', String(retryAfterSeconds));
     return res.status(429).json({

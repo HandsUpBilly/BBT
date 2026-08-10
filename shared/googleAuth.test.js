@@ -41,6 +41,47 @@ test('no allowlist defaults to unrestricted admin access', async () => {
   assert.equal(await auth.requireAdminGoogleUser(headers({})), null);
 });
 
+/**
+ * The cold-start warning is the only signal that a deployment is fail-open —
+ * there is no banner and no health check. A cleared or typo'd ADMIN_EMAILS
+ * would otherwise open every /api/editor/* route silently and indefinitely,
+ * so the log line is load-bearing rather than cosmetic.
+ */
+function captureWarnings(run) {
+  const warnings = [];
+  const original = console.warn;
+  console.warn = message => warnings.push(String(message));
+  try {
+    run();
+  } finally {
+    console.warn = original;
+  }
+  return warnings;
+}
+
+test('an empty allowlist that stays open warns at cold start', () => {
+  const warnings = captureWarnings(() =>
+    createGoogleAuth({ verifyIdToken: null, adminEmails: '' }),
+  );
+
+  assert.equal(warnings.length, 1);
+  assert.match(warnings[0], /ADMIN_EMAILS is empty/);
+  assert.match(warnings[0], /EDITOR_ALLOW_UNAUTHENTICATED=false/);
+});
+
+test('a configured allowlist, or an explicit fail-closed, stays quiet', () => {
+  assert.deepEqual(
+    captureWarnings(() => createGoogleAuth({ verifyIdToken: null, adminEmails: 'admin@x.com' })),
+    [],
+  );
+  assert.deepEqual(
+    captureWarnings(() =>
+      createGoogleAuth({ verifyIdToken: null, adminEmails: '', allowUnauthenticated: false }),
+    ),
+    [],
+  );
+});
+
 test('a configured allowlist requires sign-in, then membership', async () => {
   const auth = createGoogleAuth({
     verifyIdToken: null, adminEmails: 'admin@x.com', allowUnauthenticated: true,

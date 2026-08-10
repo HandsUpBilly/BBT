@@ -46,9 +46,6 @@
 .dice-log__entry--pass-catch { border-left: 3px solid #7a5aa0; }
 .dice-log__entry--pickup     { border-left: 3px solid var(--color-warning); }
 .dice-log__entry--block      { border-left: 3px solid var(--color-danger); }
-.dice-log__entry--success   { border-left: 3px solid var(--color-success); }
-.dice-log__entry--fail      { border-left: 3px solid var(--color-danger); }
-.dice-log__entry--pending   { border-left: 3px solid var(--color-border); opacity: 0.7; }
 
 .dice-log__icon {
   font-size: 1rem;
@@ -70,16 +67,6 @@
 .dice-log__piece {
   color: var(--color-text);
   font-weight: 600;
-}
-
-.dice-log__ma {
-  color: var(--color-text-disabled);
-  font-size: 0.7rem;
-}
-
-.dice-log__dodge-flag {
-  color: #d0a878;
-  font-size: 0.7rem;
 }
 
 .dice-log__prob {
@@ -139,18 +126,6 @@
   color: var(--color-text-muted);
   font-weight: 400;
 }
-
-.dice-log__badge {
-  font-size: 0.8rem;
-  font-weight: 700;
-  width: 1.4em;
-  text-align: center;
-  flex-shrink: 0;
-}
-
-.dice-log__badge--ok      { color: var(--color-success); }
-.dice-log__badge--fail    { color: var(--color-danger); }
-.dice-log__badge--pending { color: var(--color-text-disabled); }
 
 .dice-log__prob-row {
   display: flex;

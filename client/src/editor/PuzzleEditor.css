@@ -299,22 +299,6 @@
 .palette-piece--human { background: rgba(18, 60, 102, 0.55); }
 .palette-piece--orc { background: rgba(106, 31, 24, 0.55); }
 
-.editor__stats {
-  display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  gap: 5px;
-}
-
-.editor__stats span,
-.editor__skills {
-  background: var(--color-surface-1);
-  border: 1px solid var(--color-border-subtle);
-  border-radius: 2px;
-  color: var(--color-text);
-  padding: 6px;
-  font-size: 0.72rem;
-}
-
 .editor__errors {
   color: #cf9b90;
   padding-left: 18px;

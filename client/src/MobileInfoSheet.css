@@ -60,9 +60,9 @@
   display: none;
 }
 
-/* The player card is a 130px column in the side rail. Here it has the full
-   width, so the portrait sits beside the stats instead of above them —
-   otherwise a square portrait alone would eat the whole sheet. */
+/* In the side rail the card is a narrow column and the portrait sits above the
+   stats. Here it has the full width of the sheet, so the portrait moves beside
+   them — a square portrait at this width would otherwise eat the whole sheet. */
 .info-sheet__panel--player .panel {
   width: 100%;
   display: grid;

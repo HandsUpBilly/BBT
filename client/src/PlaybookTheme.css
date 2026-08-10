@@ -138,12 +138,30 @@
   box-shadow: inset 0 1px rgba(255, 255, 255, 0.025);
 }
 
+/* The caption is decorative, and it only renders above 900px (see the
+   responsive block near the end of this file). Its strip is declared with it so
+   the two can't drift — and stays out of the touch HUD, where seven pixels come
+   off the board and nothing is drawn in them. */
+@media (min-width: 901px) {
+  /* Flex items lay out in the content box, so this lifts the controls into the
+     top band and leaves the remainder to the stamp alone. */
+  .app--game .hud {
+    padding-bottom: 16px;
+  }
+}
+
 .app--game .hud::after {
   content: 'MATCH DAY · COACH\'S BOARD';
   position: absolute;
-  /* Keep the decorative caption out of the account control's footprint. The
-     trigger can be about 210px wide once it includes a long public alias. */
-  right: 224px;
+  /* Sits in the strip reserved by the bottom padding above, clear of every
+     control's box.
+     This used to be `right: 224px` — a guess at the account trigger's width,
+     so the stamp would tuck in beside it. The trigger grows with the player's
+     alias, and at a long one it reaches ~213px and the two touch; the stamp
+     also ran three pixels under the Zoom and Restart buttons at every width.
+     A number that has to predict a sibling's size is the wrong mechanism, so
+     there isn't one any more: the caption owns a band nothing else is in. */
+  right: 13px;
   bottom: 3px;
   color: rgba(222, 217, 203, 0.14);
   font-family: var(--font-display);
@@ -253,10 +271,6 @@
 .app--game .hud__dot {
   border-color: rgba(222, 217, 203, 0.28);
   box-shadow: none;
-}
-
-.app--game .hud__divider {
-  background: var(--color-border);
 }
 
 /* ── Legend ───────────────────────────────────────────────────────────
@@ -1178,9 +1192,7 @@
 }
 
 .app--admin .editor__puzzle-row,
-.app--admin .palette-piece,
-.app--admin .editor__stats span,
-.app--admin .editor__skills {
+.app--admin .palette-piece {
   color: var(--color-text);
   background: var(--color-surface-1);
   border: 1px solid var(--color-border-subtle);

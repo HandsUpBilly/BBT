@@ -6,7 +6,8 @@ Primary files:
 - `client/package.json`, `client/vitest.config.ts`
 - `client/src/*.test.ts`, `client/src/test/gameState.ts`
 - `shared/*.test.js`
-- `netlify/functions/*.test.js`
+- `netlify/tests/*.test.js`
+- `client/playwright.config.ts`, `client/e2e/`
 - `AGENTS.md`
 
 ## Standard Checks
@@ -17,14 +18,16 @@ One command from the repo root runs everything:
 npm run verify
 ```
 
-That is `lint` → `test` (shared, then client) → `build`. There is no hosted CI,
-so it is the only signal before opening a PR.
+That is `lint` → `test` (shared and Netlify, then client) → `build` →
+`check:functions`. There is no hosted CI, so it is the only signal before
+opening a PR — and `check:functions` is the step that matters, for the reason
+below. It is not optional and it is not implied by the other three.
 
 Individually:
 
 ```bash
 npm run lint             # eslint over client/
-npm test                 # node --test over shared/ and netlify/functions/, then vitest over client/
+npm test                 # node --test over shared/ and netlify/tests/, then vitest over client/
 npm run build            # regenerates the scenario seed, then tsc -b && vite build
 npm run check:functions  # bundles the Netlify functions as the deploy does
 ```
@@ -75,10 +78,11 @@ check `git diff --stat` and file paths.
 
 | Suite | Runner | Covers |
 |---|---|---|
-| `shared/*.test.js` | `node --test` | scenario validation, score validation, Google auth gating, rate limiting, report formatting |
+| `shared/*.test.js` | `node --test` | scenario validation, score validation, Google auth gating (including the fail-open cold-start warning), rate limiting and its bucket key, report formatting |
 | `shared/statistics.test.js` | `node --test` | anonymous personal-best aggregation, identity deduplication, empty boards |
-| `netlify/functions/blobEntries.test.js` | `node --test` | `updateEntries` etag retry loop, unconditional final-attempt write, `readEntries` corrupt/non-array handling |
-| `netlify/functions/editorStore.test.js` | `node --test` | `toPublicView` published-only narrowing and dangling series id removal |
+| `netlify/tests/blobEntries.test.js` | `node --test` | `updateEntries` etag retry loop, unconditional final-attempt write, `readEntries` corrupt/non-array handling |
+| `netlify/tests/editorStore.test.js` | `node --test` | `toPublicView` published-only narrowing and dangling series id removal |
+| `netlify/tests/leaderboardRateLimit.test.js` | `node --test` | the 429 path on both leaderboard functions: per-caller bucketing, `Retry-After`, invalid payloads not spending budget |
 | `client/src/bfs.test.ts` | vitest | pathfinding, reachability, roll targets, pass ranges, block dice, pushes, zoom bounds |
 | `client/src/useGameState.test.ts` | vitest | pass/handoff regressions, loose-ball pickup, touchdowns |
 | `client/src/blockBlitz.test.ts` | vitest | block/blitz targeting, assists, outcomes, follow-ups |
@@ -87,6 +91,16 @@ check `git diff --stat` and file paths.
 | `client/src/editor/editorValidation.test.ts` | vitest | client/server validation parity, series resolution |
 | `client/src/editor/AdminStatistics.test.tsx` | vitest | admin statistics loading and personal-best labeling |
 | `client/src/blockControls.test.tsx` | vitest | menu placement, outcome selectability |
+| `client/src/attemptStore.test.ts` | vitest | attempt recording, the per-puzzle cap, damaged/absent storage, trend maths |
+| `client/src/AttemptHistory.test.tsx` | vitest | run table order, best marking, chart points, the chart's spoken label, clear-with-confirm |
+
+**jsdom here has no Storage API.** `window.localStorage` is a bare object with
+no `getItem`/`setItem`, so an unguarded access is a TypeError rather than a
+miss — which is why every localStorage read in the client is wrapped, and why
+the attempt-history suites install their own fake. vitest also runs without
+`globals`, so Testing Library's automatic cleanup never registers: a suite that
+renders more than once must call `cleanup()` itself or every query finds
+duplicates.
 
 `client/src/test/gameState.ts` builds test states from `makeEmptyState()` rather
 than a hand-written literal, so adding a `GameState` field doesn't require

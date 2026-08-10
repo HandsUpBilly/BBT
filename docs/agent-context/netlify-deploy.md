@@ -13,7 +13,7 @@ Primary files:
 ```toml
 [build]
   base    = "client"
-  command = "npm install && npm run generate:seed && npm run build && cd ../netlify/functions && npm install"
+  command = "npm install && npm run generate:seed && npm run build && cd ../netlify/functions && npm install && node ../../scripts/check-function-bundles.mjs"
   publish = "dist"
 ```
 
@@ -75,14 +75,50 @@ runtime fetch resolves), which was 12 function invocations for five puzzles.
 
 ## Headers
 
-`netlify.toml` sets a CSP allowing only what the app actually loads — the Google
-Identity Services script, its frame, and Google avatar images — plus
+`netlify.toml` sets a CSP allowing only what the app actually loads, plus
 `X-Frame-Options: DENY`, `nosniff`, a `Referrer-Policy`, and a `Permissions-Policy`.
 The CSP matters here specifically because the Google ID token is cached in
 `localStorage`; a strict `connect-src` leaves an injected script nowhere to send it.
 
+Third-party origins on the allowlist, and the one thing each is for:
+
+| Origin | Directive | Serves |
+|---|---|---|
+| `accounts.google.com/gsi/client` | `script-src` | Google Identity Services |
+| `accounts.google.com` | `connect-src`, `frame-src` | its token endpoints and iframe |
+| `lh3.googleusercontent.com`, `*.googleusercontent.com` | `img-src` | Google avatars on the leaderboards |
+| `www.googletagmanager.com` | `script-src`, `connect-src` | the GA4 `gtag.js` loader |
+| `www.google-analytics.com`, `*.google-analytics.com` | `img-src`, `connect-src` | GA4 collection |
+| `*.analytics.google.com` | `connect-src` | GA4 regional collection |
+
+Nothing else is permitted. Keep this table and `netlify.toml` in step — the
+allowlist being *broader* than its documentation is the failure this section has
+had before: a reviewer asking "should `googletagmanager.com` be in `script-src`?"
+reads the doc, finds no such entry, and either strips a legitimate origin or
+trusts the doc and misses the drift.
+
 Hashed assets under `/assets/*` are immutable-cached; `index.html` is `no-cache`
 so a deploy is picked up on the next load.
+
+## Analytics (GA4)
+
+Google Analytics 4, measurement ID **`G-WJ2Q968GC8`**. Two script tags in
+`client/index.html`: the `gtag.js` loader from `googletagmanager.com`, then
+`client/public/gtag-init.js`.
+
+**The init snippet is a file, not an inline script, on purpose.** Inlining it
+would force `'unsafe-inline'` into `script-src`, which would defeat the reason
+the CSP is tight here at all — see Headers above. `/gtag-init.js` is served from
+the same origin, so it needs nothing beyond `'self'`. A future "just inline the
+snippet" tidy-up would silently widen the policy; don't.
+
+`gtag-init.js` sets `window['ga-disable-G-WJ2Q968GC8'] = true` on `localhost`
+and `127.0.0.1` before the `config` call, so local development doesn't land in
+the property's reports. GA reads the flag on every hit, so it has to be set
+first — keep it above `gtag('config', …)`.
+
+There is no environment variable: the measurement ID is a literal in both files,
+and it is public by nature (it ships in the page source either way).
 
 ## Environment Variables
 
@@ -118,6 +154,29 @@ address, every `/api/editor/*` route requires a verified matching Google user.
 Set `EDITOR_ALLOW_UNAUTHENTICATED=false` to opt a deployment into returning 503
 when its allowlist is empty.
 
+**Production should set it.** With it unset, the only thing protecting every
+`/api/editor/*` route — unpublished drafts, anonymous write/delete, publish, and
+the full retained leaderboard aggregates — is `ADMIN_EMAILS` being non-empty in
+the Netlify UI. Clear it, typo it, or restore the site into an environment where
+it was never set, and the whole surface opens to anonymous callers with no error
+and no banner. `EDITOR_ALLOW_UNAUTHENTICATED=false` makes that state a 503
+instead, and the open default stays available for local dev where it is
+genuinely convenient.
+
+The one visible signal is a cold-start `console.warn` from `createGoogleAuth`
+when the allowlist is empty *and* access is still open. It shows up in the
+function logs; `shared/googleAuth.test.js` covers it so it can't be dropped
+quietly.
+
+This variable **cannot be set in `netlify.toml`.** Variables declared in the
+config file are scoped to Builds and Post processing, so a function never sees
+them at runtime — set it in the Netlify UI (Site configuration → Environment
+variables), or:
+
+```bash
+netlify env:set EDITOR_ALLOW_UNAUTHENTICATED false --context production
+```
+
 ## Blobs Concurrency
 
 `netlify/functions/blobEntries.js` wraps leaderboard reads/writes with
@@ -146,6 +205,7 @@ indefinitely.
 ## Current Production Capabilities
 
 - Static game frontend
+- Google Analytics 4 (`G-WJ2Q968GC8`), disabled on localhost
 - Google/guest identity
 - Individual + series leaderboards, with server-side score validation
 - Combined home-screen progress endpoint

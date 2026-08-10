@@ -43,7 +43,7 @@ editor accepted drafts the server then rejected).
 | `reporting.js` | client download fallback, both `/api/reports` implementations |
 | `githubIssues.js` | both `/api/reports` implementations (server-only) |
 | `scoreValidation.js` | both leaderboard implementations |
-| `rateLimit.js` | both `/api/reports` implementations |
+| `rateLimit.js` | both `/api/reports` and both leaderboard implementations |
 | `statistics.js` | `server/index.js`, `editor-statistics.js` |
 
 They are plain ESM `.js` with hand-written `.d.ts` siblings so TypeScript can
@@ -110,7 +110,7 @@ Individually:
 
 ```bash
 npm run lint             # ESLint over client/
-npm test                 # node --test over shared/ and netlify/functions/, then vitest over client/
+npm test                 # node --test over shared/ and netlify/tests/, then vitest over client/
 npm run build            # regenerates the scenario seed, then tsc -b && vite build
 npm run check:functions  # bundles the Netlify functions as the deploy does
 ```
@@ -118,6 +118,24 @@ npm run check:functions  # bundles the Netlify functions as the deploy does
 There is no hosted CI, so `npm run verify` is the only signal before opening a
 PR. Note that `lint`, `tsc`, and the tests all pass on a module-resolution break
 that fails the deploy — `check:functions` is the step that catches it.
+
+### Layout regressions need the Playwright harness
+
+`npm run verify` does **not** run it. vitest runs in jsdom, which has no layout
+engine and measures every box as 0×0, so no unit test can catch a sizing
+regression. `client/e2e/` asserts on measured geometry against real browsers:
+
+```bash
+npx playwright install                    # once — fetches Chromium and WebKit
+npm --prefix client run test:e2e          # full nine-device matrix
+npm --prefix client run test:e2e:mobile   # the four phone profiles
+```
+
+It is out of `verify` deliberately: the specs need browser binaries `npm
+install` does not fetch, so a clean checkout would fail for a reason unrelated
+to the change under test. Run it by hand when touching game-screen layout,
+`Pitch.tsx`, or anything behind a `(pointer: coarse)` media query. Full notes in
+`docs/agent-context/testing-and-pr-workflow.md`.
 
 ## TypeScript / JavaScript
 
