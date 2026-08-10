@@ -3,7 +3,7 @@ import { playerPortraitFor } from './playerPortraits';
 
 describe('playerPortraitFor', () => {
   it('never uses the Human tackle status-icon sheet as the Blitzer portrait', () => {
-    expect(playerPortraitFor('human', 'blitzer')).toBe('/human-lineman-gritty.webp');
+    expect(playerPortraitFor('human', 'blitzer')).toBe('/human-blitzer-gritty.webp');
     expect(playerPortraitFor('human', 'blitzer')).not.toBe('/human-tackle.png');
   });
 

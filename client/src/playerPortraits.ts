@@ -10,10 +10,7 @@ const PLAYER_PORTRAITS: Record<Team, Record<string, string>> = {
     thrower: '/human-thrower-gritty.webp',
     catcher: '/human-catcher-gritty.webp',
     lineman: '/human-lineman-gritty.webp',
-    // There is no dedicated Human Blitzer portrait yet. Use the gritty Human
-    // player fallback rather than human-tackle.png, which is a status-icon
-    // sprite sheet and was never valid portrait artwork.
-    blitzer: '/human-lineman-gritty.webp',
+    blitzer: '/human-blitzer-gritty.webp',
   },
   orc: {
     thrower: '/orc-thrower.png',
