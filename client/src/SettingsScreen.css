@@ -161,96 +161,19 @@
 }
 
 .settings-screen__token-preview {
-  min-height: 54px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-}
-
-.settings-screen__sample-token {
-  width: 44px;
-  height: 44px;
-  border-radius: 50%;
-  flex: 0 0 auto;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-sizing: border-box;
-  font-family: var(--font-mono);
-  font-size: 0.72rem;
-  font-weight: 900;
-  color: #f4eee3;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.85);
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.55);
-}
-
-.settings-screen__sample-token--human { --sample-team: var(--team-human-deep); }
-.settings-screen__sample-token--orc { --sample-team: var(--team-orc-deep); }
-
-.settings-screen__sample-token--portrait {
-  border: 4px solid #214f91;
-  background-color: var(--sample-team);
-  background-position: center 20%;
-  background-size: cover;
-}
-
-.settings-screen__sample-token--portrait.settings-screen__sample-token--human {
-  background-image: linear-gradient(rgba(65, 126, 186, 0.28), rgba(65, 126, 186, 0.28)), url('/human-lineman-gritty.webp');
-}
-
-.settings-screen__sample-token--portrait.settings-screen__sample-token--orc {
-  border-color: #52bdd4;
-  background-image: linear-gradient(rgba(190, 65, 48, 0.28), rgba(190, 65, 48, 0.28)), url('/orc-blocker-gritty.webp');
-}
-
-.settings-screen__sample-token--clear {
-  border: 5px solid #214f91;
-  background: var(--sample-team);
-  position: relative;
+  aspect-ratio: 3 / 2;
   overflow: hidden;
-  box-shadow: inset 0 0 0 1px rgba(244, 238, 227, 0.45), 0 2px 5px rgba(0, 0, 0, 0.55);
+  border: 1px solid rgba(222, 217, 203, 0.35);
+  border-radius: 4px;
+  background: #182017;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.48);
 }
 
-.settings-screen__sample-token--clear.settings-screen__sample-token--orc {
-  border-color: #52bdd4;
-}
-
-.settings-screen__sample-token--clear .piece__role-glyph {
+.settings-screen__token-preview img {
   display: block;
-  position: absolute;
-  width: 47%;
-  height: 47%;
-  top: 7%;
-  fill: #f4eee3;
-  stroke: #111614;
-  stroke-width: 1.2;
-  stroke-linejoin: round;
-}
-
-.settings-screen__sample-token--clear .piece__role-glyph-detail {
-  fill: none;
-  stroke: #111614;
-  stroke-width: 1.35;
-  stroke-linecap: round;
-}
-
-.settings-screen__sample-token--clear > span {
-  position: absolute;
-  left: 14%;
-  right: 14%;
-  bottom: 5%;
-  line-height: 1.05;
-  background: rgba(8, 11, 12, 0.72);
-  border: 1px solid rgba(244, 238, 227, 0.42);
-  border-radius: 2px;
-  text-align: center;
-  font-size: 0.52rem;
-}
-
-.settings-screen__sample-token--plain {
-  border: 2px solid rgba(244, 238, 227, 0.7);
-  background: var(--sample-team);
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .settings-screen__token-copy {

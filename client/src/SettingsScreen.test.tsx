@@ -98,6 +98,14 @@ describe('player token style', () => {
     expect(screen.getByRole('radio', { name: /Detailed/ }).getAttribute('aria-checked')).toBe('false');
   });
 
+  it('shows a pitch comparison visual for every token level', () => {
+    renderScreen();
+
+    expect(screen.getByRole('radio', { name: /Detailed/ }).querySelector('img')?.getAttribute('src')).toContain('detailed.webp');
+    expect(screen.getByRole('radio', { name: /Tactical/ }).querySelector('img')?.getAttribute('src')).toContain('tactical.webp');
+    expect(screen.getByRole('radio', { name: /Plain/ }).querySelector('img')?.getAttribute('src')).toContain('plain.webp');
+  });
+
   it('reports a choice without assuming it becomes the new selection', () => {
     const props = renderScreen({ tokenStyle: 'portrait' });
     fireEvent.click(screen.getByRole('radio', { name: /Tactical/ }));

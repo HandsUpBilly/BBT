@@ -2,7 +2,9 @@ import { useRef, useState } from 'react';
 import { ConfirmDialog } from './ConfirmDialog';
 import { encodeAvatarFile, validateAvatarFile, AVATAR_ALLOWED_TYPES } from './avatarImage';
 import type { TokenStyle } from './prefs';
-import { RoleGlyph } from './RoleGlyph';
+import detailedPitchPreview from './assets/token-style-previews/detailed.webp';
+import tacticalPitchPreview from './assets/token-style-previews/tactical.webp';
+import plainPitchPreview from './assets/token-style-previews/plain.webp';
 import './SettingsScreen.css';
 
 interface Props {
@@ -172,8 +174,7 @@ export function SettingsScreen({
             onClick={() => onTokenStyleChange('portrait')}
           >
             <span className="settings-screen__token-preview" aria-hidden="true">
-              <span className="settings-screen__sample-token settings-screen__sample-token--portrait settings-screen__sample-token--human" />
-              <span className="settings-screen__sample-token settings-screen__sample-token--portrait settings-screen__sample-token--orc" />
+              <img src={detailedPitchPreview} alt="" />
             </span>
             <span className="settings-screen__token-copy">
               <strong>Detailed</strong>
@@ -188,14 +189,7 @@ export function SettingsScreen({
             onClick={() => onTokenStyleChange('simple')}
           >
             <span className="settings-screen__token-preview" aria-hidden="true">
-              <span className="settings-screen__sample-token settings-screen__sample-token--clear settings-screen__sample-token--human">
-                <RoleGlyph role="blitzer" fallback="lineman" />
-                <span>BL</span>
-              </span>
-              <span className="settings-screen__sample-token settings-screen__sample-token--clear settings-screen__sample-token--orc">
-                <RoleGlyph role="thrower" fallback="blocker" />
-                <span>TH</span>
-              </span>
+              <img src={tacticalPitchPreview} alt="" />
             </span>
             <span className="settings-screen__token-copy">
               <strong>Tactical</strong>
@@ -210,8 +204,7 @@ export function SettingsScreen({
             onClick={() => onTokenStyleChange('plain')}
           >
             <span className="settings-screen__token-preview" aria-hidden="true">
-              <span className="settings-screen__sample-token settings-screen__sample-token--plain settings-screen__sample-token--human">LI</span>
-              <span className="settings-screen__sample-token settings-screen__sample-token--plain settings-screen__sample-token--orc">BL</span>
+              <img src={plainPitchPreview} alt="" />
             </span>
             <span className="settings-screen__token-copy">
               <strong>Plain</strong>
