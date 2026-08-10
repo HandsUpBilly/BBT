@@ -368,6 +368,13 @@ export function Pitch({
     : null;
   const ghostHasBall = selectedPiece?.hasBall ?? false;
 
+  // Current tip of the selected piece's committed movement — not the same as
+  // selectedPiece.position, which stays at the activation's start square
+  // until the activation finalizes.
+  const tipPos = state.committedPath.length > 0
+    ? state.committedPath[state.committedPath.length - 1]
+    : state.originPos ?? selectedPiece?.position ?? null;
+
   const looseBallKey = state.ballPosition ? key(state.ballPosition) : null;
 
   // Current action label for the selected piece — shown at the bottom-right
@@ -486,10 +493,10 @@ export function Pitch({
       // Reachable squares beyond the player's remaining MA require one of the
       // two Go For It rolls. Mark the outer rings immediately, rather than
       // only revealing that cost after the player hovers a destination.
-      const isGfiRange = isReachable && selectedPiece != null
+      const isGfiRange = isReachable && tipPos != null
         && Math.max(
-          Math.abs(pCol - selectedPiece.position.col),
-          Math.abs(pRow - selectedPiece.position.row),
+          Math.abs(pCol - tipPos.col),
+          Math.abs(pRow - tipPos.row),
         ) > state.remainingMa;
       const tzCount           = tzCounts.get(k) ?? 0;
       const isInTZ            = tzCount > 0;
