@@ -24,8 +24,12 @@ conventions.
 npm run verify
 ```
 
-Runs lint, both test suites (`node --test` over `shared/`, vitest over
-`client/`), and the production build.
+Runs lint, both test suites (`node --test` over `shared/` and `netlify/tests/`,
+vitest over `client/`), the production build, and `check:functions`, which
+bundles the Netlify functions the way the deploy does.
+
+The Playwright layout harness is separate — it needs browser binaries `npm
+install` does not fetch. See `AGENTS.md`.
 
 ## Deploying to Netlify
 
@@ -50,7 +54,16 @@ configures:
   `/api/progress`, `/api/reports`, `/api/editor/*`, and `/api/scenarios` to
   their respective functions, with an SPA fallback for everything else
 - Security headers, including a CSP scoped to the Google Identity Services
-  script and Google avatar images — nothing else may be loaded or contacted
+  script and its endpoints, Google avatar images, and the Google Analytics tag
+  and its collection endpoints — nothing else may be loaded or contacted. The
+  full origin-by-origin table is in `docs/agent-context/netlify-deploy.md`.
+
+### Analytics
+
+Google Analytics 4 (`G-WJ2Q968GC8`) loads from `client/index.html`, with its
+init snippet in `client/public/gtag-init.js` rather than inline so the CSP needs
+no `'unsafe-inline'`. It is disabled on `localhost` and `127.0.0.1`. No
+environment variable is involved.
 
 ### Environment variables
 
@@ -65,7 +78,18 @@ Set these in Netlify's UI under **Site configuration → Environment variables**
 | `ADMIN_EMAILS` | Functions | Comma-separated Google account emails allowed to use `/api/editor/*` (see below). **Unset = unrestricted Admin Mode.** |
 | `VITE_ADMIN_EMAILS` | Build | Same list, baked into the client bundle to control whether the Admin Mode tab is shown. Unset shows it to everyone. Keep in sync with `ADMIN_EMAILS`. |
 | `GITHUB_ISSUES_TOKEN` | Functions | Fine-grained token limited to `HandsUpBilly/BBT` with **Issues: Read and write**, for player-submitted reports. Server-only — never a `VITE_` variable. |
-| `EDITOR_ALLOW_UNAUTHENTICATED` | Functions | Set to `false` to make an empty `ADMIN_EMAILS` fail closed with 503. Defaults to unrestricted. |
+| `EDITOR_ALLOW_UNAUTHENTICATED` | Functions | Set to `false` to make an empty `ADMIN_EMAILS` fail closed with 503. Defaults to unrestricted. **Production should set this** — see below. |
+
+`EDITOR_ALLOW_UNAUTHENTICATED=false` is worth setting on the production site.
+Left unset, the only thing protecting every `/api/editor/*` route — unpublished
+drafts, anonymous write/delete/publish, and the retained leaderboard aggregates
+— is `ADMIN_EMAILS` being non-empty here. Clear it or typo it and the whole
+surface opens to anonymous callers, silently. The functions log a warning at
+cold start in that state, but nothing else surfaces it.
+
+It must be set in the UI (or `netlify env:set EDITOR_ALLOW_UNAUTHENTICATED false
+--context production`) — **not** in `netlify.toml`, whose variables are scoped
+to builds and never reach a function at runtime.
 
 ### Google Cloud OAuth config
 
