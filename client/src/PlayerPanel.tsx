@@ -1,4 +1,5 @@
 import type { PlayerPiece, Team } from './types';
+import { playerPortraitFor } from './playerPortraits';
 import './PlayerPanel.css';
 
 interface Props {
@@ -12,38 +13,9 @@ interface Props {
   role?: 'acting' | 'target';
 }
 
-// Keep in sync with the same map in Pitch.tsx.
-// `halfling`, `ogre`, `goblin`, and `troll` have no art yet and fall through to
-// the team default below.
-const PORTRAITS: Record<Team, Record<string, string>> = {
-  human: {
-    thrower: '/human-thrower-gritty.webp',
-    catcher: '/human-catcher-gritty.webp',
-    lineman:  '/human-lineman-gritty.webp',
-    blitzer:  '/human-tackle.png',
-    blocker:  '/human-blocker.png',
-    guard:    '/human-guard.png',
-    tackle:   '/human-tackle.png',
-  },
-  orc: {
-    thrower:    '/orc-thrower.png',
-    catcher:    '/orc-catcher.png',
-    lineman:    '/orc-lineman-gritty.webp',
-    'black-orc':'/orc-black-orc.png',
-    blocker:    '/orc-blocker-gritty.webp',
-    blitzer:    '/orc-blitzer-gritty.webp',
-    'big-un':   '/orc-big-un.png',
-  },
-};
-
 const CRESTS: Record<Team, string> = {
   human: '/human-crest.png',
   orc:   '/orc-crest.png',
-};
-
-const DEFAULT_ROLE: Record<Team, string> = {
-  human: 'lineman',
-  orc:   'blocker',
 };
 
 // Stat icons using the token images
@@ -85,9 +57,7 @@ export function PlayerPanel({ piece, side, role }: Props) {
     return <div className={`panel panel--${side} panel--empty`} />;
   }
 
-  const portraitSrc =
-    PORTRAITS[piece.team][piece.role ?? DEFAULT_ROLE[piece.team]] ??
-    PORTRAITS[piece.team][DEFAULT_ROLE[piece.team]];
+  const portraitSrc = playerPortraitFor(piece.team, piece.role);
   const portraitClass = portraitSrc.includes('-gritty.')
     ? 'panel__portrait'
     : 'panel__portrait panel__portrait--legacy';
