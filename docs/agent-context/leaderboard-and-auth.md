@@ -148,6 +148,28 @@ some scenarios. Nor does it detect an internally consistent but fabricated move
 list. Only replaying the moves through the rules engine would; see spec.md
 "Leaderboard and Report Integrity".
 
+## Attempt History Is Local, And Not The Leaderboard
+
+`client/src/attemptStore.ts` keeps every completed run per puzzle in
+`localStorage` under `bbt.attempts.v1` (oldest first, capped at 50 per puzzle);
+`AttemptHistory.tsx` renders it under the per-puzzle rankings with an SVG
+improvement chart.
+
+It exists precisely *because* the board stores personal bests only. The two
+answer different questions and must not be merged: `upsertPersonalBest` throws
+away the runs that led up to a best, which is right for a ranking table and is
+exactly the data "am I improving?" needs.
+
+Two things to keep true:
+
+- **A run is recorded on reaching the `touchdown` phase, not on submit.** Runs
+  the player declines to submit are the ones the board can never show.
+- **Nothing goes to the server.** Writing every bad attempt against a player's
+  identity would need storage, a retention policy, and a guest story — guests
+  are keyed by a self-chosen name, so a shared name would be a shared history.
+  See spec.md "Per-Puzzle Attempt History" for what a server-side version would
+  have to reuse.
+
 ## Storage Rules
 
 - **The store keeps every entry; only reads truncate** (10 on Netlify, 20

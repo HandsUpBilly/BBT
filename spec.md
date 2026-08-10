@@ -3913,3 +3913,70 @@ Netlify — a Blobs- or KV-backed counter would make it a hard cap.
 - A replayed submission that does not reproduce the claimed probability is
   rejected with a 400 and never reaches the leaderboard.
 - Legitimate submissions from the real client are unaffected.
+
+---
+
+# Per-Puzzle Attempt History
+
+**Status:** Shipped, local-only. Requested in issue #68 ("I should be able to
+see a history of all my attempts at each puzzle... some graphic that showed
+improvement over time"). Every completed run is recorded on the device and
+shown under that puzzle's rankings, with a chart. Nothing is stored server-side
+— see Non-goals.
+
+## Problem Statement
+
+The leaderboard cannot answer "am I getting better at this puzzle?", and it is
+not supposed to. `upsertPersonalBest` never lets a worse run replace a better
+one, deliberately: submitting a sloppy run after a clean one used to destroy
+the good result. So the one row a player has on a board is their high-water
+mark, and every run that led up to it — the whole shape of their improvement —
+is discarded at submit time.
+
+## What ships
+
+`client/src/attemptStore.ts` keeps `{ at, probability, diceCount }` per
+completed run, per scenario, under `bbt.attempts.v1`, oldest first, capped at
+50 runs per puzzle. Every read revalidates: unparseable JSON, a non-object
+payload, or an entry that is not a well-formed attempt degrades to "no
+history", never to a broken screen.
+
+A run is recorded when the game state reaches the `touchdown` phase, not when a
+score is submitted. The request was for a history of *attempts*, and a run the
+player chose not to put on the board is exactly the kind the leaderboard cannot
+show. Restarting rebuilds the state at `playing`, which re-arms the guard.
+
+`client/src/AttemptHistory.tsx` renders under the per-puzzle rankings: run
+count, best, latest, and points gained since the first run; an inline SVG line
+chart on a fixed 0-100% axis with the personal best drawn as a rule across it;
+and a table of every run, newest first. The chart is `role="img"` with a
+spoken summary, and the table is the accessible version of the same data.
+
+Improvement is measured from the first run to the *best* one, not to the
+latest, so a bad run after a good one reads as "you haven't beaten it yet"
+rather than as going backwards. A single run reports no improvement figure at
+all — "no progress" and "nothing to compare" are different answers.
+
+## Non-goals
+
+**It does not sync.** The history is per-device, and the panel says so. Making
+it follow an account would mean writing every attempt — including every bad one
+— to Netlify Blobs against a player's identity: new storage, a retention
+policy, and a guest story (guests are keyed by a self-chosen name, so their
+history would be trivially readable by anyone who typed the same one). None of
+that is warranted to answer "am I improving", which the local record answers
+completely for the device the player is actually on.
+
+If it is ever wanted server-side, the shape to reuse is the leaderboard's:
+`shared/` for the validation, a capped list per key in Blobs, and the
+`rateLimitKey` bucket for writes.
+
+## Acceptance Criteria
+
+- Finishing a run at a puzzle adds exactly one entry to that puzzle's history,
+  whether or not the score is submitted.
+- The rankings screen for a puzzle shows every recorded run for it, newest
+  first, with the best one marked.
+- The chart plots one point per run against a fixed 0-100% axis.
+- A storage failure — quota, private browsing, no Storage API — costs the
+  history and nothing else.

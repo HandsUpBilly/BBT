@@ -1,0 +1,184 @@
+.attempts {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding-top: 22px;
+  border-top: 1px solid var(--color-border-subtle);
+}
+
+.attempts__header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.attempts__title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--color-text-strong);
+}
+
+.attempts__clear {
+  background: none;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-button);
+  color: var(--color-text-muted);
+  font-size: 0.76rem;
+  padding: 4px 10px;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: color var(--transition-fast), border-color var(--transition-fast);
+}
+
+.attempts__clear:hover {
+  border-color: #706e66;
+  color: var(--color-text-strong);
+}
+
+.attempts__empty {
+  font-size: 0.82rem;
+  line-height: 1.5;
+  color: var(--color-text-muted);
+}
+
+/* ── Headline numbers ────────────────────────────────────────────────── */
+.attempts__stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 28px;
+}
+
+.attempts__stat dt {
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--color-text-muted);
+  margin-bottom: 2px;
+}
+
+.attempts__stat dd {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--color-text-strong);
+  font-variant-numeric: tabular-nums;
+}
+
+.attempts__stat-value--best { color: var(--color-success); }
+.attempts__stat-value--gain { color: var(--color-success); }
+
+/* ── Improvement chart ───────────────────────────────────────────────── */
+/* preserveAspectRatio is none on the element, so the SVG stretches to this box
+   and its own units never need to know the rendered width. Only the stroke
+   widths below are affected, and non-scaling-stroke keeps those honest. */
+.attempts__chart {
+  width: 100%;
+  height: 96px;
+  background: var(--color-surface-sunken);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-card);
+  overflow: visible;
+}
+
+.attempts__chart-line {
+  fill: none;
+  stroke: var(--color-accent);
+  stroke-width: 2;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+  vector-effect: non-scaling-stroke;
+}
+
+/* The personal best, as a rule across the plot — the thing every later run is
+   trying to beat, and the reason a flat stretch after a good run still reads
+   as progress held rather than progress stalled. */
+.attempts__chart-best {
+  stroke: var(--color-success);
+  stroke-width: 1;
+  stroke-dasharray: 3 3;
+  opacity: 0.65;
+  vector-effect: non-scaling-stroke;
+}
+
+.attempts__chart-dot {
+  fill: var(--color-accent);
+  vector-effect: non-scaling-stroke;
+}
+
+.attempts__chart-dot--best {
+  fill: var(--color-success);
+}
+
+/* ── Run table ───────────────────────────────────────────────────────── */
+.attempts__table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.82rem;
+}
+
+.attempts__caption {
+  caption-side: bottom;
+  margin-top: 8px;
+  font-size: 0.72rem;
+  color: var(--color-text-muted);
+  text-align: left;
+}
+
+.attempts__table th,
+.attempts__table td {
+  padding: 6px 8px;
+  text-align: left;
+}
+
+.attempts__table thead th {
+  font-size: 0.68rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-text-muted);
+  border-bottom: 1px solid var(--color-border-subtle);
+}
+
+.attempts__table tbody tr + tr {
+  border-top: 1px solid var(--color-border-subtle);
+}
+
+.attempts__run {
+  width: 3rem;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.attempts__prob,
+.attempts__dice {
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text);
+}
+
+.attempts__row--best .attempts__prob {
+  color: var(--color-success);
+  font-weight: 700;
+}
+
+.attempts__badge {
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 600;
+  color: var(--color-success);
+}
+
+.attempts__when {
+  color: var(--color-text-muted);
+  white-space: nowrap;
+}
+
+@media (max-width: 520px) {
+  /* The timestamp is the first thing worth losing: the run numbers already
+     carry the order, which is what the column is really for at a glance. */
+  .attempts__when,
+  .attempts__table thead th:last-child {
+    display: none;
+  }
+}

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { fetchLeaderboard } from './api';
+import { AttemptHistory } from './AttemptHistory';
 import type { LeaderboardEntry, Scenario } from './types';
 
 import './Leaderboard.css';
@@ -109,6 +110,12 @@ export function Leaderboard({ scenario, onBack, highlightId, initialEntries, onE
           </tbody>
         </table>
       )}
+
+      {/* The board is personal bests only, so it can't answer "am I getting
+          better at this?" — that needs the runs a best replaced. It sits here
+          rather than behind its own route because this screen is already
+          "everything about my standing at this puzzle". */}
+      <AttemptHistory key={scenario.id} scenarioId={scenario.id} />
     </div>
   );
 }

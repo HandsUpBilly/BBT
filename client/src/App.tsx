@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { useGameState, makeEmptyState, makeScenarioState, pathPreviewProb } from './useGameState';
 import { Pitch } from './Pitch';
 import type { PitchOrientation } from './Pitch';
@@ -26,6 +26,7 @@ import { ReportProblemButton } from './ReportProblemButton';
 import { ReportProblemModal } from './ReportProblemModal';
 import { submitScore, fetchLeaderboard, submitSeriesScore, fetchSeriesLeaderboard, fetchProgress, ApiError } from './api';
 import type { ProgressData } from './api';
+import { recordAttempt } from './attemptStore';
 import { resolveSeriesScenarios } from './series';
 import { loadScenarioData } from './scenarios/runtime';
 import type { ScenarioData } from './scenarios/runtime';
@@ -722,6 +723,30 @@ export default function App() {
     hookSquareLeave();
     setHoveredPiece(null);
   }, [hoverCapable, hookSquareLeave]);
+
+  // Record every completed run in the local attempt history.
+  //
+  // Keyed on reaching the touchdown phase rather than on submitting, so a run
+  // the player declines to put on the board still counts as an attempt — the
+  // request was for a history of attempts, and the ones that were not worth
+  // submitting are exactly the ones the leaderboard cannot show. Restarting
+  // rebuilds the state at 'playing', which re-arms the guard for the next run.
+  const attemptRecordedRef = useRef(false);
+  useEffect(() => {
+    if (state.phase !== 'touchdown') {
+      attemptRecordedRef.current = false;
+      return;
+    }
+    if (attemptRecordedRef.current || !activeScenario) return;
+    attemptRecordedRef.current = true;
+
+    const { cumulativeProb, diceCount } = summarizeActionLog(state.actionLog);
+    recordAttempt(activeScenario.id, {
+      at: new Date().toISOString(),
+      probability: cumulativeProb,
+      diceCount,
+    });
+  }, [state.phase, state.actionLog, activeScenario]);
 
   // Submission handler (standalone puzzle mode)
   const handleSubmit = useCallback(async (name: string) => {

@@ -91,6 +91,16 @@ check `git diff --stat` and file paths.
 | `client/src/editor/editorValidation.test.ts` | vitest | client/server validation parity, series resolution |
 | `client/src/editor/AdminStatistics.test.tsx` | vitest | admin statistics loading and personal-best labeling |
 | `client/src/blockControls.test.tsx` | vitest | menu placement, outcome selectability |
+| `client/src/attemptStore.test.ts` | vitest | attempt recording, the per-puzzle cap, damaged/absent storage, trend maths |
+| `client/src/AttemptHistory.test.tsx` | vitest | run table order, best marking, chart points, the chart's spoken label, clear-with-confirm |
+
+**jsdom here has no Storage API.** `window.localStorage` is a bare object with
+no `getItem`/`setItem`, so an unguarded access is a TypeError rather than a
+miss — which is why every localStorage read in the client is wrapped, and why
+the attempt-history suites install their own fake. vitest also runs without
+`globals`, so Testing Library's automatic cleanup never registers: a suite that
+renders more than once must call `cleanup()` itself or every query finds
+duplicates.
 
 `client/src/test/gameState.ts` builds test states from `makeEmptyState()` rather
 than a hand-written literal, so adding a `GameState` field doesn't require
