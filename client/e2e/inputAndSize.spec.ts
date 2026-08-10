@@ -72,6 +72,16 @@ test.describe('layout follows size, not input', () => {
     await expect(page.locator('.side-col--left .dice-log__empty')).toBeVisible();
   });
 
+  test('the player card fills the right rail', async ({ page }) => {
+    test.skip((await capabilities(page)).compact, 'wide viewports only');
+
+    const rail = await boxOf(page.locator('.side-col--right'));
+    const panel = await boxOf(page.locator('.side-col--right .panel'));
+
+    expect(panel.width, 'the player card left unused space in its rail')
+      .toBeCloseTo(rail.width, 1);
+  });
+
   test('a compact viewport moves those surfaces out of the rails', async ({ page }) => {
     test.skip(!(await capabilities(page)).compact, 'this is the compact contract');
 
