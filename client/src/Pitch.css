@@ -463,12 +463,12 @@
   background: rgba(207, 83, 64, 0.3);
 }
 
-/* Simplified token style — a team-coloured role disc in place of the portrait
-   bitmap, matching the puzzle editor's marker (see .editor-piece). Skill-group
-   rings and letter badges are separate layers around/on top of this frame and
-   are unaffected; only the art inside the frame changes. Always in the DOM
-   (see PieceIcon in Pitch.tsx) and toggled here so no component re-renders
-   390 memoized squares just to switch style. */
+/* High-contrast token style — a team-coloured role disc in place of the
+   portrait bitmap, matching the puzzle editor's marker (see .editor-piece).
+   Skill-group rings and letter badges remain for the middle detail level.
+   Plain additionally collapses those layers, leaving only the disc and role
+   code. Everything stays in the DOM so changing this pitch-level class does
+   not push a display preference through 390 memoized squares. */
 .piece__role-code {
   display: none;
 }
@@ -502,6 +502,16 @@
   .pitch--simple .piece__role-code {
     font-size: 0.62rem;
   }
+}
+
+.pitch--plain .piece__skill-ring {
+  padding: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.pitch--plain .piece__skill-markers {
+  display: none;
 }
 
 .piece__state-overlay {
@@ -650,6 +660,17 @@
   pointer-events: none;
   z-index: 5;
   overflow: visible;
+}
+
+/* Role codes are the primary identity cue in the two disc styles. Keep the
+   carried ball clear of those letters instead of covering the middle of the
+   token. Loose balls are square-level markers and do not use this rule. */
+.pitch--simple .piece > .ball-marker {
+  width: 48%;
+  height: 48%;
+  top: 24%;
+  left: 76%;
+  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.8));
 }
 
 /* Loose ball on the ground — much larger than the carried marker so it

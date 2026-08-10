@@ -68,7 +68,7 @@ function PieceIcon({ team, role, skills }: { team: Team; role?: string; skills: 
   const groups = skillGroupsFor(skills);
   const markers = skillMarkersFor(skills);
 
-  // Always rendered, hidden by CSS unless .pitch--simple is active — see the
+  // Always rendered, hidden by CSS unless a role-disc style is active — see the
   // note above useMediaQuery's compact/hover hooks on why presentation
   // choices belong in the stylesheet rather than a second render path here.
   // The disc keeps the skill-group ring and letter-badge layers below
@@ -322,7 +322,7 @@ interface Props {
    * 15 wide gives 24px.
    */
   orientation?: PitchOrientation;
-  /** 'simple' swaps the portrait art for a team-coloured role disc; skill rings and badges are unaffected. */
+  /** Controls portrait/detail density without changing any gameplay information. */
   tokenStyle?: TokenStyle;
 }
 
@@ -655,7 +655,8 @@ export function Pitch({
     'pitch',
     `pitch--${orientation}`,
     zoomBounds ? 'pitch--zoomed' : '',
-    tokenStyle === 'simple' ? 'pitch--simple' : '',
+    tokenStyle !== 'portrait' ? 'pitch--simple' : '',
+    tokenStyle === 'plain' ? 'pitch--plain' : '',
   ].filter(Boolean).join(' ');
 
   // Drives the fit-to-container calc in Pitch.css. A custom property rather

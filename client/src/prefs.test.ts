@@ -40,8 +40,8 @@ describe('reading with nothing stored', () => {
 
 describe('writing and reading back', () => {
   it('persists a token style choice under the identity key', () => {
-    writePrefs('user-1', { tokenStyle: 'simple' });
-    expect(readPrefs('user-1')).toEqual({ tokenStyle: 'simple' });
+    writePrefs('user-1', { tokenStyle: 'plain' });
+    expect(readPrefs('user-1')).toEqual({ tokenStyle: 'plain' });
   });
 
   it('persists an avatar data URL', () => {

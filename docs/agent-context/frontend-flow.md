@@ -409,17 +409,19 @@ When adding or renaming a supported skill, update the centralized mapping and
 `skillPresentation.test.ts` together. Do not fetch palette metadata at runtime
 or bake ring, tint, or badge labels into portrait bitmaps.
 
-### Simplified player token style
+### Player token detail styles
 
-The Settings screen's player-token toggle (`prefs.ts`'s `tokenStyle`, default
-`'portrait'`) swaps the portrait bitmap and its team tint for a team-coloured
-disc showing the two-letter role code — matching the puzzle editor's own
-`.editor-piece` marker. Skill-group rings and letter badges are unchanged
-either way; only the art inside the frame changes.
+The Settings screen offers three player-token detail levels (`prefs.ts`'s
+`tokenStyle`, default `'portrait'`): Detailed uses portrait art, skill rings,
+and badges; High contrast (`'simple'`, retained for stored-preference
+compatibility) uses team-coloured role-code discs with rings and badges; Plain
+uses the same clear discs but removes the rings and badges. The two-letter disc
+matches the puzzle editor's own `.editor-piece` marker.
 
-Implemented as a single `pitch--simple` class on `<Pitch>`'s outer element,
-not a prop threaded through `Square`. `PieceIcon` always renders both the
-portrait `<img>` and a `.piece__role-code` span; CSS decides which is visible.
+Implemented as pitch-level `pitch--simple` and `pitch--plain` classes on
+`<Pitch>`'s outer element, not props threaded through `Square`. `PieceIcon`
+always renders both the portrait `<img>` and a `.piece__role-code` span; CSS
+decides which is visible and whether the skill decoration is collapsed.
 `Square` is memoized because hovering re-renders `<Pitch>` on every
 mouse-move, and a prop touching all 390 squares for a value that changes
 approximately never would be exactly the kind of presentation-in-a-component-

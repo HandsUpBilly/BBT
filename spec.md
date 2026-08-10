@@ -4079,11 +4079,10 @@ the server exists, or blocking the whole screen on the larger piece.
   now. Gated on being signed in, even though nothing about local storage
   strictly requires it, so the gate doesn't move once Phase 2 (below) makes it
   a real requirement.
-- **Player token style.** A `tokenStyle: 'portrait' | 'simple'` preference,
-  also in `prefs.ts`. `'simple'` swaps the portrait bitmap and team tint for a
-  team-coloured disc with the two-letter role code — the puzzle editor's own
-  `.editor-piece` marker — while leaving the skill-group rings and letter
-  badges untouched. See "Simplified player token style" in
+- **Player token style.** A `tokenStyle: 'portrait' | 'simple' | 'plain'`
+  preference, also in `prefs.ts`. The three Settings choices are Detailed
+  portraits, High contrast team-coloured role discs that retain skill markers,
+  and Plain role discs without the markers. See "Player token detail styles" in
   `docs/agent-context/frontend-flow.md` for why this is a single CSS class on
   `<Pitch>` rather than a prop threaded through the memoized `Square`.
 - **New `'settings'` AppMode.** Opened from `UserMenu` on every screen that
@@ -4141,6 +4140,7 @@ deliberately deferred rather than folded in:
   immediately for a signed-in player, after confirmation for a guest.
 - Uploading a non-image or oversized file shows an error and leaves the
   existing avatar and preference state untouched.
-- The token style toggle changes gameplay pitch tokens app-wide immediately;
-  skill-group rings and letter badges are visible in both styles.
+- The token style selector changes gameplay pitch tokens app-wide immediately;
+  skill-group rings and letter badges remain visible in Detailed and High
+  contrast, while Plain deliberately removes that decoration.
 - Nothing added in this phase makes a network request.
