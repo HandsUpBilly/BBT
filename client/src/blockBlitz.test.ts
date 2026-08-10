@@ -315,6 +315,26 @@ describe('Block outcome resolution', () => {
     expect(defender.position).toEqual({ col: 7, row: 8 });
     expect(attacker.position).toEqual({ col: 7, row: 9 }); // moved into the vacated square
     expect(attacker.activated).toBe(true);
+
+    // The follow-up must be logged as a move so the committed-movement trail
+    // (built from actionLog 'move' entries) extends into the vacated square
+    // instead of stopping at the block.
+    const followUpEntry = after.actionLog.at(-1)!;
+    expect(followUpEntry.kind).toBe('move');
+    expect(followUpEntry.to).toEqual({ col: 7, row: 9 });
+  });
+
+  it('push: declining the follow-up does not log a move into the vacated square', () => {
+    const state = makeState([blocker(), orc()]);
+    const { result } = renderHook(() => useGameState(state));
+
+    act(() => result.current.handleBlockAction('human1', false));
+    act(() => result.current.handleBlockTarget(7, 9));
+    act(() => result.current.handleBlockOutcomeChoice(['push'], 'push'));
+    act(() => result.current.handlePushChoice(7, 8, false));
+
+    const lastEntry = result.current.state.actionLog.at(-1)!;
+    expect(lastEntry.kind).toBe('block');
   });
 
   it('defender-stumbles: offers a follow-up like push and defender-down', () => {
