@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
-import { useGameState, makeEmptyState, makeScenarioState, pathPreviewProb } from './useGameState';
+import { useGameState, makeEmptyState, makeScenarioState, pathPreviewProb, passActionAvailability } from './useGameState';
 import { Pitch } from './Pitch';
 import type { PitchOrientation } from './Pitch';
 import { PieceMenu } from './PieceMenu';
@@ -1298,7 +1298,7 @@ export default function App() {
         // is expected to move this piece onto the ball's square first (a pickup
         // roll), then hand off/pass with the ball it just picked up.
         const canHandoff = (menuPiece.hasBall || state.ballPosition !== null) && !state.passUsed && !menuPiece.activated;
-        const canPass    = (menuPiece.hasBall || state.ballPosition !== null) && !state.passUsed && !menuPiece.activated;
+        const canPass    = passActionAvailability(state, menuPiece);
         const { canBlock, canBlitz } = blockActionAvailability(menuPiece, state);
         const menuActions: PieceMenuAction[] = [
           { label: 'Move',     key: 'move' },
