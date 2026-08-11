@@ -91,22 +91,24 @@ export function SubmitModal({ actionLog, onSubmit, onDismiss, seriesMode, contin
 
         {riskyMoves.length > 0 ? (
           <div className="submit-modal__moves">
-            <div className="submit-modal__moves-header">
-              <span>Player</span>
-              <span>Type</span>
-              <span>Move</span>
-              <span>Action</span>
-              <span className="submit-modal__col-right">Chance</span>
-            </div>
-            {riskyMoves.map((entry, i) => (
-              <div key={i} className="submit-modal__move-row">
-                <span className="submit-modal__move-name">{entryPlayerName(entry)}</span>
-                <span className="submit-modal__move-role">{entryRole(entry)}</span>
-                <span className="submit-modal__move-pos">{posLabel(entry.from)} → {posLabel(entry.to)}</span>
-                <span className="submit-modal__move-action">{actionLabel(entry)}</span>
-                <span className="submit-modal__move-prob">{pct(entry.actionProb)}</span>
+            <div className="submit-modal__moves-scroll">
+              <div className="submit-modal__moves-header">
+                <span>Player</span>
+                <span>Type</span>
+                <span>Move</span>
+                <span>Action</span>
+                <span className="submit-modal__col-right">Chance</span>
               </div>
-            ))}
+              {riskyMoves.map((entry, i) => (
+                <div key={i} className="submit-modal__move-row">
+                  <span className="submit-modal__move-name">{entryPlayerName(entry)}</span>
+                  <span className="submit-modal__move-role">{entryRole(entry)}</span>
+                  <span className="submit-modal__move-pos">{posLabel(entry.from)} → {posLabel(entry.to)}</span>
+                  <span className="submit-modal__move-action">{actionLabel(entry)}</span>
+                  <span className="submit-modal__move-prob">{pct(entry.actionProb)}</span>
+                </div>
+              ))}
+            </div>
             <div className="submit-modal__cum-row">
               <span className="submit-modal__cum-label">Cumulative probability</span>
               <span className={`submit-modal__cum-value${cumulativeProb < 0.5 ? ' submit-modal__cum-value--risky' : ''}`}>

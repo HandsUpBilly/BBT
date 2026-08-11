@@ -124,14 +124,34 @@
 }
 
 /* ── Risky moves table ───────────────────────────────────────────────── */
+/*
+ * The dialog itself caps at the viewport (see `.app--playbook .modal`) and
+ * scrolls as a last resort, but that let a long move list push the
+ * cumulative-probability row and the Continue/Submit button below the fold
+ * on a short window with only a native scrollbar — easy to miss — as the
+ * only sign more was there. `.submit-modal__moves-scroll` is the part that
+ * actually scrolls; `min-height: 0` is required for a flex child to shrink
+ * below its content size instead of forcing the dialog taller, matching the
+ * header/scroll-area/footer split `PieceMenu` already uses for the same
+ * short-screen problem.
+ */
 .submit-modal__moves {
   width: 100%;
   display: flex;
   flex-direction: column;
   gap: 3px;
+  min-height: 0;
   background: var(--color-surface-sunken);
   border-radius: var(--radius-card);
   padding: 10px 14px;
+}
+
+.submit-modal__moves-scroll {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-height: 0;
+  overflow-y: auto;
 }
 
 /* 5-column grid: Player | Type | Move | Action | Chance */
