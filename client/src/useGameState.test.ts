@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
-import { useGameState } from './useGameState';
+import { useGameState, passActionAvailability } from './useGameState';
 import { makeState, humanThrower as thrower, humanCatcher as catcher } from './test/gameState';
 
 /**
@@ -343,5 +343,54 @@ describe('zero valid targets auto-activates the carrier', () => {
 
     act(() => result.current.handleSquareClick(7, 10));
     expect(result.current.state.selectedPieceId).toBeNull();
+  });
+});
+
+/**
+ * Regression coverage for #123: the piece menu offered Pass whenever the
+ * carrier had the ball, regardless of whether any teammate was actually
+ * within throwing range — opening a targeting mode with zero valid
+ * receivers. `passActionAvailability` mirrors `blockActionAvailability`'s
+ * real-reachability check for Blitz.
+ */
+describe('passActionAvailability', () => {
+  it('allows Pass when a teammate is within range from the current position', () => {
+    // dx=0, dy=2 from the thrower's default position — well within "quick".
+    const state = makeState([thrower(), catcher()]);
+    expect(passActionAvailability(state, thrower())).toBe(true);
+  });
+
+  it('disables Pass when every teammate is out of range from every reachable square', () => {
+    // MA 6 + 2 GFI cannot bring a colinear 25-square gap into bomb range (max
+    // offset 13), so offering Pass here would open targeting with no receivers.
+    const carrier = thrower({ position: { col: 7, row: 0 }, ma: 6 });
+    const farCatcher = catcher({ position: { col: 7, row: 25 } });
+    const state = makeState([carrier, farCatcher]);
+
+    expect(passActionAvailability(state, carrier)).toBe(false);
+  });
+
+  it('allows Pass once movement brings a teammate into range', () => {
+    const carrier = thrower({ position: { col: 7, row: 0 }, ma: 8 });
+    // Reachable (MA 8 + GFI 2) and then "long" range from the reached square.
+    const nearerCatcher = catcher({ position: { col: 7, row: 16 } });
+    const state = makeState([carrier, nearerCatcher]);
+
+    expect(passActionAvailability(state, carrier)).toBe(true);
+  });
+
+  it('disables Pass with no ball and no loose ball on the pitch', () => {
+    const carrier = thrower({ hasBall: false });
+    const state = makeState([carrier, catcher()], 'human', null);
+
+    expect(passActionAvailability(state, carrier)).toBe(false);
+  });
+
+  it('disables Pass after it is spent and for an activated carrier', () => {
+    const carrier = thrower();
+    const state = makeState([carrier, catcher()]);
+
+    expect(passActionAvailability({ ...state, passUsed: true }, carrier)).toBe(false);
+    expect(passActionAvailability(state, { ...carrier, activated: true })).toBe(false);
   });
 });

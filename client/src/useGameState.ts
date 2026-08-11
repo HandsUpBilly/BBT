@@ -2,8 +2,9 @@ import { useState, useCallback } from 'react';
 import type { GameState, PlayerPiece, Position, ActionLogEntry, Scenario, BlockOutcomeFace } from './types';
 import type { PathStep } from './bfs';
 import {
-  computeReachable, findShortestPath, key, neighbours, catchTargetAt, passTargetAt, computePassRange,
-  countEligibleAssists, blockDiceCount, blockOutcomeProbabilities, blockCombinedProbability, pushBackCandidates,
+  computeReachable, findShortestPath, key, fromKey, neighbours, catchTargetAt, passTargetAt, computePassRange,
+  rangeBandForPass, countEligibleAssists, blockDiceCount, blockOutcomeProbabilities, blockCombinedProbability,
+  pushBackCandidates,
 } from './bfs';
 
 /**
@@ -1259,4 +1260,30 @@ export function blitzTargetKeys(state: GameState, attacker: PlayerPiece): Set<st
     if (canReachContact) targets.add(key(defender.position));
   }
   return targets;
+}
+
+/**
+ * Whether a piece has any legal Pass at all, given its remaining movement.
+ * Exported so the piece menu can grey out Pass when every teammate is out of
+ * range from every square the carrier could throw from — checking only
+ * "does this piece carry the ball" left the menu offering a Pass that opened
+ * targeting with zero valid receivers.
+ */
+export function passActionAvailability(state: GameState, carrier: PlayerPiece): boolean {
+  if (carrier.activated || carrier.down || state.passUsed) return false;
+  if (!carrier.hasBall && state.ballPosition === null) return false;
+
+  const { reachableKeys } = recomputeReachable(
+    state, carrier.id, carrier.position, carrier.ma, MAX_GFI,
+  );
+  const throwFromKeys = new Set(reachableKeys);
+  throwFromKeys.add(key(carrier.position));
+
+  return state.pieces.some(piece => {
+    if (piece.team !== carrier.team || piece.id === carrier.id || piece.hasBall || piece.down) return false;
+    for (const throwFromKey of throwFromKeys) {
+      if (rangeBandForPass(fromKey(throwFromKey), piece.position)) return true;
+    }
+    return false;
+  });
 }
