@@ -1459,7 +1459,7 @@
     padding: 24px 18px 22px;
   }
 
-  .app--playbook .submit-modal__moves,
+  .app--playbook .submit-modal__moves-scroll,
   .app--playbook .score-summary__moves {
     overflow-x: auto;
   }
