@@ -161,7 +161,7 @@ export function SettingsScreen({
       <section className="settings-screen__section">
         <h3 className="settings-screen__section-title">Avatar</h3>
         {isGuest ? (
-          <p className="settings-screen__section-help">Sign in with Google to set a profile photo.</p>
+          <p className="settings-screen__section-help">Sign in with Google to set an avatar.</p>
         ) : (
           <>
             <p className="settings-screen__section-help">
@@ -192,7 +192,7 @@ export function SettingsScreen({
                   disabled={avatarBusy}
                   onClick={() => fileInputRef.current?.click()}
                 >
-                  {avatarBusy ? 'Processing…' : avatar ? 'Change photo' : 'Upload photo'}
+                  {avatarBusy ? 'Processing…' : avatar ? 'Change avatar' : 'Upload avatar'}
                 </button>
                 {avatar && (
                   <button className="btn btn--ghost" onClick={() => onAvatarChange(undefined)}>

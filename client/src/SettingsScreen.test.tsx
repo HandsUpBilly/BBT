@@ -65,19 +65,19 @@ describe('display name', () => {
 describe('avatar', () => {
   it('is unavailable for guests', () => {
     renderScreen({ isGuest: true });
-    expect(screen.getByText(/Sign in with Google to set a profile photo/)).toBeTruthy();
-    expect(screen.queryByRole('button', { name: 'Upload photo' })).toBeNull();
+    expect(screen.getByText(/Sign in with Google to set an avatar/)).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Upload avatar' })).toBeNull();
   });
 
   it('offers upload for a signed-in player with no avatar yet', () => {
     renderScreen({ isGuest: false, avatar: undefined });
-    expect(screen.getByRole('button', { name: 'Upload photo' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Upload avatar' })).toBeTruthy();
     expect(screen.queryByRole('button', { name: 'Remove' })).toBeNull();
   });
 
   it('offers change and remove once an avatar is set', () => {
     const props = renderScreen({ isGuest: false, avatar: 'data:image/webp;base64,AAAA' });
-    expect(screen.getByRole('button', { name: 'Change photo' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Change avatar' })).toBeTruthy();
 
     fireEvent.click(screen.getByRole('button', { name: 'Remove' }));
     expect(props.onAvatarChange).toHaveBeenCalledWith(undefined);
