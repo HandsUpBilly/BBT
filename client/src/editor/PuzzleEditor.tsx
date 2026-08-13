@@ -466,12 +466,19 @@ export function PuzzleEditor({ onBack, onPlay, previewScenario, idToken }: Props
           </p>
         </div>
         <div className="editor__header-actions">
-          {hasUnsavedChanges && <span className="editor__unsaved">Unsaved changes</span>}
+          {hasUnsavedChanges && (
+            <span className="editor__unsaved">Unsaved changes — save before publishing</span>
+          )}
           <button className="btn btn--secondary" onClick={() => guardUnsaved(onBack, 'Leaving the editor')}>Back</button>
           <button className="btn btn--primary" onClick={() => onPlay(draft)} disabled={validationErrors.length > 0}>
             Play Draft
           </button>
-          <button className="btn btn--primary" disabled={publishing} onClick={requestPublish}>
+          <button
+            className="btn btn--primary"
+            disabled={publishing || hasUnsavedChanges}
+            title={hasUnsavedChanges ? 'Save your changes before publishing — Publish only pushes saved drafts live.' : undefined}
+            onClick={requestPublish}
+          >
             {publishing ? 'Publishing…' : 'Publish Drafts'}
           </button>
         </div>

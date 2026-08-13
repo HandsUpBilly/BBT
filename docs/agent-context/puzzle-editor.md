@@ -56,6 +56,14 @@ names, ids, or move histories to the dashboard.
   silently.
 - **Publish confirmation.** Publish is the one irreversible, player-facing
   action, so it asks first.
+- **Publish is blocked while the open draft has unsaved edits.** `Publish
+  Drafts` only copies what the server already has in its draft store — it has
+  no idea about in-progress edits still sitting in client state. Toggling
+  "Enabled for players" (or any other field) and clicking Publish without an
+  intervening Save silently published the *previous* saved state, so a puzzle
+  an admin believed they'd just enabled stayed `published: false` and never
+  appeared on Single Plays. The "Publish Drafts" button is now disabled
+  whenever `hasUnsavedChanges` is true, forcing Save first.
 - **Piece ids commit on blur**, not per keystroke — editing them live meant every
   intermediate value (including the empty string) briefly became the real id.
 
