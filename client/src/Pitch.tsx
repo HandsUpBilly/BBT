@@ -157,6 +157,29 @@ function PickupFace({ target }: { target: number }) {
   );
 }
 
+/**
+ * Marks a resolved block/blitz with the number of block dice (1-3) rolled,
+ * on the defender's square. Crimson-tinted (vs. the amber/blue/gold used for
+ * movement rolls) so it reads as a distinct kind of marker at a glance. Faces
+ * are decorative — block dice don't carry a single target number the way a
+ * dodge or pick-up roll does, so each die shows the same generic pip rather
+ * than DOT_POSITIONS[target].
+ */
+function BlockDiceFace({ count }: { count: 1 | 2 | 3 }) {
+  const label = `Block: ${count} block ${count === 1 ? 'die' : 'dice'}`;
+  return (
+    <div className="square__block-dice" title={label}>
+      {Array.from({ length: count }, (_, i) => (
+        <svg key={i} className="block-die" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+          <rect x="1" y="1" width="18" height="18" rx="3" ry="3"
+            fill="rgba(60,8,8,0.85)" stroke="rgba(255,90,90,0.95)" strokeWidth="1.5" />
+          <circle cx="10" cy="10" r="3.2" fill="rgba(255,150,150,0.95)" />
+        </svg>
+      ))}
+    </div>
+  );
+}
+
 // Game state is stored portrait: col 0-14, row 0-25.
 //   row 0  = one end zone, row 25 = the other
 //   row 13 = the scrimmage line
@@ -208,6 +231,7 @@ interface SquareProps {
   stepIsPreview: boolean;
   pathTrails: PathTrail[];
   dice: DiceInfo | null;
+  blockDice: 1 | 2 | 3 | null;
   ghost: { team: Team; role?: string; skills: readonly string[]; hasBall: boolean } | null;
   focusable: boolean;
   onSquareClick: (col: number, row: number) => void;
@@ -225,7 +249,7 @@ interface SquareProps {
  */
 const Square = memo(function Square({
   pCol, pRow, name, portrait, classes, label, pieceTeam, pieceRole, pieceSkills, pieceClasses, pieceHasBall,
-  looseBall, inTackleZone, actionLabel, displayStep, stepIsPreview, pathTrails, dice, ghost, focusable,
+  looseBall, inTackleZone, actionLabel, displayStep, stepIsPreview, pathTrails, dice, blockDice, ghost, focusable,
   onSquareClick, onPieceClick, onSquareHover, onSquareLeave,
 }: SquareProps) {
   const activate = useCallback((clientX: number, clientY: number) => {
@@ -290,6 +314,8 @@ const Square = memo(function Square({
           {dice.pickupTarget !== null && <PickupFace target={dice.pickupTarget} />}
         </div>
       )}
+
+      {blockDice !== null && <BlockDiceFace count={blockDice} />}
 
       {ghost && (
         <div className={`piece piece--${ghost.team} piece--ghost`}>
@@ -366,6 +392,18 @@ export function Pitch({
       if (entry.kind === 'move' && (entry.isGfi || entry.dodgeTarget !== null || entry.pickupTarget)) {
         map.set(key(entry.to), { isGfi: entry.isGfi, dodgeTarget: entry.dodgeTarget, pickupTarget: entry.pickupTarget ?? null });
       }
+    }
+    return map;
+  }, [state.actionLog]);
+
+  // Committed block dice: map from the defender's square -> dice count (1-3)
+  // rolled for the block/blitz resolved there. Same actionLog-derived, overwrite-
+  // on-repeat convention as committedDiceMap: a square blocked more than once
+  // this turn shows only the most recent block's dice count.
+  const committedBlockDiceMap = useMemo(() => {
+    const map = new Map<string, 1 | 2 | 3>();
+    for (const entry of state.actionLog) {
+      if (entry.kind === 'block') map.set(key(entry.to), entry.diceCount);
     }
     return map;
   }, [state.actionLog]);
@@ -453,7 +491,7 @@ export function Pitch({
     pieceSkills: readonly string[], pieceIsPreview: boolean,
     pieceDown: boolean, pieceHasBall: boolean, pieceActivated: boolean,
     reachable: boolean, dodge: number | null, gfi: boolean, pickup: number | null,
-    looseBall: boolean, isTarget: string | null,
+    looseBall: boolean, isTarget: string | null, blockDiceCount: number | null,
   ): string {
     const parts = [squareName(stateCol, stateRow)];
     if (pieceName) {
@@ -475,6 +513,7 @@ export function Pitch({
     if (gfi) parts.push('Go For It 2 plus');
     if (dodge !== null) parts.push(`dodge ${dodge} plus`);
     if (pickup !== null) parts.push(`pickup ${pickup} plus`);
+    if (blockDiceCount !== null) parts.push(`block: ${blockDiceCount} ${blockDiceCount === 1 ? 'die' : 'dice'}`);
     return parts.join(', ');
   }
 
@@ -567,6 +606,7 @@ export function Pitch({
           }
         : null;
       const displayedDice = previewDice ?? committedDice;
+      const blockDiceCount = committedBlockDiceMap.get(k) ?? null;
 
       const targetDescription = isHandoffTarget ? 'handoff target'
         : isPassReceiver ? 'pass target'
@@ -593,7 +633,7 @@ export function Pitch({
             describedPiece?.down ?? false, describedPiece?.hasBall ?? false, describedPiece?.activated ?? false,
             isReachable, displayedDice?.dodgeTarget ?? null,
             (displayedDice?.isGfi ?? false) || isGfiRange, displayedDice?.pickupTarget ?? null,
-            isLooseBall, targetDescription,
+            isLooseBall, targetDescription, blockDiceCount,
           )}
           pieceTeam={piece?.team ?? null}
           pieceRole={piece?.role}
@@ -614,6 +654,7 @@ export function Pitch({
           stepIsPreview={!!previewStep}
           pathTrails={pathTrails}
           dice={displayedDice}
+          blockDice={blockDiceCount}
           ghost={showGhost && selectedPiece
             ? {
                 team: selectedPiece.team,
