@@ -472,7 +472,13 @@
 
 /* Completed throws use one amber arc over the whole board. Movement remains
    a white square-by-square dotted trail, so the two actions cannot be
-   mistaken for one another even where their routes cross. */
+   mistaken for one another even where their routes cross. The amber is kept
+   deliberately muted (low alpha, thinner stroke) to match the white trail's
+   visual weight — see issue #139, the previous stroke read as much louder
+   than the movement trail even though both used the same 0.96 alpha, because
+   saturated amber against green pitch reads as more salient than white at
+   equal alpha, and the stroke was also proportionally thicker (0.13 of a
+   board cell vs. the movement trail's 0.07 of a square). */
 .pitch__pass-trajectories {
   position: absolute;
   inset: 0;
@@ -485,16 +491,16 @@
 
 .pitch__pass-trajectory {
   fill: none;
-  stroke: rgba(244, 190, 74, 0.96);
-  stroke-width: 0.13;
+  stroke: rgba(244, 190, 74, 0.55);
+  stroke-width: 0.09;
   stroke-linecap: round;
   stroke-dasharray: 0.34 0.2;
-  filter: drop-shadow(0 0 0.08px rgba(0, 0, 0, 0.95));
+  filter: drop-shadow(0 0 0.08px rgba(0, 0, 0, 0.6));
   marker-end: url('#pass-trajectory-arrow');
 }
 
 .pitch__pass-trajectories marker path {
-  fill: rgba(244, 190, 74, 0.96);
+  fill: rgba(244, 190, 74, 0.55);
 }
 
 .square--handoff-target .square__overlay {
