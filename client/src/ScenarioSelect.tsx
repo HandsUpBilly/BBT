@@ -201,7 +201,7 @@ export function ScenarioSelect({
           <div className="series-row">
             <div className="series-row__number" aria-hidden="true">01</div>
             <div className="series-row__body">
-              <span className="series-row__eyebrow">Featured playbook</span>
+              <span className="series-row__eyebrow">Tutorial</span>
               <h2 className="series-row__title">{series.name}</h2>
               <p className="series-row__desc">{series.description}</p>
               <div className="series-row__meta">{formatProgress(seriesProgress)}</div>
