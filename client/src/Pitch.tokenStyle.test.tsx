@@ -2,7 +2,7 @@ import { cleanup, render } from '@testing-library/react';
 import { afterEach, describe, expect, it } from 'vitest';
 import { Pitch } from './Pitch';
 import { humanBlocker, makeState, orcBlocker } from './test/gameState';
-import type { BlockLogEntry, MoveLogEntry, PassLogEntry } from './types';
+import type { BlockLogEntry, HandoffLogEntry, MoveLogEntry, PassCatchLogEntry, PassLogEntry } from './types';
 
 afterEach(cleanup);
 
@@ -190,6 +190,122 @@ describe('Pitch block dice marker', () => {
 
     const square = container.querySelector('[data-square="9H"]');
     expect(square?.querySelector('.square__block-dice')).toBeNull();
+  });
+});
+
+describe('Pitch pass and catch dice', () => {
+  it('shows a teal pass die on the target square', () => {
+    const pass: PassLogEntry = {
+      kind: 'pass',
+      pieceName: 'Thrower',
+      pieceRole: 'thrower',
+      receiverName: 'Catcher',
+      receiverRole: 'catcher',
+      from: { col: 7, row: 8 },
+      to: { col: 7, row: 12 },
+      passTarget: 3,
+      rangeBand: 'short',
+      actionProb: 2 / 3,
+      cumulativeProb: 2 / 3,
+      dodgeTarget: null,
+      isGfi: false,
+    };
+
+    const { container, getByTitle } = render(
+      <Pitch state={{ ...state, actionLog: [pass] }} onSquareClick={noop} onPieceClick={noop} onSquareHover={noop} onSquareLeave={noop} />,
+    );
+
+    const square = container.querySelector('[data-square="12H"]');
+    expect(square?.querySelector('.pass-die')).toBeTruthy();
+    expect(getByTitle('Pass roll: 3+')).toBeTruthy();
+    expect(square?.getAttribute('aria-label')).toContain('pass 3 plus');
+  });
+
+  it('shows a magenta catch die on the receiver square, distinct from the pass die', () => {
+    const passCatch: PassCatchLogEntry = {
+      kind: 'pass-catch',
+      pieceName: 'Catcher',
+      pieceRole: 'catcher',
+      from: { col: 7, row: 12 },
+      to: { col: 7, row: 12 },
+      catchTarget: 2,
+      actionProb: 5 / 6,
+      cumulativeProb: 5 / 6,
+      dodgeTarget: null,
+      isGfi: false,
+    };
+
+    const { container, getByTitle } = render(
+      <Pitch state={{ ...state, actionLog: [passCatch] }} onSquareClick={noop} onPieceClick={noop} onSquareHover={noop} onSquareLeave={noop} />,
+    );
+
+    const square = container.querySelector('[data-square="12H"]');
+    expect(square?.querySelector('.catch-die')).toBeTruthy();
+    expect(square?.querySelector('.pass-die')).toBeNull();
+    expect(getByTitle('Catch roll: 2+')).toBeTruthy();
+    expect(square?.getAttribute('aria-label')).toContain('catch 2 plus');
+  });
+
+  it('reuses the catch die for a hand-off, the same Agility test as a pass-catch', () => {
+    const handoff: HandoffLogEntry = {
+      kind: 'handoff',
+      pieceName: 'Carrier',
+      pieceRole: 'blocker',
+      receiverName: 'Receiver',
+      receiverRole: 'lineman',
+      from: { col: 6, row: 12 },
+      to: { col: 7, row: 12 },
+      catchTarget: 2,
+      actionProb: 5 / 6,
+      cumulativeProb: 5 / 6,
+      dodgeTarget: null,
+      isGfi: false,
+    };
+
+    const { container } = render(
+      <Pitch state={{ ...state, actionLog: [handoff] }} onSquareClick={noop} onPieceClick={noop} onSquareHover={noop} onSquareLeave={noop} />,
+    );
+
+    const square = container.querySelector('[data-square="12H"]');
+    expect(square?.querySelector('.catch-die')).toBeTruthy();
+  });
+
+  it('shows both the pass die and the catch die together when a throw and its catch land on the same square', () => {
+    const pass: PassLogEntry = {
+      kind: 'pass',
+      pieceName: 'Thrower',
+      pieceRole: 'thrower',
+      receiverName: 'Catcher',
+      receiverRole: 'catcher',
+      from: { col: 7, row: 8 },
+      to: { col: 7, row: 12 },
+      passTarget: 3,
+      rangeBand: 'short',
+      actionProb: 2 / 3,
+      cumulativeProb: 2 / 3,
+      dodgeTarget: null,
+      isGfi: false,
+    };
+    const passCatch: PassCatchLogEntry = {
+      kind: 'pass-catch',
+      pieceName: 'Catcher',
+      pieceRole: 'catcher',
+      from: { col: 7, row: 12 },
+      to: { col: 7, row: 12 },
+      catchTarget: 2,
+      actionProb: 5 / 6,
+      cumulativeProb: 5 / 6,
+      dodgeTarget: null,
+      isGfi: false,
+    };
+
+    const { container } = render(
+      <Pitch state={{ ...state, actionLog: [pass, passCatch] }} onSquareClick={noop} onPieceClick={noop} onSquareHover={noop} onSquareLeave={noop} />,
+    );
+
+    const square = container.querySelector('[data-square="12H"]');
+    expect(square?.querySelector('.pass-die')).toBeTruthy();
+    expect(square?.querySelector('.catch-die')).toBeTruthy();
   });
 });
 
