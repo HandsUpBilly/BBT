@@ -146,11 +146,12 @@ min-heap (`MinHeap` in `bfs.ts`) with parent pointers, not a re-sorted array
 with a copied path per node. `Pitch.tsx` memoizes each `Square`, since only a
 few of the 390 change between frames.
 
-Committed movement is shown as a dotted white trail derived from the move
-entries in `actionLog`. The route therefore remains visible after an activation
-ends, disappears automatically when a cancelled activation rolls back its log,
-and uses every individual step (including diagonals) rather than only the
-waypoint destinations in `committedPath`.
+Committed movement is shown as a dashed white trail with an arrow at its final
+square, derived from the move entries in `actionLog`. The route therefore
+remains visible after an activation ends, disappears automatically when a
+cancelled activation rolls back its log, and uses every individual step
+(including diagonals) rather than only the waypoint destinations in
+`committedPath`.
 
 Completed passes are also derived from `actionLog`, but render as a single
 curved amber trajectory with an arrowhead across the pitch. The curve is

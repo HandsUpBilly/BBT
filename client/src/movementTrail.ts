@@ -4,6 +4,7 @@ import type { ActionLogEntry, Position } from './types';
 export interface PathTrail {
   from: Position;
   to: Position | null;
+  terminal?: boolean;
 }
 
 function samePosition(a: Position, b: Position): boolean {
@@ -71,6 +72,7 @@ export function buildMovementTrailMap(actionLog: ActionLogEntry[]): Map<string, 
       const pathTrail = {
         from: path[index - 1] ?? pos,
         to: path[index + 1] ?? null,
+        terminal: index === path.length - 1,
       };
       const squareTrails = trails.get(key(pos));
       if (squareTrails) squareTrails.push(pathTrail);
