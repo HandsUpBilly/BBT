@@ -3,6 +3,7 @@ import type { BlockOutcomeFace } from './types';
 import { BLOCK_OUTCOME_FACES, blockCombinedProbability } from './bfs';
 import { isBlockOutcomeSelectable } from './blockControls';
 import { useModalFocus } from './useModalFocus';
+import { BlockDiceGraphic } from './BlockDiceGraphic';
 import './SubmitModal.css'; // shared modal-backdrop/modal styles
 import './BlockOutcomePanel.css';
 
@@ -80,6 +81,7 @@ export function BlockOutcomePanel({
         tabIndex={-1}
       >
         <h2 id={titleId} className="modal__title">{attackerName} blocks {defenderName}</h2>
+        <BlockDiceGraphic count={diceCount} className="block-outcome__dice-graphic" size={40} />
         <p className="modal__desc">
           {diceCount} {diceCount === 1 ? 'die' : 'dice'} · {picker === 'attacker' ? 'Attacker' : 'Defender'} picks —
           check which outcome(s) you'd accept as this block "succeeding"

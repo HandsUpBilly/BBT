@@ -8,6 +8,11 @@
   max-width: 480px;
 }
 
+.block-outcome__dice-graphic {
+  margin: 4px 0 2px;
+  gap: 10px;
+}
+
 .block-outcome__rows {
   width: 100%;
   display: flex;

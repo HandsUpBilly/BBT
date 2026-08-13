@@ -1,0 +1,28 @@
+.block-dice-graphic {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: 6%;
+}
+
+.block-die-icon {
+  aspect-ratio: 1;
+  flex-shrink: 0;
+  display: block;
+}
+
+/* Shrink as more dice join the row, same shrink-to-fit spirit as the
+   movement-roll dice (square__roll-die's max-height) — a lone die reads
+   large, two or three share the row without ballooning past it. */
+.block-dice-graphic[data-count="1"] .block-die-icon {
+  width: 38%;
+}
+
+.block-dice-graphic[data-count="2"] .block-die-icon {
+  width: 26%;
+}
+
+.block-dice-graphic[data-count="3"] .block-die-icon {
+  width: 19%;
+}
