@@ -104,6 +104,8 @@ function sanitizeMove(move, actionProb) {
     cumulativeProb: sanitizedCumulativeProb(move.cumulativeProb, actionProb),
   };
 
+  if (move.dodgeSkillReroll !== undefined) sanitized.dodgeSkillReroll = Boolean(move.dodgeSkillReroll);
+
   if (move.receiverName !== undefined) sanitized.receiverName = sanitizedString(move.receiverName);
   if (move.receiverRole !== undefined) sanitized.receiverRole = sanitizedString(move.receiverRole);
 

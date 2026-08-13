@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import { useGameState, passActionAvailability } from './useGameState';
 import { makeState, humanThrower as thrower, humanCatcher as catcher } from './test/gameState';
+import type { MoveLogEntry } from './types';
 
 /**
  * Regression tests for the "long bomb" pass/handoff bug: a receiver who
@@ -300,6 +301,54 @@ describe('loose ball pickup', () => {
     const throwerPiece = after.pieces.find(p => p.id === 'thrower')!;
     expect(throwerPiece.hasBall).toBe(false);
     expect(throwerPiece.activated).toBe(true);
+  });
+});
+
+describe('Dodge skill reroll', () => {
+  const markedRoute = (skills: string[]) => makeState([
+    thrower({
+      hasBall: false,
+      position: { col: 7, row: 10 },
+      skills,
+    }),
+    {
+      id: 'opp1', team: 'orc', role: 'blocker', name: 'Grukk',
+      position: { col: 7, row: 11 }, ma: 4, st: 3, ag: 3, pa: 6, av: 9,
+      skills: [], activated: false, hasBall: false, down: false,
+    },
+    {
+      id: 'opp2', team: 'orc', role: 'blocker', name: 'Muzgash',
+      position: { col: 8, row: 9 }, ma: 4, st: 3, ag: 3, pa: 6, av: 9,
+      skills: [], activated: false, hasBall: false, down: false,
+    },
+  ]);
+
+  function commitTwoDodges(skills: string[]) {
+    const { result } = renderHook(() => useGameState(markedRoute(skills)));
+    act(() => result.current.handleSquareClick(7, 10));
+    act(() => result.current.handleSquareClick(7, 9));
+    act(() => result.current.handleSquareClick(7, 8));
+    return result.current.state;
+  }
+
+  it('applies one reroll exactly across successive dodge steps', () => {
+    const after = commitTwoDodges(['Dodge']);
+    const dodges = after.actionLog.filter(
+      (entry): entry is MoveLogEntry =>
+        entry.kind === 'move' && entry.dodgeTarget !== null,
+    );
+
+    expect(dodges).toHaveLength(2);
+    expect(dodges.map(entry => entry.dodgeTarget)).toEqual([4, 4]);
+    expect(dodges[0].actionProb).toBeCloseTo(3 / 4, 10);
+    expect(dodges[1].actionProb).toBeCloseTo(2 / 3, 10);
+    expect(dodges[1].cumulativeProb).toBeCloseTo(1 / 2, 10);
+    expect(dodges.every(entry => entry.dodgeSkillReroll)).toBe(true);
+  });
+
+  it('does not change dodge scoring for a player without the skill', () => {
+    const after = commitTwoDodges([]);
+    expect(after.actionLog[after.actionLog.length - 1].cumulativeProb).toBeCloseTo(1 / 4, 10);
   });
 });
 

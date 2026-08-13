@@ -125,6 +125,20 @@ Deliberate, and worth knowing before "fixing" them:
 - Failed rolls aren't simulated — the model tracks the probability of the whole
   line succeeding, so play continues as though every roll passed.
 
+## Dodge Skill Reroll
+
+A player with the `Dodge` skill has one reroll shared by all dodge tests in
+that activation. It is not assigned to the first or hardest dodge. The rules
+engine carries the probability that the reroll is still available across each
+committed movement step, including separate clicks, so a line with dodge
+success chances `p1..pn` is scored exactly as:
+
+`product(p1..pn) * (1 + sum(1 - pi))`
+
+This is the probability that every dodge succeeds with at most one initial
+failure. Each dodge remains one action-log entry and is marked when the Dodge
+skill contributes; the skill does not add another leaderboard `diceCount`.
+
 ## Performance
 
 `findShortestPath` runs on every mouse-move over the pitch. It uses a binary

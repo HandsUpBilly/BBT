@@ -31,6 +31,7 @@ function makeBlankState(overrides: Partial<GameState> = {}): GameState {
     remainingMa: 0,
     remainingGfi: 0,
     pendingDodgeTargets: [],
+    dodgeRerollAvailability: 0,
     phase: 'playing',
     activationLogStart: 0,
     activationSnapshot: null,
@@ -80,6 +81,25 @@ export function successChance(target: number): number {
 }
 
 /**
+ * Score one dodge while preserving the exact state of a single skill reroll.
+ *
+ * `rerollAvailability` is the fraction of successful histories reaching this
+ * dodge in which the reroll has not already been consumed. The returned
+ * chance is therefore conditional on the run having succeeded so far, which
+ * lets each action-log probability continue to multiply into the exact score.
+ */
+export function dodgeChance(
+  target: number,
+  rerollAvailability: number,
+): { chance: number; nextAvailability: number } {
+  const baseChance = successChance(target);
+  const available = Math.max(0, Math.min(1, rerollAvailability));
+  const chance = baseChance * (1 + available * (1 - baseChance));
+  const nextAvailability = chance > 0 ? (available * baseChance) / chance : 0;
+  return { chance, nextAvailability };
+}
+
+/**
  * Combined success chance of every roll along a previewed path.
  *
  * The committed probability is only accumulated when a move is actually
@@ -92,11 +112,16 @@ export function successChance(target: number): number {
  * Deliberately mirrors the per-step maths in handleSquareClick: GFI is a 2+,
  * and GFI, dodge and pickup rolls on one square all stack.
  */
-export function pathPreviewProb(path: readonly PathStep[]): number {
+export function pathPreviewProb(path: readonly PathStep[], dodgeRerollAvailability = 0): number {
   let prob = 1;
+  let rerollAvailability = dodgeRerollAvailability;
   for (const step of path) {
     if (step.isGfi) prob *= successChance(2);
-    if (step.dodgeTarget !== null) prob *= successChance(step.dodgeTarget);
+    if (step.dodgeTarget !== null) {
+      const dodge = dodgeChance(step.dodgeTarget, rerollAvailability);
+      prob *= dodge.chance;
+      rerollAvailability = dodge.nextAvailability;
+    }
     if (step.pickupTarget !== null) prob *= successChance(step.pickupTarget);
   }
   return prob;
@@ -156,6 +181,7 @@ function clearSelection(state: GameState, cancelActivation = false): GameState {
     remainingMa: 0,
     remainingGfi: 0,
     pendingDodgeTargets: [],
+    dodgeRerollAvailability: 0,
     pendingProb: 1,
     activationLogStart: 0,
     activationSnapshot: null,
@@ -198,6 +224,7 @@ function beginActivation(
     remainingMa: ma,
     remainingGfi: gfi,
     pendingDodgeTargets: [],
+    dodgeRerollAvailability: piece.skills.includes('Dodge') ? 1 : 0,
     pendingProb: 1,
     reachableKeys,
     activationLogStart: state.actionLog.length,
@@ -520,6 +547,7 @@ export function useGameState(initialState: GameState) {
         let runningCumProb = prev.actionLog.length > 0
           ? prev.actionLog[prev.actionLog.length - 1].cumulativeProb : 1;
         let runningPendingProb = prev.pendingProb;
+        let runningDodgeRerollAvailability = prev.dodgeRerollAvailability;
         const newDodgeTargets = [...prev.pendingDodgeTargets];
         const perStepEntries: ActionLogEntry[] = [];
 
@@ -527,9 +555,14 @@ export function useGameState(initialState: GameState) {
         for (const step of path) {
           // GFI = 2+ (5/6 success). Dodge, GFI, and pickup can all stack — multiply probabilities.
           const gfiProb  = step.isGfi ? successChance(2) : 1;
-          const dodgeProb = step.dodgeTarget !== null ? successChance(step.dodgeTarget) : 1;
+          const dodge = step.dodgeTarget !== null
+            ? dodgeChance(step.dodgeTarget, runningDodgeRerollAvailability)
+            : null;
+          const dodgeProb = dodge?.chance ?? 1;
           const pickupProb = step.pickupTarget !== null ? successChance(step.pickupTarget) : 1;
           const stepProb = gfiProb * dodgeProb * pickupProb;
+          const dodgeSkillReroll = step.dodgeTarget !== null && runningDodgeRerollAvailability > 0;
+          if (dodge) runningDodgeRerollAvailability = dodge.nextAvailability;
           runningCumProb = runningCumProb * stepProb;
 
           if (step.isGfi || step.dodgeTarget !== null || step.pickupTarget !== null) {
@@ -545,6 +578,7 @@ export function useGameState(initialState: GameState) {
             to: step.pos,
             steps: 1,
             dodgeTarget: step.dodgeTarget,
+            dodgeSkillReroll,
             isGfi: step.isGfi,
             pickupTarget: step.pickupTarget,
             actionProb: stepProb,
@@ -578,6 +612,7 @@ export function useGameState(initialState: GameState) {
             committedPath: newCommittedPath,
             walkedSquares: newWalkedSquares,
             pendingDodgeTargets: newDodgeTargets,
+            dodgeRerollAvailability: runningDodgeRerollAvailability,
             pendingProb: newPendingProb,
             actionLog: newActionLog,
             phase: 'touchdown',
@@ -597,6 +632,7 @@ export function useGameState(initialState: GameState) {
             reachableKeys: new Set(),
             pathPreview: [],
             pendingDodgeTargets: newDodgeTargets,
+            dodgeRerollAvailability: runningDodgeRerollAvailability,
             pendingProb: newPendingProb,
             actionLog: newActionLog,
           };
@@ -613,6 +649,7 @@ export function useGameState(initialState: GameState) {
           reachableKeys,
           pathPreview: [],
           pendingDodgeTargets: newDodgeTargets,
+          dodgeRerollAvailability: runningDodgeRerollAvailability,
           pendingProb: newPendingProb,
           actionLog: newActionLog,
         };

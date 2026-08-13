@@ -15,6 +15,7 @@ carries a **Status** line — read it before treating a section as work to do.
 | Handoff Action | Shipped |
 | Pass Action | Shipped |
 | Scenario 002 — The Handoff Play | Shipped |
+| Dodge Skill Reroll | Shipped |
 | Leaderboard — Move Summary on Row Click | Shipped |
 | Leaderboard — Netlify Deployment | Shipped |
 | Puzzle Mode | Shipped (Free Play removed) |
@@ -1255,6 +1256,41 @@ The thrower has the ball but cannot reach the end zone alone. A catcher is posit
 ## Problem Statement
 
 A browser-based Blood Bowl puzzle game.
+
+---
+
+# Dodge Skill Reroll
+
+**Status:** Shipped. Movement dodges made by a Dodge-skilled player include one exact shared reroll per activation.
+
+## Rule
+
+The Dodge skill supplies one reroll shared by every dodge test in that player's
+activation. Because the puzzle engine does not simulate failures, the reroll is
+represented in the probability chain rather than assigned to a particular
+step. For dodge success chances `p1..pn`, the probability that the line
+succeeds with no more than one initial failure is:
+
+`product(p1..pn) * (1 + sum(1 - pi))`
+
+The engine carries the conditional probability that the reroll remains
+available across committed steps and separate movement clicks. This preserves
+the action log's invariant that multiplying every `actionProb` produces the
+submitted score.
+
+Each dodge remains one risky-move entry and therefore counts once toward the
+existing leaderboard `diceCount`. Entries whose probability benefits from the
+skill carry `dodgeSkillReroll: true`, allowing the live log, touchdown summary,
+and saved leaderboard summary to identify the skill reroll without inventing a
+separate roll entry.
+
+## Acceptance Criteria
+
+1. A single dodge at base chance `p` scores as `p * (2 - p)` for a player with Dodge.
+2. Multiple dodges share exactly one reroll, including when movement is committed over several clicks.
+3. Players without Dodge retain the existing probability calculation.
+4. Cancelling or ending the activation clears its reroll state.
+5. Preview, committed action log, submitted score, and saved move summary agree.
 
 ---
 

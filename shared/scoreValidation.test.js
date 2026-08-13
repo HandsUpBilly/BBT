@@ -94,6 +94,7 @@ test('sanitizes a move down to whitelisted fields, discarding everything else', 
     from: { col: 7, row: 10 },
     to: { col: 7, row: 9 },
     dodgeTarget: 3,
+    dodgeSkillReroll: true,
     isGfi: false,
     pickupTarget: 2,
     catchTarget: 4,
@@ -112,7 +113,7 @@ test('sanitizes a move down to whitelisted fields, discarding everything else', 
   const [sanitized] = score.moves;
 
   assert.deepEqual(Object.keys(sanitized).sort(), [
-    'acceptedFaces', 'actionProb', 'catchTarget', 'cumulativeProb', 'diceCount', 'dodgeTarget',
+    'acceptedFaces', 'actionProb', 'catchTarget', 'cumulativeProb', 'diceCount', 'dodgeSkillReroll', 'dodgeTarget',
     'from', 'isBlitz', 'isGfi', 'passTarget', 'pickupTarget', 'pieceName', 'pieceRole', 'picker',
     'rangeBand', 'receiverName', 'receiverRole', 'resolvedFace', 'to',
   ].sort());
@@ -120,6 +121,7 @@ test('sanitizes a move down to whitelisted fields, discarding everything else', 
   assert.deepEqual(sanitized.from, { col: 7, row: 10 });
   assert.deepEqual(sanitized.acceptedFaces, ['push', 'defender-down']);
   assert.equal(sanitized.resolvedFace, 'defender-down');
+  assert.equal(sanitized.dodgeSkillReroll, true);
   assert.equal('maliciousPayload' in sanitized, false);
 });
 

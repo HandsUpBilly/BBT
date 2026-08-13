@@ -29,9 +29,10 @@ function actionLabel(m: LeaderboardEntry['moves'][number]): string {
     return `Catch ${m.catchTarget}+`;   // pass-catch
   if (m.catchTarget !== undefined) return `Handoff ${m.catchTarget}+`;
   const pickupSuffix = m.pickupTarget ? ` · Pickup ${m.pickupTarget}+` : '';
-  if (m.isGfi && m.dodgeTarget !== null) return `GFI 2+ · Dodge ${m.dodgeTarget}+${pickupSuffix}`;
+  const rerollSuffix = m.dodgeSkillReroll ? ' (skill reroll)' : '';
+  if (m.isGfi && m.dodgeTarget !== null) return `GFI 2+ · Dodge ${m.dodgeTarget}+${rerollSuffix}${pickupSuffix}`;
   if (m.isGfi) return `Go For It 2+${pickupSuffix}`;
-  if (m.dodgeTarget !== null) return `Dodge ${m.dodgeTarget}+${pickupSuffix}`;
+  if (m.dodgeTarget !== null) return `Dodge ${m.dodgeTarget}+${rerollSuffix}${pickupSuffix}`;
   return `Pickup ${m.pickupTarget}+`;
 }
 function playerName(m: LeaderboardEntry['moves'][number]): string {

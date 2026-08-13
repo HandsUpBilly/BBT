@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { pathPreviewProb, successChance } from './useGameState';
+import { dodgeChance, pathPreviewProb, successChance } from './useGameState';
 import type { PathStep } from './bfs';
 
 function step(overrides: Partial<PathStep> = {}): PathStep {
@@ -41,6 +41,27 @@ describe('pathPreviewProb', () => {
       step({ requiresDodge: true, dodgeTarget: 5 }),
     ];
     expect(pathPreviewProb(path)).toBeCloseTo((4 / 6) * (2 / 6), 10);
+  });
+
+  it('models one Dodge skill reroll across the whole path', () => {
+    const path = [
+      step({ requiresDodge: true, dodgeTarget: 3 }),
+      step({ requiresDodge: true, dodgeTarget: 2 }),
+    ];
+
+    // Base success plus either one of the two dodges failing once and then
+    // succeeding on its skill reroll: p1*p2*(1 + q1 + q2).
+    expect(pathPreviewProb(path, 1)).toBeCloseTo((4 / 6) * (5 / 6) * (1 + 2 / 6 + 1 / 6), 10);
+  });
+
+  it('carries a partially consumed reroll into the next preview', () => {
+    const firstDodge = dodgeChance(3, 1);
+    expect(firstDodge.chance).toBeCloseTo(8 / 9, 10);
+    expect(firstDodge.nextAvailability).toBeCloseTo(3 / 4, 10);
+
+    expect(pathPreviewProb([
+      step({ requiresDodge: true, dodgeTarget: 2 }),
+    ], firstDodge.nextAvailability)).toBeCloseTo(15 / 16, 10);
   });
 
   it('stacks a GFI, a dodge and a pickup landing on one square', () => {
