@@ -5,6 +5,7 @@ export interface PathTrail {
   from: Position;
   to: Position | null;
   terminal?: boolean;
+  leadsToTerminal?: boolean;
 }
 
 function samePosition(a: Position, b: Position): boolean {
@@ -73,6 +74,7 @@ export function buildMovementTrailMap(actionLog: ActionLogEntry[]): Map<string, 
         from: path[index - 1] ?? pos,
         to: path[index + 1] ?? null,
         terminal: index === path.length - 1,
+        leadsToTerminal: index === path.length - 2,
       };
       const squareTrails = trails.get(key(pos));
       if (squareTrails) squareTrails.push(pathTrail);
