@@ -90,6 +90,15 @@
   grid-template-columns: minmax(210px, 260px) minmax(560px, 1fr) minmax(260px, 320px);
   gap: 14px;
   align-items: start;
+  /* The pitch panel's actual content (metadata fields + a fixed-size 15x26
+     pitch grid) tops out well under a thousand pixels. Uncapped, the center
+     column's `1fr` track grows to fill whatever is left on a wide monitor,
+     stranding the pitch in a sea of empty background — see issue #144.
+     Centering the whole layout (rather than left-pinning it) also spreads
+     the remaining viewport width evenly instead of parking it all on the
+     right. */
+  max-width: 1660px;
+  margin-inline: auto;
 }
 
 .editor__panel,
