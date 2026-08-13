@@ -147,10 +147,12 @@ as-is, and `av` is the printed target minus 1 and is display-only.
 Templates may carry a `names` pool, used by `generatedPlayerName` instead of the
 team-wide pool — Halflings, Ogres, Goblins, and Trolls each have their own.
 
-`halfling`, `ogre`, `goblin`, and `troll` have no portrait art yet, so the
-role-to-asset maps in `Pitch.tsx` and `PlayerPanel.tsx` fall back to the team
-default. Skills beyond Block/Wrestle/Dodge/Tackle are display-only labels; the
-rules engine does not implement them.
+`ogre` and `troll` have dedicated gritty portrait art. `big-un` and `black-orc`
+use the same text-free circular portrait style rather than the older cartoon
+badges. `halfling` and `goblin` still have no portrait art, so
+`playerPortraits.ts` falls back to the team default for those roles. Skills
+beyond Block/Wrestle/Dodge/Tackle are display-only labels; the rules engine does
+not implement them.
 
 ## Validation
 

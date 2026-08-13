@@ -11,15 +11,17 @@ const PLAYER_PORTRAITS: Record<Team, Record<string, string>> = {
     catcher: '/human-catcher-gritty.webp',
     lineman: '/human-lineman-gritty.webp',
     blitzer: '/human-blitzer-gritty.webp',
+    ogre: '/ogre-gritty.webp',
   },
   orc: {
     thrower: '/orc-thrower.png',
     catcher: '/orc-catcher.png',
     lineman: '/orc-lineman-gritty.webp',
-    'black-orc': '/orc-black-orc.png',
+    'black-orc': '/black-orc-gritty.webp',
     blocker: '/orc-blocker-gritty.webp',
     blitzer: '/orc-blitzer-gritty.webp',
-    'big-un': '/orc-big-un.png',
+    'big-un': '/big-un-gritty.webp',
+    troll: '/troll-gritty.webp',
   },
 };
 
