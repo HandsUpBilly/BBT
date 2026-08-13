@@ -147,12 +147,14 @@ as-is, and `av` is the printed target minus 1 and is display-only.
 Templates may carry a `names` pool, used by `generatedPlayerName` instead of the
 team-wide pool — Halflings, Ogres, Goblins, and Trolls each have their own.
 
-`ogre` and `troll` have dedicated gritty portrait art. `big-un` and `black-orc`
-use the same text-free circular portrait style rather than the older cartoon
-badges. `halfling` and `goblin` still have no portrait art, so
-`playerPortraits.ts` falls back to the team default for those roles. Skills
-beyond Block/Wrestle/Dodge/Tackle are display-only labels; the rules engine does
-not implement them.
+Every role in `playerPortraits.ts`'s `PLAYER_ROLES` has dedicated gritty
+portrait art, including roles selectable only on an existing piece rather than
+the add-player palette. The text-free circular portraits share the same
+team-specific frame, palette, and painted style; the coverage test rejects
+duplicate fallback art and old non-gritty assets. Unknown roles outside the
+editor roster still fall back to the team default. Skills beyond
+Block/Wrestle/Dodge/Tackle are display-only labels; the rules engine does not
+implement them.
 
 ## Validation
 

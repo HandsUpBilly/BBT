@@ -6,16 +6,12 @@ import { AdminStatistics } from './AdminStatistics';
 import { createScenario, deleteScenario, fetchEditorData, publishEditorData, updateDefaultSeries, updateScenario } from './editorApi';
 import { missingSeriesScenarioIds, nextScenarioId, validateScenarioDraft } from './editorValidation';
 import { PLAYER_TEMPLATES, generatedPlayerName, templateToPiece } from './playerTemplates';
-import { playerPortraitFor } from '../playerPortraits';
+import { PLAYER_ROLES, playerPortraitFor } from '../playerPortraits';
 import { STAT_KEYS, STAT_RANGE, PITCH } from '../../../shared/scenarioValidation.js';
 import './PuzzleEditor.css';
 
 const COLS = PITCH.maxCol + 1;
 const ROWS = PITCH.maxRow + 1;
-const ROLES: Record<Team, string[]> = {
-  human: ['thrower', 'catcher', 'lineman', 'blitzer', 'halfling', 'ogre', 'blocker', 'guard', 'tackle'],
-  orc: ['thrower', 'catcher', 'lineman', 'blocker', 'blitzer', 'big-un', 'goblin', 'troll', 'black-orc'],
-};
 const EMPTY_SERIES: SeriesDefinition = {
   id: 'default',
   name: 'Humans vs Orcs: Touchdown or Bust',
@@ -658,9 +654,9 @@ export function PuzzleEditor({ onBack, onPlay, previewScenario, idToken }: Props
                     onChange={event => {
                       const team = event.target.value as Team;
                       // Keep the role valid for the new team.
-                      const role = ROLES[team].includes(selectedPiece.role ?? '')
+                      const role = PLAYER_ROLES[team].includes(selectedPiece.role ?? '')
                         ? selectedPiece.role
-                        : ROLES[team][0];
+                        : PLAYER_ROLES[team][0];
                       updatePiece(selectedPiece.id, { team, role });
                     }}
                   >
@@ -671,10 +667,10 @@ export function PuzzleEditor({ onBack, onPlay, previewScenario, idToken }: Props
                 <label>
                   Role
                   <select
-                    value={selectedPiece.role ?? ROLES[selectedPiece.team][0]}
+                    value={selectedPiece.role ?? PLAYER_ROLES[selectedPiece.team][0]}
                     onChange={event => updatePiece(selectedPiece.id, { role: event.target.value })}
                   >
-                    {ROLES[selectedPiece.team].map(role => (
+                    {PLAYER_ROLES[selectedPiece.team].map(role => (
                       <option key={role} value={role}>{role}</option>
                     ))}
                   </select>
