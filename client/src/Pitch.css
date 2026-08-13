@@ -470,15 +470,15 @@
   filter: drop-shadow(0 0 2px rgba(0, 0, 0, 0.9));
 }
 
-/* Completed throws use one amber arc over the whole board. Movement remains
-   a white square-by-square dotted trail, so the two actions cannot be
-   mistaken for one another even where their routes cross. The amber is kept
+/* Completed throws use one teal arc over the whole board, matching the pass
+   die colour so the two read as the same action (teal rather than dodge's
+   amber, which the old trajectory reused and which clashed with it). Movement
+   remains a white square-by-square dotted trail, so the two actions cannot be
+   mistaken for one another even where their routes cross. The stroke is kept
    deliberately muted (low alpha, thinner stroke) to match the white trail's
-   visual weight — see issue #139, the previous stroke read as much louder
-   than the movement trail even though both used the same 0.96 alpha, because
-   saturated amber against green pitch reads as more salient than white at
-   equal alpha, and the stroke was also proportionally thicker (0.13 of a
-   board cell vs. the movement trail's 0.07 of a square). */
+   visual weight — see issue #139, a saturated colour against the green pitch
+   reads as more salient than white at equal alpha, and a stroke proportionally
+   thicker than the movement trail's 0.07-of-a-square compounds that further. */
 .pitch__pass-trajectories {
   position: absolute;
   inset: 0;
@@ -491,7 +491,7 @@
 
 .pitch__pass-trajectory {
   fill: none;
-  stroke: rgba(244, 190, 74, 0.55);
+  stroke: rgba(70, 220, 190, 0.55);
   stroke-width: 0.09;
   stroke-linecap: round;
   stroke-dasharray: 0.34 0.2;
@@ -500,7 +500,7 @@
 }
 
 .pitch__pass-trajectories marker path {
-  fill: rgba(244, 190, 74, 0.55);
+  fill: rgba(70, 220, 190, 0.55);
 }
 
 .square--handoff-target .square__overlay {
@@ -950,7 +950,9 @@
 
 .gfi-die,
 .dodge-die,
-.pickup-die {
+.pickup-die,
+.pass-die,
+.catch-die {
   width: 100%;
   height: 100%;
   display: block;

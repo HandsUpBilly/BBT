@@ -157,6 +157,40 @@ function PickupFace({ target }: { target: number }) {
   );
 }
 
+function PassFace({ target }: { target: number }) {
+  // Pass accuracy roll — teal, distinct from the amber/blue/gold movement
+  // dice and the crimson block dice, so a completed throw reads at a glance.
+  const dots = DOT_POSITIONS[target] ?? DOT_POSITIONS[6];
+  return (
+    <RollDie label={`Pass roll: ${target}+`}>
+      <svg className="pass-die" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+        <rect x="1" y="1" width="18" height="18" rx="3" ry="3"
+          fill="rgba(8,45,42,0.82)" stroke="rgba(70,220,190,0.95)" strokeWidth="1.5" />
+        {dots.map(([cx, cy], i) => (
+          <circle key={i} cx={cx} cy={cy} r="2" fill="rgba(150,245,225,0.95)" />
+        ))}
+      </svg>
+    </RollDie>
+  );
+}
+
+function CatchFace({ target }: { target: number }) {
+  // Catch roll (pass-catch and handoff share the same Agility test) — magenta,
+  // distinct from every other on-pitch die colour.
+  const dots = DOT_POSITIONS[target] ?? DOT_POSITIONS[6];
+  return (
+    <RollDie label={`Catch roll: ${target}+`}>
+      <svg className="catch-die" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+        <rect x="1" y="1" width="18" height="18" rx="3" ry="3"
+          fill="rgba(45,8,42,0.82)" stroke="rgba(230,110,220,0.95)" strokeWidth="1.5" />
+        {dots.map(([cx, cy], i) => (
+          <circle key={i} cx={cx} cy={cy} r="2" fill="rgba(245,180,240,0.95)" />
+        ))}
+      </svg>
+    </RollDie>
+  );
+}
+
 /**
  * Marks a resolved block/blitz with the number of block dice (1-3) rolled,
  * on the defender's square. Crimson-tinted (vs. the amber/blue/gold used for
@@ -208,6 +242,8 @@ interface DiceInfo {
   isGfi: boolean;
   dodgeTarget: number | null;
   pickupTarget: number | null;
+  passTarget: number | null;
+  catchTarget: number | null;
 }
 
 interface SquareProps {
@@ -312,6 +348,8 @@ const Square = memo(function Square({
           {dice.isGfi && <GfiFace />}
           {dice.dodgeTarget !== null && <DiceFace target={dice.dodgeTarget} />}
           {dice.pickupTarget !== null && <PickupFace target={dice.pickupTarget} />}
+          {dice.passTarget !== null && <PassFace target={dice.passTarget} />}
+          {dice.catchTarget !== null && <CatchFace target={dice.catchTarget} />}
         </div>
       )}
 
@@ -386,11 +424,22 @@ export function Pitch({
 
   // Committed dice: map from destination key -> dice info from actionLog.
   // Persists after a waypoint is set so dice remain visible on committed squares.
+  // Pass and pass-catch entries land on the same receiver square, so entries
+  // are merged onto whatever is already there rather than overwritten —
+  // otherwise the catch die would erase the pass die that shares its square.
   const committedDiceMap = useMemo(() => {
     const map = new Map<string, DiceInfo>();
+    const merge = (k: string, patch: Partial<DiceInfo>) => {
+      const existing = map.get(k) ?? { isGfi: false, dodgeTarget: null, pickupTarget: null, passTarget: null, catchTarget: null };
+      map.set(k, { ...existing, ...patch });
+    };
     for (const entry of state.actionLog) {
       if (entry.kind === 'move' && (entry.isGfi || entry.dodgeTarget !== null || entry.pickupTarget)) {
-        map.set(key(entry.to), { isGfi: entry.isGfi, dodgeTarget: entry.dodgeTarget, pickupTarget: entry.pickupTarget ?? null });
+        merge(key(entry.to), { isGfi: entry.isGfi, dodgeTarget: entry.dodgeTarget, pickupTarget: entry.pickupTarget ?? null });
+      } else if (entry.kind === 'pass') {
+        merge(key(entry.to), { passTarget: entry.passTarget });
+      } else if (entry.kind === 'pass-catch' || entry.kind === 'handoff') {
+        merge(key(entry.to), { catchTarget: entry.catchTarget });
       }
     }
     return map;
@@ -492,6 +541,7 @@ export function Pitch({
     pieceDown: boolean, pieceHasBall: boolean, pieceActivated: boolean,
     reachable: boolean, dodge: number | null, gfi: boolean, pickup: number | null,
     looseBall: boolean, isTarget: string | null, blockDiceCount: number | null,
+    passTarget: number | null, catchTarget: number | null,
   ): string {
     const parts = [squareName(stateCol, stateRow)];
     if (pieceName) {
@@ -514,6 +564,8 @@ export function Pitch({
     if (dodge !== null) parts.push(`dodge ${dodge} plus`);
     if (pickup !== null) parts.push(`pickup ${pickup} plus`);
     if (blockDiceCount !== null) parts.push(`block: ${blockDiceCount} ${blockDiceCount === 1 ? 'die' : 'dice'}`);
+    if (passTarget !== null) parts.push(`pass ${passTarget} plus`);
+    if (catchTarget !== null) parts.push(`catch ${catchTarget} plus`);
     return parts.join(', ');
   }
 
@@ -603,6 +655,8 @@ export function Pitch({
             isGfi: previewStep.isGfi,
             dodgeTarget: previewStep.requiresDodge ? previewStep.dodgeTarget : null,
             pickupTarget: previewStep.pickupTarget,
+            passTarget: null,
+            catchTarget: null,
           }
         : null;
       const displayedDice = previewDice ?? committedDice;
@@ -634,6 +688,7 @@ export function Pitch({
             isReachable, displayedDice?.dodgeTarget ?? null,
             (displayedDice?.isGfi ?? false) || isGfiRange, displayedDice?.pickupTarget ?? null,
             isLooseBall, targetDescription, blockDiceCount,
+            displayedDice?.passTarget ?? null, displayedDice?.catchTarget ?? null,
           )}
           pieceTeam={piece?.team ?? null}
           pieceRole={piece?.role}
