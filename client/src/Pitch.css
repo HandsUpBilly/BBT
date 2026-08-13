@@ -460,14 +460,18 @@
   pointer-events: none;
 }
 
-.square__path-trail polyline {
+.square__path-trail-line {
   fill: none;
   stroke: rgba(255, 255, 255, 0.96);
   stroke-width: 7;
   stroke-linecap: round;
   stroke-linejoin: round;
-  stroke-dasharray: 11 10;
+  stroke-dasharray: 18 13;
   filter: drop-shadow(0 0 2px rgba(0, 0, 0, 0.9));
+}
+
+.square__path-trail marker path {
+  fill: rgba(255, 255, 255, 0.96);
 }
 
 /* Completed throws use one teal arc over the whole board, matching the pass
