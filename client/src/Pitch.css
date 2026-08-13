@@ -967,20 +967,9 @@
   top: 2%;
   left: 3%;
   right: 3%;
-  display: flex;
-  flex-direction: row;
   align-items: flex-start;
-  justify-content: center;
-  gap: 4%;
   pointer-events: none;
   z-index: 7;
-}
-
-.block-die {
-  width: 28%;
-  aspect-ratio: 1;
-  flex-shrink: 0;
-  display: block;
 }
 
 /* ── Step numbers ───────────────────────────────────────────────────── */

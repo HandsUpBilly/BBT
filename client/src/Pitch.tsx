@@ -11,6 +11,7 @@ import type { PitchSurface, TokenStyle } from './prefs';
 import { RoleGlyph } from './RoleGlyph';
 import { roleCodeFor } from './rolePresentation';
 import { DEFAULT_PLAYER_ROLE, playerPortraitFor } from './playerPortraits';
+import { BlockDiceGraphic } from './BlockDiceGraphic';
 import './Pitch.css';
 
 function BallIcon({ ghost, loose }: { ghost?: boolean; loose?: boolean }) {
@@ -194,24 +195,10 @@ function CatchFace({ target }: { target: number }) {
 /**
  * Marks a resolved block/blitz with the number of block dice (1-3) rolled,
  * on the defender's square. Crimson-tinted (vs. the amber/blue/gold used for
- * movement rolls) so it reads as a distinct kind of marker at a glance. Faces
- * are decorative — block dice don't carry a single target number the way a
- * dodge or pick-up roll does, so each die shows the same generic pip rather
- * than DOT_POSITIONS[target].
+ * movement rolls) so it reads as a distinct kind of marker at a glance.
  */
 function BlockDiceFace({ count }: { count: 1 | 2 | 3 }) {
-  const label = `Block: ${count} block ${count === 1 ? 'die' : 'dice'}`;
-  return (
-    <div className="square__block-dice" title={label}>
-      {Array.from({ length: count }, (_, i) => (
-        <svg key={i} className="block-die" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
-          <rect x="1" y="1" width="18" height="18" rx="3" ry="3"
-            fill="rgba(60,8,8,0.85)" stroke="rgba(255,90,90,0.95)" strokeWidth="1.5" />
-          <circle cx="10" cy="10" r="3.2" fill="rgba(255,150,150,0.95)" />
-        </svg>
-      ))}
-    </div>
-  );
+  return <BlockDiceGraphic count={count} className="square__block-dice" />;
 }
 
 // Game state is stored portrait: col 0-14, row 0-25.
