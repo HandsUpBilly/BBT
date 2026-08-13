@@ -1,8 +1,8 @@
 import { cleanup, render } from '@testing-library/react';
 import { afterEach, describe, expect, it } from 'vitest';
 import { Pitch } from './Pitch';
-import { humanBlocker, makeState } from './test/gameState';
-import type { MoveLogEntry, PassLogEntry } from './types';
+import { humanBlocker, makeState, orcBlocker } from './test/gameState';
+import type { BlockLogEntry, MoveLogEntry, PassLogEntry } from './types';
 
 afterEach(cleanup);
 
@@ -141,6 +141,55 @@ describe('Pitch roll dice', () => {
     expect(getByTitle('Go For It roll: 2+')).toBeTruthy();
     expect(getByTitle('Dodge roll: 3+')).toBeTruthy();
     expect(getByTitle('Pick-up roll: 4+')).toBeTruthy();
+  });
+});
+
+describe('Pitch block dice marker', () => {
+  it('shows one die per dice count on the defender square, above the piece', () => {
+    const defender = orcBlocker({ position: { col: 7, row: 9 } });
+    const block: BlockLogEntry = {
+      kind: 'block',
+      isBlitz: false,
+      pieceName: 'Aldric Swiftfoot',
+      pieceRole: 'blocker',
+      receiverName: defender.name,
+      receiverRole: defender.role ?? 'blocker',
+      from: { col: 7, row: 10 },
+      to: defender.position,
+      diceCount: 2,
+      picker: 'attacker',
+      outcomeProbs: { 'attacker-down': 0, 'both-down': 0, push: 1, 'defender-stumbles': 0, 'defender-down': 0 },
+      acceptedFaces: ['push'],
+      resolvedFace: 'push',
+      actionProb: 1,
+      cumulativeProb: 1,
+      dodgeTarget: null,
+      isGfi: false,
+    };
+    const blockedState = { ...makeState([humanBlocker(), defender]), actionLog: [block] };
+
+    const { container } = render(
+      <Pitch state={blockedState} onSquareClick={noop} onPieceClick={noop} onSquareHover={noop} onSquareLeave={noop} />,
+    );
+
+    const square = container.querySelector('[data-square="9H"]');
+    const marker = square?.querySelector('.square__block-dice');
+    expect(marker).toBeTruthy();
+    expect(marker?.querySelectorAll('.block-die')).toHaveLength(2);
+    expect(marker?.getAttribute('title')).toBe('Block: 2 block dice');
+    expect(square?.getAttribute('aria-label')).toContain('block: 2 dice');
+  });
+
+  it('clears once the block entry is rolled back out of the action log', () => {
+    const defender = orcBlocker({ position: { col: 7, row: 9 } });
+    const stateWithoutBlock = makeState([humanBlocker(), defender]);
+
+    const { container } = render(
+      <Pitch state={stateWithoutBlock} onSquareClick={noop} onPieceClick={noop} onSquareHover={noop} onSquareLeave={noop} />,
+    );
+
+    const square = container.querySelector('[data-square="9H"]');
+    expect(square?.querySelector('.square__block-dice')).toBeNull();
   });
 });
 

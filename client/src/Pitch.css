@@ -950,6 +950,31 @@
   display: block;
 }
 
+/* ── Block dice marker ──────────────────────────────────────────────── */
+/* Anchored to the top of the square (rather than square__dice's centered
+   inset:0) so up to three dice lay out in a row without fighting the piece
+   icon or the movement-roll dice for the same space. */
+.square__block-dice {
+  position: absolute;
+  top: 2%;
+  left: 3%;
+  right: 3%;
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 4%;
+  pointer-events: none;
+  z-index: 7;
+}
+
+.block-die {
+  width: 28%;
+  aspect-ratio: 1;
+  flex-shrink: 0;
+  display: block;
+}
+
 /* ── Step numbers ───────────────────────────────────────────────────── */
 .step-num {
   position: absolute;

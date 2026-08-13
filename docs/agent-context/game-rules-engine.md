@@ -143,6 +143,16 @@ curved amber trajectory with an arrowhead across the pitch. The curve is
 orientation- and zoom-aware and deliberately differs from the segmented white
 movement trail, so a throw and a run remain distinguishable when they cross.
 
+A resolved block/blitz shows its dice count (1–3) as small crimson dice on the
+defender's square (`BlockLogEntry.to`), reusing the same per-square marker
+pattern as the dodge/GFI/pick-up dice: a `Map<string, 1|2|3>` built from
+`actionLog` block entries (`Pitch.tsx`'s `committedBlockDiceMap`), so the
+marker persists after the activation ends and disappears automatically if a
+cancel rolls the block entry back out of the log. A square blocked more than
+once in a turn (defender not pushed off it) shows only the most recent
+block's dice count, matching the movement-dice overwrite-on-repeat
+convention.
+
 ## Tests
 
 | File | Covers |
