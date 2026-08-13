@@ -111,7 +111,7 @@ export function DiceLog({ log }: Props) {
             <span className="dice-log__prob">
               {entry.isGfi && <span className="dice-log__gfi-tag">GFI 2+</span>}
               {entry.dodgeTarget !== null && (
-                <span>{entry.dodgeTarget}+</span>
+                <span>{entry.dodgeTarget}+{entry.dodgeSkillReroll ? ' · Dodge reroll' : ''}</span>
               )}
               {!!entry.pickupTarget && (
                 <span className="dice-log__pickup-tag">Pickup {entry.pickupTarget}+</span>

@@ -187,6 +187,7 @@ function summarizeActionLog(actionLog: ActionLogEntry[]) {
       pieceName: e.pieceName, pieceRole: e.pieceRole,
       from: e.from, to: e.to,
       dodgeTarget: e.dodgeTarget, isGfi: e.isGfi,
+      dodgeSkillReroll: e.dodgeSkillReroll,
       pickupTarget: e.pickupTarget ?? null,
       actionProb: e.actionProb, cumulativeProb: e.cumulativeProb,
     };
@@ -1112,7 +1113,7 @@ export default function App() {
   // committed, which is the wrong order for a game about weighing risk.
   const lastCommittedProb = state.actionLog.length > 0
     ? state.actionLog[state.actionLog.length - 1].cumulativeProb : 1;
-  const previewProb = pathPreviewProb(state.pathPreview);
+  const previewProb = pathPreviewProb(state.pathPreview, state.dodgeRerollAvailability);
   // Not multiplied by state.pendingProb: that resets per activation and
   // accumulates the same per-step values, so it is always already inside
   // lastCommittedProb. Including it counted the current piece's rolls twice

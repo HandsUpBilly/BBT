@@ -75,6 +75,7 @@ export type MoveLogEntry = {
   to: Position;
   steps: number;
   dodgeTarget: number | null;  // null = free move
+  dodgeSkillReroll?: boolean;  // Dodge skill contributes its once-per-activation reroll
   isGfi: boolean;              // true = Go For It step (2+ roll)
   pickupTarget?: number | null; // Agility test to pick up a loose ball on this step, null/undefined = no pickup
   actionProb: number;          // probability of this step alone (1 if no roll needed)
@@ -186,6 +187,10 @@ export interface GameState {
   remainingGfi: number;        // GFI steps still available (max 2, resets each activation)
   // Dodge targets queued along the committed path, shown as pending dice
   pendingDodgeTargets: number[];
+  // Among the activation's still-successful outcomes, the fraction where the
+  // Dodge skill reroll remains unused. Zero means the player has no available
+  // Dodge reroll; one means every successful outcome still has it.
+  dodgeRerollAvailability: number;
   phase: GamePhase;
   activationLogStart: number;  // actionLog.length when current piece was selected (for cancel rollback)
   // Board as it was when the current activation began. Sub-steps such as Blitz
@@ -248,6 +253,7 @@ export interface RiskyMove {
   from: Position;
   to: Position;
   dodgeTarget: number | null;
+  dodgeSkillReroll?: boolean;                         // movement Dodge skill reroll contributed
   isGfi: boolean;
   pickupTarget?: number | null;                       // loose-ball pickup
   catchTarget?: number;                               // handoff / pass-catch
