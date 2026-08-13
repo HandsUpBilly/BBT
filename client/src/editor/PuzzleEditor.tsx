@@ -6,6 +6,7 @@ import { AdminStatistics } from './AdminStatistics';
 import { createScenario, deleteScenario, fetchEditorData, publishEditorData, updateDefaultSeries, updateScenario } from './editorApi';
 import { missingSeriesScenarioIds, nextScenarioId, validateScenarioDraft } from './editorValidation';
 import { PLAYER_TEMPLATES, generatedPlayerName, templateToPiece } from './playerTemplates';
+import { playerPortraitFor } from '../playerPortraits';
 import { STAT_KEYS, STAT_RANGE, PITCH } from '../../../shared/scenarioValidation.js';
 import './PuzzleEditor.css';
 
@@ -605,8 +606,16 @@ export function PuzzleEditor({ onBack, onPlay, previewScenario, idToken }: Props
                     onDragStart={event => event.dataTransfer.setData('application/x-bbt-template', template.key)}
                     type="button"
                   >
-                    <strong>{template.label}</strong>
-                    <span>MA {template.ma} ST {template.st} AG {template.ag} PA {template.pa} AV {template.av}</span>
+                    <img
+                      className="palette-piece__icon"
+                      src={playerPortraitFor(template.team, template.role)}
+                      alt=""
+                      draggable={false}
+                    />
+                    <span className="palette-piece__text">
+                      <strong>{template.label}</strong>
+                      <span>MA {template.ma} ST {template.st} AG {template.ag} PA {template.pa} AV {template.av}</span>
+                    </span>
                   </button>
                 ))}
               </div>

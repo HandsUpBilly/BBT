@@ -294,10 +294,26 @@
   color: var(--color-text-strong);
   padding: 9px;
   display: flex;
-  flex-direction: column;
-  gap: 3px;
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
   text-align: left;
   cursor: grab;
+}
+
+.palette-piece__icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 2px solid rgba(222, 217, 203, 0.5);
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.palette-piece__text {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
 }
 
 .palette-piece span {
