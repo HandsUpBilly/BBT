@@ -27,16 +27,19 @@ describe('buildMovementTrailMap', () => {
       from: { col: 7, row: 8 },
       to: { col: 7, row: 9 },
       terminal: false,
+      leadsToTerminal: false,
     }]);
     expect(trails.get('7,9')).toEqual([{
       from: { col: 7, row: 8 },
       to: { col: 7, row: 10 },
       terminal: false,
+      leadsToTerminal: true,
     }]);
     expect(trails.get('7,10')).toEqual([{
       from: { col: 7, row: 9 },
       to: null,
       terminal: true,
+      leadsToTerminal: false,
     }]);
   });
 

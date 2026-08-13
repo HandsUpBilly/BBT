@@ -313,17 +313,17 @@ const Square = memo(function Square({
         const markerId = `movement-trail-arrow-${pCol}-${pRow}-${index}`;
         return (
         <svg key={index} className="square__path-trail" viewBox="0 0 100 100" aria-hidden="true">
-          {pathTrail.terminal && (
+          {pathTrail.leadsToTerminal && (
             <defs>
-              <marker id={markerId} markerWidth="5" markerHeight="5" refX="4" refY="2.5" orient="auto" markerUnits="strokeWidth">
-                <path d="M 0 0 L 5 2.5 L 0 5 z" />
+              <marker id={markerId} markerWidth="14" markerHeight="14" refX="11" refY="7" orient="auto" markerUnits="userSpaceOnUse">
+                <path d="M 1 1 L 12 7 L 1 13 z" />
               </marker>
             </defs>
           )}
           <polyline
             className="square__path-trail-line"
             points={trailPolylinePoints(pathTrail, pCol, pRow, portrait)}
-            markerEnd={pathTrail.terminal ? `url(#${markerId})` : undefined}
+            markerEnd={pathTrail.leadsToTerminal ? `url(#${markerId})` : undefined}
           />
         </svg>
         );
