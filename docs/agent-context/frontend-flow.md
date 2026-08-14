@@ -147,10 +147,11 @@ curved amber trajectory, handoffs a short dotted amber line, and blocks a red
 contact marker labelled with the dice count. Cancelled activations need no
 special handling because rollback already removes them from `actionLog`.
 
-The diagram currently belongs to the live touchdown summary. Leaderboard
-entries persist risky moves rather than the complete action log, so a saved
-leaderboard summary does not have enough data to reconstruct the full run and
-must not display a partial diagram as if it were complete.
+New leaderboard entries also persist a sanitized `playLog` containing only the
+fields the diagram reads. Clicking a ranking row therefore reconstructs the
+same diagram in `ScoreSummary`. Entries saved before `playLog` shipped remain
+valid and show an explicit unavailable message rather than a partial route
+built from the risky-roll list.
 
 ## Player-Facing Brand
 

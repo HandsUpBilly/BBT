@@ -3972,9 +3972,11 @@ draws passes and handoffs as distinct ball trajectories, and marks blocks with
 their dice count. Because cancelled activations are rolled back out of the
 action log, they do not appear in the completed play.
 
-This first version is intentionally shown only while the completed run is still
-live. Existing leaderboard records keep risky moves, not every free movement
-step, and therefore cannot faithfully reconstruct the full diagram.
+New individual leaderboard records persist a separate sanitized `playLog`, so
+clicking a ranking row reconstructs the same completed-play diagram in its
+score summary. Existing records keep only risky moves, not every free movement
+step; they remain readable but show an explicit unavailable message instead of
+an incomplete diagram.
 
 # Per-Puzzle Attempt History
 

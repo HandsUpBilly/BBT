@@ -1,4 +1,5 @@
 import { useId } from 'react';
+import { buildMovementRoutes } from './playDiagramRoutes';
 import type { ActionLogEntry, Position, Scenario } from './types';
 import './PlayDiagram.css';
 
@@ -9,32 +10,14 @@ const PITCH_HEIGHT = 15 * CELL;
 const SVG_WIDTH = PITCH_WIDTH + MARGIN * 2;
 const SVG_HEIGHT = PITCH_HEIGHT + MARGIN * 2;
 
-export interface MovementRoute {
+interface DiagramLogEntry {
+  kind: ActionLogEntry['kind'];
   pieceName: string;
-  points: Position[];
-}
-
-function samePosition(a: Position, b: Position): boolean {
-  return a.col === b.col && a.row === b.row;
-}
-
-/** Group the step-by-step log into the routes actually committed by each activation. */
-export function buildMovementRoutes(actionLog: ActionLogEntry[]): MovementRoute[] {
-  const routes: MovementRoute[] = [];
-  let current: MovementRoute | undefined;
-
-  for (const entry of actionLog) {
-    if (entry.kind !== 'move') continue;
-    const tip = current?.points.at(-1);
-    if (!current || current.pieceName !== entry.pieceName || !tip || !samePosition(tip, entry.from)) {
-      current = { pieceName: entry.pieceName, points: [entry.from, entry.to] };
-      routes.push(current);
-    } else if (!samePosition(tip, entry.to)) {
-      current.points.push(entry.to);
-    }
-  }
-
-  return routes;
+  from: Position;
+  to: Position;
+  receiverName?: string;
+  isBlitz?: boolean;
+  diceCount?: 1 | 2 | 3;
 }
 
 function point(position: Position): { x: number; y: number } {
@@ -68,7 +51,7 @@ function curvedPath(from: Position, to: Position): string {
 
 interface Props {
   scenario: Scenario;
-  actionLog: ActionLogEntry[];
+  actionLog: readonly DiagramLogEntry[];
 }
 
 export function PlayDiagram({ scenario, actionLog }: Props) {
@@ -168,7 +151,7 @@ export function PlayDiagram({ scenario, actionLog }: Props) {
               d={curvedPath(entry.from, entry.to)}
               markerEnd={`url(#${ballMarker})`}
             >
-              <title>{entry.pieceName} passes to {entry.receiverName}</title>
+              <title>{entry.pieceName} passes to {entry.receiverName ?? 'receiver'}</title>
             </path>
           ))}
           {handoffs.map((entry, index) => {
@@ -185,7 +168,7 @@ export function PlayDiagram({ scenario, actionLog }: Props) {
                 y2={to.y}
                 markerEnd={`url(#${ballMarker})`}
               >
-                <title>{entry.pieceName} hands off to {entry.receiverName}</title>
+                <title>{entry.pieceName} hands off to {entry.receiverName ?? 'receiver'}</title>
               </line>
             );
           })}
@@ -194,10 +177,10 @@ export function PlayDiagram({ scenario, actionLog }: Props) {
             const to = point(entry.to);
             return (
               <g key={`block-${index}`} data-route-kind="block">
-                <title>{entry.pieceName} {entry.isBlitz ? 'blitzes' : 'blocks'} {entry.receiverName}</title>
+                <title>{entry.pieceName} {entry.isBlitz ? 'blitzes' : 'blocks'} {entry.receiverName ?? 'opponent'}</title>
                 <line className="play-diagram__route play-diagram__route--block" x1={from.x} y1={from.y} x2={to.x} y2={to.y} />
                 <circle className="play-diagram__block-mark" cx={to.x} cy={to.y} r="8" />
-                <text className="play-diagram__block-dice" x={to.x} y={to.y + 3}>{entry.diceCount}</text>
+                <text className="play-diagram__block-dice" x={to.x} y={to.y + 3}>{entry.diceCount ?? '?'}</text>
               </g>
             );
           })}

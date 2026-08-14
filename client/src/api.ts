@@ -1,4 +1,4 @@
-import type { LeaderboardEntry, RiskyMove, SeriesLeaderboardEntry, SeriesPuzzleResult } from './types';
+import type { ActionLogEntry, LeaderboardEntry, RiskyMove, SeriesLeaderboardEntry, SeriesPuzzleResult } from './types';
 // Same module the server uses to build GitHub issue bodies, so the offline
 // download fallback is byte-identical to what would have been filed.
 import { createDownload, REPORT_LIMITS } from '../../shared/reporting.js';
@@ -93,12 +93,13 @@ export async function submitScore(
   probability: number,
   diceCount: number,
   moves: RiskyMove[],
+  playLog: ActionLogEntry[],
   idToken?: string | null,
 ): Promise<LeaderboardEntry> {
   const res = await fetch(`${BASE}/leaderboard/${encodeURIComponent(scenarioId)}`, {
     method: 'POST',
     headers: authHeaders(idToken),
-    body: JSON.stringify({ name, probability, diceCount, moves }),
+    body: JSON.stringify({ name, probability, diceCount, moves, playLog }),
   });
   return (await requireOk(res, 'Failed to submit score')).json();
 }

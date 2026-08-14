@@ -779,7 +779,7 @@ export default function App() {
     const { cumulativeProb, diceCount, moves } = summarizeActionLog(state.actionLog);
     setSubmitError(undefined);
     try {
-      const entry = await submitScore(activeScenario.id, name, cumulativeProb, diceCount, moves, idToken);
+      const entry = await submitScore(activeScenario.id, name, cumulativeProb, diceCount, moves, state.actionLog, idToken);
       rememberLocalScore(activeScenario.id, entry.id);
       setLeaderboardHighlight(entry.id);
       setProgressRefreshKey(k => k + 1);
@@ -836,7 +836,7 @@ export default function App() {
     // is the thing being scored, so a failure here must not cost the player
     // their progress. It is surfaced as a non-blocking notice instead).
     try {
-      await submitScore(activeScenario.id, seriesRun.playerName, cumulativeProb, diceCount, moves, idToken);
+      await submitScore(activeScenario.id, seriesRun.playerName, cumulativeProb, diceCount, moves, state.actionLog, idToken);
     } catch (error) {
       setSubmitNotice(`This puzzle's individual score wasn't saved (${describeSubmitError(error)}). Your series run continues.`);
     }
@@ -1031,6 +1031,7 @@ export default function App() {
           {archiveControls}
           <ScoreSummary
             entry={selectedEntry}
+            scenario={activeScenario}
             onBack={() => setSelectedEntry(undefined)}
           />
           {notice}

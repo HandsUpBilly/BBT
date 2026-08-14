@@ -1,6 +1,7 @@
 import { cleanup, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it } from 'vitest';
-import { buildMovementRoutes, PlayDiagram } from './PlayDiagram';
+import { PlayDiagram } from './PlayDiagram';
+import { buildMovementRoutes } from './playDiagramRoutes';
 import type { ActionLogEntry, Scenario } from './types';
 
 const scenario: Scenario = {

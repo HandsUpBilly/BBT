@@ -274,6 +274,21 @@ export interface RiskyMove {
   cumulativeProb: number;
 }
 
+/**
+ * Sanitized, display-only action data persisted with a ranked score so the
+ * completed play diagram can be reconstructed. Unlike `moves`, this includes
+ * free movement but does not participate in score validation.
+ */
+export interface PlayLogEntry {
+  kind: ActionLogEntry['kind'];
+  pieceName: string;
+  from: Position;
+  to: Position;
+  receiverName?: string;
+  isBlitz?: boolean;
+  diceCount?: 1 | 2 | 3;
+}
+
 export interface LeaderboardEntry {
   id: string;
   scenarioId: string;
@@ -282,6 +297,7 @@ export interface LeaderboardEntry {
   diceCount: number;
   date: string;
   moves: RiskyMove[];
+  playLog?: PlayLogEntry[];
   userId?: string;
   authProvider?: 'google';
 }
