@@ -685,6 +685,40 @@ body,
   font-weight: 600;
 }
 
+/* The touchdown analysis can step aside without advancing a series. Keep the
+   return route floating above the completed pitch so it remains reachable in
+   every desktop/mobile board layout without taking space away from the board. */
+.touchdown-review-bar {
+  position: fixed;
+  left: 50%;
+  bottom: max(12px, env(safe-area-inset-bottom));
+  z-index: 90;
+  transform: translateX(-50%);
+  width: min(460px, calc(100vw - 24px));
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  color: var(--color-text);
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border-selected);
+  border-radius: var(--radius-panel);
+  box-shadow: var(--shadow-overlay);
+  font-size: 0.85rem;
+}
+
+.touchdown-review-bar .btn {
+  flex-shrink: 0;
+}
+
+@media (max-width: 520px) {
+  .touchdown-review-bar {
+    align-items: stretch;
+    flex-direction: column;
+  }
+}
+
 
 /* ── Compact: hide side panels, stack vertically ─────────────────────────
    A size question, answered by a size query — and 1024px, not 768px.

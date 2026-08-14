@@ -400,6 +400,7 @@ export default function App() {
   const [seriesInitialEntries, setSeriesInitialEntries] = useState<SeriesLeaderboardEntry[] | undefined>();
   const [selectedSeriesEntry, setSelectedSeriesEntry] = useState<SeriesLeaderboardEntry | undefined>();
   const [confirmLeaveSeries, setConfirmLeaveSeries] = useState(false);
+  const [reviewingCompletedBoard, setReviewingCompletedBoard] = useState(false);
   const [reportOpen, setReportOpen] = useState(false);
   // Blocking failure on the touchdown submit — keeps the SubmitModal open so
   // the player can retry rather than silently losing the run.
@@ -856,6 +857,7 @@ export default function App() {
 
   const handleRestartTurn = useCallback(() => {
     if (!activeScenario) return;
+    setReviewingCompletedBoard(false);
     const s = makeScenarioState(activeScenario);
     resetBoards(s);
     setZoomBounds(computeStartOfPlayZoom(s.pieces, s.activeTeam));
@@ -867,6 +869,7 @@ export default function App() {
     const firstScenario = seriesScenarios[0];
     if (!firstScenario) return;
     setSeriesRun({ playerName: identityName, puzzleIndex: 0, results: [] });
+    setReviewingCompletedBoard(false);
     setActiveScenario(firstScenario);
     const s = makeScenarioState(firstScenario);
     resetBoards(s);
@@ -903,6 +906,7 @@ export default function App() {
 
     if (nextIndex < seriesScenarios.length) {
       const nextScenario = seriesScenarios[nextIndex];
+      setReviewingCompletedBoard(false);
       setSeriesRun({ ...seriesRun, puzzleIndex: nextIndex, results });
       setActiveScenario(nextScenario);
       const s = makeScenarioState(nextScenario);
@@ -920,6 +924,7 @@ export default function App() {
       setSeriesHighlight(entry.id);
       setProgressRefreshKey(k => k + 1);
       setState(s => ({ ...s, phase: 'playing' }));
+      setReviewingCompletedBoard(false);
       setSeriesRun(null);
       setAppMode('series-leaderboard');
       // The backing store can take a moment to become read-consistent after a
@@ -941,6 +946,7 @@ export default function App() {
 
   const confirmLeaveSeriesYes = useCallback(() => {
     setConfirmLeaveSeries(false);
+    setReviewingCompletedBoard(false);
     setSeriesRun(null);
     setAppMode('home');
   }, []);
@@ -1318,13 +1324,14 @@ export default function App() {
       )}
 
       {/* Touchdown — show summary and submit score */}
-      {state.phase === 'touchdown' && effectiveAppMode === 'series-puzzle' && seriesRun && activeScenario && (
+      {state.phase === 'touchdown' && effectiveAppMode === 'series-puzzle' && seriesRun && activeScenario && !reviewingCompletedBoard && (
         <SubmitModal
           scenario={activeScenario}
           actionLog={state.actionLog}
           onSubmit={handleSeriesContinue}
           onDismiss={handleSeriesContinue}
           seriesMode
+          onReviewBoard={() => setReviewingCompletedBoard(true)}
           error={submitError}
           continueLabel={
             seriesRun.puzzleIndex + 1 < seriesScenarios.length
@@ -1332,6 +1339,18 @@ export default function App() {
               : 'Finish Series'
           }
         />
+      )}
+      {state.phase === 'touchdown' && effectiveAppMode === 'series-puzzle' && seriesRun && reviewingCompletedBoard && (
+        <div className="touchdown-review-bar" role="region" aria-label="Completed board review">
+          <span>Reviewing the completed board</span>
+          <button
+            className="btn btn--primary"
+            onClick={() => setReviewingCompletedBoard(false)}
+            autoFocus
+          >
+            View Analysis &amp; Continue
+          </button>
+        </div>
       )}
       {!branchingEnabled && state.phase === 'touchdown' && effectiveAppMode === 'puzzle' && activeScenario && (
         <SubmitModal
