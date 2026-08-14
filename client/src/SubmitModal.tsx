@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { PlayDiagram } from './PlayDiagram';
+import { BallIcon } from './BallIcon';
 import type { ActionLogEntry, Scenario } from './types';
 import './SubmitModal.css';
 
@@ -92,7 +93,10 @@ export function SubmitModal({ scenario, actionLog, onSubmit, onDismiss, seriesMo
   return (
     <div className="modal-backdrop">
       <div className="modal submit-modal">
-        <div className="submit-modal__td">🏈 TOUCHDOWN!</div>
+        <div className="submit-modal__td">
+          <BallIcon className="submit-modal__td-ball" />
+          TOUCHDOWN!
+        </div>
 
         <PlayDiagram scenario={scenario} actionLog={actionLog} />
 
