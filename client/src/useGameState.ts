@@ -48,6 +48,7 @@ function makeBlankState(overrides: Partial<GameState> = {}): GameState {
     passRangeKeys: new Map(),
     passReceiverKeys: new Set(),
     blitzUsed: false,
+    blitzResumeId: null,
     pendingBlock: false,
     pendingBlockIsBlitz: false,
     blitzTargetId: null,
@@ -185,6 +186,7 @@ function clearSelection(state: GameState, cancelActivation = false): GameState {
     pendingProb: 1,
     activationLogStart: 0,
     activationSnapshot: null,
+    blitzResumeId: null,
     pendingHandoff: false,
     isHandoffTargeting: false,
     handoffTargets: new Set(),
@@ -229,6 +231,7 @@ function beginActivation(
     reachableKeys,
     activationLogStart: state.actionLog.length,
     activationSnapshot: takeSnapshot(state),
+    blitzResumeId: null,
   };
 }
 
@@ -271,6 +274,9 @@ function resumeMovementAfterBlitz(
     // The block is resolved and irreversible; from here on a cancel should only
     // undo the movement that follows it, so re-baseline the snapshot.
     activationSnapshot: { pieces, ballPosition: state.ballPosition },
+    // Marks this piece as mid-leftover-movement so switching to a different
+    // piece finalizes it instead of leaving it reselectable later — see #161.
+    blitzResumeId: attackerId,
   };
 }
 
@@ -662,8 +668,20 @@ export function useGameState(initialState: GameState) {
         !pieceOnSquare.activated &&
         !pieceOnSquare.down
       ) {
-        const { reachableKeys } = recomputeReachable(prev, pieceOnSquare.id, pieceOnSquare.position, pieceOnSquare.ma, MAX_GFI);
-        return beginActivation(prev, pieceOnSquare, pieceOnSquare.ma, MAX_GFI, reachableKeys);
+        // If a different piece is still spending its post-Blitz leftover
+        // movement (block already resolved and committed), finalize it
+        // before switching — otherwise it stays reselectable later with a
+        // fresh full MA pool instead of its turn actually ending. See #161.
+        const basePrev = prev.blitzResumeId && prev.blitzResumeId !== pieceOnSquare.id
+          ? {
+              ...prev,
+              pieces: prev.pieces.map(p => p.id === prev.blitzResumeId ? { ...p, activated: true } : p),
+              blitzResumeId: null,
+            }
+          : prev;
+
+        const { reachableKeys } = recomputeReachable(basePrev, pieceOnSquare.id, pieceOnSquare.position, pieceOnSquare.ma, MAX_GFI);
+        return beginActivation(basePrev, pieceOnSquare, pieceOnSquare.ma, MAX_GFI, reachableKeys);
       }
 
       // Deselect (cancel)
