@@ -68,7 +68,7 @@ export function BranchStrip({ branches, deadWeight, score, onSelect, onConcede }
               aria-current={branch.isViewed ? 'true' : undefined}
               onClick={() => onSelect(branch.id)}
             >
-              <span className="branch-chip__label">{branch.label}</span>
+              <span className="branch-chip__label">{branch.path}</span>
               <span className="branch-chip__weight">{pct(branch.weight)}</span>
               <span className="branch-chip__status">{STATUS_LABEL[branch.status]}</span>
             </button>
@@ -76,8 +76,8 @@ export function BranchStrip({ branches, deadWeight, score, onSelect, onConcede }
               <button
                 type="button"
                 className="branch-chip__concede"
-                title={`Give up on "${branch.label}" — costs ${pct(branch.weight)}`}
-                aria-label={`Give up on ${branch.label}`}
+                title={`Give up on "${branch.path}" — costs ${pct(branch.weight)}`}
+                aria-label={`Give up on ${branch.path}`}
                 onClick={() => onConcede(branch.id)}
               >
                 ✕

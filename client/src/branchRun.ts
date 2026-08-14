@@ -66,6 +66,14 @@ export interface RunSplit {
   resolution: BlockResolution;
   diceCount: 1 | 2 | 3;
   picker: 'attacker' | 'defender';
+  /**
+   * Who was blocking whom. Carried on every child so a branch can always be
+   * traced back to the specific block that forked it — a bare state name like
+   * "Pushed" recurs across any block that can produce a push, so once a run
+   * has more than one block in it, the name alone stops being an identity.
+   */
+  attackerName: string;
+  defenderName: string;
   /** Child line ids, aligned with `resolution.states`. */
   childIds: string[];
 }
@@ -361,6 +369,8 @@ export function splitOnBlock(run: BranchRun): BranchRun {
       resolution,
       diceCount: choice.diceCount,
       picker: choice.picker,
+      attackerName: attacker.name,
+      defenderName: defender.name,
       childIds: children.map(child => child.id),
     };
 
@@ -494,6 +504,8 @@ export function toSubmissionTree(run: BranchRun, lineId: string = run.rootId): S
 export interface BranchStripEntry {
   id: string;
   label: string;
+  /** Full lineage back to the block(s) that produced this branch — see `branchPath`. */
+  path: string;
   /** P(reaching this branch) — derived, and it moves as branches are authored. */
   weight: number;
   /** Conditional chance of scoring from here. */
@@ -534,19 +546,49 @@ export function ghostPieces(run: BranchRun): GhostPiece[] {
 
       const id = `${piece.id}@${piece.position.col},${piece.position.row}:${piece.down}`;
       const existing = ghosts.get(id);
-      if (existing) existing.labels.push(line.label);
+      // Full path, not the bare label: two different blocks can each leave a
+      // defender "Pushed" onto the same square, and the tooltip has to say
+      // which block put it there.
+      const path = branchPath(run, line.id);
+      if (existing) existing.labels.push(path);
       else {
         ghosts.set(id, {
           pieceId: piece.id,
           position: piece.position,
           down: piece.down,
-          labels: [line.label],
+          labels: [path],
         });
       }
     }
   }
 
   return [...ghosts.values()];
+}
+
+/**
+ * Full trail of blocks and outcomes that produced `lineId`, root to leaf, as
+ * one readable string — e.g. `"Cedric ⚔ Muzgash: Pushed"` for a line under one
+ * block, or `"Cedric ⚔ Muzgash: Pushed → Aldric ⚔ Grukk: Push"` once a second
+ * block forks inside the first.
+ *
+ * A bare board-state name is not an identity: any block can produce a
+ * "Pushed" branch, so once a run has more than one block in it, two entirely
+ * unrelated leaves can carry the same short label. Everywhere a branch is
+ * shown to the player — the strip, the ghost overlay, the run summary — needs
+ * this instead, so a permutation is always traceable to the specific block
+ * that created it.
+ */
+export function branchPath(run: BranchRun, lineId: string): string {
+  const segments: string[] = [];
+  let current = run.lines[lineId];
+  while (current.parentId) {
+    const parent = run.lines[current.parentId];
+    const split = parent.split;
+    if (!split) break; // unreachable: a line only has a parent via that parent's split
+    segments.unshift(`${split.attackerName} ⚔ ${split.defenderName}: ${current.label}`);
+    current = parent;
+  }
+  return segments.length > 0 ? segments.join(' → ') : current.label;
 }
 
 /** Everything the branch strip needs, for branches that are still leaves. */
@@ -566,6 +608,7 @@ export function branchStrip(run: BranchRun): BranchStripEntry[] {
       return {
         id: line.id,
         label: line.label,
+        path: branchPath(run, line.id),
         weight: summary?.weight ?? 0,
         value: summary?.value ?? 0,
         status,

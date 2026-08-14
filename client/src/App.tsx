@@ -1364,6 +1364,8 @@ export default function App() {
         && effectiveAppMode === 'puzzle' && activeScenario && (
         <BranchRunSummary
           scenarioName={activeScenario.name}
+          scenario={activeScenario}
+          run={branchedBoards.run}
           summary={branchedBoards.summary}
           branches={branchedBoards.strip}
           onSubmit={handleBranchSubmit}
