@@ -18,6 +18,8 @@ function renderScreen(overrides: Partial<ComponentProps<typeof SettingsScreen>> 
     onPitchSurfaceChange: vi.fn(),
     showCoordinates: true,
     onShowCoordinatesChange: vi.fn(),
+    blockBranching: false,
+    onBlockBranchingChange: vi.fn(),
     onBack: vi.fn(),
     ...overrides,
   };
@@ -134,6 +136,23 @@ describe('pitch display', () => {
     const props = renderScreen({ showCoordinates: true });
     fireEvent.click(screen.getByRole('checkbox', { name: /Cell numbering/ }));
     expect(props.onShowCoordinatesChange).toHaveBeenCalledWith(false);
+  });
+});
+
+describe('experimental features', () => {
+  it('is off by default and reports being turned on', () => {
+    const props = renderScreen({ blockBranching: false });
+    const toggle = screen.getByRole('checkbox', { name: /Block outcome branching/ });
+
+    expect((toggle as HTMLInputElement).checked).toBe(false);
+    fireEvent.click(toggle);
+    expect(props.onBlockBranchingChange).toHaveBeenCalledWith(true);
+  });
+
+  it('reports being turned back off', () => {
+    const props = renderScreen({ blockBranching: true });
+    fireEvent.click(screen.getByRole('checkbox', { name: /Block outcome branching/ }));
+    expect(props.onBlockBranchingChange).toHaveBeenCalledWith(false);
   });
 });
 

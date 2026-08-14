@@ -1013,6 +1013,8 @@ export default function App() {
           onPitchSurfaceChange={pitchSurface => setPrefs({ pitchSurface })}
           showCoordinates={prefs.showCoordinates ?? true}
           onShowCoordinatesChange={showCoordinates => setPrefs({ showCoordinates })}
+          blockBranching={prefs.blockBranching ?? false}
+          onBlockBranchingChange={blockBranching => setPrefs({ blockBranching })}
           onBack={() => setAppMode(settingsReturnMode)}
         />
         {notice}
