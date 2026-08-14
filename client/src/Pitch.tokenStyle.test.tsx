@@ -175,7 +175,8 @@ describe('Pitch block dice marker', () => {
     const square = container.querySelector('[data-square="9H"]');
     const marker = square?.querySelector('.square__block-dice');
     expect(marker).toBeTruthy();
-    expect(marker?.querySelectorAll('.block-die-icon')).toHaveLength(1);
+    // diceCount 2 in the fixture: the marker draws one icon per die rolled.
+    expect(marker?.querySelectorAll('.block-die-icon')).toHaveLength(2);
     expect(marker?.getAttribute('title')).toBe('Block: Push Back');
     expect(square?.getAttribute('aria-label')).toContain('block result: Push Back');
   });

@@ -4384,8 +4384,20 @@ independent authoring jobs.
 
 ## Authoring: free navigation
 
-The checklist modal is deleted outright. There is no pre-declaration step. A
-block simply splits the branch set and play continues.
+The checklist is gone, but not the dialog. A block still shows a modal before
+it rolls — dice count, who picks (coloured red when the defender does, white/
+neutral when the attacker does — always the player, since only the active
+piece can declare a block), and the resulting board-state split — the same way
+a dodge shows its target before you click into it. What's gone is the
+checklist part: no checkboxes, no choosing which outcomes count as "success".
+The player either rolls (splitting the branch set) or backs out; there is
+nothing to configure in between.
+
+The split shown in that dialog is computed by valuing every live board state
+equally (nothing has been authored yet, so nothing else is knowable) — which
+is exactly the split the branch strip itself shows the instant the dice are
+rolled. The dialog says plainly that authoring will move these numbers, so a
+pre-roll figure never reads as a promise.
 
 **Lockstep replay.** An action authored while viewing one branch is attempted in
 every branch still in lockstep with it (same authored action sequence since

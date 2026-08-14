@@ -79,7 +79,8 @@ export interface BranchRun {
   seq: number;
 }
 
-const BOARD_STATE_LABELS: Record<BlockBoardState['kind'], string> = {
+/** Branch-strip label for each board state, reused by the pre-roll preview dialog. */
+export const BOARD_STATE_LABELS: Record<BlockBoardState['kind'], string> = {
   'defender-pushed-down': 'Pushed + Down',
   'defender-down-in-place': 'Down in place',
   'defender-pushed': 'Pushed',
@@ -259,13 +260,16 @@ export function declareBlock(run: BranchRun, pieceId: string, isBlitz: boolean):
  * since assists depend on who is standing where — so the same blitz can be two
  * dice in one branch and one in another.
  *
- * Resolving the block splits immediately: there is no step in between where the
- * player says what they would accept, because that is the thing this model
- * exists to remove. (For a Blitz the first click only nominates the target, so
- * the split waits for the second.)
+ * Does not split. The player never chooses which outcomes to accept — that is
+ * the thing this model exists to remove — but they do still see the dice count
+ * and the rough shape of the die before committing to rolling it, the same way
+ * the game shows a dodge target before you click into it. `splitOnBlock` is a
+ * separate step so the UI can put a confirm/cancel in between. (For a Blitz the
+ * first click only nominates the target, so `blockChoice` isn't set until the
+ * second.)
  */
 export function chooseBlockTarget(run: BranchRun, pos: Position): BranchRun {
-  return splitOnBlock(authorUniform(run, state => applyBlockTarget(state, pos)));
+  return authorUniform(run, state => applyBlockTarget(state, pos));
 }
 
 /** True once the viewed branch has a block resolved and waiting to be split. */

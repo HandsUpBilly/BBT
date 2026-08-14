@@ -185,14 +185,24 @@ function CatchFace({ target }: { target: number }) {
   );
 }
 
+/** What resolved on a defender's square this turn, for the pitch marker. */
+export interface ResolvedBlockDice {
+  face: BlockOutcomeFace;
+  diceCount: 1 | 2 | 3;
+  picker: 'attacker' | 'defender';
+}
+
 /**
  * Marks a resolved block/blitz with the outcome it actually produced (e.g.
- * "Push Back", "Defender Down"), on the defender's square. Crimson-tinted
- * (vs. the amber/blue/gold used for movement rolls) so it reads as a
- * distinct kind of marker at a glance.
+ * "Push Back", "Defender Down"), on the defender's square. Crimson- or
+ * white-tinted by who picked the die (see BlockDiceGraphic's `favor`), and
+ * drawn as `diceCount` icons — a 2- or 3-dice block reads as a genuine
+ * handful of dice, not a single die standing in for the whole roll.
  */
-function BlockDiceFace({ face }: { face: BlockOutcomeFace }) {
-  return <BlockFaceGraphic face={face} className="square__block-dice" />;
+function BlockDiceFace({ face, diceCount, picker }: ResolvedBlockDice) {
+  return (
+    <BlockFaceGraphic face={face} count={diceCount} favor={picker} className="square__block-dice" />
+  );
 }
 
 // Game state is stored portrait: col 0-14, row 0-25.
@@ -248,7 +258,7 @@ interface SquareProps {
   stepIsPreview: boolean;
   pathTrails: PathTrail[];
   dice: DiceInfo | null;
-  blockDice: BlockOutcomeFace | null;
+  blockDice: ResolvedBlockDice | null;
   trailStart: number | null;
   ghost: { team: Team; role?: string; skills: readonly string[]; hasBall: boolean } | null;
   /** Where this piece stands in *other* live branches — see BranchStrip. */
@@ -355,7 +365,9 @@ const Square = memo(function Square({
         </div>
       )}
 
-      {blockDice !== null && <BlockDiceFace face={blockDice} />}
+      {blockDice !== null && (
+        <BlockDiceFace face={blockDice.face} diceCount={blockDice.diceCount} picker={blockDice.picker} />
+      )}
 
       {branchGhosts.map(branchGhost => {
         const key = `${branchGhost.down}-${branchGhost.labels.join()}`;
@@ -529,14 +541,16 @@ export function Pitch({
   }, [state.actionLog]);
 
   // Committed block outcome: map from the defender's square -> the resolved
-  // face (e.g. "push", "defender-down") for the block/blitz resolved there.
-  // Same actionLog-derived, overwrite-on-repeat convention as committedDiceMap:
-  // a square blocked more than once this turn shows only the most recent
-  // block's outcome.
+  // face plus how many dice actually rolled and who picked, for the pitch
+  // marker. Same actionLog-derived, overwrite-on-repeat convention as
+  // committedDiceMap: a square blocked more than once this turn shows only
+  // the most recent block's outcome.
   const committedBlockDiceMap = useMemo(() => {
-    const map = new Map<string, BlockOutcomeFace>();
+    const map = new Map<string, ResolvedBlockDice>();
     for (const entry of state.actionLog) {
-      if (entry.kind === 'block') map.set(key(entry.to), entry.resolvedFace);
+      if (entry.kind === 'block') {
+        map.set(key(entry.to), { face: entry.resolvedFace, diceCount: entry.diceCount, picker: entry.picker });
+      }
     }
     return map;
   }, [state.actionLog]);
@@ -818,7 +832,7 @@ export function Pitch({
             describedPiece?.down ?? false, describedPiece?.hasBall ?? false, describedPiece?.activated ?? false,
             isReachable, displayedDice?.dodgeTarget ?? null,
             (displayedDice?.isGfi ?? false) || isGfiRange, displayedDice?.pickupTarget ?? null,
-            isLooseBall, targetDescription, blockFace,
+            isLooseBall, targetDescription, blockFace?.face ?? null,
             displayedDice?.passTarget ?? null, displayedDice?.catchTarget ?? null, trailStartNumber,
           ),
           squareBranchGhosts.length > 0

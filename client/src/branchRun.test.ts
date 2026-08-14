@@ -15,6 +15,7 @@ import {
   declareBlock,
   declareHandoff,
   ghostPieces,
+  isBlockPending,
   isRunComplete,
   runSummary,
   selectBranch,
@@ -245,6 +246,44 @@ describe('declarations across a group', () => {
   });
 });
 
+describe('declaring a block waits for a roll', () => {
+  // Built from a plain board via declareBlock + chooseBlockTarget, unlike
+  // blockRun() above which starts from a blockChoice already set — this is
+  // what App actually drives the pitch through before the split.
+  function declaredNotSplit(): BranchRun {
+    const attacker = humanBlocker({ id: 'attacker', position: { col: 7, row: 10 }, skills: ['Block'] });
+    const defender = orcBlocker({ id: 'defender', position: { col: 7, row: 9 } });
+    let run = startRun(applyClick(makeState([attacker, defender]), { col: 7, row: 10 }));
+    run = declareBlock(run, 'attacker', false);
+    return chooseBlockTarget(run, { col: 7, row: 9 });
+  }
+
+  it('sets blockChoice without splitting the run', () => {
+    const run = declaredNotSplit();
+
+    // The player has picked a target and seen the dice, but nothing has
+    // rolled yet — there is still exactly one line, not three.
+    expect(isBlockPending(run)).toBe(true);
+    expect(viewedLine(run).state.blockChoice).not.toBeNull();
+    expect(branchStrip(run)).toHaveLength(1);
+  });
+
+  it('splits into branches once the roll is accepted', () => {
+    const run = splitOnBlock(declaredNotSplit());
+
+    expect(isBlockPending(run)).toBe(false);
+    expect(branchStrip(run)).toHaveLength(3);
+  });
+
+  it('cancelling the declared block clears it without ever splitting', () => {
+    const run = cancelActivation(declaredNotSplit());
+
+    expect(viewedLine(run).state.blockChoice).toBeNull();
+    expect(viewedLine(run).state.selectedPieceId).toBeNull();
+    expect(branchStrip(run)).toHaveLength(1);
+  });
+});
+
 describe('a second block', () => {
   /** A separate pairing far from the first, so the two blocks are independent. */
   const attacker2 = () =>
@@ -347,6 +386,7 @@ describe('submission tree', () => {
     let run = choosePush(blockRun([attacker2, defender2, carrier()]), { col: 7, row: 8 }, false);
     run = declareBlock(run, 'attacker2', false);
     run = chooseBlockTarget(run, { col: 2, row: 9 });
+    run = splitOnBlock(run);
     run = choosePush(run, { col: 2, row: 8 }, false);
     run = clickSquare(run, { col: 5, row: 1 });
     run = clickSquare(run, { col: 5, row: 0 });
