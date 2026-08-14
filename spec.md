@@ -29,7 +29,7 @@ carries a **Status** line — read it before treating a section as work to do.
 | BB Tactics — Tabletop Playbook Home Redesign | Shipped |
 | Leaderboard and Report Integrity | **Planned** |
 | Player Config Screen | Phase 1 Shipped, Phase 2 **Planned** |
-| Block Outcomes as Board-State Branches | Phases 0–1 Shipped (dark), Phases 2–5 **Planned** |
+| Block Outcomes as Board-State Branches | Phases 0–2a Shipped (dark), Phases 2b–6 **Planned** |
 
 Durable behavior that has already shipped belongs in `docs/agent-context/`, not
 here. When a plan below ships, move the facts worth keeping into the matching
@@ -4195,9 +4195,10 @@ deliberately deferred rather than folded in:
 # Block Outcomes as Board-State Branches
 
 **Status:** In progress, behind the `blockBranching` preference (Settings →
-Experimental, off by default). Phase 0 (feature flag) and phase 1 (pure
-resolution engine, `client/src/blockBranching.ts`) are shipped dark and reach no
-UI; phases 2–5 are outstanding. Supersedes the outcome-checklist design in
+Experimental, off by default). Phase 0 (feature flag), phase 1 (resolution
+engine, `client/src/blockBranching.ts`) and phase 2a (tree evaluation and replay
+primitives, `client/src/blockBranchTree.ts` + `client/src/branchReplay.ts`) are
+shipped dark and reach no UI; phases 2b–6 are outstanding. Supersedes the outcome-checklist design in
 *Block and Blitz Actions* (see "Design: modeling block dice inside the
 probability-tracking model", marked superseded there), which stays live until
 phase 5 removes it.
@@ -4256,6 +4257,14 @@ Replace the single `GameState` with a **branch set**. Each branch holds:
 | `label` | derived from the board states that created it |
 
 **Score = Σ weight over branches whose status is `scored`.**
+
+**Weight is derived, never stored.** It cannot be assigned when the block splits,
+because how often each board happens depends on what each one turns out to be
+worth, which is not known until it has been authored. So the branch set is a
+tree evaluated in two passes — values bottom-up, weights top-down — and the
+score is the root's value, which is also exactly the summed weight of the lines
+that reach a touchdown. `branchSummary` asserts that identity rather than
+assuming it.
 
 That is the whole scoring rule. Today's multiplicative score is the special case
 where the set never grows beyond one branch. Failure branches (failed dodge,
@@ -4477,14 +4486,28 @@ Sequenced so each phase is independently testable and nothing lands half-wired.
    for the ordering/weight closed form, `blockNodeValue` for the folded value.
    Headless, no UI, no state changes. The property test asserting the binary
    case reproduces `blockCombinedProbability` (criterion 2) lands here. **Done.**
-2. **Branch set in `useGameState`** — replace the single state with a branch set,
-   implement lockstep replay, merging, and group rollback. Still no UI: drive it
-   entirely from tests. This is the large phase.
-3. **UI** — branch strip, ghost overlay, submit gating, behind the flag.
-4. **Scoring** — branch-tree log format, validator rewrite, expected dice count.
-5. **Flag removal** — delete `BlockOutcomePanel.tsx`,
+2. **Branch set in `useGameState`**, split in two because the pure half stands
+   on its own:
+   - **2a — evaluation and replay primitives. Done.**
+     `client/src/blockBranchTree.ts` is the authoring tree and its expectimax
+     evaluation; `client/src/branchReplay.ts` is `boardHash` (the merge key)
+     plus lockstep replay. `handleSquareClick` is split into `classifyClick`
+     (what a click *means* on a board) and pure appliers, so a click can be
+     replayed into a sibling and checked for still meaning the same thing.
+     Behaviour-preserving: the existing suite passes untouched.
+   - **2b — the hook itself.** Hold a branch tree instead of one `GameState`,
+     split it on a block, navigate between branches, concede a branch, and roll
+     an activation back across a whole lockstep group. Still no UI.
+3. **Merging** — apply `groupByBoard` to fold reconverged branches, which turns
+   the tree into a DAG and means evaluation has to memoise by node identity and
+   accumulate incoming weight before descending. Deliberately sequenced *after*
+   the hook: merging changes how much authoring a puzzle costs, not what it
+   scores, so nothing upstream depends on it being in place.
+4. **UI** — branch strip, ghost overlay, submit gating, behind the flag.
+5. **Scoring** — branch-tree log format, validator rewrite, expected dice count.
+6. **Flag removal** — delete `BlockOutcomePanel.tsx`,
    `isBlockOutcomeSelectable`, the checklist role of
    `blockCombinedProbability`, and the preference itself.
 
-Phase 2 carries essentially all of the remaining risk; 3–5 are mechanical once
-the branch set is real.
+Phase 2b carries most of the remaining risk; 3–6 are mechanical once the branch
+set is real.
