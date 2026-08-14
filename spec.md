@@ -4587,8 +4587,6 @@ Sequenced so each phase is independently testable and nothing lands half-wired.
 
 The model is complete behind the flag — playable, scored, and submittable.
 What is left is cleanup (6).
-The risky phases are done and the model is playable behind the flag. What is
-left is the submission format (5) and cleanup (6).
 
 # Review Completed Series Board
 
