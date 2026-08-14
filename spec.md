@@ -3961,6 +3961,21 @@ Netlify — a Blobs- or KV-backed counter would make it a hard cap.
 
 ---
 
+# Completed Play Diagram
+
+**Status:** Shipped. The touchdown summary renders a responsive chalkboard SVG
+from the active scenario and that run's complete action log.
+
+The diagram is session-specific rather than stock artwork. It shows the
+starting formation, groups contiguous movement steps into committed routes,
+draws passes and handoffs as distinct ball trajectories, and marks blocks with
+their dice count. Because cancelled activations are rolled back out of the
+action log, they do not appear in the completed play.
+
+This first version is intentionally shown only while the completed run is still
+live. Existing leaderboard records keep risky moves, not every free movement
+step, and therefore cannot faithfully reconstruct the full diagram.
+
 # Per-Puzzle Attempt History
 
 **Status:** Shipped, local-only. Requested in issue #68 ("I should be able to

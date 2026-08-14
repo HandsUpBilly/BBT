@@ -1256,8 +1256,9 @@ export default function App() {
       )}
 
       {/* Touchdown — show summary and submit score */}
-      {state.phase === 'touchdown' && effectiveAppMode === 'series-puzzle' && seriesRun && (
+      {state.phase === 'touchdown' && effectiveAppMode === 'series-puzzle' && seriesRun && activeScenario && (
         <SubmitModal
+          scenario={activeScenario}
           actionLog={state.actionLog}
           onSubmit={handleSeriesContinue}
           onDismiss={handleSeriesContinue}
@@ -1270,8 +1271,9 @@ export default function App() {
           }
         />
       )}
-      {state.phase === 'touchdown' && effectiveAppMode === 'puzzle' && (
+      {state.phase === 'touchdown' && effectiveAppMode === 'puzzle' && activeScenario && (
         <SubmitModal
+          scenario={activeScenario}
           actionLog={state.actionLog}
           onSubmit={handleSubmit}
           onDismiss={handleSkipSubmit}
