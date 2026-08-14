@@ -156,6 +156,63 @@ test('sanitizes a move with junk/out-of-range field values rather than trusting 
   assert.equal(sanitized.cumulativeProb, 1);
 });
 
+test('sanitizes the saved play log used by ranking diagrams', () => {
+  const playLog = [{
+    kind: 'move',
+    pieceName: 'Runner'.repeat(20),
+    pieceRole: 'not persisted',
+    from: { col: 7, row: 6 },
+    to: { col: 99, row: -4 },
+    actionProb: 1,
+    maliciousPayload: 'x'.repeat(50_000),
+  }, {
+    kind: 'block',
+    pieceName: 'Blitzer',
+    receiverName: 'Defender',
+    from: { col: 7, row: 8 },
+    to: { col: 6, row: 9 },
+    isBlitz: true,
+    diceCount: 2,
+  }];
+
+  const score = validateScoreSubmission({
+    name: 'Coach', probability: 1, diceCount: 0, moves: [], playLog,
+  });
+
+  assert.deepEqual(score.playLog, [{
+    kind: 'move',
+    pieceName: 'Runner'.repeat(20).slice(0, 40),
+    from: { col: 7, row: 6 },
+    to: { col: 0, row: 0 },
+  }, {
+    kind: 'block',
+    pieceName: 'Blitzer',
+    receiverName: 'Defender',
+    from: { col: 7, row: 8 },
+    to: { col: 6, row: 9 },
+    isBlitz: true,
+    diceCount: 2,
+  }]);
+});
+
+test('keeps play-log storage bounded and rejects unknown action kinds', () => {
+  const base = { name: 'Coach', probability: 1, diceCount: 0, moves: [] };
+  assert.throws(
+    () => validateScoreSubmission({ ...base, playLog: 'not-an-array' }),
+    /playLog must be an array/,
+  );
+  assert.throws(
+    () => validateScoreSubmission({ ...base, playLog: Array.from({ length: 251 }, () => ({
+      kind: 'move', pieceName: 'Runner', from: { col: 1, row: 1 }, to: { col: 1, row: 2 },
+    })) }),
+    /playLog has too many entries/,
+  );
+  assert.throws(
+    () => validateScoreSubmission({ ...base, playLog: [{ kind: 'teleport' }] }),
+    /playLog contains an invalid entry/,
+  );
+});
+
 test('series submissions must average their puzzles and total their dice', () => {
   const puzzles = [
     { scenarioId: 'a', scenarioName: 'A', probability: 0.5, diceCount: 1, moves: [{ actionProb: 0.5 }] },

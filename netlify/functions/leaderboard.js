@@ -97,6 +97,7 @@ export default async function handler(req) {
       diceCount: score.diceCount,
       date: new Date().toISOString(),
       moves: score.moves,
+      ...(score.playLog !== undefined ? { playLog: score.playLog } : {}),
       ...entryAuthFields(user),
     };
 

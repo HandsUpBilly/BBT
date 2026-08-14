@@ -119,6 +119,7 @@ app.post('/api/leaderboard/:scenarioId', async (req, res) => {
     diceCount: score.diceCount,
     date: new Date().toISOString(),
     moves: score.moves,
+    ...(score.playLog !== undefined ? { playLog: score.playLog } : {}),
     ...entryAuthFields(user),
   };
 

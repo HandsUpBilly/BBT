@@ -27,6 +27,8 @@
 export const SCORE_LIMITS = {
   name: 32,
   maxMoves: 200,
+  /** Complete diagram actions include free steps, so use a separate bounded cap. */
+  maxPlayLogEntries: 250,
   maxPuzzles: 50,
   /** Cap on each string field kept from a move (piece/receiver name and role). */
   moveStringLimit: 40,
@@ -38,6 +40,7 @@ const RANGE_BANDS = new Set(['quick', 'short', 'long', 'bomb']);
 const BLOCK_FACES = new Set(['attacker-down', 'both-down', 'push', 'defender-stumbles', 'defender-down']);
 const PICKERS = new Set(['attacker', 'defender']);
 const DICE_COUNTS = new Set([1, 2, 3]);
+const PLAY_LOG_KINDS = new Set(['move', 'handoff', 'pass', 'pass-catch', 'block']);
 
 export class ScoreValidationError extends Error {}
 
@@ -73,6 +76,46 @@ function sanitizedPosition(value) {
   const col = Number(value?.col);
   const row = Number(value?.row);
   return { col: Number.isFinite(col) ? col : 0, row: Number.isFinite(row) ? row : 0 };
+}
+
+function sanitizedPlayPosition(value) {
+  const col = Number(value?.col);
+  const row = Number(value?.row);
+  return {
+    col: Number.isInteger(col) && col >= 0 && col <= 14 ? col : 0,
+    row: Number.isInteger(row) && row >= 0 && row <= 25 ? row : 0,
+  };
+}
+
+/**
+ * The play log is display data, not a second score claim. Keep only the small
+ * field set PlayDiagram reads, while retaining free movement omitted from the
+ * risky-move list. Missing logs are allowed for pre-feature clients/entries.
+ */
+function sanitizePlayLog(playLog) {
+  if (playLog === undefined) return undefined;
+  if (!Array.isArray(playLog)) throw new ScoreValidationError('playLog must be an array');
+  if (playLog.length > SCORE_LIMITS.maxPlayLogEntries) {
+    throw new ScoreValidationError('playLog has too many entries');
+  }
+
+  return playLog.map(entry => {
+    if (!entry || typeof entry !== 'object' || !PLAY_LOG_KINDS.has(entry.kind)) {
+      throw new ScoreValidationError('playLog contains an invalid entry');
+    }
+    const sanitized = {
+      kind: entry.kind,
+      pieceName: sanitizedString(entry.pieceName),
+      from: sanitizedPlayPosition(entry.from),
+      to: sanitizedPlayPosition(entry.to),
+    };
+    if (entry.receiverName !== undefined) sanitized.receiverName = sanitizedString(entry.receiverName);
+    if (entry.kind === 'block') {
+      sanitized.isBlitz = Boolean(entry.isBlitz);
+      sanitized.diceCount = DICE_COUNTS.has(entry.diceCount) ? entry.diceCount : 1;
+    }
+    return sanitized;
+  });
 }
 
 /** Dice roll targets are always 1-6; anything else isn't a real target. */
@@ -180,8 +223,9 @@ export function validateScoreSubmission(body, user) {
   const probability = validProbability(body.probability, 'probability');
   const diceCount = validDiceCount(body.diceCount, 'diceCount');
   const moves = validateMoves(body.moves ?? [], probability, diceCount, 'Score');
+  const playLog = sanitizePlayLog(body.playLog);
 
-  return { name: normalizeName(body.name), probability, diceCount, moves };
+  return { name: normalizeName(body.name), probability, diceCount, moves, playLog };
 }
 
 /** Validates a series submission: average probability, total dice, per-puzzle results. */

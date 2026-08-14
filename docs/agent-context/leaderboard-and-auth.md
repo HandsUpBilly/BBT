@@ -115,6 +115,15 @@ trusted**. `shared/scoreValidation.js` (used by both targets):
   extra properties or oversized strings into the stored Blob;
 - for series, requires the average and dice total to match the puzzle results.
 
+Individual puzzle entries may also carry `playLog`, the display-only source for
+the completed-play diagram shown after clicking a ranking row. It is separate
+from `moves`: free movement belongs in the picture but does not count as a die
+roll or participate in the probability product. `scoreValidation.js` still
+treats it as untrusted input, caps it at 250 entries, accepts only known action
+kinds, bounds coordinates to the 26×15 pitch, and projects every entry down to
+the names/positions/block fields `PlayDiagram` actually reads. Older entries
+without `playLog` remain valid and render an unavailable message.
+
 Both leaderboard POST routes (`/api/leaderboard/:scenarioId` and
 `/api/series-leaderboard`, in both `server/index.js` and the Netlify
 functions) are rate-limited with the same `shared/rateLimit.js` limiter used

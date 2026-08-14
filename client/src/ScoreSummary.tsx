@@ -1,8 +1,11 @@
 import type { LeaderboardEntry } from './types';
+import { PlayDiagram } from './PlayDiagram';
+import type { Scenario } from './types';
 import './ScoreSummary.css';
 
 interface Props {
   entry: LeaderboardEntry;
+  scenario: Scenario;
   onBack: () => void;
 }
 
@@ -46,7 +49,7 @@ function playerRole(m: LeaderboardEntry['moves'][number]): string {
 }
 
 
-export function ScoreSummary({ entry, onBack }: Props) {
+export function ScoreSummary({ entry, scenario, onBack }: Props) {
   const moves = entry.moves ?? [];
   const cumProb = moves.length > 0 ? moves[moves.length - 1].cumulativeProb : entry.probability;
 
@@ -61,6 +64,14 @@ export function ScoreSummary({ entry, onBack }: Props) {
           </p>
         </div>
       </div>
+
+      {entry.playLog !== undefined ? (
+        <PlayDiagram scenario={scenario} actionLog={entry.playLog} />
+      ) : (
+        <p className="score-summary__diagram-unavailable">
+          Play diagram unavailable for scores submitted before this feature.
+        </p>
+      )}
 
       {moves.length === 0 ? (
         <p className="score-summary__empty">No move data available for this entry.</p>
