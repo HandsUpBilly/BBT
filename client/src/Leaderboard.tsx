@@ -25,6 +25,15 @@ function initials(name: string): string {
   return (first + last).toUpperCase();
 }
 
+/**
+ * A branching run's dice count is a weight-weighted mean over the branches that
+ * score, so it is not a whole number. Single-line runs stay integral and are
+ * shown unchanged.
+ */
+function formatDiceCount(diceCount: number): string {
+  return Number.isInteger(diceCount) ? String(diceCount) : diceCount.toFixed(1);
+}
+
 export function Leaderboard({ scenario, onBack, highlightId, initialEntries, onEntriesLoaded, onRowClick }: Props) {
   const [entries, setEntries] = useState<LeaderboardEntry[]>(initialEntries ?? []);
   const [loading, setLoading] = useState(!initialEntries);
@@ -103,7 +112,7 @@ export function Leaderboard({ scenario, onBack, highlightId, initialEntries, onE
                 </td>
                 <td className="lb-table__name">{e.name}</td>
                 <td className="lb-table__prob">{pct(e.probability)}</td>
-                <td className="lb-table__dice">{e.diceCount}</td>
+                <td className="lb-table__dice">{formatDiceCount(e.diceCount)}</td>
                 <td className="lb-table__date">{new Date(e.date).toLocaleDateString()}</td>
               </tr>
             ))}

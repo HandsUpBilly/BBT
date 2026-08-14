@@ -21,7 +21,7 @@
  *   glitch.
  */
 
-import type { GameState, Position } from './types';
+import type { GameState, Position, RiskyMove } from './types';
 import {
   applyBlockAction,
   applyBlockBoardState,
@@ -39,6 +39,7 @@ import {
 import { blockBoardStates, type BlockBoardState, type BlockResolution } from './blockBranching';
 import { branchSummary, type BranchSummary, type LineNode } from './blockBranchTree';
 import { replayClick } from './branchReplay';
+import { summarizeActionLog } from './riskyMoves';
 
 /** One authored segment: a board plus how it relates to the rest of the run. */
 export interface RunLine {
@@ -51,6 +52,8 @@ export interface RunLine {
   state: GameState;
   /** Cumulative roll probability at the moment this segment began. */
   startCumProb: number;
+  /** Index into `state.actionLog` where this segment's own entries start. */
+  startLogIndex: number;
   /** The player gave up here: costs its weight, costs no authoring. */
   conceded: boolean;
   /** Replay refused an inherited action, so this branch needs authoring. */
@@ -102,6 +105,7 @@ export function startRun(state: GameState): BranchRun {
     lockstepId: 'G0',
     state,
     startCumProb: cumProbOf(state),
+    startLogIndex: state.actionLog.length,
     conceded: false,
     needsAttention: false,
     split: null,
@@ -340,6 +344,10 @@ export function splitOnBlock(run: BranchRun): BranchRun {
       lockstepId,
       state: applyBlockBoardState(state, boardState, ctx),
       startCumProb,
+      // The block entry itself is logged at actionProb 1, so including it in
+      // the child's segment leaves the segment product untouched while keeping
+      // the block visible in that branch's own history.
+      startLogIndex: state.actionLog.length,
       conceded: false,
       needsAttention: false,
       split: null,
@@ -417,6 +425,66 @@ function toTree(run: BranchRun, id: string): LineNode {
 /** The run's current honest expected value, plus per-branch weights. */
 export function runSummary(run: BranchRun): BranchSummary {
   return branchSummary(toTree(run, run.rootId));
+}
+
+/**
+ * One segment of a run as the leaderboard receives it. Mirrors the shape
+ * `validateBranchTree` in shared/scoreValidation.js recomputes.
+ */
+export interface SubmissionNode {
+  /** Product of the ordinary rolls committed in this segment. */
+  lineProb: number;
+  /** Those rolls, for the leaderboard detail view. */
+  moves: RiskyMove[];
+  outcome: 'scored' | 'conceded' | 'block';
+  block?: {
+    diceCount: 1 | 2 | 3;
+    picker: 'attacker' | 'defender';
+    /** Faces producing each live board state, aligned with `children`. */
+    faceCounts: number[];
+    /** Faces that end the drive and are never branched. */
+    deadFaceCount: number;
+    children: SubmissionNode[];
+  };
+}
+
+/**
+ * Serialise the run for submission.
+ *
+ * Deliberately carries face counts rather than the skills they were derived
+ * from: the server has to recompute the score, and the face-to-board collapse
+ * is the client's rules engine talking. What the server *can* check is that the
+ * counts add up to a die, that every board state has a branch, and that the
+ * arithmetic on top of them is right — which is what keeps a tampered score out
+ * of the sort key without pretending this is a cheat-proof boundary.
+ *
+ * A branch still being authored serialises as conceded, so a partial run is
+ * never scored higher than it earned.
+ */
+export function toSubmissionTree(run: BranchRun, lineId: string = run.rootId): SubmissionNode {
+  const line = run.lines[lineId];
+  const segment = line.state.actionLog.slice(line.startLogIndex);
+  const { moves } = summarizeActionLog(segment);
+  const node: SubmissionNode = {
+    lineProb: lineProb(line),
+    moves,
+    outcome: 'conceded',
+  };
+
+  if (line.split) {
+    node.outcome = 'block';
+    node.block = {
+      diceCount: line.split.diceCount,
+      picker: line.split.picker,
+      faceCounts: line.split.resolution.states.map(state => state.faceCount),
+      deadFaceCount: line.split.resolution.deadFaceCount,
+      children: line.split.childIds.map(childId => toSubmissionTree(run, childId)),
+    };
+    return node;
+  }
+
+  if (!line.conceded && line.state.phase === 'touchdown') node.outcome = 'scored';
+  return node;
 }
 
 export interface BranchStripEntry {

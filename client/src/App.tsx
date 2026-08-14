@@ -3,6 +3,7 @@ import { useGameState, makeEmptyState, makeScenarioState, pathPreviewProb, passA
 import { useBranchRun } from './useBranchRun';
 import { BranchStrip } from './BranchStrip';
 import { BranchRunSummary } from './BranchRunSummary';
+import { toSubmissionTree } from './branchRun';
 import { Pitch } from './Pitch';
 import type { PitchOrientation } from './Pitch';
 import { PieceMenu } from './PieceMenu';
@@ -30,6 +31,7 @@ import { SettingsScreen } from './SettingsScreen';
 import { submitScore, fetchLeaderboard, submitSeriesScore, fetchSeriesLeaderboard, fetchProgress, ApiError } from './api';
 import type { ProgressData } from './api';
 import { recordAttempt } from './attemptStore';
+import { summarizeActionLog } from './riskyMoves';
 import { readAllPrefs, writePrefs, GUEST_PREFS_KEY } from './prefs';
 import type { PlayerPrefs } from './prefs';
 import { playerComparison } from './playerComparison';
@@ -42,7 +44,7 @@ import { PuzzleEditor } from './editor/PuzzleEditor';
 import { useAuth } from './auth';
 import type {
   AppMode, GameState, PlayerPiece, Scenario, LeaderboardEntry,
-  SeriesLeaderboardEntry, SeriesPuzzleResult, RiskyMove, ActionLogEntry,
+  SeriesLeaderboardEntry, SeriesPuzzleResult,
 } from './types';
 import { key, computeZoomBounds } from './bfs';
 import type { ZoomBounds } from './bfs';
@@ -156,68 +158,6 @@ function rememberLocalScore(scenarioId: string, entryId: string): void {
   }
 }
 
-/** Build the risky-moves list + summary stats from a completed puzzle's action log. */
-function summarizeActionLog(actionLog: ActionLogEntry[]) {
-  const cumulativeProb = actionLog.length > 0
-    ? actionLog[actionLog.length - 1].cumulativeProb
-    : 1;
-  const riskyMoves = actionLog.filter(e =>
-    e.kind === 'handoff' || e.kind === 'pass' || e.kind === 'pass-catch' || e.kind === 'block' ||
-    e.dodgeTarget !== null || e.isGfi || (e.kind === 'move' && !!e.pickupTarget)
-  );
-  const diceCount = riskyMoves.length;
-  const moves: RiskyMove[] = riskyMoves.map(e => {
-    if (e.kind === 'handoff') {
-      return {
-        pieceName: e.pieceName, pieceRole: e.pieceRole,
-        receiverName: e.receiverName, receiverRole: e.receiverRole,
-        from: e.from, to: e.to,
-        dodgeTarget: null, isGfi: false,
-        catchTarget: e.catchTarget,
-        actionProb: e.actionProb, cumulativeProb: e.cumulativeProb,
-      };
-    }
-    if (e.kind === 'pass') {
-      return {
-        pieceName: e.pieceName, pieceRole: e.pieceRole,
-        receiverName: e.receiverName, receiverRole: e.receiverRole,
-        from: e.from, to: e.to,
-        dodgeTarget: null, isGfi: false,
-        passTarget: e.passTarget, rangeBand: e.rangeBand,
-        actionProb: e.actionProb, cumulativeProb: e.cumulativeProb,
-      };
-    }
-    if (e.kind === 'pass-catch') {
-      return {
-        pieceName: e.pieceName, pieceRole: e.pieceRole,
-        from: e.from, to: e.to,
-        dodgeTarget: null, isGfi: false,
-        catchTarget: e.catchTarget,
-        actionProb: e.actionProb, cumulativeProb: e.cumulativeProb,
-      };
-    }
-    if (e.kind === 'block') {
-      return {
-        pieceName: e.pieceName, pieceRole: e.pieceRole,
-        receiverName: e.receiverName, receiverRole: e.receiverRole,
-        from: e.from, to: e.to,
-        dodgeTarget: null, isGfi: false,
-        isBlitz: e.isBlitz, diceCount: e.diceCount, picker: e.picker,
-        acceptedFaces: e.acceptedFaces, resolvedFace: e.resolvedFace,
-        actionProb: e.actionProb, cumulativeProb: e.cumulativeProb,
-      };
-    }
-    return {
-      pieceName: e.pieceName, pieceRole: e.pieceRole,
-      from: e.from, to: e.to,
-      dodgeTarget: e.dodgeTarget, isGfi: e.isGfi,
-      dodgeSkillReroll: e.dodgeSkillReroll,
-      pickupTarget: e.pickupTarget ?? null,
-      actionProb: e.actionProb, cumulativeProb: e.cumulativeProb,
-    };
-  });
-  return { cumulativeProb, diceCount, moves };
-}
 
 /**
  * Netlify Blobs is not immediately read-consistent after a write, so the
@@ -463,6 +403,7 @@ export default function App() {
   const branchedBoards = useBranchRun(makeEmptyState());
   const branchingEnabled = useBlockBranchingForAttempt(prefs.blockBranching ?? false, activeScenario?.id);
   const game = branchingEnabled ? branchedBoards : singleBoard;
+  const branchedSummary = branchedBoards.summary;
 
   const { state, setState, handleSquareClick: hookSquareClick, handleSquareHover: hookSquareHover,
           handleSquareLeave: hookSquareLeave, handleCancelSelection,
@@ -808,21 +749,30 @@ export default function App() {
   // submitting are exactly the ones the leaderboard cannot show. Restarting
   // rebuilds the state at 'playing', which re-arms the guard for the next run.
   const attemptRecordedRef = useRef(false);
+  // A branching run finishes when every branch is resolved, not when the branch
+  // being viewed happens to score — and its probability is the whole run's, not
+  // the viewed line's. Recording the viewed line here would file an attempt at a
+  // number the leaderboard never sees.
+  const runFinished = branchingEnabled ? branchedBoards.complete : state.phase === 'touchdown';
   useEffect(() => {
-    if (state.phase !== 'touchdown') {
+    if (!runFinished) {
       attemptRecordedRef.current = false;
       return;
     }
     if (attemptRecordedRef.current || !activeScenario) return;
     attemptRecordedRef.current = true;
 
-    const { cumulativeProb, diceCount } = summarizeActionLog(state.actionLog);
+    const { probability, diceCount } = branchingEnabled
+      ? { probability: branchedSummary.score, diceCount: branchedSummary.expectedDice }
+      : (({ cumulativeProb, diceCount }) => ({ probability: cumulativeProb, diceCount }))(
+          summarizeActionLog(state.actionLog));
+
     recordAttempt(activeScenario.id, {
       at: new Date().toISOString(),
-      probability: cumulativeProb,
+      probability,
       diceCount,
     });
-  }, [state.phase, state.actionLog, activeScenario]);
+  }, [runFinished, branchingEnabled, branchedSummary, state.actionLog, activeScenario]);
 
   // Submission handler (standalone puzzle mode)
   const handleSubmit = useCallback(async (name: string) => {
@@ -849,6 +799,34 @@ export default function App() {
       setSubmitError(describeSubmitError(error));
     }
   }, [activeScenario, state.actionLog, setState, idToken]);
+
+  // A branching run submits its whole tree: the score is a sum over the
+  // branches that reach a touchdown, so the server recomputes from the tree
+  // rather than from one line's rolls. `moves` goes along as display data for
+  // the primary line only.
+  const handleBranchSubmit = useCallback(async (name: string) => {
+    if (!activeScenario) return;
+    const { summary, run } = branchedBoards;
+    const { moves } = summarizeActionLog(branchedBoards.state.actionLog);
+    setSubmitError(undefined);
+    try {
+      const entry = await submitScore(
+        activeScenario.id, name, summary.score, summary.expectedDice,
+        moves, branchedBoards.state.actionLog, idToken, toSubmissionTree(run),
+      );
+      rememberLocalScore(activeScenario.id, entry.id);
+      setLeaderboardHighlight(entry.id);
+      setProgressRefreshKey(k => k + 1);
+      setBranchSummaryDismissed(true);
+      setAppMode('leaderboard');
+      await new Promise(res => setTimeout(res, LEADERBOARD_CONSISTENCY_DELAY_MS));
+      const entries = await fetchLeaderboard(activeScenario.id);
+      setLeaderboardInitialEntries(entries);
+      setLeaderboardRefreshKey(k => k + 1);
+    } catch (error) {
+      setSubmitError(describeSubmitError(error));
+    }
+  }, [activeScenario, branchedBoards, idToken]);
 
   const handleSkipSubmit = useCallback(() => {
     setState(s => ({ ...s, phase: 'playing' }));
@@ -1371,7 +1349,11 @@ export default function App() {
           scenarioName={activeScenario.name}
           summary={branchedBoards.summary}
           branches={branchedBoards.strip}
+          onSubmit={handleBranchSubmit}
           onDismiss={() => setBranchSummaryDismissed(true)}
+          defaultName={identityName}
+          signedInName={identityName}
+          error={submitError}
         />
       )}
 

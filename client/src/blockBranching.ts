@@ -25,9 +25,7 @@
 
 import { BLOCK_FACE_WEIGHTS, BLOCK_OUTCOME_FACES } from './bfs';
 import type { BlockOutcomeFace } from './types';
-
-/** Total physical faces on a block die. */
-const DIE_FACES = 6;
+import { blockStateWeights } from '../../shared/blockWeights.js';
 
 /**
  * The distinct boards a block can leave behind, other than the ones that end
@@ -151,28 +149,14 @@ export interface BlockStateProbabilities {
   order: number[];
 }
 
-/** Rank key that keeps the dead outcome last among equally valued entries. */
-interface RankEntry {
-  /** Index into `states`, or `states.length` for the dead outcome. */
-  index: number;
-  /** Faces producing this entry, kept integral so the weights stay exact. */
-  faceCount: number;
-  value: number;
-}
-
 /**
  * Derive each board state's probability from what it is worth.
  *
- * The picking side takes the best (attacker) or worst (defender) state
- * available on the dice, so with the states ranked best-first and `s(k)` the
- * face count of ranks `k` and worse:
- *
- *   attacker picks -> P(rank k) = (s(k)/6)^N - (s(k+1)/6)^N
- *   defender picks -> P(rank k) = (t(k)/6)^N - (t(k-1)/6)^N   [t = ranks k and better]
- *
- * i.e. "every die landed at rank k or worse, minus every die landed strictly
- * worse". Face counts stay integral until the final division so a full die's
- * worth of outcomes is exactly 1.
+ * A typed wrapper over `shared/blockWeights.js`, which carries the closed form
+ * and its derivation. The maths lives in `shared/` because the server-side
+ * score validator has to reach the identical number from a submitted tree —
+ * two implementations would disagree in the last decimal place and start
+ * rejecting honest scores.
  *
  * `values` is the conditional chance of scoring from each state, aligned with
  * `resolution.states`; a missing or conceded entry counts as 0.
@@ -183,56 +167,13 @@ export function blockStateProbabilities(
   diceCount: 1 | 2 | 3,
   picker: 'attacker' | 'defender',
 ): BlockStateProbabilities {
-  const { states, deadFaceCount } = resolution;
-  const entries: RankEntry[] = states.map((state, index) => ({
-    index,
-    faceCount: state.faceCount,
-    value: values[index] ?? 0,
-  }));
-  if (deadFaceCount > 0) {
-    entries.push({ index: states.length, faceCount: deadFaceCount, value: 0 });
-  }
-
-  // Best first; ties fall back to canonical order so the split between equally
-  // good states is deterministic, and the dead outcome sorts last.
-  entries.sort((a, b) => b.value - a.value || a.index - b.index);
-
-  const n = entries.length;
-  const share = (faces: number) => Math.pow(faces / DIE_FACES, diceCount);
-  const ranked = new Array<number>(n).fill(0);
-
-  if (picker === 'attacker') {
-    // Cumulative face count of rank k and everything worse.
-    let worseOrEqual = 0;
-    for (let k = n - 1; k >= 0; k--) {
-      const strictlyWorse = worseOrEqual;
-      worseOrEqual += entries[k].faceCount;
-      ranked[k] = share(worseOrEqual) - share(strictlyWorse);
-    }
-  } else {
-    // Mirror: the defender takes the worst face on the dice.
-    let betterOrEqual = 0;
-    for (let k = 0; k < n; k++) {
-      const strictlyBetter = betterOrEqual;
-      betterOrEqual += entries[k].faceCount;
-      ranked[k] = share(betterOrEqual) - share(strictlyBetter);
-    }
-  }
-
-  const probabilities = new Array<number>(states.length).fill(0);
-  let deadProbability = 0;
-  const order: number[] = [];
-  for (let k = 0; k < n; k++) {
-    const { index } = entries[k];
-    if (index === states.length) {
-      deadProbability = ranked[k];
-    } else {
-      probabilities[index] = ranked[k];
-      order.push(index);
-    }
-  }
-
-  return { probabilities, deadProbability, order };
+  return blockStateWeights(
+    resolution.states.map(state => state.faceCount),
+    resolution.deadFaceCount,
+    [...values],
+    diceCount,
+    picker,
+  );
 }
 
 /**

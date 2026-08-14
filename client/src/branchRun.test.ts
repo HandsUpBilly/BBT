@@ -3,6 +3,7 @@ import type { GameState, PlayerPiece } from './types';
 import { blockOutcomeProbabilities } from './bfs';
 import { applyClick } from './useGameState';
 import { makeState, humanBlocker, orcBlocker, humanThrower } from './test/gameState';
+import { validateScoreSubmission } from '../../shared/scoreValidation.js';
 import {
   branchStrip,
   cancelActivation,
@@ -19,6 +20,7 @@ import {
   selectBranch,
   splitOnBlock,
   startRun,
+  toSubmissionTree,
   unresolvedLines,
   viewedLine,
   type BranchRun,
@@ -293,6 +295,88 @@ describe('a second block', () => {
     run = clickSquare(run, { col: 5, row: 0 });
 
     expect(runSummary(run).expectedDice).toBeCloseTo(2, 12);
+  });
+});
+
+describe('submission tree', () => {
+  const carrier = () => humanThrower({ id: 'carrier', position: { col: 5, row: 1 } });
+
+  function scoredRun(): BranchRun {
+    let run = choosePush(blockRun([carrier()]), { col: 7, row: 8 }, false);
+    run = clickSquare(run, { col: 5, row: 1 });
+    run = clickSquare(run, { col: 5, row: 0 });
+    return run;
+  }
+
+  /** Submit exactly as the app would, and let the real validator judge it. */
+  function submit(run: BranchRun, overrides: Record<string, unknown> = {}) {
+    const summary = runSummary(run);
+    return validateScoreSubmission({
+      name: 'Coach',
+      probability: summary.score,
+      diceCount: summary.expectedDice,
+      tree: toSubmissionTree(run),
+      ...overrides,
+    });
+  }
+
+  it('is accepted by the server validator with the score the client computed', () => {
+    const run = scoredRun();
+    const validated = submit(run);
+
+    // The single most important guarantee in the whole feature: the number the
+    // player is shown is the number the leaderboard recomputes independently.
+    expect(validated.probability).toBeCloseTo(runSummary(run).score, 12);
+    expect(validated.branching).toBe(true);
+  });
+
+  it('round-trips a run with a conceded branch', () => {
+    const run = scoredRun();
+    const inPlace = branchStrip(run).find(e => e.label === 'Down in place')!;
+    const conceded = concedeBranch(run, inPlace.id);
+
+    expect(submit(conceded).probability).toBeCloseTo(runSummary(conceded).score, 12);
+  });
+
+  it('round-trips a run with two blocks in it', () => {
+    const attacker2 = humanBlocker({
+      id: 'attacker2', position: { col: 2, row: 10 }, skills: ['Block'],
+    });
+    const defender2 = orcBlocker({ id: 'defender2', position: { col: 2, row: 9 } });
+
+    let run = choosePush(blockRun([attacker2, defender2, carrier()]), { col: 7, row: 8 }, false);
+    run = declareBlock(run, 'attacker2', false);
+    run = chooseBlockTarget(run, { col: 2, row: 9 });
+    run = choosePush(run, { col: 2, row: 8 }, false);
+    run = clickSquare(run, { col: 5, row: 1 });
+    run = clickSquare(run, { col: 5, row: 0 });
+
+    const summary = runSummary(run);
+    expect(summary.score).toBeCloseTo((5 / 6) ** 2, 12);
+    expect(submit(run).probability).toBeCloseTo(summary.score, 12);
+  });
+
+  it('accounts for every die face in each block it submits', () => {
+    const block = toSubmissionTree(scoredRun()).block!;
+    const live = block.faceCounts.reduce((a, b) => a + b, 0);
+
+    expect(live + block.deadFaceCount).toBe(6);
+    expect(block.children).toHaveLength(block.faceCounts.length);
+  });
+
+  it('serialises a branch that is still open as conceded', () => {
+    // Half-finished runs must never be scored as if the unauthored branches
+    // would have worked out.
+    const open = blockRun();
+    const tree = toSubmissionTree(open);
+
+    expect(tree.block!.children.every(child => child.outcome === 'conceded')).toBe(true);
+  });
+
+  it('is rejected when the claimed probability is raised', () => {
+    const run = scoredRun();
+    expect(() => submit(run, { probability: 0.99 }))
+      .toThrow(/does not match its branch tree/);
   });
 });
 

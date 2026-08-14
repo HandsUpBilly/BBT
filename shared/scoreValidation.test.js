@@ -266,3 +266,141 @@ test('sortEntries ranks by probability then fewest dice, without mutating', () =
   assert.deepEqual(sortEntries(entries).map(e => e.id), ['c', 'b', 'a']);
   assert.deepEqual(entries, snapshot, 'sortEntries must not mutate its input');
 });
+
+// ── Branch-tree submissions ─────────────────────────────────────────────────
+//
+// The canonical shape: a block with an attacker who has Block, against a plain
+// defender. Five faces collapse to three live boards weighted 2/6, 1/6, 2/6,
+// with one face putting the attacker down and ending the drive.
+
+function branchBlock(children, overrides = {}) {
+  return {
+    lineProb: 1,
+    moves: [],
+    outcome: 'block',
+    block: {
+      diceCount: 1,
+      picker: 'attacker',
+      faceCounts: [2, 1, 2],
+      deadFaceCount: 1,
+      children,
+      ...overrides,
+    },
+  };
+}
+
+const scoredLeaf = (lineProb = 1) => ({ lineProb, moves: [], outcome: 'scored' });
+const concededLeaf = () => ({ lineProb: 1, moves: [], outcome: 'conceded' });
+
+function treeBody(tree, probability, diceCount, extra = {}) {
+  return { name: 'Coach', probability, diceCount, tree, ...extra };
+}
+
+test('accepts a branch tree whose score matches its branches', () => {
+  const tree = branchBlock([scoredLeaf(), scoredLeaf(), scoredLeaf()]);
+  const result = validateScoreSubmission(treeBody(tree, 5 / 6, 1));
+
+  assert.equal(result.branching, true);
+  assert.ok(Math.abs(result.probability - 5 / 6) < 1e-9);
+  assert.equal(result.diceCount, 1);
+});
+
+test('charges a conceded branch its full weight', () => {
+  // Giving up the 2/6 "pushed" branch leaves 3/6 scoring.
+  const tree = branchBlock([scoredLeaf(), scoredLeaf(), concededLeaf()]);
+  const result = validateScoreSubmission(treeBody(tree, 3 / 6, 1));
+
+  assert.ok(Math.abs(result.probability - 0.5) < 1e-9);
+});
+
+test('rejects a branch tree whose claimed probability is inflated', () => {
+  const tree = branchBlock([scoredLeaf(), scoredLeaf(), concededLeaf()]);
+  assert.throws(
+    () => validateScoreSubmission(treeBody(tree, 0.95, 1)),
+    /does not match its branch tree/,
+  );
+});
+
+test('rejects a block whose faces do not add up to a die', () => {
+  // Dropping the face that puts the attacker down would claim the whole die
+  // scores — the exact edit that makes a bad run look clean.
+  const tree = branchBlock([scoredLeaf(), scoredLeaf(), scoredLeaf()], { deadFaceCount: 0 });
+  assert.throws(() => validateScoreSubmission(treeBody(tree, 1, 1)), /faces must add up to 6/);
+});
+
+test('rejects a block missing a branch for one of its board states', () => {
+  const tree = branchBlock([scoredLeaf(), scoredLeaf()]);
+  assert.throws(
+    () => validateScoreSubmission(treeBody(tree, 5 / 6, 1)),
+    /one branch per board state/,
+  );
+});
+
+test('rejects a segment whose rolls do not multiply to its probability', () => {
+  const tree = branchBlock([
+    { lineProb: 0.5, moves: [{ actionProb: 5 / 6 }], outcome: 'scored' },
+    scoredLeaf(),
+    scoredLeaf(),
+  ]);
+  assert.throws(
+    () => validateScoreSubmission(treeBody(tree, 0.7, 1)),
+    /segment probability does not match its recorded rolls/,
+  );
+});
+
+test('rejects a tree that scores nowhere', () => {
+  const tree = branchBlock([concededLeaf(), concededLeaf(), concededLeaf()]);
+  assert.throws(() => validateScoreSubmission(treeBody(tree, 0.5, 1)), /must score somewhere/);
+});
+
+test('rejects a branch that both ends and continues', () => {
+  const tree = branchBlock([
+    { ...scoredLeaf(), block: branchBlock([scoredLeaf(), scoredLeaf(), scoredLeaf()]).block },
+    scoredLeaf(),
+    scoredLeaf(),
+  ]);
+  assert.throws(
+    () => validateScoreSubmission(treeBody(tree, 5 / 6, 1)),
+    /cannot both end and continue/,
+  );
+});
+
+test('rejects an unknown branch outcome', () => {
+  const tree = branchBlock([{ lineProb: 1, moves: [], outcome: 'maybe' }, scoredLeaf(), scoredLeaf()]);
+  assert.throws(() => validateScoreSubmission(treeBody(tree, 5 / 6, 1)), /unknown outcome/);
+});
+
+test('rejects a branch tree nested past the depth cap', () => {
+  let tree = scoredLeaf();
+  for (let i = 0; i < 20; i++) tree = branchBlock([tree, scoredLeaf(), scoredLeaf()]);
+  assert.throws(() => validateScoreSubmission(treeBody(tree, 0.5, 1)), /too many nodes|nested too deeply/);
+});
+
+test('accepts a fractional dice count and rejects one that disagrees', () => {
+  // One branch takes a second block, so the mean over scoring lines sits
+  // between one die and two.
+  const inner = branchBlock([scoredLeaf(), scoredLeaf(), scoredLeaf()]);
+  const tree = branchBlock([inner, scoredLeaf(), scoredLeaf()]);
+
+  // The 2/6 branch carries a second block worth 5/6; the other 3/6 score flat.
+  const probability = (2 / 6) * (5 / 6) + 3 / 6;
+  // Two dice on the scoring lines under the inner block, one on the rest.
+  const dice = ((2 / 6) * (5 / 6) * 2 + (3 / 6) * 1) / probability;
+  assert.ok(!Number.isInteger(dice), 'the fixture should produce a fractional dice count');
+
+  const result = validateScoreSubmission(treeBody(tree, probability, dice));
+  assert.ok(Math.abs(result.diceCount - dice) < 1e-9);
+  assert.throws(() => validateScoreSubmission(treeBody(tree, probability, 9)), /diceCount does not match/);
+});
+
+test('keeps a branching run primary-line moves for display without a product check', () => {
+  const tree = branchBlock([scoredLeaf(), scoredLeaf(), scoredLeaf()]);
+  const result = validateScoreSubmission(treeBody(tree, 5 / 6, 1, {
+    moves: [{ actionProb: 0.5, pieceName: 'Aldric', from: { col: 1, row: 1 }, to: { col: 1, row: 2 } }],
+  }));
+
+  // 0.5 is nothing like the 5/6 score; under branching that is expected,
+  // because these rolls are only part of one branch.
+  assert.equal(result.moves.length, 1);
+  assert.equal(result.moves[0].pieceName, 'Aldric');
+});
