@@ -33,6 +33,14 @@ export interface PlayerPrefs {
   showCoordinates?: boolean;
   /** A `data:image/webp;base64,...` URL produced by avatarImage.ts. */
   avatar?: string;
+  /**
+   * Opt in to the board-state branching model for block dice (spec.md, "Block
+   * Outcomes as Board-State Branches"). Off means the shipped outcome
+   * checklist. This is a build-in-progress flag, not a taste setting: the two
+   * models score differently, so a run made under one is not comparable to a
+   * run made under the other.
+   */
+  blockBranching?: boolean;
 }
 
 type PrefsMap = Record<string, PlayerPrefs>;
@@ -59,6 +67,7 @@ function sanitizePrefs(value: unknown): PlayerPrefs | null {
   if (isTokenStyle(candidate.tokenStyle)) prefs.tokenStyle = candidate.tokenStyle;
   if (isPitchSurface(candidate.pitchSurface)) prefs.pitchSurface = candidate.pitchSurface;
   if (typeof candidate.showCoordinates === 'boolean') prefs.showCoordinates = candidate.showCoordinates;
+  if (typeof candidate.blockBranching === 'boolean') prefs.blockBranching = candidate.blockBranching;
   if (isAvatarDataUrl(candidate.avatar)) prefs.avatar = candidate.avatar;
   return prefs;
 }

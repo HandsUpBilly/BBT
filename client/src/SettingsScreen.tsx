@@ -19,6 +19,8 @@ interface Props {
   onPitchSurfaceChange: (surface: PitchSurface) => void;
   showCoordinates: boolean;
   onShowCoordinatesChange: (show: boolean) => void;
+  blockBranching: boolean;
+  onBlockBranchingChange: (enabled: boolean) => void;
   onBack: () => void;
 }
 
@@ -39,6 +41,7 @@ export function SettingsScreen({
   tokenStyle, onTokenStyleChange,
   pitchSurface, onPitchSurfaceChange,
   showCoordinates, onShowCoordinatesChange,
+  blockBranching, onBlockBranchingChange,
   onBack,
 }: Props) {
   const [name, setName] = useState(identityName);
@@ -258,6 +261,30 @@ export function SettingsScreen({
             </span>
           </button>
         </div>
+      </section>
+
+      <section className="settings-screen__section">
+        <h3 className="settings-screen__section-title">
+          Experimental <span className="settings-screen__badge">In development</span>
+        </h3>
+        <p className="settings-screen__section-help">
+          Unfinished features, off by default. Expect rough edges.
+        </p>
+        <label className="settings-screen__coordinate-toggle">
+          <span>
+            <strong>Block outcome branching</strong>
+            <small>
+              Blocks split the board into every state the dice can produce instead of asking
+              which result you would accept. Scores from this model are not comparable to
+              scores from the current one.
+            </small>
+          </span>
+          <input
+            type="checkbox"
+            checked={blockBranching}
+            onChange={event => onBlockBranchingChange(event.target.checked)}
+          />
+        </label>
       </section>
 
       {pendingRename !== null && (

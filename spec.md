@@ -29,7 +29,7 @@ carries a **Status** line — read it before treating a section as work to do.
 | BB Tactics — Tabletop Playbook Home Redesign | Shipped |
 | Leaderboard and Report Integrity | **Planned** |
 | Player Config Screen | Phase 1 Shipped, Phase 2 **Planned** |
-| Block Outcomes as Board-State Branches | **Planned** (supersedes the block outcome checklist) |
+| Block Outcomes as Board-State Branches | Phases 0–1 Shipped (dark), Phases 2–5 **Planned** |
 
 Durable behavior that has already shipped belongs in `docs/agent-context/`, not
 here. When a plan below ships, move the facts worth keeping into the matching
@@ -4194,9 +4194,13 @@ deliberately deferred rather than folded in:
 
 # Block Outcomes as Board-State Branches
 
-**Status:** **Planned.** Supersedes the outcome-checklist design in *Block and
-Blitz Actions* (see "Design: modeling block dice inside the probability-tracking
-model", marked superseded there). Nothing in this section has been built.
+**Status:** In progress, behind the `blockBranching` preference (Settings →
+Experimental, off by default). Phase 0 (feature flag) and phase 1 (pure
+resolution engine, `client/src/blockBranching.ts`) are shipped dark and reach no
+UI; phases 2–5 are outstanding. Supersedes the outcome-checklist design in
+*Block and Blitz Actions* (see "Design: modeling block dice inside the
+probability-tracking model", marked superseded there), which stays live until
+phase 5 removes it.
 
 ## Problem Statement
 
@@ -4400,12 +4404,31 @@ no gain in truth.
   face groupings against the recorded ST/skills, the derived ordering, the
   closed-form weights, then `Σ` scoring-leaf weights against the claim. Keep the
   existing posture — this catches nonsense, it is not a cheat-proof boundary.
-- **Leaderboards reset where blocks are involved.** Per-puzzle leaderboards
-  containing any entry with a `block` move are cleared on release; puzzles never
-  blocked in are untouched. Series leaderboards are cleared for any series
-  containing an affected puzzle, since a partially-migrated average is
-  meaningless. *Open decision: whether to snapshot the cleared entries anywhere
-  before dropping them.*
+- **No leaderboard migration.** Existing entries are test data and will be
+  deleted by hand before release. Nothing needs snapshotting, and no clearing
+  script is required.
+
+## Feature flag
+
+The change is too large to land in one piece, so it ships dark and is opted into
+per player from Settings → Experimental.
+
+- **`PlayerPrefs.blockBranching`** in `client/src/prefs.ts`, defaulting to
+  `false` (i.e. today's outcome checklist). It lives alongside the other display
+  preferences: `localStorage`, keyed by identity, junk-tolerant.
+- **It is a build-in-progress flag, not a taste setting.** The two models score
+  differently, so a run made under one is not comparable to a run made under the
+  other. The Settings copy says so.
+- **The flag gates the block resolution path only.** Everything upstream of a
+  block — movement, dodges, GFI, pickup, pass, handoff — is identical either
+  way, because those rolls already have exactly one live branch.
+- **A run is not allowed to straddle the two models.** The flag is read once
+  when a puzzle is opened and held for that attempt; toggling it mid-puzzle does
+  not take effect until the next attempt.
+- **Removing the flag is the last step**, once the branching path is the only
+  one worth playing. The checklist code (`BlockOutcomePanel.tsx`,
+  `isBlockOutcomeSelectable`, the checklist role of `blockCombinedProbability`)
+  is deleted at that point, not before.
 
 ## Non-goals
 
@@ -4446,18 +4469,22 @@ no gain in truth.
 
 Sequenced so each phase is independently testable and nothing lands half-wired.
 
-1. **Pure resolution engine** — `blockBoardStates(attacker, defender, diceCount,
-   picker)` plus the ordering/weight closed form, in `bfs.ts` or a new
-   `blockBranching.ts`. Headless, no UI, no state changes. Property test against
-   `blockCombinedProbability` (criterion 2) lands here.
+0. **Feature flag** — `PlayerPrefs.blockBranching` plus the Settings →
+   Experimental toggle, defaulting off. Lands first so every later phase has
+   somewhere dark to land. **Done.**
+1. **Pure resolution engine** — `client/src/blockBranching.ts`:
+   `blockBoardStates` for the face-to-board collapse, `blockStateProbabilities`
+   for the ordering/weight closed form, `blockNodeValue` for the folded value.
+   Headless, no UI, no state changes. The property test asserting the binary
+   case reproduces `blockCombinedProbability` (criterion 2) lands here. **Done.**
 2. **Branch set in `useGameState`** — replace the single state with a branch set,
    implement lockstep replay, merging, and group rollback. Still no UI: drive it
    entirely from tests. This is the large phase.
-3. **UI** — branch strip, ghost overlay, submit gating. Delete
-   `BlockOutcomePanel.tsx`, `isBlockOutcomeSelectable`, and the checklist role of
-   `blockCombinedProbability`.
+3. **UI** — branch strip, ghost overlay, submit gating, behind the flag.
 4. **Scoring** — branch-tree log format, validator rewrite, expected dice count.
-5. **Migration** — leaderboard clearing script and release note.
+5. **Flag removal** — delete `BlockOutcomePanel.tsx`,
+   `isBlockOutcomeSelectable`, the checklist role of
+   `blockCombinedProbability`, and the preference itself.
 
-Phases 1–2 carry essentially all of the risk; phases 3–5 are mechanical once the
-branch set is real.
+Phase 2 carries essentially all of the remaining risk; 3–5 are mechanical once
+the branch set is real.

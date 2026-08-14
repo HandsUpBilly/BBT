@@ -49,6 +49,11 @@ describe('writing and reading back', () => {
     expect(readPrefs('user-1')).toEqual({ pitchSurface: 'slate', showCoordinates: false });
   });
 
+  it('persists the block branching opt-in', () => {
+    writePrefs('user-1', { blockBranching: true });
+    expect(readPrefs('user-1')).toEqual({ blockBranching: true });
+  });
+
   it('persists an avatar data URL', () => {
     writePrefs('user-1', { avatar: VALID_AVATAR });
     expect(readPrefs('user-1')).toEqual({ avatar: VALID_AVATAR });
@@ -82,6 +87,11 @@ describe('tolerating junk', () => {
 
   it('drops invalid pitch display values', () => {
     storage.setItem(KEY, JSON.stringify({ 'user-1': { pitchSurface: 'mud', showCoordinates: 'no' } }));
+    expect(readPrefs('user-1')).toEqual({});
+  });
+
+  it('drops a non-boolean block branching flag', () => {
+    storage.setItem(KEY, JSON.stringify({ 'user-1': { blockBranching: 'yes' } }));
     expect(readPrefs('user-1')).toEqual({});
   });
 

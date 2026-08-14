@@ -371,7 +371,7 @@ export type BlockOutcomeFace =
   | 'attacker-down' | 'both-down' | 'push' | 'defender-stumbles' | 'defender-down';
 
 /** Number of the die's 6 physical faces that produce each outcome (3–4 = Push, 2 faces). */
-const BLOCK_FACE_WEIGHTS: Record<BlockOutcomeFace, number> = {
+export const BLOCK_FACE_WEIGHTS: Record<BlockOutcomeFace, number> = {
   'attacker-down': 1,
   'both-down': 1,
   'push': 2,
