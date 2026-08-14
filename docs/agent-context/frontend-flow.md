@@ -46,6 +46,12 @@ name or avatar. Google identity is retained only as a stable account key and
 for the server-side admin email allowlist. Signing out clears Google auth if
 signed in, otherwise clears the guest alias.
 
+The account menu also opens **About** beside Settings and Log Out. Its
+focus-trapped dialog is the single player-facing location for the build version
+(`__BBT_VERSION__`); the home masthead no longer carries a separate version
+label. Because `UserMenu` is shared, About remains available from home,
+archives, Admin Mode, Settings, and the game HUD.
+
 ## Settings Screen and Player Prefs
 
 `SettingsScreen.tsx`, opened from `UserMenu`'s previously-disabled Settings
@@ -94,7 +100,8 @@ public avatars).
   action logs, accessibility labels, or written solutions.
 - **The game HUD keeps the account menu near the front on compact screens.**
   The toolbar is intentionally one row with overflow clipped; leaving the
-  account trigger at the far end made Settings unreachable on narrow iPhones.
+  account trigger at the far end made Settings and About unreachable on narrow
+  iPhones.
   The `?` control is the pitch/skill Key, not Settings.
 - **`UserMenu`'s avatar falls back to initials on load failure**, not just on
   absence — a corrupted or future-format data URL degrades the same way a

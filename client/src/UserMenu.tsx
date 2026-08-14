@@ -6,6 +6,7 @@ interface Props {
   /** A `data:image/...` avatar (see prefs.ts). Falls back to initials when absent or when it fails to load. */
   avatar?: string;
   onSettings?: () => void;
+  onAbout?: () => void;
   onSignOut?: () => void;
 }
 
@@ -30,9 +31,10 @@ function Avatar({ name, avatar, large }: { name: string; avatar?: string; large?
   return <span className={`${className} user-menu__avatar--fallback`}>{initials(name)}</span>;
 }
 
-export function UserMenu({ name, avatar, onSettings, onSignOut }: Props) {
+export function UserMenu({ name, avatar, onSettings, onAbout, onSignOut }: Props) {
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
 
   const close = useCallback(() => setOpen(false), []);
 
@@ -55,6 +57,7 @@ export function UserMenu({ name, avatar, onSettings, onSignOut }: Props) {
   return (
     <div className="user-menu" ref={rootRef}>
       <button
+        ref={triggerRef}
         className="user-menu__trigger"
         onClick={() => setOpen(o => !o)}
         aria-haspopup="menu"
@@ -80,6 +83,21 @@ export function UserMenu({ name, avatar, onSettings, onSignOut }: Props) {
               onClick={() => { close(); onSettings(); }}
             >
               Settings
+            </button>
+          )}
+          {onAbout && (
+            <button
+              className="user-menu__item"
+              role="menuitem"
+              onClick={() => {
+                close();
+                // The menu item disappears as the dialog opens. Put focus on
+                // the persistent trigger first so useModalFocus can restore it.
+                triggerRef.current?.focus();
+                onAbout();
+              }}
+            >
+              About
             </button>
           )}
           {onSignOut && (
