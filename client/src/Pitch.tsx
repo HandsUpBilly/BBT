@@ -1,6 +1,6 @@
 import { memo, useCallback, useMemo } from 'react';
 import type { CSSProperties } from 'react';
-import type { GameState, Team, BlockOutcomeFace } from './types';
+import type { GameState, Team, BlockOutcomeFace, BlockLogEntry, Position } from './types';
 import { key, neighbours } from './bfs';
 import type { ZoomBounds } from './bfs';
 import { buildMovementTrailMap, buildMovementStartMarkers, trailPolylinePoints } from './movementTrail';
@@ -550,6 +550,26 @@ export function Pitch({
     return map;
   }, [state.actionLog]);
 
+  // Squares a push touched this turn: origin (the defender's pre-push
+  // square, `entry.to`) and destination (`entry.pushTo`). Same actionLog-
+  // derived, auto-clears-on-cancel convention as the trail/dice/block-outcome
+  // maps above — a square pushed through more than once keeps every glow it
+  // was part of, since origin and destination read differently.
+  const pushOriginKeys = useMemo(() => {
+    const keys = new Set<string>();
+    for (const entry of state.actionLog) {
+      if (entry.kind === 'block' && entry.pushTo) keys.add(key(entry.to));
+    }
+    return keys;
+  }, [state.actionLog]);
+  const pushDestinationKeys = useMemo(() => {
+    const keys = new Set<string>();
+    for (const entry of state.actionLog) {
+      if (entry.kind === 'block' && entry.pushTo) keys.add(key(entry.pushTo));
+    }
+    return keys;
+  }, [state.actionLog]);
+
   const selectedPiece = state.selectedPieceId
     ? state.pieces.find(p => p.id === state.selectedPieceId)
     : null;
@@ -619,6 +639,18 @@ export function Pitch({
     .map((entry, index) => ({
       key: `${entry.pieceName}-${entry.receiverName}-${index}`,
       path: passTrajectoryPath(entry.from, entry.to, portrait, acrossStart, downStart),
+    }));
+
+  // A resolved push, drawn the same way as a completed pass (one arc with an
+  // arrowhead over the two squares involved) but in its own colour so a push
+  // isn't mistaken for a throw — see pushOriginKeys/pushDestinationKeys above
+  // for why the origin square can also be carrying that block's resolved-face
+  // marker.
+  const pushIndicators = state.actionLog
+    .filter((entry): entry is BlockLogEntry & { pushTo: Position } => entry.kind === 'block' && !!entry.pushTo)
+    .map((entry, index) => ({
+      key: `${entry.pieceName}-${entry.receiverName}-push-${index}`,
+      path: passTrajectoryPath(entry.to, entry.pushTo, portrait, acrossStart, downStart),
     }));
 
   // Labels follow the axis, not the orientation: the letter always names the
@@ -709,6 +741,8 @@ export function Pitch({
       const isBlockTarget     = state.blockTargets.has(k);
       const isBlitzTarget     = piece?.id === state.blitzTargetId;
       const isPushTarget      = state.pushTargetKeys.has(k);
+      const isPushOrigin      = pushOriginKeys.has(k);
+      const isPushDestination = pushDestinationKeys.has(k);
       const isLooseBall       = looseBallKey === k;
       const squareBranchGhosts = branchGhostMap.get(k) ?? NO_BRANCH_GHOSTS;
 
@@ -734,6 +768,8 @@ export function Pitch({
         isBlockTarget  ? 'square--block-target'  : '',
         isBlitzTarget  ? 'square--blitz-target'  : '',
         isPushTarget   ? 'square--push-target'   : '',
+        isPushOrigin      ? 'square--push-origin'      : '',
+        isPushDestination ? 'square--push-destination' : '',
         squareBranchGhosts.length > 0 ? 'square--branch-ghost' : '',
       ].filter(Boolean).join(' ');
 
@@ -797,6 +833,8 @@ export function Pitch({
           squareBranchGhosts.length > 0
             ? `occupied in other outcomes: ${squareBranchGhosts.flatMap(g => g.labels).join(', ')}`
             : '',
+          isPushOrigin ? 'pushed from here' : '',
+          isPushDestination ? 'pushed to here' : '',
           ].filter(Boolean).join(', ')}
           pieceTeam={piece?.team ?? null}
           pieceRole={piece?.role}
@@ -907,6 +945,23 @@ export function Pitch({
               </defs>
               {passTrajectories.map(trajectory => (
                 <path key={trajectory.key} className="pitch__pass-trajectory" d={trajectory.path} />
+              ))}
+            </svg>
+          )}
+          {pushIndicators.length > 0 && (
+            <svg
+              className="pitch__push-indicators"
+              viewBox={`0 0 ${visibleCols} ${visibleRows}`}
+              preserveAspectRatio="none"
+              aria-hidden="true"
+            >
+              <defs>
+                <marker id="push-indicator-arrow" markerWidth="5" markerHeight="5" refX="4" refY="2.5" orient="auto" markerUnits="strokeWidth">
+                  <path d="M 0 0 L 5 2.5 L 0 5 z" />
+                </marker>
+              </defs>
+              {pushIndicators.map(indicator => (
+                <path key={indicator.key} className="pitch__push-indicator" d={indicator.path} />
               ))}
             </svg>
           )}

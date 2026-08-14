@@ -738,13 +738,25 @@ export function applyPushChoice(prev: GameState, pos: Position, followUp: boolea
     pushed, prev.ballPosition, resolution.defenderFalls ? [resolution.defenderId] : [],
   );
 
+  // Record the push destination on the block entry that produced it, so the
+  // pushed-from/pushed-to indicator can be derived from actionLog alone —
+  // same convention as the resolved-face marker, persisting after the
+  // activation ends and clearing automatically if a cancel rolls the block
+  // entry back out of the log.
+  const blockEntryIndex = prev.actionLog.findLastIndex(entry => entry.kind === 'block');
+  const loggedPush = blockEntryIndex === -1
+    ? prev.actionLog
+    : prev.actionLog.map((entry, index) =>
+        index === blockEntryIndex ? { ...entry, pushTo: pos } : entry,
+      );
+
   // Log the follow-up as a free move step so the committed-movement
   // trail extends into the vacated square, matching the attacker's
   // actual final position.
-  const cumulativeProb = prev.actionLog.length > 0
-    ? prev.actionLog[prev.actionLog.length - 1].cumulativeProb : 1;
+  const cumulativeProb = loggedPush.length > 0
+    ? loggedPush[loggedPush.length - 1].cumulativeProb : 1;
   const actionLog = attackerFollowsUp && attacker
-    ? [...prev.actionLog, {
+    ? [...loggedPush, {
         kind: 'move' as const,
         pieceName: attacker.name,
         pieceRole: attacker.role ?? attacker.team,
@@ -757,7 +769,7 @@ export function applyPushChoice(prev: GameState, pos: Position, followUp: boolea
         actionProb: 1,
         cumulativeProb,
       }]
-    : prev.actionLog;
+    : loggedPush;
 
   const nextState = {
     ...prev,
