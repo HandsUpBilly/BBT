@@ -153,6 +153,12 @@ same diagram in `ScoreSummary`. Entries saved before `playLog` shipped remain
 valid and show an explicit unavailable message rather than a partial route
 built from the risky-roll list.
 
+During a series, the touchdown analysis has a **Review Board** action. It hides
+the analysis without submitting or advancing, leaving the scored board exactly
+as played. A persistent **View Analysis & Continue** bar returns to the same
+analysis; the player cannot accidentally bypass the normal score submission or
+next-puzzle transition while reviewing.
+
 ## Player-Facing Brand
 
 - The app name is **Turn 16**, referring to the final turn of a Blood Bowl
