@@ -84,3 +84,26 @@ export function buildMovementTrailMap(actionLog: ActionLogEntry[]): Map<string, 
 
   return trails;
 }
+
+/**
+ * Build a marker for each piece's activation order this turn: square key ->
+ * the 1-based order in which that piece first moved. One number per piece
+ * (not per move segment), placed on the square it moved *from* the first
+ * time it moved — a piece that moves in two separate stretches within the
+ * turn keeps its original number rather than gaining a second one.
+ */
+export function buildMovementStartMarkers(actionLog: ActionLogEntry[]): Map<string, number> {
+  const markers = new Map<string, number>();
+  const numberedPieces = new Set<string>();
+  let nextNumber = 1;
+
+  for (const entry of actionLog) {
+    if (entry.kind !== 'move') continue;
+    if (numberedPieces.has(entry.pieceName)) continue;
+    numberedPieces.add(entry.pieceName);
+    markers.set(key(entry.from), nextNumber);
+    nextNumber++;
+  }
+
+  return markers;
+}

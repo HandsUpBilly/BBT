@@ -337,6 +337,21 @@ describe('Block outcome resolution', () => {
     expect(lastEntry.kind).toBe('block');
   });
 
+  it('push: records the push destination on the block log entry, for the pushed-from/pushed-to indicator', () => {
+    const state = makeState([blocker(), orc()]);
+    const { result } = renderHook(() => useGameState(state));
+
+    act(() => result.current.handleBlockAction('human1', false));
+    act(() => result.current.handleBlockTarget(7, 9));
+    act(() => result.current.handleBlockOutcomeChoice(['push'], 'push'));
+    act(() => result.current.handlePushChoice(7, 8, false));
+
+    const blockEntry = result.current.state.actionLog.find(e => e.kind === 'block')!;
+    if (blockEntry.kind !== 'block') throw new Error('expected a block log entry');
+    expect(blockEntry.to).toEqual({ col: 7, row: 9 }); // defender's pre-push square
+    expect(blockEntry.pushTo).toEqual({ col: 7, row: 8 });
+  });
+
   it('defender-stumbles: offers a follow-up like push and defender-down', () => {
     const state = makeState([blocker(), orc()]);
     const { result } = renderHook(() => useGameState(state));

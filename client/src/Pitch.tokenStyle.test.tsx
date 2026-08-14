@@ -145,7 +145,7 @@ describe('Pitch roll dice', () => {
 });
 
 describe('Pitch block dice marker', () => {
-  it('shows one die per dice count on the defender square, above the piece', () => {
+  it('shows the resolved outcome on the defender square, above the piece', () => {
     const defender = orcBlocker({ position: { col: 7, row: 9 } });
     const block: BlockLogEntry = {
       kind: 'block',
@@ -175,9 +175,9 @@ describe('Pitch block dice marker', () => {
     const square = container.querySelector('[data-square="9H"]');
     const marker = square?.querySelector('.square__block-dice');
     expect(marker).toBeTruthy();
-    expect(marker?.querySelectorAll('.block-die-icon')).toHaveLength(2);
-    expect(marker?.getAttribute('title')).toBe('Block: 2 block dice');
-    expect(square?.getAttribute('aria-label')).toContain('block: 2 dice');
+    expect(marker?.querySelectorAll('.block-die-icon')).toHaveLength(1);
+    expect(marker?.getAttribute('title')).toBe('Block: Push Back');
+    expect(square?.getAttribute('aria-label')).toContain('block result: Push Back');
   });
 
   it('clears once the block entry is rolled back out of the action log', () => {
@@ -193,8 +193,78 @@ describe('Pitch block dice marker', () => {
   });
 });
 
+describe('Pitch movement trail start marker', () => {
+  it('numbers the square a piece first moved from, in activation order', () => {
+    const first: MoveLogEntry = {
+      kind: 'move',
+      pieceName: 'Aldric',
+      pieceRole: 'blocker',
+      from: { col: 2, row: 3 },
+      to: { col: 2, row: 4 },
+      steps: 1,
+      dodgeTarget: null,
+      isGfi: false,
+      actionProb: 1,
+      cumulativeProb: 1,
+    };
+    const second: MoveLogEntry = {
+      kind: 'move',
+      pieceName: 'Brogar',
+      pieceRole: 'lineman',
+      from: { col: 5, row: 3 },
+      to: { col: 5, row: 4 },
+      steps: 1,
+      dodgeTarget: null,
+      isGfi: false,
+      actionProb: 1,
+      cumulativeProb: 1,
+    };
+    const trailState = { ...makeState([humanBlocker()]), actionLog: [first, second] };
+
+    const { container } = render(
+      <Pitch state={trailState} onSquareClick={noop} onPieceClick={noop} onSquareHover={noop} onSquareLeave={noop} />,
+    );
+
+    const firstStart = container.querySelector('[data-square="3C"]');
+    expect(firstStart?.querySelector('.trail-start-marker')?.textContent).toBe('1');
+    expect(firstStart?.getAttribute('aria-label')).toContain('activation order 1');
+
+    const secondStart = container.querySelector('[data-square="3F"]');
+    expect(secondStart?.querySelector('.trail-start-marker')?.textContent).toBe('2');
+
+    // Squares stepped into (not the starting square) get no marker.
+    const stepped = container.querySelector('[data-square="4C"]');
+    expect(stepped?.querySelector('.trail-start-marker')).toBeNull();
+  });
+
+  it('is suppressed once another piece occupies the starting square', () => {
+    const mover: MoveLogEntry = {
+      kind: 'move',
+      pieceName: 'Aldric',
+      pieceRole: 'blocker',
+      from: { col: 7, row: 10 },
+      to: { col: 7, row: 11 },
+      steps: 1,
+      dodgeTarget: null,
+      isGfi: false,
+      actionProb: 1,
+      cumulativeProb: 1,
+    };
+    const occupier = humanBlocker({ position: { col: 7, row: 10 } });
+    const occupiedState = { ...makeState([occupier]), actionLog: [mover] };
+
+    const { container } = render(
+      <Pitch state={occupiedState} onSquareClick={noop} onPieceClick={noop} onSquareHover={noop} onSquareLeave={noop} />,
+    );
+
+    const square = container.querySelector('[data-square="10H"]');
+    expect(square?.querySelector('.piece')).toBeTruthy();
+    expect(square?.querySelector('.trail-start-marker')).toBeNull();
+  });
+});
+
 describe('Pitch pass and catch dice', () => {
-  it('shows a teal pass die on the target square', () => {
+  it('shows a teal pass die on the passer\'s square, not the target square', () => {
     const pass: PassLogEntry = {
       kind: 'pass',
       pieceName: 'Thrower',
@@ -215,10 +285,13 @@ describe('Pitch pass and catch dice', () => {
       <Pitch state={{ ...state, actionLog: [pass] }} onSquareClick={noop} onPieceClick={noop} onSquareHover={noop} onSquareLeave={noop} />,
     );
 
-    const square = container.querySelector('[data-square="12H"]');
-    expect(square?.querySelector('.pass-die')).toBeTruthy();
+    const passerSquare = container.querySelector('[data-square="8H"]');
+    expect(passerSquare?.querySelector('.pass-die')).toBeTruthy();
     expect(getByTitle('Pass roll: 3+')).toBeTruthy();
-    expect(square?.getAttribute('aria-label')).toContain('pass 3 plus');
+    expect(passerSquare?.getAttribute('aria-label')).toContain('pass 3 plus');
+
+    const targetSquare = container.querySelector('[data-square="12H"]');
+    expect(targetSquare?.querySelector('.pass-die')).toBeNull();
   });
 
   it('shows a magenta catch die on the receiver square, distinct from the pass die', () => {
@@ -270,7 +343,7 @@ describe('Pitch pass and catch dice', () => {
     expect(square?.querySelector('.catch-die')).toBeTruthy();
   });
 
-  it('shows both the pass die and the catch die together when a throw and its catch land on the same square', () => {
+  it('splits the pass die onto the passer and the catch die onto the receiver for one throw', () => {
     const pass: PassLogEntry = {
       kind: 'pass',
       pieceName: 'Thrower',
@@ -303,9 +376,13 @@ describe('Pitch pass and catch dice', () => {
       <Pitch state={{ ...state, actionLog: [pass, passCatch] }} onSquareClick={noop} onPieceClick={noop} onSquareHover={noop} onSquareLeave={noop} />,
     );
 
-    const square = container.querySelector('[data-square="12H"]');
-    expect(square?.querySelector('.pass-die')).toBeTruthy();
-    expect(square?.querySelector('.catch-die')).toBeTruthy();
+    const passerSquare = container.querySelector('[data-square="8H"]');
+    expect(passerSquare?.querySelector('.pass-die')).toBeTruthy();
+    expect(passerSquare?.querySelector('.catch-die')).toBeNull();
+
+    const receiverSquare = container.querySelector('[data-square="12H"]');
+    expect(receiverSquare?.querySelector('.catch-die')).toBeTruthy();
+    expect(receiverSquare?.querySelector('.pass-die')).toBeNull();
   });
 });
 

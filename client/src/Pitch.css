@@ -507,6 +507,33 @@
   fill: rgba(70, 220, 190, 0.55);
 }
 
+/* A resolved push: same one-arc-plus-arrowhead treatment as a completed pass,
+   but in a distinct ice-blue so a push isn't mistaken for a throw or for the
+   white movement trail — including where it shares the origin square with
+   that block's crimson resolved-face marker. */
+.pitch__push-indicators {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.pitch__push-indicator {
+  fill: none;
+  stroke: rgba(90, 160, 230, 0.6);
+  stroke-width: 0.09;
+  stroke-linecap: round;
+  filter: drop-shadow(0 0 0.08px rgba(0, 0, 0, 0.6));
+  marker-end: url('#push-indicator-arrow');
+}
+
+.pitch__push-indicators marker path {
+  fill: rgba(90, 160, 230, 0.6);
+}
+
 .square--handoff-target .square__overlay {
   background: rgba(63, 158, 119, 0.38);
   box-shadow: inset 0 0 0 2px rgba(95, 182, 148, 0.85);
@@ -548,6 +575,16 @@
 .square--push-target .square__overlay {
   background: var(--move-risk);
   box-shadow: inset 0 0 0 2px rgba(199, 150, 61, 0.9);
+}
+
+/* Soft, persistent glow on the two squares a resolved push touched — origin
+   and destination share the same ice-blue hue as the connecting arc above,
+   at low enough alpha to stay legible under a block-outcome marker or a
+   piece token sharing the square. */
+.square--push-origin .square__overlay,
+.square--push-destination .square__overlay {
+  background: rgba(90, 160, 230, 0.22);
+  box-shadow: inset 0 0 0 2px rgba(120, 180, 235, 0.55);
 }
 
 /* ── Pieces ─────────────────────────────────────────────────────────── */
@@ -1039,3 +1076,28 @@
 
 .step-num--preview   { color: var(--move-path); text-shadow: 0 0 3px rgba(0, 0, 0, 0.9); font-variant-numeric: tabular-nums; }
 .step-num--committed { color: rgba(235, 231, 219, 0.4); text-shadow: 0 0 3px rgba(0, 0, 0, 0.7); font-variant-numeric: tabular-nums; }
+
+/* ── Trail start marker ─────────────────────────────────────────────── */
+/* Marks the square a piece first moved from this turn, numbered by
+   activation order, centred on the square per the movement trail lines
+   (trailPolylinePoints) that converge on the same point. */
+.trail-start-marker {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 42%;
+  aspect-ratio: 1;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: rgba(245, 241, 230, 0.92);
+  border: 1px solid rgba(20, 16, 14, 0.65);
+  color: #14100e;
+  font-size: 0.5rem;
+  font-weight: 800;
+  line-height: 1;
+  pointer-events: none;
+  user-select: none;
+  z-index: 4;
+}

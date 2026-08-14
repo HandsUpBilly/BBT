@@ -14,6 +14,8 @@ interface Props {
    */
   seriesMode?: boolean;
   continueLabel?: string;
+  /** Temporarily reveal the completed pitch without advancing the series. */
+  onReviewBoard?: () => void;
   defaultName?: string;
   signedInName?: string;
   /** Submission failure — keeps the dialog open so the player can retry. */
@@ -67,7 +69,7 @@ function capitalize(s: string): string {
   return s.charAt(0).toUpperCase() + s.slice(1);
 }
 
-export function SubmitModal({ scenario, actionLog, onSubmit, onDismiss, seriesMode, continueLabel, defaultName = '', signedInName, error }: Props) {
+export function SubmitModal({ scenario, actionLog, onSubmit, onDismiss, seriesMode, continueLabel, onReviewBoard, defaultName = '', signedInName, error }: Props) {
   const [name, setName] = useState(defaultName);
   const [submitting, setSubmitting] = useState(false);
 
@@ -134,6 +136,11 @@ export function SubmitModal({ scenario, actionLog, onSubmit, onDismiss, seriesMo
             <button className="modal__roll-btn" disabled={submitting} onClick={() => runSubmit('')}>
               {submitting ? 'Saving…' : error ? 'Try Again' : continueLabel ?? 'Continue'}
             </button>
+            {onReviewBoard && (
+              <button className="modal__continue-btn" disabled={submitting} onClick={onReviewBoard}>
+                Review Board
+              </button>
+            )}
           </div>
         ) : (
           <>

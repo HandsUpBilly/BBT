@@ -4,6 +4,7 @@ import { BLOCK_OUTCOME_FACES, blockCombinedProbability } from './bfs';
 import { isBlockOutcomeSelectable } from './blockControls';
 import { useModalFocus } from './useModalFocus';
 import { BlockDiceGraphic } from './BlockDiceGraphic';
+import { BLOCK_FACE_LABELS as FACE_LABELS, BLOCK_FACE_GLYPHS as FACE_ICONS } from './blockFacePresentation';
 import './SubmitModal.css'; // shared modal-backdrop/modal styles
 import './BlockOutcomePanel.css';
 
@@ -17,22 +18,6 @@ interface Props {
   onConfirm: (acceptedFaces: BlockOutcomeFace[], resolvedFace: BlockOutcomeFace) => void;
   onCancel: () => void;
 }
-
-const FACE_LABELS: Record<BlockOutcomeFace, string> = {
-  'attacker-down': 'Attacker Down',
-  'both-down': 'Both Down',
-  'push': 'Push Back',
-  'defender-stumbles': 'Defender Stumbles',
-  'defender-down': 'Defender Down',
-};
-
-const FACE_ICONS: Record<BlockOutcomeFace, string> = {
-  'attacker-down': '☠',
-  'both-down': '☠☠',
-  'push': '➜',
-  'defender-stumbles': '✦',
-  'defender-down': '✹',
-};
 
 function pct(p: number) {
   return `${Math.round(p * 100)}%`;

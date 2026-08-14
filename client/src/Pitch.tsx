@@ -1,9 +1,9 @@
 import { memo, useCallback, useMemo } from 'react';
 import type { CSSProperties } from 'react';
-import type { GameState, Team } from './types';
+import type { GameState, Team, BlockOutcomeFace, BlockLogEntry, Position } from './types';
 import { key, neighbours } from './bfs';
 import type { ZoomBounds } from './bfs';
-import { buildMovementTrailMap, trailPolylinePoints } from './movementTrail';
+import { buildMovementTrailMap, buildMovementStartMarkers, trailPolylinePoints } from './movementTrail';
 import type { PathTrail } from './movementTrail';
 import { passTrajectoryPath } from './passTrajectory';
 import { skillGroupsFor, skillMarkersFor } from './skillPresentation';
@@ -12,7 +12,8 @@ import type { GhostPiece } from './branchRun';
 import { RoleGlyph } from './RoleGlyph';
 import { roleCodeFor } from './rolePresentation';
 import { DEFAULT_PLAYER_ROLE, playerPortraitFor } from './playerPortraits';
-import { BlockDiceGraphic } from './BlockDiceGraphic';
+import { BlockFaceGraphic } from './BlockDiceGraphic';
+import { BLOCK_FACE_LABELS } from './blockFacePresentation';
 import './Pitch.css';
 
 function BallIcon({ ghost, loose }: { ghost?: boolean; loose?: boolean }) {
@@ -194,12 +195,13 @@ function CatchFace({ target }: { target: number }) {
 }
 
 /**
- * Marks a resolved block/blitz with the number of block dice (1-3) rolled,
- * on the defender's square. Crimson-tinted (vs. the amber/blue/gold used for
- * movement rolls) so it reads as a distinct kind of marker at a glance.
+ * Marks a resolved block/blitz with the outcome it actually produced (e.g.
+ * "Push Back", "Defender Down"), on the defender's square. Crimson-tinted
+ * (vs. the amber/blue/gold used for movement rolls) so it reads as a
+ * distinct kind of marker at a glance.
  */
-function BlockDiceFace({ count }: { count: 1 | 2 | 3 }) {
-  return <BlockDiceGraphic count={count} className="square__block-dice" />;
+function BlockDiceFace({ face }: { face: BlockOutcomeFace }) {
+  return <BlockFaceGraphic face={face} className="square__block-dice" />;
 }
 
 // Game state is stored portrait: col 0-14, row 0-25.
@@ -255,7 +257,8 @@ interface SquareProps {
   stepIsPreview: boolean;
   pathTrails: PathTrail[];
   dice: DiceInfo | null;
-  blockDice: 1 | 2 | 3 | null;
+  blockDice: BlockOutcomeFace | null;
+  trailStart: number | null;
   ghost: { team: Team; role?: string; skills: readonly string[]; hasBall: boolean } | null;
   /** Where this piece stands in *other* live branches — see BranchStrip. */
   branchGhosts: readonly BranchGhostView[];
@@ -275,7 +278,7 @@ interface SquareProps {
  */
 const Square = memo(function Square({
   pCol, pRow, name, portrait, classes, label, pieceTeam, pieceRole, pieceSkills, pieceClasses, pieceHasBall,
-  looseBall, inTackleZone, actionLabel, displayStep, stepIsPreview, pathTrails, dice, blockDice, ghost,
+  looseBall, inTackleZone, actionLabel, displayStep, stepIsPreview, pathTrails, dice, blockDice, trailStart, ghost,
   branchGhosts, focusable,
   onSquareClick, onPieceClick, onSquareHover, onSquareLeave,
 }: SquareProps) {
@@ -332,6 +335,9 @@ const Square = memo(function Square({
         </svg>
         );
       })}
+      {trailStart !== null && (
+        <span className="trail-start-marker">{trailStart}</span>
+      )}
       {!pieceTeam && looseBall && <BallIcon loose />}
       {inTackleZone && <div className="square__tz-overlay" />}
       {pieceTeam && (
@@ -358,7 +364,7 @@ const Square = memo(function Square({
         </div>
       )}
 
-      {blockDice !== null && <BlockDiceFace count={blockDice} />}
+      {blockDice !== null && <BlockDiceFace face={blockDice} />}
 
       {branchGhosts.map(branchGhost => {
         const key = `${branchGhost.down}-${branchGhost.labels.join()}`;
@@ -498,11 +504,21 @@ export function Pitch({
     [state.actionLog],
   );
 
-  // Committed dice: map from destination key -> dice info from actionLog.
-  // Persists after a waypoint is set so dice remain visible on committed squares.
-  // Pass and pass-catch entries land on the same receiver square, so entries
-  // are merged onto whatever is already there rather than overwritten —
-  // otherwise the catch die would erase the pass die that shares its square.
+  // Which square each piece first moved from this turn, numbered in
+  // activation order — same actionLog-derived, auto-clearing-on-cancel
+  // convention as the trail and dice maps above.
+  const movementStartMap = useMemo(
+    () => buildMovementStartMarkers(state.actionLog),
+    [state.actionLog],
+  );
+
+  // Committed dice: map from square key -> dice info from actionLog. Persists
+  // after a waypoint is set so dice remain visible on committed squares. The
+  // pass die belongs on the passer's square (entry.from — where the Pass roll
+  // actually happens) and the catch die on the receiver's square (entry.to);
+  // entries are merged onto whatever is already there rather than
+  // overwritten, since a step can carry more than one roll (e.g. a dodge and
+  // a pickup on the same square).
   const committedDiceMap = useMemo(() => {
     const map = new Map<string, DiceInfo>();
     const merge = (k: string, patch: Partial<DiceInfo>) => {
@@ -513,7 +529,7 @@ export function Pitch({
       if (entry.kind === 'move' && (entry.isGfi || entry.dodgeTarget !== null || entry.pickupTarget)) {
         merge(key(entry.to), { isGfi: entry.isGfi, dodgeTarget: entry.dodgeTarget, pickupTarget: entry.pickupTarget ?? null });
       } else if (entry.kind === 'pass') {
-        merge(key(entry.to), { passTarget: entry.passTarget });
+        merge(key(entry.from), { passTarget: entry.passTarget });
       } else if (entry.kind === 'pass-catch' || entry.kind === 'handoff') {
         merge(key(entry.to), { catchTarget: entry.catchTarget });
       }
@@ -521,16 +537,37 @@ export function Pitch({
     return map;
   }, [state.actionLog]);
 
-  // Committed block dice: map from the defender's square -> dice count (1-3)
-  // rolled for the block/blitz resolved there. Same actionLog-derived, overwrite-
-  // on-repeat convention as committedDiceMap: a square blocked more than once
-  // this turn shows only the most recent block's dice count.
+  // Committed block outcome: map from the defender's square -> the resolved
+  // face (e.g. "push", "defender-down") for the block/blitz resolved there.
+  // Same actionLog-derived, overwrite-on-repeat convention as committedDiceMap:
+  // a square blocked more than once this turn shows only the most recent
+  // block's outcome.
   const committedBlockDiceMap = useMemo(() => {
-    const map = new Map<string, 1 | 2 | 3>();
+    const map = new Map<string, BlockOutcomeFace>();
     for (const entry of state.actionLog) {
-      if (entry.kind === 'block') map.set(key(entry.to), entry.diceCount);
+      if (entry.kind === 'block') map.set(key(entry.to), entry.resolvedFace);
     }
     return map;
+  }, [state.actionLog]);
+
+  // Squares a push touched this turn: origin (the defender's pre-push
+  // square, `entry.to`) and destination (`entry.pushTo`). Same actionLog-
+  // derived, auto-clears-on-cancel convention as the trail/dice/block-outcome
+  // maps above — a square pushed through more than once keeps every glow it
+  // was part of, since origin and destination read differently.
+  const pushOriginKeys = useMemo(() => {
+    const keys = new Set<string>();
+    for (const entry of state.actionLog) {
+      if (entry.kind === 'block' && entry.pushTo) keys.add(key(entry.to));
+    }
+    return keys;
+  }, [state.actionLog]);
+  const pushDestinationKeys = useMemo(() => {
+    const keys = new Set<string>();
+    for (const entry of state.actionLog) {
+      if (entry.kind === 'block' && entry.pushTo) keys.add(key(entry.pushTo));
+    }
+    return keys;
   }, [state.actionLog]);
 
   const selectedPiece = state.selectedPieceId
@@ -604,6 +641,18 @@ export function Pitch({
       path: passTrajectoryPath(entry.from, entry.to, portrait, acrossStart, downStart),
     }));
 
+  // A resolved push, drawn the same way as a completed pass (one arc with an
+  // arrowhead over the two squares involved) but in its own colour so a push
+  // isn't mistaken for a throw — see pushOriginKeys/pushDestinationKeys above
+  // for why the origin square can also be carrying that block's resolved-face
+  // marker.
+  const pushIndicators = state.actionLog
+    .filter((entry): entry is BlockLogEntry & { pushTo: Position } => entry.kind === 'block' && !!entry.pushTo)
+    .map((entry, index) => ({
+      key: `${entry.pieceName}-${entry.receiverName}-push-${index}`,
+      path: passTrajectoryPath(entry.to, entry.pushTo, portrait, acrossStart, downStart),
+    }));
+
   // Labels follow the axis, not the orientation: the letter always names the
   // state col and the number always names the state row.
   const acrossLabel = portrait ? squareLetter : squareNumber;
@@ -616,8 +665,8 @@ export function Pitch({
     pieceSkills: readonly string[], pieceIsPreview: boolean,
     pieceDown: boolean, pieceHasBall: boolean, pieceActivated: boolean,
     reachable: boolean, dodge: number | null, gfi: boolean, pickup: number | null,
-    looseBall: boolean, isTarget: string | null, blockDiceCount: number | null,
-    passTarget: number | null, catchTarget: number | null,
+    looseBall: boolean, isTarget: string | null, blockFace: BlockOutcomeFace | null,
+    passTarget: number | null, catchTarget: number | null, trailStartNumber: number | null,
   ): string {
     const parts = [squareName(stateCol, stateRow)];
     if (pieceName) {
@@ -639,9 +688,10 @@ export function Pitch({
     if (gfi) parts.push('Go For It 2 plus');
     if (dodge !== null) parts.push(`dodge ${dodge} plus`);
     if (pickup !== null) parts.push(`pickup ${pickup} plus`);
-    if (blockDiceCount !== null) parts.push(`block: ${blockDiceCount} ${blockDiceCount === 1 ? 'die' : 'dice'}`);
+    if (blockFace !== null) parts.push(`block result: ${BLOCK_FACE_LABELS[blockFace]}`);
     if (passTarget !== null) parts.push(`pass ${passTarget} plus`);
     if (catchTarget !== null) parts.push(`catch ${catchTarget} plus`);
+    if (trailStartNumber !== null) parts.push(`activation order ${trailStartNumber}`);
     return parts.join(', ');
   }
 
@@ -691,6 +741,8 @@ export function Pitch({
       const isBlockTarget     = state.blockTargets.has(k);
       const isBlitzTarget     = piece?.id === state.blitzTargetId;
       const isPushTarget      = state.pushTargetKeys.has(k);
+      const isPushOrigin      = pushOriginKeys.has(k);
+      const isPushDestination = pushDestinationKeys.has(k);
       const isLooseBall       = looseBallKey === k;
       const squareBranchGhosts = branchGhostMap.get(k) ?? NO_BRANCH_GHOSTS;
 
@@ -716,6 +768,8 @@ export function Pitch({
         isBlockTarget  ? 'square--block-target'  : '',
         isBlitzTarget  ? 'square--blitz-target'  : '',
         isPushTarget   ? 'square--push-target'   : '',
+        isPushOrigin      ? 'square--push-origin'      : '',
+        isPushDestination ? 'square--push-destination' : '',
         squareBranchGhosts.length > 0 ? 'square--branch-ghost' : '',
       ].filter(Boolean).join(' ');
 
@@ -738,7 +792,14 @@ export function Pitch({
           }
         : null;
       const displayedDice = previewDice ?? committedDice;
-      const blockDiceCount = committedBlockDiceMap.get(k) ?? null;
+      const blockFace = committedBlockDiceMap.get(k) ?? null;
+
+      // Suppressed on an occupied square (nothing to read a number under) or
+      // one already carrying a roll marker, so the activation-order badge
+      // never fights another marker for the same square's centre.
+      const trailStartNumber = !piece && !displayedDice && blockFace === null
+        ? movementStartMap.get(k) ?? null
+        : null;
 
       const targetDescription = isHandoffTarget ? 'handoff target'
         : isPassReceiver ? 'pass target'
@@ -766,12 +827,14 @@ export function Pitch({
             describedPiece?.down ?? false, describedPiece?.hasBall ?? false, describedPiece?.activated ?? false,
             isReachable, displayedDice?.dodgeTarget ?? null,
             (displayedDice?.isGfi ?? false) || isGfiRange, displayedDice?.pickupTarget ?? null,
-            isLooseBall, targetDescription, blockDiceCount,
-            displayedDice?.passTarget ?? null, displayedDice?.catchTarget ?? null,
+            isLooseBall, targetDescription, blockFace,
+            displayedDice?.passTarget ?? null, displayedDice?.catchTarget ?? null, trailStartNumber,
           ),
           squareBranchGhosts.length > 0
             ? `occupied in other outcomes: ${squareBranchGhosts.flatMap(g => g.labels).join(', ')}`
             : '',
+          isPushOrigin ? 'pushed from here' : '',
+          isPushDestination ? 'pushed to here' : '',
           ].filter(Boolean).join(', ')}
           pieceTeam={piece?.team ?? null}
           pieceRole={piece?.role}
@@ -792,7 +855,8 @@ export function Pitch({
           stepIsPreview={!!previewStep}
           pathTrails={pathTrails}
           dice={displayedDice}
-          blockDice={blockDiceCount}
+          blockDice={blockFace}
+          trailStart={trailStartNumber}
           ghost={showGhost && selectedPiece
             ? {
                 team: selectedPiece.team,
@@ -881,6 +945,23 @@ export function Pitch({
               </defs>
               {passTrajectories.map(trajectory => (
                 <path key={trajectory.key} className="pitch__pass-trajectory" d={trajectory.path} />
+              ))}
+            </svg>
+          )}
+          {pushIndicators.length > 0 && (
+            <svg
+              className="pitch__push-indicators"
+              viewBox={`0 0 ${visibleCols} ${visibleRows}`}
+              preserveAspectRatio="none"
+              aria-hidden="true"
+            >
+              <defs>
+                <marker id="push-indicator-arrow" markerWidth="5" markerHeight="5" refX="4" refY="2.5" orient="auto" markerUnits="strokeWidth">
+                  <path d="M 0 0 L 5 2.5 L 0 5 z" />
+                </marker>
+              </defs>
+              {pushIndicators.map(indicator => (
+                <path key={indicator.key} className="pitch__push-indicator" d={indicator.path} />
               ))}
             </svg>
           )}
