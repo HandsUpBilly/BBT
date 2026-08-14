@@ -216,6 +216,12 @@ export interface GameState {
   passReceiverKeys: Set<string>;
   // Block / Blitz (one Blitz per turn; plain Block has no limit)
   blitzUsed: boolean;
+  // Id of the piece currently spending its post-Blitz leftover movement (its
+  // block already resolved and committed to `pieces`, but it isn't marked
+  // `activated` yet so it can keep moving). Selecting a different piece must
+  // finalize this one first — otherwise it stays reselectable later with a
+  // fresh full MA pool, effectively granting free extra movement.
+  blitzResumeId: string | null;
   pendingBlock: boolean;         // declared Block/Blitz — move first (Blitz only) then pick target
   pendingBlockIsBlitz: boolean;  // whether the current pendingBlock/isBlockTargeting sequence is a Blitz (persists across the movement step, since blockChoice isn't set until a target is picked)
   blitzTargetId: string | null;  // chosen defender for a Blitz; selected before movement begins

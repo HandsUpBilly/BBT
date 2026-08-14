@@ -451,6 +451,44 @@ describe('Blitz', () => {
     expect(result.current.state.pieces.find(p => p.id === 'human1')!.activated).toBe(true);
   });
 
+  it('finalizes leftover Blitz movement when a different piece is selected instead of continuing (#161)', () => {
+    const state = makeState([
+      blocker({ position: { col: 7, row: 12 } }),
+      blocker({ id: 'human2', name: 'Sera Quickhand', position: { col: 3, row: 3 } }),
+      orc({ position: { col: 7, row: 9 } }),
+    ]);
+    const { result } = renderHook(() => useGameState(state));
+
+    act(() => result.current.handleBlockAction('human1', true));
+    act(() => result.current.handleBlockTarget(7, 9)); // choose the defender
+    act(() => result.current.handleSquareClick(7, 10)); // move adjacent
+    act(() => result.current.handleBlockTarget(7, 9)); // throw the block
+    act(() => result.current.handleBlockOutcomeChoice(['defender-down'], 'defender-down'));
+    act(() => result.current.handlePushChoice(7, 8, true));
+
+    // human1 has leftover movement and is not yet activated.
+    expect(result.current.state.selectedPieceId).toBe('human1');
+    expect(result.current.state.pieces.find(p => p.id === 'human1')!.activated).toBe(false);
+
+    // Instead of continuing human1's movement, the player selects human2.
+    act(() => result.current.handleSquareClick(3, 3));
+
+    expect(result.current.state.selectedPieceId).toBe('human2');
+    // human1's activation is finalized at its post-Blitz position rather than
+    // left dangling and reselectable with a fresh MA pool.
+    const human1 = result.current.state.pieces.find(p => p.id === 'human1')!;
+    expect(human1.activated).toBe(true);
+    expect(human1.position).toEqual({ col: 7, row: 9 });
+
+    // human1 cannot be reopened for a fresh MA pool: clicking its square while
+    // human2 is selected just cancels human2's own (unmoved) selection, and
+    // human1's finalized activation/position are untouched.
+    act(() => result.current.handleSquareClick(7, 9));
+    expect(result.current.state.selectedPieceId).toBeNull();
+    expect(result.current.state.pieces.find(p => p.id === 'human1')!.activated).toBe(true);
+    expect(result.current.state.pieces.find(p => p.id === 'human1')!.position).toEqual({ col: 7, row: 9 });
+  });
+
   it('cannot be declared a second time in the same team turn', () => {
     const state = makeState([
       blocker({ position: { col: 7, row: 10 } }),
