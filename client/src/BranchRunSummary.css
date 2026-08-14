@@ -1,0 +1,107 @@
+/*
+ * The shared .modal is a centering column, so every block in here has to claim
+ * the full width and re-assert left alignment or it collapses to its content
+ * and stacks down the middle.
+ */
+.branch-summary__score,
+.branch-summary__breakdown,
+.branch-summary__branches,
+.branch-summary__note {
+  align-self: stretch;
+  width: 100%;
+  text-align: left;
+}
+
+.branch-summary__score {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin: 4px 0 12px;
+}
+
+.branch-summary__score strong {
+  font-size: 2.2rem;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text-strong);
+}
+
+.branch-summary__score span {
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+}
+
+.branch-summary__breakdown {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 8px 16px;
+  margin: 0 0 14px;
+}
+
+.branch-summary__breakdown > div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.branch-summary__breakdown dt {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-text-muted);
+}
+
+.branch-summary__breakdown dd {
+  margin: 0;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text);
+}
+
+.branch-summary__branches {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0 0 12px;
+  padding: 0;
+  list-style: none;
+}
+
+.branch-summary__branch {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  gap: 12px;
+  padding: 6px 8px;
+  font-size: 0.82rem;
+  background: var(--color-surface-2);
+  border-left: 3px solid var(--color-border);
+  border-radius: 4px;
+}
+
+.branch-summary__branch--scored {
+  border-left-color: var(--color-success);
+}
+
+.branch-summary__branch--conceded {
+  border-left-color: var(--color-border);
+  opacity: 0.6;
+}
+
+.branch-summary__branch-weight {
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  color: var(--color-text-strong);
+}
+
+.branch-summary__branch-value {
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text-muted);
+  min-width: 8ch;
+  text-align: right;
+}
+
+.branch-summary__note {
+  margin: 0 0 12px;
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+}

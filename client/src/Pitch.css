@@ -811,6 +811,54 @@
   outline-offset: 1px;
 }
 
+/*
+ * Where a piece stands in the *other* branches a block left behind. Drawn
+ * fainter than the movement-preview ghost and with a distinct dotted outline,
+ * because the two mean different things and can share a square: one is where
+ * this piece is about to go, the other is where it already is in a world you
+ * are not currently looking at.
+ */
+.piece--branch-ghost {
+  opacity: 0.22;
+  pointer-events: none;
+}
+
+.piece--branch-ghost .piece__visual {
+  outline: 1px dotted var(--color-text-muted);
+  outline-offset: 2px;
+}
+
+.square--branch-ghost .square__overlay {
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-text-muted) 35%, transparent);
+}
+
+/*
+ * Same piece, same square, different prone state in another branch. The
+ * standing case gets the loud colour: a player still on their feet there is
+ * projecting a tackle zone the viewed board does not have, which is exactly
+ * what breaks a plan carried over from this branch.
+ */
+.square__branch-flag {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  z-index: 6;
+  pointer-events: none;
+}
+
+.square__branch-flag--standing {
+  background: var(--color-warning);
+  box-shadow: 0 0 0 1px rgb(0 0 0 / 45%);
+}
+
+.square__branch-flag--down {
+  background: transparent;
+  border: 1px solid var(--color-text-muted);
+}
+
 .piece__skill-markers {
   position: absolute;
   z-index: 4;
