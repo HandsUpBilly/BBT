@@ -32,7 +32,7 @@ const PLAYER_PORTRAITS: Record<Team, Record<string, string>> = {
     blitzer: '/orc-blitzer-gritty.webp',
     'big-un': '/big-un-gritty.webp',
     goblin: '/goblin-gritty.webp',
-    troll: '/troll-gritty.webp',
+    troll: '/troll-v3-gritty.webp',
   },
 };
 
