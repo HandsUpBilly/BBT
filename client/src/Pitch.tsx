@@ -315,8 +315,8 @@ const Square = memo(function Square({
         <svg key={index} className="square__path-trail" viewBox="0 0 100 100" aria-hidden="true">
           {pathTrail.leadsToTerminal && (
             <defs>
-              <marker id={markerId} markerWidth="14" markerHeight="14" refX="11" refY="7" orient="auto" markerUnits="userSpaceOnUse">
-                <path d="M 1 1 L 12 7 L 1 13 z" />
+              <marker id={markerId} markerWidth="22" markerHeight="22" refX="17" refY="11" orient="auto" markerUnits="userSpaceOnUse">
+                <path d="M 1 1 L 19 11 L 1 21 z" />
               </marker>
             </defs>
           )}
