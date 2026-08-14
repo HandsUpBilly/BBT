@@ -183,6 +183,19 @@ by dice count) because it is only ever shown before a block resolves, in
 `BlockOutcomePanel`'s outcome-choice dialog, where no single face is "the"
 result yet.
 
+A resolved push (push / defender-stumbles-falls / defender-down with a legal
+push square) also draws a pushed-from/pushed-to indicator: an ice-blue arc
+with an arrowhead between the two squares (`Pitch.tsx`'s `pushIndicators`,
+reusing `passTrajectoryPath`), plus a soft ice-blue glow on both squares
+(`.square--push-origin` / `.square--push-destination`). The destination is
+recorded on the block's own `BlockLogEntry.pushTo` field, set by
+`applyPushChoice` once the player picks a push-back square — `to` stays the
+defender's *pre*-push square (see above), so the pair `to` → `pushTo`
+describes the whole push. Same actionLog-derived, persists-after-activation,
+clears-on-cancel convention as the trail/dice/block-outcome markers, and
+deliberately coexists with the resolved-face marker on the origin square
+rather than displacing it.
+
 ## Tests
 
 | File | Covers |

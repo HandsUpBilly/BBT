@@ -135,7 +135,7 @@ export type BlockLogEntry = {
   receiverName: string;      // defender (reuse receiver* fields for RiskyMove compat)
   receiverRole: string;
   from: Position;            // attacker position (post-move, if Blitz)
-  to: Position;               // defender position
+  to: Position;               // defender position at the moment the block resolved, before any push
   diceCount: 1 | 2 | 3;
   picker: 'attacker' | 'defender';
   outcomeProbs: Record<BlockOutcomeFace, number>; // probability of each face occurring at least/only as required by picker
@@ -143,6 +143,10 @@ export type BlockLogEntry = {
   resolvedFace: BlockOutcomeFace;     // the single face the game continues from
   actionProb: number;         // combined probability of acceptedFaces per the formula above
   cumulativeProb: number;
+  // Set once a push-back square is chosen (push / defender-stumbles /
+  // defender-down with a legal push square). `to` stays the pre-push square
+  // so the two together describe the full push: from `to` to `pushTo`.
+  pushTo?: Position;
   // These mirror MoveLogEntry fields so existing risky-move filters work unchanged
   dodgeTarget: null;
   isGfi: false;
