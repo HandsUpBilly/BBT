@@ -3,7 +3,7 @@ import type { CSSProperties } from 'react';
 import type { GameState, Team, BlockOutcomeFace } from './types';
 import { key, neighbours } from './bfs';
 import type { ZoomBounds } from './bfs';
-import { buildMovementTrailMap, trailPolylinePoints } from './movementTrail';
+import { buildMovementTrailMap, buildMovementStartMarkers, trailPolylinePoints } from './movementTrail';
 import type { PathTrail } from './movementTrail';
 import { passTrajectoryPath } from './passTrajectory';
 import { skillGroupsFor, skillMarkersFor } from './skillPresentation';
@@ -257,6 +257,7 @@ interface SquareProps {
   pathTrails: PathTrail[];
   dice: DiceInfo | null;
   blockDice: BlockOutcomeFace | null;
+  trailStart: number | null;
   ghost: { team: Team; role?: string; skills: readonly string[]; hasBall: boolean } | null;
   focusable: boolean;
   onSquareClick: (col: number, row: number) => void;
@@ -274,7 +275,7 @@ interface SquareProps {
  */
 const Square = memo(function Square({
   pCol, pRow, name, portrait, classes, label, pieceTeam, pieceRole, pieceSkills, pieceClasses, pieceHasBall,
-  looseBall, inTackleZone, actionLabel, displayStep, stepIsPreview, pathTrails, dice, blockDice, ghost, focusable,
+  looseBall, inTackleZone, actionLabel, displayStep, stepIsPreview, pathTrails, dice, blockDice, trailStart, ghost, focusable,
   onSquareClick, onPieceClick, onSquareHover, onSquareLeave,
 }: SquareProps) {
   const activate = useCallback((clientX: number, clientY: number) => {
@@ -330,6 +331,9 @@ const Square = memo(function Square({
         </svg>
         );
       })}
+      {trailStart !== null && (
+        <span className="trail-start-marker">{trailStart}</span>
+      )}
       {!pieceTeam && looseBall && <BallIcon loose />}
       {inTackleZone && <div className="square__tz-overlay" />}
       {pieceTeam && (
@@ -422,6 +426,14 @@ export function Pitch({
 
   const movementTrailMap = useMemo(
     () => buildMovementTrailMap(state.actionLog),
+    [state.actionLog],
+  );
+
+  // Which square each piece first moved from this turn, numbered in
+  // activation order — same actionLog-derived, auto-clearing-on-cancel
+  // convention as the trail and dice maps above.
+  const movementStartMap = useMemo(
+    () => buildMovementStartMarkers(state.actionLog),
     [state.actionLog],
   );
 
@@ -545,7 +557,7 @@ export function Pitch({
     pieceDown: boolean, pieceHasBall: boolean, pieceActivated: boolean,
     reachable: boolean, dodge: number | null, gfi: boolean, pickup: number | null,
     looseBall: boolean, isTarget: string | null, blockFace: BlockOutcomeFace | null,
-    passTarget: number | null, catchTarget: number | null,
+    passTarget: number | null, catchTarget: number | null, trailStartNumber: number | null,
   ): string {
     const parts = [squareName(stateCol, stateRow)];
     if (pieceName) {
@@ -570,6 +582,7 @@ export function Pitch({
     if (blockFace !== null) parts.push(`block result: ${BLOCK_FACE_LABELS[blockFace]}`);
     if (passTarget !== null) parts.push(`pass ${passTarget} plus`);
     if (catchTarget !== null) parts.push(`catch ${catchTarget} plus`);
+    if (trailStartNumber !== null) parts.push(`activation order ${trailStartNumber}`);
     return parts.join(', ');
   }
 
@@ -666,6 +679,13 @@ export function Pitch({
       const displayedDice = previewDice ?? committedDice;
       const blockFace = committedBlockDiceMap.get(k) ?? null;
 
+      // Suppressed on an occupied square (nothing to read a number under) or
+      // one already carrying a roll marker, so the activation-order badge
+      // never fights another marker for the same square's centre.
+      const trailStartNumber = !piece && !displayedDice && blockFace === null
+        ? movementStartMap.get(k) ?? null
+        : null;
+
       const targetDescription = isHandoffTarget ? 'handoff target'
         : isPassReceiver ? 'pass target'
         : isBlockTarget ? 'block target'
@@ -692,7 +712,7 @@ export function Pitch({
             isReachable, displayedDice?.dodgeTarget ?? null,
             (displayedDice?.isGfi ?? false) || isGfiRange, displayedDice?.pickupTarget ?? null,
             isLooseBall, targetDescription, blockFace,
-            displayedDice?.passTarget ?? null, displayedDice?.catchTarget ?? null,
+            displayedDice?.passTarget ?? null, displayedDice?.catchTarget ?? null, trailStartNumber,
           )}
           pieceTeam={piece?.team ?? null}
           pieceRole={piece?.role}
@@ -714,6 +734,7 @@ export function Pitch({
           pathTrails={pathTrails}
           dice={displayedDice}
           blockDice={blockFace}
+          trailStart={trailStartNumber}
           ghost={showGhost && selectedPiece
             ? {
                 team: selectedPiece.team,

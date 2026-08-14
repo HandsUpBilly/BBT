@@ -155,6 +155,14 @@ cancelled activation rolls back its log, and uses every individual step
 (including diagonals) rather than only the waypoint destinations in
 `committedPath`.
 
+Each piece's first move this turn also gets a numbered circle on the square it
+moved *from*, numbered by activation order (`movementTrail.ts`'s
+`buildMovementStartMarkers`, rendered as `.trail-start-marker` in `Pitch.tsx`).
+It is one number per piece, not per move segment — a piece that moves, does
+something else, then moves again from a different square keeps its original
+number. The marker is suppressed on a square that is occupied or already
+carrying a dice/block marker, so it never contests the same square's centre.
+
 Completed passes are also derived from `actionLog`, but render as a single
 curved amber trajectory with an arrowhead across the pitch. The curve is
 orientation- and zoom-aware and deliberately differs from the segmented white

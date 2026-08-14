@@ -193,6 +193,76 @@ describe('Pitch block dice marker', () => {
   });
 });
 
+describe('Pitch movement trail start marker', () => {
+  it('numbers the square a piece first moved from, in activation order', () => {
+    const first: MoveLogEntry = {
+      kind: 'move',
+      pieceName: 'Aldric',
+      pieceRole: 'blocker',
+      from: { col: 2, row: 3 },
+      to: { col: 2, row: 4 },
+      steps: 1,
+      dodgeTarget: null,
+      isGfi: false,
+      actionProb: 1,
+      cumulativeProb: 1,
+    };
+    const second: MoveLogEntry = {
+      kind: 'move',
+      pieceName: 'Brogar',
+      pieceRole: 'lineman',
+      from: { col: 5, row: 3 },
+      to: { col: 5, row: 4 },
+      steps: 1,
+      dodgeTarget: null,
+      isGfi: false,
+      actionProb: 1,
+      cumulativeProb: 1,
+    };
+    const trailState = { ...makeState([humanBlocker()]), actionLog: [first, second] };
+
+    const { container } = render(
+      <Pitch state={trailState} onSquareClick={noop} onPieceClick={noop} onSquareHover={noop} onSquareLeave={noop} />,
+    );
+
+    const firstStart = container.querySelector('[data-square="3C"]');
+    expect(firstStart?.querySelector('.trail-start-marker')?.textContent).toBe('1');
+    expect(firstStart?.getAttribute('aria-label')).toContain('activation order 1');
+
+    const secondStart = container.querySelector('[data-square="3F"]');
+    expect(secondStart?.querySelector('.trail-start-marker')?.textContent).toBe('2');
+
+    // Squares stepped into (not the starting square) get no marker.
+    const stepped = container.querySelector('[data-square="4C"]');
+    expect(stepped?.querySelector('.trail-start-marker')).toBeNull();
+  });
+
+  it('is suppressed once another piece occupies the starting square', () => {
+    const mover: MoveLogEntry = {
+      kind: 'move',
+      pieceName: 'Aldric',
+      pieceRole: 'blocker',
+      from: { col: 7, row: 10 },
+      to: { col: 7, row: 11 },
+      steps: 1,
+      dodgeTarget: null,
+      isGfi: false,
+      actionProb: 1,
+      cumulativeProb: 1,
+    };
+    const occupier = humanBlocker({ position: { col: 7, row: 10 } });
+    const occupiedState = { ...makeState([occupier]), actionLog: [mover] };
+
+    const { container } = render(
+      <Pitch state={occupiedState} onSquareClick={noop} onPieceClick={noop} onSquareHover={noop} onSquareLeave={noop} />,
+    );
+
+    const square = container.querySelector('[data-square="10H"]');
+    expect(square?.querySelector('.piece')).toBeTruthy();
+    expect(square?.querySelector('.trail-start-marker')).toBeNull();
+  });
+});
+
 describe('Pitch pass and catch dice', () => {
   it('shows a teal pass die on the target square', () => {
     const pass: PassLogEntry = {
