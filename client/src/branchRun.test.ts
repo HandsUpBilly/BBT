@@ -6,9 +6,13 @@ import { makeState, humanBlocker, orcBlocker, humanThrower } from './test/gameSt
 import {
   branchStrip,
   cancelActivation,
+  chooseBlockTarget,
+  chooseHandoffTarget,
   choosePush,
   clickSquare,
   concedeBranch,
+  declareBlock,
+  declareHandoff,
   isRunComplete,
   runSummary,
   selectBranch,
@@ -178,6 +182,116 @@ describe('lockstep authoring', () => {
       expect(line.state.committedPath).toEqual([]);
       expect(line.state.pieces.find(p => p.id === 'runner')?.position).toEqual({ col: 6, row: 10 });
     }
+  });
+});
+
+describe('declarations across a group', () => {
+  /** Ball carrier next to the block, with a receiver just past the defender. */
+  const carrier = () => humanThrower({ id: 'carrier', position: { col: 8, row: 9 } });
+  const receiver = () => humanBlocker({ id: 'receiver', position: { col: 8, row: 8 } });
+
+  function handedOff(): BranchRun {
+    let run = choosePush(blockRun([carrier(), receiver()]), { col: 7, row: 8 }, false);
+    run = declareHandoff(run, 'carrier');
+    run = clickSquare(run, { col: 8, row: 9 }); // end activation, opening targeting
+    return chooseHandoffTarget(run, { col: 8, row: 8 });
+  }
+
+  function catchTargetIn(run: BranchRun, label: string): number | undefined {
+    const line = Object.values(run.lines).find(l => l.label === label && !l.split);
+    const entry = line?.state.actionLog.find(e => e.kind === 'handoff');
+    return entry && 'catchTarget' in entry ? entry.catchTarget : undefined;
+  }
+
+  it('recomputes catch targets per branch instead of copying the authored roll', () => {
+    const run = handedOff();
+
+    // Only "Pushed" leaves a defender standing next to the receiver, so only
+    // that branch's catch is marked. Same click, three different rolls.
+    const pushed = catchTargetIn(run, 'Pushed')!;
+    const pushedDown = catchTargetIn(run, 'Pushed + Down')!;
+    const inPlace = catchTargetIn(run, 'Down in place')!;
+
+    expect(pushed).toBeGreaterThan(pushedDown);
+    expect(pushedDown).toBe(inPlace);
+  });
+
+  it('costs the marked branch more probability off one authored hand off', () => {
+    const run = handedOff();
+
+    // Both branches are reached on two faces of six, so their weights differ
+    // only by what the hand off cost — dearer where the defender is standing.
+    expect(entry(run, 'Pushed')!.weight)
+      .toBeLessThan(entry(run, 'Pushed + Down')!.weight);
+  });
+
+  it('flags branches where the declared action is not available', () => {
+    // This attacker is only ever adjacent to a *standing* defender in the
+    // "Pushed" branch; elsewhere the defender is prone and cannot be blocked.
+    const opportunist = humanBlocker({ id: 'opportunist', position: { col: 6, row: 7 } });
+    let run = choosePush(blockRun([opportunist]), { col: 7, row: 8 }, false);
+
+    // Author from the one branch where the block is legal: an action illegal on
+    // the viewed board is simply not available, so nothing would happen at all.
+    run = selectBranch(run, entry(run, 'Pushed')!.id);
+    run = declareBlock(run, 'opportunist', false);
+
+    expect(entry(run, 'Pushed')?.status).toBe('authoring');
+    expect(entry(run, 'Pushed + Down')?.status).toBe('needs-attention');
+    expect(entry(run, 'Down in place')?.status).toBe('needs-attention');
+  });
+});
+
+describe('a second block', () => {
+  /** A separate pairing far from the first, so the two blocks are independent. */
+  const attacker2 = () =>
+    humanBlocker({ id: 'attacker2', position: { col: 2, row: 10 }, skills: ['Block'] });
+  const defender2 = () => orcBlocker({ id: 'defender2', position: { col: 2, row: 9 } });
+  const carrier = () => humanThrower({ id: 'carrier', position: { col: 5, row: 1 } });
+
+  function twoBlocks(): BranchRun {
+    let run = choosePush(blockRun([attacker2(), defender2(), carrier()]), { col: 7, row: 8 }, false);
+    run = declareBlock(run, 'attacker2', false);
+    run = chooseBlockTarget(run, { col: 2, row: 9 });
+    run = splitOnBlock(run);
+    return choosePush(run, { col: 2, row: 8 }, false);
+  }
+
+  it('splits every branch of the group at once', () => {
+    const run = twoBlocks();
+
+    // Three boards from the first block, each forking into three again.
+    expect(branchStrip(run)).toHaveLength(9);
+  });
+
+  it('keeps all nine branches in one lockstep group', () => {
+    let run = twoBlocks();
+    run = clickSquare(run, { col: 5, row: 1 });
+    run = clickSquare(run, { col: 5, row: 0 });
+
+    // One authored walk-in still serves every branch, which is the whole reason
+    // multi-block puzzles stay playable.
+    expect(branchStrip(run).every(e => e.status === 'scored')).toBe(true);
+    expect(isRunComplete(run)).toBe(true);
+  });
+
+  it('compounds the two blocks into one honest number', () => {
+    let run = twoBlocks();
+    run = clickSquare(run, { col: 5, row: 1 });
+    run = clickSquare(run, { col: 5, row: 0 });
+
+    const summary = runSummary(run);
+    // Each block survives 5 faces in 6, and they are independent.
+    expect(summary.score).toBeCloseTo((5 / 6) ** 2, 12);
+    expect(summary.deadWeight).toBeCloseTo(1 - (5 / 6) ** 2, 12);
+  });
+
+  it('counts the dice from both blocks', () => {
+    let run = twoBlocks();
+    run = clickSquare(run, { col: 5, row: 1 });
+    run = clickSquare(run, { col: 5, row: 0 });
+
+    expect(runSummary(run).expectedDice).toBeCloseTo(2, 12);
   });
 });
 
