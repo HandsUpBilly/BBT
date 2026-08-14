@@ -772,6 +772,357 @@ export function applyPushChoice(prev: GameState, pos: Position, followUp: boolea
     : clearSelection(nextState);
 }
 
+/**
+ * Declare a Hand Off: select the carrier for normal movement, then open
+ * receiver targeting once the activation ends.
+ */
+export function applyHandoffAction(prev: GameState, pieceId: string): GameState {
+  if (prev.passUsed) return prev;
+
+  // Eligible if the piece already carries the ball, or the ball is
+  // currently loose — in that case the player is expected to move this
+  // piece onto the loose ball's square (picking it up) before handing off.
+  const carrier = prev.pieces.find(p => p.id === pieceId);
+  if (!carrier || carrier.activated || carrier.down) return prev;
+  if (!carrier.hasBall && prev.ballPosition === null) return prev;
+
+  const { reachableKeys } = recomputeReachable(prev, pieceId, carrier.position, carrier.ma, MAX_GFI);
+
+  return {
+    ...beginActivation(prev, carrier, carrier.ma, MAX_GFI, reachableKeys),
+    pendingHandoff: true,
+    isHandoffTargeting: false,
+    handoffTargets: new Set(),
+  };
+}
+
+/** Execute a hand off: log the catch roll, transfer the ball, end the activation. */
+export function applyHandoffTarget(prev: GameState, pos: Position): GameState {
+  if (!prev.isHandoffTargeting || !prev.selectedPieceId) return prev;
+
+  const receiverKey = key(pos);
+  if (!prev.handoffTargets.has(receiverKey)) return prev;
+
+  const carrier = prev.pieces.find(p => p.id === prev.selectedPieceId);
+  const receiver = prev.pieces.find(p => key(p.position) === receiverKey);
+  if (!carrier || !receiver) return prev;
+
+  // Carrier's current position (after any movement this activation)
+  const carrierPos = prev.committedPath.length > 0
+    ? prev.committedPath[prev.committedPath.length - 1]
+    : carrier.position;
+
+  const opponents = prev.pieces.filter(p => p.team !== carrier.team && !p.down).map(p => p.position);
+  const catchTarget = catchTargetAt(pos, receiver.ag, opponents);
+  const actionProb = successChance(catchTarget);
+  const prevCumProb = prev.actionLog.length > 0
+    ? prev.actionLog[prev.actionLog.length - 1].cumulativeProb
+    : 1;
+  const cumulativeProb = prevCumProb * actionProb;
+
+  const handoffEntry: ActionLogEntry = {
+    kind: 'handoff',
+    pieceName: carrier.name,
+    pieceRole: carrier.role ?? carrier.team,
+    receiverName: receiver.name,
+    receiverRole: receiver.role ?? receiver.team,
+    from: carrierPos,
+    to: pos,
+    catchTarget,
+    actionProb,
+    cumulativeProb,
+    dodgeTarget: null,
+    isGfi: false,
+  };
+
+  // Move carrier to its committed position, mark activated, transfer ball
+  const pieces = prev.pieces.map(p => {
+    if (p.id === carrier.id) {
+      return { ...p, position: carrierPos, activated: true, hasBall: false };
+    }
+    if (p.id === receiver.id) {
+      return { ...p, hasBall: true };
+    }
+    return p;
+  });
+
+  // Touchdown: the receiver caught the handoff in the end zone
+  const isTouchdown = isTouchdownSquare(receiver.position, receiver.team);
+
+  return clearSelection({
+    ...prev,
+    pieces,
+    passUsed: true,
+    actionLog: [...prev.actionLog, handoffEntry],
+    pendingProb: prev.pendingProb * actionProb,
+    ...(isTouchdown ? { phase: 'touchdown' as const } : {}),
+  });
+}
+
+/** Declare a Pass: same as Move, but pass targeting opens when movement ends. */
+export function applyPassAction(prev: GameState, pieceId: string): GameState {
+  if (prev.passUsed) return prev;
+  // Eligible if the piece already carries the ball, or the ball is
+  // currently loose — in that case the player is expected to move this
+  // piece onto the loose ball's square (picking it up) before passing.
+  const carrier = prev.pieces.find(p => p.id === pieceId);
+  if (!carrier || carrier.activated || carrier.down) return prev;
+  if (!carrier.hasBall && prev.ballPosition === null) return prev;
+
+  const { reachableKeys } = recomputeReachable(prev, pieceId, carrier.position, carrier.ma, MAX_GFI);
+
+  return {
+    ...beginActivation(prev, carrier, carrier.ma, MAX_GFI, reachableKeys),
+    pendingPass: true,
+    isPassTargeting: false,
+    passRangeKeys: new Map(),
+    passReceiverKeys: new Set(),
+  };
+}
+
+/** Execute a pass: log the pass and catch rolls, transfer the ball. */
+export function applyPassTarget(prev: GameState, pos: Position): GameState {
+  if (!prev.isPassTargeting || !prev.selectedPieceId) return prev;
+
+  const receiverKey = key(pos);
+  if (!prev.passReceiverKeys.has(receiverKey)) return prev;
+
+  const carrier = prev.pieces.find(p => p.id === prev.selectedPieceId);
+  const receiver = prev.pieces.find(p => key(p.position) === receiverKey);
+  if (!carrier || !receiver) return prev;
+
+  const carrierPos = prev.committedPath.length > 0
+    ? prev.committedPath[prev.committedPath.length - 1]
+    : carrier.position;
+
+  const opponents = prev.pieces.filter(p => p.team !== carrier.team && !p.down).map(p => p.position);
+
+  const passTarget = passTargetAt(carrierPos, carrier.pa, pos, opponents);
+  const band = prev.passRangeKeys.get(receiverKey);
+  // Out of range — passReceiverKeys is built from the same range map, so
+  // this should be unreachable, but bail out rather than log a bogus roll.
+  if (passTarget === null || !band) return prev;
+
+  const catchTarget = catchTargetAt(pos, receiver.ag, opponents);
+
+  const passProb  = successChance(passTarget);
+  const catchProb = successChance(catchTarget);
+
+  const prevCumProb = prev.actionLog.length > 0
+    ? prev.actionLog[prev.actionLog.length - 1].cumulativeProb : 1;
+
+  const afterPassCum  = prevCumProb * passProb;
+  const afterCatchCum = afterPassCum * catchProb;
+
+  const passEntry: ActionLogEntry = {
+    kind: 'pass',
+    pieceName: carrier.name,
+    pieceRole: carrier.role ?? carrier.team,
+    receiverName: receiver.name,
+    receiverRole: receiver.role ?? receiver.team,
+    from: carrierPos,
+    to: pos,
+    passTarget,
+    rangeBand: band,
+    actionProb: passProb,
+    cumulativeProb: afterPassCum,
+    dodgeTarget: null,
+    isGfi: false,
+  };
+
+  const catchEntry: ActionLogEntry = {
+    kind: 'pass-catch',
+    pieceName: receiver.name,
+    pieceRole: receiver.role ?? receiver.team,
+    from: pos,
+    to: pos,
+    catchTarget,
+    actionProb: catchProb,
+    cumulativeProb: afterCatchCum,
+    dodgeTarget: null,
+    isGfi: false,
+  };
+
+  const pieces = prev.pieces.map(p => {
+    if (p.id === carrier.id)  return { ...p, position: carrierPos, activated: true, hasBall: false };
+    if (p.id === receiver.id) return { ...p, hasBall: true };
+    return p;
+  });
+
+  // Touchdown: the receiver caught the pass in the end zone
+  const isTouchdown = isTouchdownSquare(receiver.position, receiver.team);
+
+  return clearSelection({
+    ...prev,
+    pieces,
+    passUsed: true,
+    actionLog: [...prev.actionLog, passEntry, catchEntry],
+    pendingProb: prev.pendingProb * passProb * catchProb,
+    ...(isTouchdown ? { phase: 'touchdown' as const } : {}),
+  });
+}
+
+/**
+ * Declare a Block or Blitz. Blitz chooses its defender first, then allows
+ * movement into contact; plain Block never moves and only offers adjacent
+ * defenders.
+ */
+export function applyBlockAction(prev: GameState, pieceId: string, isBlitz: boolean): GameState {
+  if (isBlitz && prev.blitzUsed) return prev;
+
+  const attacker = prev.pieces.find(p => p.id === pieceId);
+  if (!attacker || attacker.activated || attacker.down) return prev;
+
+  if (isBlitz) {
+    const targets = blitzTargetKeys(prev, attacker);
+    if (targets.size === 0) return prev;
+
+    return {
+      // Movement stays locked until a defender is chosen, so start from an
+      // empty reachable set.
+      ...beginActivation(prev, attacker, attacker.ma, MAX_GFI, new Set()),
+      pendingBlock: true,
+      pendingBlockIsBlitz: true,
+      blitzTargetId: null,
+      isBlockTargeting: true,
+      blockTargets: targets,
+    };
+  }
+
+  // Plain Block — no movement, target directly from the current square.
+  const targets = new Set<string>();
+  for (const n of neighbours(attacker.position)) {
+    const nk = key(n);
+    const piece = prev.pieces.find(p => key(p.position) === nk);
+    if (piece && piece.team !== attacker.team && !piece.down) {
+      targets.add(nk);
+    }
+  }
+  if (targets.size === 0) return prev;
+
+  return {
+    ...beginActivation(prev, attacker, 0, 0, new Set()),
+    pendingBlock: false,
+    pendingBlockIsBlitz: false,
+    blitzTargetId: null,
+    isBlockTargeting: true,
+    blockTargets: targets,
+  };
+}
+
+/**
+ * For a Blitz, the first defender click chooses the target and opens movement;
+ * clicking that target again from an adjacent square performs the block. Plain
+ * Block goes directly to the dice calculation.
+ */
+export function applyBlockTarget(prev: GameState, pos: Position): GameState {
+  const defenderKey = key(pos);
+  if (!prev.selectedPieceId) return prev;
+
+  const attacker = prev.pieces.find(p => p.id === prev.selectedPieceId);
+  const defender = prev.pieces.find(p => key(p.position) === defenderKey);
+  if (!attacker || !defender || defender.team === attacker.team || defender.down) return prev;
+
+  const choosingBlitzTarget = prev.pendingBlock
+    && prev.pendingBlockIsBlitz
+    && prev.blitzTargetId === null
+    && prev.isBlockTargeting;
+
+  if (choosingBlitzTarget) {
+    if (!prev.blockTargets.has(defenderKey)) return prev;
+    const { reachableKeys } = recomputeReachable(
+      prev,
+      attacker.id,
+      attacker.position,
+      attacker.ma,
+      MAX_GFI,
+    );
+    return {
+      ...prev,
+      blitzTargetId: defender.id,
+      isBlockTargeting: false,
+      blockTargets: new Set(),
+      reachableKeys,
+    };
+  }
+
+  const executingBlitz = prev.pendingBlock
+    && prev.pendingBlockIsBlitz
+    && prev.blitzTargetId === defender.id;
+  const executingPlainBlock = prev.isBlockTargeting && prev.blockTargets.has(defenderKey);
+  if (!executingBlitz && !executingPlainBlock) return prev;
+
+  const attackerPos = executingBlitz
+    ? (prev.committedPath[prev.committedPath.length - 1] ?? prev.originPos ?? attacker.position)
+    : attacker.position;
+  if (!neighbours(attackerPos).some(p => key(p) === defenderKey)) return prev;
+
+  // BB2020: the block itself costs one square of the Blitz's movement.
+  // Without this a blitzing piece effectively got MA + 1.
+  let remainingMa = prev.remainingMa;
+  let remainingGfi = prev.remainingGfi;
+  if (executingBlitz) {
+    if (remainingMa > 0) remainingMa -= 1;
+    else if (remainingGfi > 0) remainingGfi -= 1;
+    else return prev; // no movement left to spend on the block
+  }
+
+  const pickedUpBall = prev.ballPosition !== null
+    && prev.walkedSquares.some(p => key(p) === key(prev.ballPosition!));
+  const pieces = prev.pieces.map(piece =>
+    piece.id === attacker.id
+      ? { ...piece, position: attackerPos, hasBall: piece.hasBall || pickedUpBall }
+      : piece
+  );
+  const positionedAttacker = pieces.find(piece => piece.id === attacker.id)!;
+
+  const attackerTeammates = pieces.filter(p => p.team === positionedAttacker.team)
+    .map(p => ({ id: p.id, position: p.position, down: p.down }));
+  const defenderTeammates = pieces.filter(p => p.team === defender.team)
+    .map(p => ({ id: p.id, position: p.position, down: p.down }));
+
+  const attackerAssists = countEligibleAssists(
+    defender.position,
+    attackerTeammates,
+    positionedAttacker.id,
+    defenderTeammates,
+    defender.id,
+  );
+  const defenderAssists = countEligibleAssists(
+    positionedAttacker.position,
+    defenderTeammates,
+    defender.id,
+    attackerTeammates,
+    positionedAttacker.id,
+  );
+
+  const { diceCount, picker } = blockDiceCount(positionedAttacker.st, attackerAssists, defender.st, defenderAssists);
+  const outcomeProbs = blockOutcomeProbabilities(diceCount, picker);
+
+  return {
+    ...prev,
+    pieces,
+    ballPosition: pickedUpBall ? null : prev.ballPosition,
+    originPos: attackerPos,
+    committedPath: [],
+    walkedSquares: [],
+    remainingMa,
+    remainingGfi,
+    reachableKeys: new Set(),
+    pathPreview: [],
+    pendingBlock: false,
+    isBlockTargeting: false,
+    blockTargets: new Set(),
+    blockChoice: {
+      defenderId: defender.id,
+      isBlitz: prev.pendingBlockIsBlitz,
+      diceCount,
+      picker,
+      outcomeProbs,
+    },
+  };
+}
+
 export interface BlockSplitContext {
   attackerId: string;
   defenderId: string;
@@ -936,18 +1287,7 @@ export function useGameState(initialState: GameState) {
   }, []);
 
   const handleCancelSelection = useCallback(() => {
-    setState(prev => {
-      // Backing out of receiver targeting keeps the carrier selected so the
-      // player can pick a different action; everything else is a full cancel,
-      // which also rewinds the board via the activation snapshot.
-      if (prev.isHandoffTargeting) {
-        return { ...prev, pendingHandoff: false, isHandoffTargeting: false, handoffTargets: new Set() };
-      }
-      if (prev.isPassTargeting) {
-        return { ...prev, pendingPass: false, isPassTargeting: false, passRangeKeys: new Map(), passReceiverKeys: new Set() };
-      }
-      return prev.selectedPieceId ? clearSelection(prev, true) : prev;
-    });
+    setState(applyCancelSelection);
   }, []);
 
   /**
@@ -956,25 +1296,7 @@ export function useGameState(initialState: GameState) {
    * When the player ends the activation, receiver targeting opens automatically.
    */
   const handleHandoffAction = useCallback((pieceId: string) => {
-    setState(prev => {
-      if (prev.passUsed) return prev;
-
-      // Eligible if the piece already carries the ball, or the ball is
-      // currently loose — in that case the player is expected to move this
-      // piece onto the loose ball's square (picking it up) before handing off.
-      const carrier = prev.pieces.find(p => p.id === pieceId);
-      if (!carrier || carrier.activated || carrier.down) return prev;
-      if (!carrier.hasBall && prev.ballPosition === null) return prev;
-
-      const { reachableKeys } = recomputeReachable(prev, pieceId, carrier.position, carrier.ma, MAX_GFI);
-
-      return {
-        ...beginActivation(prev, carrier, carrier.ma, MAX_GFI, reachableKeys),
-        pendingHandoff: true,
-        isHandoffTargeting: false,
-        handoffTargets: new Set(),
-      };
-    });
+    setState(prev => applyHandoffAction(prev, pieceId));
   }, []);
 
   /**
@@ -982,67 +1304,7 @@ export function useGameState(initialState: GameState) {
    * Executes the handoff: logs the catch roll, transfers the ball, marks carrier activated.
    */
   const handleHandoffTarget = useCallback((col: number, row: number) => {
-    setState(prev => {
-      if (!prev.isHandoffTargeting || !prev.selectedPieceId) return prev;
-
-      const receiverKey = key({ col, row });
-      if (!prev.handoffTargets.has(receiverKey)) return prev;
-
-      const carrier = prev.pieces.find(p => p.id === prev.selectedPieceId);
-      const receiver = prev.pieces.find(p => key(p.position) === receiverKey);
-      if (!carrier || !receiver) return prev;
-
-      // Carrier's current position (after any movement this activation)
-      const carrierPos = prev.committedPath.length > 0
-        ? prev.committedPath[prev.committedPath.length - 1]
-        : carrier.position;
-
-      const opponents = prev.pieces.filter(p => p.team !== carrier.team && !p.down).map(p => p.position);
-      const catchTarget = catchTargetAt({ col, row }, receiver.ag, opponents);
-      const actionProb = successChance(catchTarget);
-      const prevCumProb = prev.actionLog.length > 0
-        ? prev.actionLog[prev.actionLog.length - 1].cumulativeProb
-        : 1;
-      const cumulativeProb = prevCumProb * actionProb;
-
-      const handoffEntry: ActionLogEntry = {
-        kind: 'handoff',
-        pieceName: carrier.name,
-        pieceRole: carrier.role ?? carrier.team,
-        receiverName: receiver.name,
-        receiverRole: receiver.role ?? receiver.team,
-        from: carrierPos,
-        to: { col, row },
-        catchTarget,
-        actionProb,
-        cumulativeProb,
-        dodgeTarget: null,
-        isGfi: false,
-      };
-
-      // Move carrier to its committed position, mark activated, transfer ball
-      const pieces = prev.pieces.map(p => {
-        if (p.id === carrier.id) {
-          return { ...p, position: carrierPos, activated: true, hasBall: false };
-        }
-        if (p.id === receiver.id) {
-          return { ...p, hasBall: true };
-        }
-        return p;
-      });
-
-      // Touchdown: the receiver caught the handoff in the end zone
-      const isTouchdown = isTouchdownSquare(receiver.position, receiver.team);
-
-      return clearSelection({
-        ...prev,
-        pieces,
-        passUsed: true,
-        actionLog: [...prev.actionLog, handoffEntry],
-        pendingProb: prev.pendingProb * actionProb,
-        ...(isTouchdown ? { phase: 'touchdown' as const } : {}),
-      });
-    });
+    setState(prev => applyHandoffTarget(prev, { col, row }));
   }, []);
 
   /**
@@ -1051,25 +1313,7 @@ export function useGameState(initialState: GameState) {
    * When the player ends activation, pass targeting opens.
    */
   const handlePassAction = useCallback((pieceId: string) => {
-    setState(prev => {
-      if (prev.passUsed) return prev;
-      // Eligible if the piece already carries the ball, or the ball is
-      // currently loose — in that case the player is expected to move this
-      // piece onto the loose ball's square (picking it up) before passing.
-      const carrier = prev.pieces.find(p => p.id === pieceId);
-      if (!carrier || carrier.activated || carrier.down) return prev;
-      if (!carrier.hasBall && prev.ballPosition === null) return prev;
-
-      const { reachableKeys } = recomputeReachable(prev, pieceId, carrier.position, carrier.ma, MAX_GFI);
-
-      return {
-        ...beginActivation(prev, carrier, carrier.ma, MAX_GFI, reachableKeys),
-        pendingPass: true,
-        isPassTargeting: false,
-        passRangeKeys: new Map(),
-        passReceiverKeys: new Set(),
-      };
-    });
+    setState(prev => applyPassAction(prev, pieceId));
   }, []);
 
   /**
@@ -1077,86 +1321,7 @@ export function useGameState(initialState: GameState) {
    * Logs pass roll + catch roll entries, transfers ball, marks carrier activated.
    */
   const handlePassTarget = useCallback((col: number, row: number) => {
-    setState(prev => {
-      if (!prev.isPassTargeting || !prev.selectedPieceId) return prev;
-
-      const receiverKey = key({ col, row });
-      if (!prev.passReceiverKeys.has(receiverKey)) return prev;
-
-      const carrier = prev.pieces.find(p => p.id === prev.selectedPieceId);
-      const receiver = prev.pieces.find(p => key(p.position) === receiverKey);
-      if (!carrier || !receiver) return prev;
-
-      const carrierPos = prev.committedPath.length > 0
-        ? prev.committedPath[prev.committedPath.length - 1]
-        : carrier.position;
-
-      const opponents = prev.pieces.filter(p => p.team !== carrier.team && !p.down).map(p => p.position);
-
-      const passTarget = passTargetAt(carrierPos, carrier.pa, { col, row }, opponents);
-      const band = prev.passRangeKeys.get(receiverKey);
-      // Out of range — passReceiverKeys is built from the same range map, so
-      // this should be unreachable, but bail out rather than log a bogus roll.
-      if (passTarget === null || !band) return prev;
-
-      const catchTarget = catchTargetAt({ col, row }, receiver.ag, opponents);
-
-      const passProb  = successChance(passTarget);
-      const catchProb = successChance(catchTarget);
-
-      const prevCumProb = prev.actionLog.length > 0
-        ? prev.actionLog[prev.actionLog.length - 1].cumulativeProb : 1;
-
-      const afterPassCum  = prevCumProb * passProb;
-      const afterCatchCum = afterPassCum * catchProb;
-
-      const passEntry: ActionLogEntry = {
-        kind: 'pass',
-        pieceName: carrier.name,
-        pieceRole: carrier.role ?? carrier.team,
-        receiverName: receiver.name,
-        receiverRole: receiver.role ?? receiver.team,
-        from: carrierPos,
-        to: { col, row },
-        passTarget,
-        rangeBand: band,
-        actionProb: passProb,
-        cumulativeProb: afterPassCum,
-        dodgeTarget: null,
-        isGfi: false,
-      };
-
-      const catchEntry: ActionLogEntry = {
-        kind: 'pass-catch',
-        pieceName: receiver.name,
-        pieceRole: receiver.role ?? receiver.team,
-        from: { col, row },
-        to: { col, row },
-        catchTarget,
-        actionProb: catchProb,
-        cumulativeProb: afterCatchCum,
-        dodgeTarget: null,
-        isGfi: false,
-      };
-
-      const pieces = prev.pieces.map(p => {
-        if (p.id === carrier.id)  return { ...p, position: carrierPos, activated: true, hasBall: false };
-        if (p.id === receiver.id) return { ...p, hasBall: true };
-        return p;
-      });
-
-      // Touchdown: the receiver caught the pass in the end zone
-      const isTouchdown = isTouchdownSquare(receiver.position, receiver.team);
-
-      return clearSelection({
-        ...prev,
-        pieces,
-        passUsed: true,
-        actionLog: [...prev.actionLog, passEntry, catchEntry],
-        pendingProb: prev.pendingProb * passProb * catchProb,
-        ...(isTouchdown ? { phase: 'touchdown' as const } : {}),
-      });
-    });
+    setState(prev => applyPassTarget(prev, { col, row }));
   }, []);
 
   /**
@@ -1165,48 +1330,7 @@ export function useGameState(initialState: GameState) {
    * Block never moves and only offers adjacent defenders.
    */
   const handleBlockAction = useCallback((pieceId: string, isBlitz: boolean) => {
-    setState(prev => {
-      if (isBlitz && prev.blitzUsed) return prev;
-
-      const attacker = prev.pieces.find(p => p.id === pieceId);
-      if (!attacker || attacker.activated || attacker.down) return prev;
-
-      if (isBlitz) {
-        const targets = blitzTargetKeys(prev, attacker);
-        if (targets.size === 0) return prev;
-
-        return {
-          // Movement stays locked until a defender is chosen, so start from an
-          // empty reachable set.
-          ...beginActivation(prev, attacker, attacker.ma, MAX_GFI, new Set()),
-          pendingBlock: true,
-          pendingBlockIsBlitz: true,
-          blitzTargetId: null,
-          isBlockTargeting: true,
-          blockTargets: targets,
-        };
-      }
-
-      // Plain Block — no movement, target directly from the current square.
-      const targets = new Set<string>();
-      for (const n of neighbours(attacker.position)) {
-        const nk = key(n);
-        const piece = prev.pieces.find(p => key(p.position) === nk);
-        if (piece && piece.team !== attacker.team && !piece.down) {
-          targets.add(nk);
-        }
-      }
-      if (targets.size === 0) return prev;
-
-      return {
-        ...beginActivation(prev, attacker, 0, 0, new Set()),
-        pendingBlock: false,
-        pendingBlockIsBlitz: false,
-        blitzTargetId: null,
-        isBlockTargeting: true,
-        blockTargets: targets,
-      };
-    });
+    setState(prev => applyBlockAction(prev, pieceId, isBlitz));
   }, []);
 
   /**
@@ -1215,113 +1339,7 @@ export function useGameState(initialState: GameState) {
    * Plain Block goes directly to the outcome calculation.
    */
   const handleBlockTarget = useCallback((col: number, row: number) => {
-    setState(prev => {
-      const defenderKey = key({ col, row });
-      if (!prev.selectedPieceId) return prev;
-
-      const attacker = prev.pieces.find(p => p.id === prev.selectedPieceId);
-      const defender = prev.pieces.find(p => key(p.position) === defenderKey);
-      if (!attacker || !defender || defender.team === attacker.team || defender.down) return prev;
-
-      const choosingBlitzTarget = prev.pendingBlock
-        && prev.pendingBlockIsBlitz
-        && prev.blitzTargetId === null
-        && prev.isBlockTargeting;
-
-      if (choosingBlitzTarget) {
-        if (!prev.blockTargets.has(defenderKey)) return prev;
-        const { reachableKeys } = recomputeReachable(
-          prev,
-          attacker.id,
-          attacker.position,
-          attacker.ma,
-          MAX_GFI,
-        );
-        return {
-          ...prev,
-          blitzTargetId: defender.id,
-          isBlockTargeting: false,
-          blockTargets: new Set(),
-          reachableKeys,
-        };
-      }
-
-      const executingBlitz = prev.pendingBlock
-        && prev.pendingBlockIsBlitz
-        && prev.blitzTargetId === defender.id;
-      const executingPlainBlock = prev.isBlockTargeting && prev.blockTargets.has(defenderKey);
-      if (!executingBlitz && !executingPlainBlock) return prev;
-
-      const attackerPos = executingBlitz
-        ? (prev.committedPath[prev.committedPath.length - 1] ?? prev.originPos ?? attacker.position)
-        : attacker.position;
-      if (!neighbours(attackerPos).some(pos => key(pos) === defenderKey)) return prev;
-
-      // BB2020: the block itself costs one square of the Blitz's movement.
-      // Without this a blitzing piece effectively got MA + 1.
-      let remainingMa = prev.remainingMa;
-      let remainingGfi = prev.remainingGfi;
-      if (executingBlitz) {
-        if (remainingMa > 0) remainingMa -= 1;
-        else if (remainingGfi > 0) remainingGfi -= 1;
-        else return prev; // no movement left to spend on the block
-      }
-
-      const pickedUpBall = prev.ballPosition !== null
-        && prev.walkedSquares.some(pos => key(pos) === key(prev.ballPosition!));
-      const pieces = prev.pieces.map(piece =>
-        piece.id === attacker.id
-          ? { ...piece, position: attackerPos, hasBall: piece.hasBall || pickedUpBall }
-          : piece
-      );
-      const positionedAttacker = pieces.find(piece => piece.id === attacker.id)!;
-
-      const attackerTeammates = pieces.filter(p => p.team === positionedAttacker.team)
-        .map(p => ({ id: p.id, position: p.position, down: p.down }));
-      const defenderTeammates = pieces.filter(p => p.team === defender.team)
-        .map(p => ({ id: p.id, position: p.position, down: p.down }));
-
-      const attackerAssists = countEligibleAssists(
-        defender.position,
-        attackerTeammates,
-        positionedAttacker.id,
-        defenderTeammates,
-        defender.id,
-      );
-      const defenderAssists = countEligibleAssists(
-        positionedAttacker.position,
-        defenderTeammates,
-        defender.id,
-        attackerTeammates,
-        positionedAttacker.id,
-      );
-
-      const { diceCount, picker } = blockDiceCount(positionedAttacker.st, attackerAssists, defender.st, defenderAssists);
-      const outcomeProbs = blockOutcomeProbabilities(diceCount, picker);
-
-      return {
-        ...prev,
-        pieces,
-        ballPosition: pickedUpBall ? null : prev.ballPosition,
-        originPos: attackerPos,
-        committedPath: [],
-        walkedSquares: [],
-        remainingMa,
-        remainingGfi,
-        reachableKeys: new Set(),
-        pathPreview: [],
-        pendingBlock: false,
-        isBlockTargeting: false,
-        blockTargets: new Set(),
-        blockChoice: {
-          defenderId: defender.id,
-          isBlitz: prev.pendingBlockIsBlitz,
-          diceCount,
-          picker,
-          outcomeProbs,
-        },
-      };
-    });
+    setState(prev => applyBlockTarget(prev, { col, row }));
   }, []);
 
   /**
@@ -1472,67 +1490,7 @@ export function useGameState(initialState: GameState) {
    * and ends the attacker's activation.
    */
   const handlePushChoice = useCallback((col: number, row: number, followUp: boolean) => {
-    setState(prev => {
-      if (!prev.pendingBlockResolution) return prev;
-      const resolution = prev.pendingBlockResolution;
-      const targetKey = key({ col, row });
-      if (!prev.pushTargetKeys.has(targetKey)) return prev;
-
-      const attacker = prev.pieces.find(p => p.id === resolution.attackerId);
-      const attackerFollowsUp = resolution.offerFollowUp && followUp;
-
-      const pushed = prev.pieces.map(p => {
-        if (p.id === resolution.defenderId) {
-          return { ...p, position: { col, row }, down: resolution.defenderFalls };
-        }
-        if (p.id === resolution.attackerId) {
-          return {
-            ...p,
-            position: attackerFollowsUp ? resolution.defenderFrom : p.position,
-            activated: !resolution.isBlitz,
-          };
-        }
-        return p;
-      });
-
-      // A pushed-and-downed carrier drops the ball on the square it lands in.
-      const { pieces, ballPosition } = dropBallIfCarrying(
-        pushed, prev.ballPosition, resolution.defenderFalls ? [resolution.defenderId] : [],
-      );
-
-      // Log the follow-up as a free move step so the committed-movement
-      // trail extends into the vacated square, matching the attacker's
-      // actual final position.
-      const cumulativeProb = prev.actionLog.length > 0
-        ? prev.actionLog[prev.actionLog.length - 1].cumulativeProb : 1;
-      const actionLog = attackerFollowsUp && attacker
-        ? [...prev.actionLog, {
-            kind: 'move' as const,
-            pieceName: attacker.name,
-            pieceRole: attacker.role ?? attacker.team,
-            from: attacker.position,
-            to: resolution.defenderFrom,
-            steps: 1,
-            dodgeTarget: null,
-            isGfi: false,
-            pickupTarget: null,
-            actionProb: 1,
-            cumulativeProb,
-          }]
-        : prev.actionLog;
-
-      const nextState = {
-        ...prev,
-        pieces,
-        ballPosition,
-        actionLog,
-        pendingBlockResolution: null,
-        pushTargetKeys: new Set<string>(),
-      };
-      return resolution.isBlitz
-        ? resumeMovementAfterBlitz(nextState, pieces, resolution.attackerId)
-        : clearSelection(nextState);
-    });
+    setState(prev => applyPushChoice(prev, { col, row }, followUp));
   }, []);
 
   return {

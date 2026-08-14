@@ -29,7 +29,7 @@ carries a **Status** line — read it before treating a section as work to do.
 | BB Tactics — Tabletop Playbook Home Redesign | Shipped |
 | Leaderboard and Report Integrity | **Planned** |
 | Player Config Screen | Phase 1 Shipped, Phase 2 **Planned** |
-| Block Outcomes as Board-State Branches | Phases 0–2b Shipped (dark), Phases 3–6 **Planned** |
+| Block Outcomes as Board-State Branches | Phases 0–2c Shipped (dark), Phases 3–6 **Planned** |
 
 Durable behavior that has already shipped belongs in `docs/agent-context/`, not
 here. When a plan below ships, move the facts worth keeping into the matching
@@ -4213,8 +4213,8 @@ deliberately deferred rather than folded in:
 Experimental, off by default). Phases 0–2b are shipped dark and reach no UI —
 the feature flag, the resolution engine (`blockBranching.ts`), tree evaluation
 and replay primitives (`blockBranchTree.ts`, `branchReplay.ts`), and the run
-model (`branchRun.ts`, `useBranchRun.ts`). Phases 3–6 are outstanding, and the
-declaration handlers still need to be made group-aware (see phase 2b). Supersedes the outcome-checklist design in
+model (`branchRun.ts`, `useBranchRun.ts`), including group-aware declarations.
+Phases 3–6 are outstanding. Supersedes the outcome-checklist design in
 *Block and Blitz Actions* (see "Design: modeling block dice inside the
 probability-tracking model", marked superseded there), which stays live until
 phase 5 removes it.
@@ -4519,14 +4519,18 @@ Sequenced so each phase is independently testable and nothing lands half-wired.
      cover navigation. `client/src/useBranchRun.ts` is the React wrapper, thin
      enough that everything worth testing is tested without React.
 
-     **Known gap before the UI can work.** Only the transitions the core loop
-     needs are group-aware. The declaration handlers — `handleBlockAction`,
-     `handleBlockTarget`, `handleHandoffAction`, `handleHandoffTarget`,
-     `handlePassAction`, `handlePassTarget` — still operate on a single
-     `GameState` inside `useGameState`. Each needs its pure body extracted and
-     routed through `authorAcrossGroup`, exactly as `applyCancelSelection` and
-     `applyPushChoice` already are. Mechanical, but it has to land before or
-     alongside phase 4.
+   - **2c — group-aware declarations. Done.** Every handler in `useGameState`
+     now delegates to an exported pure applier, and `branchRun.ts` routes each
+     through the lockstep group: `declareBlock` / `chooseBlockTarget`,
+     `declareHandoff` / `chooseHandoffTarget`, `declarePass` /
+     `choosePassTarget`. Dice count, catch targets and pass targets are all
+     recomputed per branch, so one authored hand off can be a bare catch in one
+     branch and a marked one in another.
+
+     `splitOnBlock` splits **every** branch in the group that has a block
+     pending, not just the viewed one, since the declaration reached all of
+     them. All the resulting children join a single lockstep group, so a second
+     block leaves nine branches still following one authored plan.
 3. **Merging** — apply `groupByBoard` to fold reconverged branches, which turns
    the tree into a DAG and means evaluation has to memoise by node identity and
    accumulate incoming weight before descending. Deliberately sequenced *after*
@@ -4538,6 +4542,6 @@ Sequenced so each phase is independently testable and nothing lands half-wired.
    `isBlockOutcomeSelectable`, the checklist role of
    `blockCombinedProbability`, and the preference itself.
 
-The risky phases are done: the branch set is real and evaluated. What is left
-is display (3–4), the submission format (5), and cleanup (6), plus the
-declaration-handler gap noted under 2b.
+The risky phases are done: the branch set is real, evaluated, and drivable
+end to end. What is left is display (3–4), the submission format (5), and
+cleanup (6).

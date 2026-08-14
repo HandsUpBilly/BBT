@@ -23,9 +23,15 @@
 
 import type { GameState, Position } from './types';
 import {
+  applyBlockAction,
   applyBlockBoardState,
+  applyBlockTarget,
   applyCancelSelection,
   applyClick,
+  applyHandoffAction,
+  applyHandoffTarget,
+  applyPassAction,
+  applyPassTarget,
   applyPushChoice,
   classifyClick,
   type ClickIntent,
@@ -203,6 +209,61 @@ export function clickSquare(run: BranchRun, pos: Position): BranchRun {
   );
 }
 
+/**
+ * Author a transition that is the same instruction on every board — declaring
+ * an action, picking a receiver, choosing a defender.
+ *
+ * A sibling where the reducer declines it has genuinely diverged: the receiver
+ * drifted out of range, the defender is no longer adjacent, the blitz has no
+ * movement left. Those are exactly the cases the player needs pointing at, so
+ * they are flagged rather than skipped.
+ */
+function authorUniform(run: BranchRun, apply: (state: GameState) => GameState): BranchRun {
+  return authorAcrossGroup(run, apply, state => {
+    const next = apply(state);
+    return next === state ? null : next;
+  });
+}
+
+/** Declare a Hand Off for a piece, across the lockstep group. */
+export function declareHandoff(run: BranchRun, pieceId: string): BranchRun {
+  return authorUniform(run, state => applyHandoffAction(state, pieceId));
+}
+
+/** Pick a hand-off receiver. Catch targets are recomputed per branch. */
+export function chooseHandoffTarget(run: BranchRun, pos: Position): BranchRun {
+  return authorUniform(run, state => applyHandoffTarget(state, pos));
+}
+
+/** Declare a Pass for a piece, across the lockstep group. */
+export function declarePass(run: BranchRun, pieceId: string): BranchRun {
+  return authorUniform(run, state => applyPassAction(state, pieceId));
+}
+
+/** Pick a pass receiver. Pass and catch targets are recomputed per branch. */
+export function choosePassTarget(run: BranchRun, pos: Position): BranchRun {
+  return authorUniform(run, state => applyPassTarget(state, pos));
+}
+
+/** Declare a Block or Blitz for a piece, across the lockstep group. */
+export function declareBlock(run: BranchRun, pieceId: string, isBlitz: boolean): BranchRun {
+  return authorUniform(run, state => applyBlockAction(state, pieceId, isBlitz));
+}
+
+/**
+ * Pick the defender to block. Dice count and picker are recomputed per branch,
+ * since assists depend on who is standing where — so the same blitz can be two
+ * dice in one branch and one in another.
+ */
+export function chooseBlockTarget(run: BranchRun, pos: Position): BranchRun {
+  return authorUniform(run, state => applyBlockTarget(state, pos));
+}
+
+/** True once the viewed branch has a block resolved and waiting to be split. */
+export function isBlockPending(run: BranchRun): boolean {
+  return viewedLine(run).state.blockChoice !== null;
+}
+
 /** Choose a push-back square (and follow-up) across the lockstep group. */
 export function choosePush(run: BranchRun, pos: Position, followUp: boolean): BranchRun {
   return authorAcrossGroup(
@@ -221,14 +282,7 @@ export function choosePush(run: BranchRun, pos: Position, followUp: boolean): Br
 
 /** Back out of the current activation across the whole lockstep group. */
 export function cancelActivation(run: BranchRun): BranchRun {
-  return authorAcrossGroup(
-    run,
-    applyCancelSelection,
-    state => {
-      const next = applyCancelSelection(state);
-      return next === state ? null : next;
-    },
-  );
+  return authorUniform(run, applyCancelSelection);
 }
 
 /**
@@ -239,53 +293,69 @@ export function cancelActivation(run: BranchRun): BranchRun {
  * would accept, they just keep playing, in whichever branch they choose.
  */
 export function splitOnBlock(run: BranchRun): BranchRun {
-  const parent = viewedLine(run);
-  const { state } = parent;
-  const choice = state.blockChoice;
-  if (!choice || !state.selectedPieceId) return run;
+  const viewed = viewedLine(run);
+  if (!viewed.state.blockChoice) return run;
 
-  const attacker = state.pieces.find(p => p.id === state.selectedPieceId);
-  const defender = state.pieces.find(p => p.id === choice.defenderId);
-  if (!attacker || !defender) return run;
-
-  const resolution = blockBoardStates(attacker.skills, defender.skills);
-  if (resolution.states.length === 0) {
-    // Every face ends the drive. Nothing to author: the branch is simply dead.
-    return withLines(run, [{ ...parent, conceded: true, state: { ...state, blockChoice: null } }]);
-  }
-
-  const ctx = { attackerId: attacker.id, defenderId: defender.id, isBlitz: choice.isBlitz };
-  const startCumProb = cumProbOf(state);
+  // Every branch in the group with a block pending forks at once, because the
+  // block was declared across the whole group. All the resulting children join
+  // a single lockstep group: they were following one plan before the block and
+  // there is no reason they cannot keep doing so, with the replay legality
+  // check catching whichever of them the plan actually stops working on.
+  const splitting = [viewed, ...lockstepGroup(run, viewed)]
+    .filter(line => line.state.blockChoice !== null);
 
   let seq = run.seq;
   const lockstepId = `G${seq++}`;
-  const children: RunLine[] = resolution.states.map(boardState => ({
-    id: `L${seq++}`,
-    parentId: parent.id,
-    label: BOARD_STATE_LABELS[boardState.kind],
-    lockstepId,
-    state: applyBlockBoardState(state, boardState, ctx),
-    startCumProb,
-    conceded: false,
-    needsAttention: false,
-    split: null,
-  }));
+  const updates: RunLine[] = [];
+  let viewedId = run.viewedId;
 
-  const split: RunSplit = {
-    resolution,
-    diceCount: choice.diceCount,
-    picker: choice.picker,
-    childIds: children.map(child => child.id),
-  };
+  for (const parent of splitting) {
+    const { state } = parent;
+    const choice = state.blockChoice!;
+    const cleared = { ...state, blockChoice: null };
 
-  const next = withLines(
-    { ...run, seq },
-    [{ ...parent, split, state: { ...state, blockChoice: null } }, ...children],
-  );
+    const attacker = state.pieces.find(p => p.id === state.selectedPieceId);
+    const defender = state.pieces.find(p => p.id === choice.defenderId);
+    if (!attacker || !defender) continue;
 
-  // Land the player in the first branch so play simply continues; every other
-  // branch is following along in lockstep behind them.
-  return { ...next, viewedId: children[0].id };
+    const resolution = blockBoardStates(attacker.skills, defender.skills);
+    if (resolution.states.length === 0) {
+      // Every face ends the drive. Nothing to author: the branch is simply dead.
+      updates.push({ ...parent, conceded: true, state: cleared });
+      continue;
+    }
+
+    const ctx = { attackerId: attacker.id, defenderId: defender.id, isBlitz: choice.isBlitz };
+    const startCumProb = cumProbOf(state);
+
+    const children: RunLine[] = resolution.states.map(boardState => ({
+      id: `L${seq++}`,
+      parentId: parent.id,
+      label: BOARD_STATE_LABELS[boardState.kind],
+      lockstepId,
+      state: applyBlockBoardState(state, boardState, ctx),
+      startCumProb,
+      conceded: false,
+      needsAttention: false,
+      split: null,
+    }));
+
+    const split: RunSplit = {
+      resolution,
+      diceCount: choice.diceCount,
+      picker: choice.picker,
+      childIds: children.map(child => child.id),
+    };
+
+    updates.push({ ...parent, split, state: cleared }, ...children);
+
+    // Land the player in the first branch of the one they were looking at, so
+    // play simply continues; everything else follows along in lockstep.
+    if (parent.id === run.viewedId) viewedId = children[0].id;
+  }
+
+  if (updates.length === 0) return run;
+  return { ...withLines({ ...run, seq }, updates), viewedId };
 }
 
 /** Give up on a branch. It keeps its weight and contributes nothing. */
