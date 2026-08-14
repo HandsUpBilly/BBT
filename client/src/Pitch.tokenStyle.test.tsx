@@ -264,7 +264,7 @@ describe('Pitch movement trail start marker', () => {
 });
 
 describe('Pitch pass and catch dice', () => {
-  it('shows a teal pass die on the target square', () => {
+  it('shows a teal pass die on the passer\'s square, not the target square', () => {
     const pass: PassLogEntry = {
       kind: 'pass',
       pieceName: 'Thrower',
@@ -285,10 +285,13 @@ describe('Pitch pass and catch dice', () => {
       <Pitch state={{ ...state, actionLog: [pass] }} onSquareClick={noop} onPieceClick={noop} onSquareHover={noop} onSquareLeave={noop} />,
     );
 
-    const square = container.querySelector('[data-square="12H"]');
-    expect(square?.querySelector('.pass-die')).toBeTruthy();
+    const passerSquare = container.querySelector('[data-square="8H"]');
+    expect(passerSquare?.querySelector('.pass-die')).toBeTruthy();
     expect(getByTitle('Pass roll: 3+')).toBeTruthy();
-    expect(square?.getAttribute('aria-label')).toContain('pass 3 plus');
+    expect(passerSquare?.getAttribute('aria-label')).toContain('pass 3 plus');
+
+    const targetSquare = container.querySelector('[data-square="12H"]');
+    expect(targetSquare?.querySelector('.pass-die')).toBeNull();
   });
 
   it('shows a magenta catch die on the receiver square, distinct from the pass die', () => {
@@ -340,7 +343,7 @@ describe('Pitch pass and catch dice', () => {
     expect(square?.querySelector('.catch-die')).toBeTruthy();
   });
 
-  it('shows both the pass die and the catch die together when a throw and its catch land on the same square', () => {
+  it('splits the pass die onto the passer and the catch die onto the receiver for one throw', () => {
     const pass: PassLogEntry = {
       kind: 'pass',
       pieceName: 'Thrower',
@@ -373,9 +376,13 @@ describe('Pitch pass and catch dice', () => {
       <Pitch state={{ ...state, actionLog: [pass, passCatch] }} onSquareClick={noop} onPieceClick={noop} onSquareHover={noop} onSquareLeave={noop} />,
     );
 
-    const square = container.querySelector('[data-square="12H"]');
-    expect(square?.querySelector('.pass-die')).toBeTruthy();
-    expect(square?.querySelector('.catch-die')).toBeTruthy();
+    const passerSquare = container.querySelector('[data-square="8H"]');
+    expect(passerSquare?.querySelector('.pass-die')).toBeTruthy();
+    expect(passerSquare?.querySelector('.catch-die')).toBeNull();
+
+    const receiverSquare = container.querySelector('[data-square="12H"]');
+    expect(receiverSquare?.querySelector('.catch-die')).toBeTruthy();
+    expect(receiverSquare?.querySelector('.pass-die')).toBeNull();
   });
 });
 

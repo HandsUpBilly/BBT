@@ -437,11 +437,13 @@ export function Pitch({
     [state.actionLog],
   );
 
-  // Committed dice: map from destination key -> dice info from actionLog.
-  // Persists after a waypoint is set so dice remain visible on committed squares.
-  // Pass and pass-catch entries land on the same receiver square, so entries
-  // are merged onto whatever is already there rather than overwritten —
-  // otherwise the catch die would erase the pass die that shares its square.
+  // Committed dice: map from square key -> dice info from actionLog. Persists
+  // after a waypoint is set so dice remain visible on committed squares. The
+  // pass die belongs on the passer's square (entry.from — where the Pass roll
+  // actually happens) and the catch die on the receiver's square (entry.to);
+  // entries are merged onto whatever is already there rather than
+  // overwritten, since a step can carry more than one roll (e.g. a dodge and
+  // a pickup on the same square).
   const committedDiceMap = useMemo(() => {
     const map = new Map<string, DiceInfo>();
     const merge = (k: string, patch: Partial<DiceInfo>) => {
@@ -452,7 +454,7 @@ export function Pitch({
       if (entry.kind === 'move' && (entry.isGfi || entry.dodgeTarget !== null || entry.pickupTarget)) {
         merge(key(entry.to), { isGfi: entry.isGfi, dodgeTarget: entry.dodgeTarget, pickupTarget: entry.pickupTarget ?? null });
       } else if (entry.kind === 'pass') {
-        merge(key(entry.to), { passTarget: entry.passTarget });
+        merge(key(entry.from), { passTarget: entry.passTarget });
       } else if (entry.kind === 'pass-catch' || entry.kind === 'handoff') {
         merge(key(entry.to), { catchTarget: entry.catchTarget });
       }
