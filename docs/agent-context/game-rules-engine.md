@@ -155,20 +155,33 @@ cancelled activation rolls back its log, and uses every individual step
 (including diagonals) rather than only the waypoint destinations in
 `committedPath`.
 
+Each piece's first move this turn also gets a numbered circle on the square it
+moved *from*, numbered by activation order (`movementTrail.ts`'s
+`buildMovementStartMarkers`, rendered as `.trail-start-marker` in `Pitch.tsx`).
+It is one number per piece, not per move segment — a piece that moves, does
+something else, then moves again from a different square keeps its original
+number. The marker is suppressed on a square that is occupied or already
+carrying a dice/block marker, so it never contests the same square's centre.
+
 Completed passes are also derived from `actionLog`, but render as a single
 curved amber trajectory with an arrowhead across the pitch. The curve is
 orientation- and zoom-aware and deliberately differs from the segmented white
 movement trail, so a throw and a run remain distinguishable when they cross.
 
-A resolved block/blitz shows its dice count (1–3) as small crimson dice on the
+A resolved block/blitz shows its actual outcome (`BlockLogEntry.resolvedFace`,
+e.g. "Push Back", "Defender Down") as a small crimson marker on the
 defender's square (`BlockLogEntry.to`), reusing the same per-square marker
-pattern as the dodge/GFI/pick-up dice: a `Map<string, 1|2|3>` built from
-`actionLog` block entries (`Pitch.tsx`'s `committedBlockDiceMap`), so the
+pattern as the dodge/GFI/pick-up dice: a `Map<string, BlockOutcomeFace>` built
+from `actionLog` block entries (`Pitch.tsx`'s `committedBlockDiceMap`), so the
 marker persists after the activation ends and disappears automatically if a
 cancel rolls the block entry back out of the log. A square blocked more than
 once in a turn (defender not pushed off it) shows only the most recent
-block's dice count, matching the movement-dice overwrite-on-repeat
-convention.
+block's outcome, matching the movement-dice overwrite-on-repeat convention.
+`BlockDiceGraphic.tsx`'s `BlockFaceGraphic` renders the resolved-face marker;
+its sibling `BlockDiceGraphic` component stays decorative (skull/pow cycling
+by dice count) because it is only ever shown before a block resolves, in
+`BlockOutcomePanel`'s outcome-choice dialog, where no single face is "the"
+result yet.
 
 ## Tests
 
