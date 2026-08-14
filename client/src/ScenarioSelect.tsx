@@ -30,7 +30,6 @@ interface Props {
   isAdmin: boolean;
   userMenu: ReactNode;
   reportButton: ReactNode;
-  version: string;
 }
 
 function pct(value: number): string {
@@ -99,7 +98,6 @@ export function ScenarioSelect({
   isAdmin,
   userMenu,
   reportButton,
-  version,
 }: Props) {
   const [playView, setPlayView] = useState<PlayView>('series');
 
@@ -137,7 +135,6 @@ export function ScenarioSelect({
             {reportButton}
             {userMenu}
           </div>
-          <span className="scenario-select__version">Version {version}</span>
         </div>
         <div className="scenario-select__route" aria-hidden="true">
           <span />

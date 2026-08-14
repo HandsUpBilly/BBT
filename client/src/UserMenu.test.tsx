@@ -48,11 +48,33 @@ describe('UserMenu', () => {
     expect(screen.queryByRole('menu')).toBeNull();
   });
 
-  it('still offers Log Out alongside Settings', () => {
-    const onSignOut = vi.fn();
-    render(<UserMenu name="Endzone Expert" onSettings={() => undefined} onSignOut={onSignOut} />);
+  it('offers About beside Settings and closes the menu when chosen', () => {
+    const onAbout = vi.fn();
+    render(<UserMenu name="Endzone Expert" onSettings={() => undefined} onAbout={onAbout} />);
     openMenu();
 
+    fireEvent.click(screen.getByRole('menuitem', { name: 'About' }));
+
+    expect(onAbout).toHaveBeenCalledOnce();
+    expect(screen.queryByRole('menu')).toBeNull();
+    expect(document.activeElement).toBe(
+      screen.getByRole('button', { name: 'Player menu for Endzone Expert' }),
+    );
+  });
+
+  it('still offers Log Out alongside Settings and About', () => {
+    const onSignOut = vi.fn();
+    render(
+      <UserMenu
+        name="Endzone Expert"
+        onSettings={() => undefined}
+        onAbout={() => undefined}
+        onSignOut={onSignOut}
+      />,
+    );
+    openMenu();
+
+    expect(screen.getByRole('menuitem', { name: 'About' })).toBeTruthy();
     fireEvent.click(screen.getByRole('menuitem', { name: 'Log Out' }));
     expect(onSignOut).toHaveBeenCalledOnce();
   });

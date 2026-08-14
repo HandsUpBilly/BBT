@@ -99,16 +99,6 @@
   gap: 7px;
 }
 
-.scenario-select__version {
-  color: var(--color-text-disabled);
-  font-family: var(--font-display);
-  font-size: 0.6rem;
-  font-weight: 600;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  font-variant-numeric: tabular-nums;
-}
-
 .scenario-select__route {
   position: absolute;
   right: 62px;
@@ -516,10 +506,6 @@
   .scenario-select__user {
     top: 10px;
     right: 10px;
-  }
-
-  .scenario-select__version {
-    display: none;
   }
 
   .scenario-select__eyebrow {

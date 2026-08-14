@@ -1123,11 +1123,6 @@
   text-shadow: none;
 }
 
-.app--landing .scenario-select__version {
-  color: var(--color-text-disabled);
-  font-family: var(--font-display);
-}
-
 .app--landing .challenge-section__summary {
   color: var(--color-text-muted);
   font-family: var(--font-display);

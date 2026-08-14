@@ -1,0 +1,23 @@
+.about-dialog {
+  min-width: min(420px, 90vw);
+  max-width: 520px;
+}
+
+.about-dialog__eyebrow,
+.about-dialog__version {
+  font-family: var(--font-display);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.about-dialog__eyebrow {
+  color: var(--color-accent);
+  font-size: 0.72rem;
+}
+
+.about-dialog__version {
+  color: var(--color-text-strong);
+  font-size: 0.9rem;
+  font-variant-numeric: tabular-nums;
+}

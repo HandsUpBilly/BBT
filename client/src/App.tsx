@@ -27,6 +27,7 @@ import { CommitBar } from './CommitBar';
 import { SuccessChanceReadout } from './SuccessChanceReadout';
 import { ReportProblemButton } from './ReportProblemButton';
 import { ReportProblemModal } from './ReportProblemModal';
+import { AboutDialog } from './AboutDialog';
 import { SettingsScreen } from './SettingsScreen';
 import { submitScore, fetchLeaderboard, submitSeriesScore, fetchSeriesLeaderboard, fetchProgress, ApiError } from './api';
 import type { ProgressData } from './api';
@@ -342,6 +343,7 @@ export default function App() {
   const [confirmLeaveSeries, setConfirmLeaveSeries] = useState(false);
   const [reviewingCompletedBoard, setReviewingCompletedBoard] = useState(false);
   const [reportOpen, setReportOpen] = useState(false);
+  const [aboutOpen, setAboutOpen] = useState(false);
   // Blocking failure on the touchdown submit — keeps the SubmitModal open so
   // the player can retry rather than silently losing the run.
   const [submitError, setSubmitError] = useState<string | undefined>();
@@ -481,6 +483,9 @@ export default function App() {
       onClose={() => setReportOpen(false)}
     />
   );
+  const aboutModal = aboutOpen && (
+    <AboutDialog version={__BBT_VERSION__} onClose={() => setAboutOpen(false)} />
+  );
   const handleSignOut = useCallback(() => {
     if (currentUser) {
       signOut();
@@ -497,10 +502,20 @@ export default function App() {
     setAppMode('settings');
   }, [appMode]);
 
+  const accountMenu = (
+    <UserMenu
+      name={identityName}
+      avatar={prefs.avatar}
+      onSettings={openSettings}
+      onAbout={() => setAboutOpen(true)}
+      onSignOut={handleSignOut}
+    />
+  );
+
   const archiveControls = (
     <div className="app__account-controls">
       {reportButton('header')}
-      <UserMenu name={identityName} avatar={prefs.avatar} onSettings={openSettings} onSignOut={handleSignOut} />
+      {accountMenu}
     </div>
   );
 
@@ -972,12 +987,12 @@ export default function App() {
           progress={progress}
           userId={currentUser?.id}
           isAdmin={isAdmin}
-          userMenu={<UserMenu name={identityName} avatar={prefs.avatar} onSettings={openSettings} onSignOut={handleSignOut} />}
+          userMenu={accountMenu}
           reportButton={reportButton('header')}
-          version={__BBT_VERSION__}
         />
         {notice}
         {reportModal}
+        {aboutModal}
         <AppFooter />
       </div>
     );
@@ -994,6 +1009,7 @@ export default function App() {
           />
           {notice}
           {reportModal}
+          {aboutModal}
           <AppFooter />
         </div>
       );
@@ -1011,6 +1027,7 @@ export default function App() {
         />
         {notice}
         {reportModal}
+        {aboutModal}
         <AppFooter />
       </div>
     );
@@ -1019,13 +1036,14 @@ export default function App() {
   if (effectiveAppMode === 'admin') {
     return (
       <div className="app app--home app--admin app--playbook">
-        <UserMenu name={identityName} avatar={prefs.avatar} onSettings={openSettings} onSignOut={handleSignOut} />
+        {accountMenu}
         <PuzzleEditor
           onBack={() => setAppMode('home')}
           onPlay={previewPuzzle}
           previewScenario={editorPreviewScenario}
           idToken={idToken}
         />
+        {aboutModal}
         <AppFooter />
       </div>
     );
@@ -1053,6 +1071,7 @@ export default function App() {
         />
         {notice}
         {reportModal}
+        {aboutModal}
         <AppFooter />
       </div>
     );
@@ -1070,6 +1089,7 @@ export default function App() {
           />
           {notice}
           {reportModal}
+          {aboutModal}
           <AppFooter />
         </div>
       );
@@ -1088,6 +1108,7 @@ export default function App() {
         />
         {notice}
         {reportModal}
+        {aboutModal}
         <AppFooter />
       </div>
     );
@@ -1186,9 +1207,9 @@ export default function App() {
           <span className="hud__btn-text">{backLabel}</span>
         </button>
 
-        {/* Keep account/Settings ahead of optional tools on narrow one-row
+        {/* Keep account/Settings/About ahead of optional tools on narrow one-row
             HUDs, where controls at the far end are intentionally clipped. */}
-        <UserMenu name={identityName} avatar={prefs.avatar} onSettings={openSettings} onSignOut={handleSignOut} />
+        {accountMenu}
 
         <div className="hud__prob">
           {!compact && seriesCounter && <>{seriesCounter}{' · '}</>}
@@ -1436,7 +1457,8 @@ export default function App() {
         />
       )}
       {notice}
-        {reportModal}
+      {reportModal}
+      {aboutModal}
     </div>
   );
 }
