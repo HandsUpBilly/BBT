@@ -2,6 +2,7 @@ import type { ActionLogEntry, LeaderboardEntry, RiskyMove, SeriesLeaderboardEntr
 // Same module the server uses to build GitHub issue bodies, so the offline
 // download fallback is byte-identical to what would have been filed.
 import { createDownload, REPORT_LIMITS } from '../../shared/reporting.js';
+import type { SubmissionNode } from './branchRun';
 
 const BASE = '/api';
 
@@ -95,11 +96,17 @@ export async function submitScore(
   moves: RiskyMove[],
   playLog: ActionLogEntry[],
   idToken?: string | null,
+  /**
+   * Branch tree for a branching run. Its presence tells the server the score is
+   * a sum over branches rather than the product of one line's rolls, so it
+   * recomputes from the tree instead of from `moves`.
+   */
+  tree?: SubmissionNode,
 ): Promise<LeaderboardEntry> {
   const res = await fetch(`${BASE}/leaderboard/${encodeURIComponent(scenarioId)}`, {
     method: 'POST',
     headers: authHeaders(idToken),
-    body: JSON.stringify({ name, probability, diceCount, moves, playLog }),
+    body: JSON.stringify({ name, probability, diceCount, moves, playLog, ...(tree ? { tree } : {}) }),
   });
   return (await requireOk(res, 'Failed to submit score')).json();
 }

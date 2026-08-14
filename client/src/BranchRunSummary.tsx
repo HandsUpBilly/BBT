@@ -1,4 +1,4 @@
-import { useId } from 'react';
+import { useId, useState } from 'react';
 import type { BranchStripEntry } from './branchRun';
 import type { BranchSummary } from './blockBranchTree';
 import { useModalFocus } from './useModalFocus';
@@ -9,7 +9,12 @@ interface Props {
   scenarioName: string;
   summary: BranchSummary;
   branches: BranchStripEntry[];
+  onSubmit: (name: string) => void;
   onDismiss: () => void;
+  defaultName?: string;
+  signedInName?: string;
+  /** Submission failure — keeps the dialog open so the player can retry. */
+  error?: string;
 }
 
 function pct(value: number): string {
@@ -18,18 +23,31 @@ function pct(value: number): string {
 }
 
 /**
- * End-of-run readout for the branching model.
+ * End-of-run readout for the branching model, and its submission step.
  *
- * Deliberately not a leaderboard submission. A policy score is a sum over the
- * branches that reach a touchdown, while the server still validates a score as
- * the *product* of a single line's rolls — so a run authored here cannot be
- * submitted without the branch-tree format that comes with the scoring phase.
- * Showing the number and saying why it stops here beats posting one the server
- * would reject, or worse, silently mis-scoring the board.
+ * The breakdown is the point: a single percentage hides which branch cost what,
+ * and that is exactly the thing the player is here to learn. The submission
+ * carries the branch tree alongside the score so the server can recompute it —
+ * a policy score is a sum over the branches that reach a touchdown, not the
+ * product of one line's rolls.
  */
-export function BranchRunSummary({ scenarioName, summary, branches, onDismiss }: Props) {
+export function BranchRunSummary({
+  scenarioName, summary, branches, onSubmit, onDismiss, defaultName, signedInName, error,
+}: Props) {
   const titleId = useId();
   const ref = useModalFocus<HTMLDivElement>(onDismiss);
+  const [name, setName] = useState(defaultName ?? '');
+  const [submitting, setSubmitting] = useState(false);
+
+  function runSubmit(value: string) {
+    setSubmitting(true);
+    onSubmit(value);
+    // The parent keeps the dialog open on failure and swaps in `error`, so
+    // clear the busy state rather than leaving the button stuck on "Saving…".
+    setSubmitting(false);
+  }
+
+  const submitName = signedInName || name.trim();
 
   const scored = branches.filter(b => b.status === 'scored');
   const givenUp = branches.filter(b => b.status === 'conceded');
@@ -95,13 +113,38 @@ export function BranchRunSummary({ scenarioName, summary, branches, onDismiss }:
           ))}
         </ul>
 
-        <p className="branch-summary__note">
-          Branching runs aren't on the leaderboard yet — the score is a total across
-          outcomes, which the submission format doesn't carry.
-        </p>
+        {error && <p className="submit-modal__error" role="alert">{error}</p>}
+
+        {signedInName ? (
+          <p className="submit-modal__prompt">Submit as {signedInName}</p>
+        ) : (
+          <>
+            <p className="submit-modal__prompt">Enter a public alias for the leaderboard:</p>
+            <input
+              className="submit-modal__input"
+              type="text"
+              maxLength={32}
+              placeholder="Your public alias"
+              value={name}
+              onChange={e => setName(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && submitName && !submitting && runSubmit(submitName)}
+              autoFocus
+            />
+          </>
+        )}
 
         <div className="submit-modal__actions">
-          <button className="modal__continue-btn" onClick={onDismiss}>Done</button>
+          <button
+            className="modal__roll-btn"
+            disabled={!submitName || submitting || summary.score <= 0}
+            title={summary.score <= 0 ? 'A run that scores nowhere has nothing to submit' : undefined}
+            onClick={() => runSubmit(submitName)}
+          >
+            {submitting ? 'Saving…' : error ? 'Try Again' : 'Submit Score'}
+          </button>
+          <button className="modal__continue-btn" disabled={submitting} onClick={onDismiss}>
+            Skip
+          </button>
         </div>
       </div>
     </div>

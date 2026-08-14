@@ -24,9 +24,15 @@
 // Only replaying the moves through the rules engine closes those; see spec.md
 // "Leaderboard and Report Integrity" for why that is deferred.
 
+import { blockStateWeights, blockNodeWeightedValue, DIE_FACES } from './blockWeights.js';
+
 export const SCORE_LIMITS = {
   name: 32,
   maxMoves: 200,
+  /** Nodes in a submitted branch tree — a block roughly triples the count. */
+  maxTreeNodes: 200,
+  /** Blocks deep a single line may go, so a hostile tree can't blow the stack. */
+  maxTreeDepth: 16,
   /** Complete diagram actions include free steps, so use a separate bounded cap. */
   maxPlayLogEntries: 250,
   maxPuzzles: 50,
@@ -208,6 +214,194 @@ function validateMoves(moves, probability, diceCount, label) {
   return sanitized;
 }
 
+/**
+ * Dice count for a branching run is a weight-weighted mean over the lines that
+ * score, so it is not a whole number. Everything else about it is unchanged:
+ * it is only ever a leaderboard tie-break.
+ */
+function validExpectedDice(value, field) {
+  const num = finiteNumber(value, field);
+  if (num < 0 || num > SCORE_LIMITS.maxMoves) {
+    throw new ScoreValidationError(`${field} must be between 0 and ${SCORE_LIMITS.maxMoves}`);
+  }
+  return num;
+}
+
+function wholeCount(value, field, max) {
+  const num = finiteNumber(value, field);
+  if (!Number.isInteger(num) || num < 0 || num > max) {
+    throw new ScoreValidationError(`${field} must be a whole number between 0 and ${max}`);
+  }
+  return num;
+}
+
+/**
+ * The rolls committed inside one segment of a branch must multiply to the
+ * segment probability it claims. This is the same product check the flat model
+ * uses — under branching it just applies per segment instead of once overall,
+ * because the block splits that own the rest of the probability are not rolls.
+ */
+function checkSegmentRolls(node, lineProb, label) {
+  const moves = node.moves ?? [];
+  if (!Array.isArray(moves)) throw new ScoreValidationError(`${label} moves must be an array`);
+  if (moves.length > SCORE_LIMITS.maxMoves) throw new ScoreValidationError(`${label} has too many moves`);
+
+  let product = 1;
+  for (const move of moves) {
+    if (!move || typeof move !== 'object') throw new ScoreValidationError(`${label} contains an invalid move`);
+    product *= validProbability(move.actionProb, `${label} move probability`);
+  }
+  if (!closeEnough(product, lineProb)) {
+    throw new ScoreValidationError(`${label} segment probability does not match its recorded rolls`);
+  }
+}
+
+/**
+ * Structural check on one node of a submitted branch tree, recursing into any
+ * block below it. Returns nothing; the numbers are recomputed separately so the
+ * shape is fully validated before any arithmetic depends on it.
+ */
+function checkTreeShape(node, label, depth, counter) {
+  if (!node || typeof node !== 'object' || Array.isArray(node)) {
+    throw new ScoreValidationError(`${label} is not a valid branch`);
+  }
+  if (++counter.nodes > SCORE_LIMITS.maxTreeNodes) {
+    throw new ScoreValidationError('Branch tree has too many nodes');
+  }
+  if (depth > SCORE_LIMITS.maxTreeDepth) {
+    throw new ScoreValidationError('Branch tree is nested too deeply');
+  }
+
+  const lineProb = validProbability(node.lineProb, `${label} segment probability`);
+  checkSegmentRolls(node, lineProb, label);
+
+  if (node.outcome === 'scored' || node.outcome === 'conceded') {
+    if (node.block !== undefined) {
+      throw new ScoreValidationError(`${label} cannot both end and continue into a block`);
+    }
+    return;
+  }
+  if (node.outcome !== 'block') {
+    throw new ScoreValidationError(`${label} has an unknown outcome`);
+  }
+
+  const block = node.block;
+  if (!block || typeof block !== 'object') {
+    throw new ScoreValidationError(`${label} is missing its block`);
+  }
+  if (!DICE_COUNTS.has(block.diceCount)) {
+    throw new ScoreValidationError(`${label} block diceCount must be 1, 2 or 3`);
+  }
+  if (!PICKERS.has(block.picker)) {
+    throw new ScoreValidationError(`${label} block picker must be attacker or defender`);
+  }
+
+  const faceCounts = block.faceCounts;
+  if (!Array.isArray(faceCounts) || faceCounts.length === 0) {
+    throw new ScoreValidationError(`${label} block must list its board states`);
+  }
+  if (faceCounts.length > DIE_FACES) {
+    throw new ScoreValidationError(`${label} block has more board states than die faces`);
+  }
+
+  let live = 0;
+  for (const faceCount of faceCounts) {
+    live += wholeCount(faceCount, `${label} board state face count`, DIE_FACES);
+  }
+  const dead = wholeCount(block.deadFaceCount, `${label} block deadFaceCount`, DIE_FACES);
+
+  // Every face has to land somewhere. Without this a tree could quietly drop
+  // the faces that end the drive and claim the whole die scores.
+  if (live + dead !== DIE_FACES) {
+    throw new ScoreValidationError(`${label} block faces must add up to ${DIE_FACES}`);
+  }
+
+  if (!Array.isArray(block.children) || block.children.length !== faceCounts.length) {
+    throw new ScoreValidationError(`${label} block needs one branch per board state`);
+  }
+
+  block.children.forEach((child, index) => {
+    checkTreeShape(child, `${label} branch ${index + 1}`, depth + 1, counter);
+  });
+}
+
+/** Conditional chance of scoring from the start of a segment. */
+function treeValue(node) {
+  if (node.outcome === 'scored') return node.lineProb;
+  if (node.outcome === 'conceded') return 0;
+
+  const { block } = node;
+  const values = block.children.map(treeValue);
+  return node.lineProb * blockNodeWeightedValue(
+    block.faceCounts, block.deadFaceCount, values, block.diceCount, block.picker,
+  );
+}
+
+/**
+ * Recompute a submitted branch tree.
+ *
+ * Returns the score two independent ways — the root's value, and the summed
+ * weight of the lines that actually reach a touchdown — and requires them to
+ * agree. Those are genuinely different walks of the tree (values bottom-up
+ * versus weights top-down), so a tree that satisfies both is internally
+ * coherent in a way a single check would not establish.
+ *
+ * Same posture as the flat validator: this catches nonsense and keeps garbage
+ * out of the sort key. It cannot tell a fabricated-but-consistent tree from a
+ * real one — only replaying the moves through the rules engine would.
+ */
+export function validateBranchTree(tree, label) {
+  checkTreeShape(tree, label, 0, { nodes: 0 });
+
+  let scoredWeight = 0;
+  let diceWeighted = 0;
+
+  const walk = (node, incoming, diceSoFar) => {
+    const survived = incoming * node.lineProb;
+    if (node.outcome === 'scored') {
+      scoredWeight += survived;
+      diceWeighted += survived * diceSoFar;
+      return;
+    }
+    if (node.outcome === 'conceded') return;
+
+    const { block } = node;
+    const values = block.children.map(treeValue);
+    const { probabilities } = blockStateWeights(
+      block.faceCounts, block.deadFaceCount, values, block.diceCount, block.picker,
+    );
+    const dice = diceSoFar + block.diceCount;
+    block.children.forEach((child, index) => walk(child, survived * probabilities[index], dice));
+  };
+
+  walk(tree, 1, 0);
+
+  const value = treeValue(tree);
+  if (!closeEnough(value, scoredWeight)) {
+    throw new ScoreValidationError(`${label} branch weights do not add up to its score`);
+  }
+  if (value <= 0) {
+    throw new ScoreValidationError(`${label} must score somewhere to be submitted`);
+  }
+
+  return { probability: value, expectedDice: scoredWeight > 0 ? diceWeighted / scoredWeight : 0 };
+}
+
+/**
+ * Sanitize a move list kept purely for display, with no product check against
+ * the claimed score. Used for a branching run's primary line, whose rolls are
+ * only part of what the score is made of.
+ */
+function sanitizeDisplayMoves(moves, label) {
+  if (!Array.isArray(moves)) throw new ScoreValidationError(`${label} moves must be an array`);
+  if (moves.length > SCORE_LIMITS.maxMoves) throw new ScoreValidationError(`${label} has too many moves`);
+
+  return moves.map(move => {
+    if (!move || typeof move !== 'object') throw new ScoreValidationError(`${label} contains an invalid move`);
+    return sanitizeMove(move, validProbability(move.actionProb, `${label} move probability`));
+  });
+}
+
 export function normalizeName(name) {
   const resolved = String(name ?? '').trim().slice(0, SCORE_LIMITS.name);
   if (!resolved) throw new ScoreValidationError('name is required');
@@ -221,9 +415,34 @@ export function validateScoreSubmission(body, user) {
   }
 
   const probability = validProbability(body.probability, 'probability');
+  const playLog = sanitizePlayLog(body.playLog);
+
+  // A branching run's score is a sum over the branches that reach a touchdown,
+  // not the product of one line's rolls, so it carries the tree it was computed
+  // from and the server recomputes it. `moves` is then display data for the
+  // primary line only — the product check would be meaningless against a score
+  // that several branches contributed to.
+  if (body.tree !== undefined) {
+    const { probability: computed, expectedDice } = validateBranchTree(body.tree, 'Score');
+    if (!closeEnough(computed, probability)) {
+      throw new ScoreValidationError('Score probability does not match its branch tree');
+    }
+    const diceCount = validExpectedDice(body.diceCount, 'diceCount');
+    if (!closeEnough(diceCount, expectedDice)) {
+      throw new ScoreValidationError('Score diceCount does not match its branch tree');
+    }
+    return {
+      name: normalizeName(body.name),
+      probability,
+      diceCount,
+      moves: sanitizeDisplayMoves(body.moves ?? [], 'Score'),
+      playLog,
+      branching: true,
+    };
+  }
+
   const diceCount = validDiceCount(body.diceCount, 'diceCount');
   const moves = validateMoves(body.moves ?? [], probability, diceCount, 'Score');
-  const playLog = sanitizePlayLog(body.playLog);
 
   return { name: normalizeName(body.name), probability, diceCount, moves, playLog };
 }

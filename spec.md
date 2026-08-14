@@ -29,7 +29,7 @@ carries a **Status** line — read it before treating a section as work to do.
 | BB Tactics — Tabletop Playbook Home Redesign | Shipped |
 | Leaderboard and Report Integrity | **Planned** |
 | Player Config Screen | Phase 1 Shipped, Phase 2 **Planned** |
-| Block Outcomes as Board-State Branches | Phases 0–4 Shipped (behind flag), Phases 5–6 **Planned** |
+| Block Outcomes as Board-State Branches | Phases 0–5 Shipped (behind flag), Phase 6 **Planned** |
 
 Durable behavior that has already shipped belongs in `docs/agent-context/`, not
 here. When a plan below ships, move the facts worth keeping into the matching
@@ -4216,9 +4216,9 @@ Experimental, off by default). Phases 0–2b are shipped dark and reach no UI �
 the feature flag, the resolution engine (`blockBranching.ts`), tree evaluation
 and replay primitives (`blockBranchTree.ts`, `branchReplay.ts`), and the run
 model (`branchRun.ts`, `useBranchRun.ts`), including group-aware declarations,
-and the UI is wired up behind the flag. Phases 5–6 are outstanding: leaderboard
-submission is disabled while branching is on, because the score is a sum over
-branches and the submission format still carries a product. Supersedes the outcome-checklist design in
+the UI is wired up behind the flag, and branching runs submit to the leaderboard
+with the server recomputing their branch tree. Only phase 6 is outstanding:
+deleting the checklist, the flag, and the code that serves them. Supersedes the outcome-checklist design in
 *Block and Blitz Actions* (see "Design: modeling block dice inside the
 probability-tracking model", marked superseded there), which stays live until
 phase 5 removes it.
@@ -4559,10 +4559,31 @@ Sequenced so each phase is independently testable and nothing lands half-wired.
    sum over branches and `shared/scoreValidation.js` still checks a product, so
    a branching run shows its number and says why it stops there rather than
    posting one the server would reject. Phase 5 lifts this.
-5. **Scoring** — branch-tree log format, validator rewrite, expected dice count.
+5. **Scoring. Done.** A branching run submits the tree it was scored from, and
+   the server recomputes it. `shared/blockWeights.js` holds the closed form so
+   client and validator reach the identical number — two implementations would
+   disagree in the last decimal place and start rejecting honest scores, so the
+   client engine is now a typed wrapper over it.
+
+   `validateBranchTree` recomputes the score two independent ways — the root's
+   value, and the summed weight of the lines that reach a touchdown — and
+   requires them to agree. Those are different walks of the tree (values
+   bottom-up, weights top-down), so satisfying both establishes a coherence a
+   single check would not. It also enforces that each block's faces add up to a
+   die, that every board state has a branch, and that each segment's rolls
+   multiply to the segment probability it claims. Same posture as the flat
+   validator: it catches nonsense, it is not a cheat-proof boundary.
+
+   `diceCount` is a weight-weighted mean over the scoring lines and is therefore
+   fractional; the leaderboard formats it to one place. A branch still being
+   authored serialises as conceded, so a partial run is never scored higher than
+   it earned.
+
+   The round trip is asserted in `branchRun.test.ts` against the real validator:
+   what the player is shown is what the leaderboard recomputes.
 6. **Flag removal** — delete `BlockOutcomePanel.tsx`,
    `isBlockOutcomeSelectable`, the checklist role of
    `blockCombinedProbability`, and the preference itself.
 
-The risky phases are done and the model is playable behind the flag. What is
-left is the submission format (5) and cleanup (6).
+The model is complete behind the flag — playable, scored, and submittable.
+What is left is cleanup (6).
