@@ -145,7 +145,7 @@ describe('Pitch roll dice', () => {
 });
 
 describe('Pitch block dice marker', () => {
-  it('shows one die per dice count on the defender square, above the piece', () => {
+  it('shows the resolved outcome on the defender square, above the piece', () => {
     const defender = orcBlocker({ position: { col: 7, row: 9 } });
     const block: BlockLogEntry = {
       kind: 'block',
@@ -175,9 +175,9 @@ describe('Pitch block dice marker', () => {
     const square = container.querySelector('[data-square="9H"]');
     const marker = square?.querySelector('.square__block-dice');
     expect(marker).toBeTruthy();
-    expect(marker?.querySelectorAll('.block-die-icon')).toHaveLength(2);
-    expect(marker?.getAttribute('title')).toBe('Block: 2 block dice');
-    expect(square?.getAttribute('aria-label')).toContain('block: 2 dice');
+    expect(marker?.querySelectorAll('.block-die-icon')).toHaveLength(1);
+    expect(marker?.getAttribute('title')).toBe('Block: Push Back');
+    expect(square?.getAttribute('aria-label')).toContain('block result: Push Back');
   });
 
   it('clears once the block entry is rolled back out of the action log', () => {

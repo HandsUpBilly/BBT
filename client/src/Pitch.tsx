@@ -1,6 +1,6 @@
 import { memo, useCallback, useMemo } from 'react';
 import type { CSSProperties } from 'react';
-import type { GameState, Team } from './types';
+import type { GameState, Team, BlockOutcomeFace } from './types';
 import { key, neighbours } from './bfs';
 import type { ZoomBounds } from './bfs';
 import { buildMovementTrailMap, trailPolylinePoints } from './movementTrail';
@@ -11,7 +11,8 @@ import type { PitchSurface, TokenStyle } from './prefs';
 import { RoleGlyph } from './RoleGlyph';
 import { roleCodeFor } from './rolePresentation';
 import { DEFAULT_PLAYER_ROLE, playerPortraitFor } from './playerPortraits';
-import { BlockDiceGraphic } from './BlockDiceGraphic';
+import { BlockFaceGraphic } from './BlockDiceGraphic';
+import { BLOCK_FACE_LABELS } from './blockFacePresentation';
 import './Pitch.css';
 
 function BallIcon({ ghost, loose }: { ghost?: boolean; loose?: boolean }) {
@@ -193,12 +194,13 @@ function CatchFace({ target }: { target: number }) {
 }
 
 /**
- * Marks a resolved block/blitz with the number of block dice (1-3) rolled,
- * on the defender's square. Crimson-tinted (vs. the amber/blue/gold used for
- * movement rolls) so it reads as a distinct kind of marker at a glance.
+ * Marks a resolved block/blitz with the outcome it actually produced (e.g.
+ * "Push Back", "Defender Down"), on the defender's square. Crimson-tinted
+ * (vs. the amber/blue/gold used for movement rolls) so it reads as a
+ * distinct kind of marker at a glance.
  */
-function BlockDiceFace({ count }: { count: 1 | 2 | 3 }) {
-  return <BlockDiceGraphic count={count} className="square__block-dice" />;
+function BlockDiceFace({ face }: { face: BlockOutcomeFace }) {
+  return <BlockFaceGraphic face={face} className="square__block-dice" />;
 }
 
 // Game state is stored portrait: col 0-14, row 0-25.
@@ -254,7 +256,7 @@ interface SquareProps {
   stepIsPreview: boolean;
   pathTrails: PathTrail[];
   dice: DiceInfo | null;
-  blockDice: 1 | 2 | 3 | null;
+  blockDice: BlockOutcomeFace | null;
   ghost: { team: Team; role?: string; skills: readonly string[]; hasBall: boolean } | null;
   focusable: boolean;
   onSquareClick: (col: number, row: number) => void;
@@ -354,7 +356,7 @@ const Square = memo(function Square({
         </div>
       )}
 
-      {blockDice !== null && <BlockDiceFace count={blockDice} />}
+      {blockDice !== null && <BlockDiceFace face={blockDice} />}
 
       {ghost && (
         <div className={`piece piece--${ghost.team} piece--ghost`}>
@@ -446,14 +448,15 @@ export function Pitch({
     return map;
   }, [state.actionLog]);
 
-  // Committed block dice: map from the defender's square -> dice count (1-3)
-  // rolled for the block/blitz resolved there. Same actionLog-derived, overwrite-
-  // on-repeat convention as committedDiceMap: a square blocked more than once
-  // this turn shows only the most recent block's dice count.
+  // Committed block outcome: map from the defender's square -> the resolved
+  // face (e.g. "push", "defender-down") for the block/blitz resolved there.
+  // Same actionLog-derived, overwrite-on-repeat convention as committedDiceMap:
+  // a square blocked more than once this turn shows only the most recent
+  // block's outcome.
   const committedBlockDiceMap = useMemo(() => {
-    const map = new Map<string, 1 | 2 | 3>();
+    const map = new Map<string, BlockOutcomeFace>();
     for (const entry of state.actionLog) {
-      if (entry.kind === 'block') map.set(key(entry.to), entry.diceCount);
+      if (entry.kind === 'block') map.set(key(entry.to), entry.resolvedFace);
     }
     return map;
   }, [state.actionLog]);
@@ -541,7 +544,7 @@ export function Pitch({
     pieceSkills: readonly string[], pieceIsPreview: boolean,
     pieceDown: boolean, pieceHasBall: boolean, pieceActivated: boolean,
     reachable: boolean, dodge: number | null, gfi: boolean, pickup: number | null,
-    looseBall: boolean, isTarget: string | null, blockDiceCount: number | null,
+    looseBall: boolean, isTarget: string | null, blockFace: BlockOutcomeFace | null,
     passTarget: number | null, catchTarget: number | null,
   ): string {
     const parts = [squareName(stateCol, stateRow)];
@@ -564,7 +567,7 @@ export function Pitch({
     if (gfi) parts.push('Go For It 2 plus');
     if (dodge !== null) parts.push(`dodge ${dodge} plus`);
     if (pickup !== null) parts.push(`pickup ${pickup} plus`);
-    if (blockDiceCount !== null) parts.push(`block: ${blockDiceCount} ${blockDiceCount === 1 ? 'die' : 'dice'}`);
+    if (blockFace !== null) parts.push(`block result: ${BLOCK_FACE_LABELS[blockFace]}`);
     if (passTarget !== null) parts.push(`pass ${passTarget} plus`);
     if (catchTarget !== null) parts.push(`catch ${catchTarget} plus`);
     return parts.join(', ');
@@ -661,7 +664,7 @@ export function Pitch({
           }
         : null;
       const displayedDice = previewDice ?? committedDice;
-      const blockDiceCount = committedBlockDiceMap.get(k) ?? null;
+      const blockFace = committedBlockDiceMap.get(k) ?? null;
 
       const targetDescription = isHandoffTarget ? 'handoff target'
         : isPassReceiver ? 'pass target'
@@ -688,7 +691,7 @@ export function Pitch({
             describedPiece?.down ?? false, describedPiece?.hasBall ?? false, describedPiece?.activated ?? false,
             isReachable, displayedDice?.dodgeTarget ?? null,
             (displayedDice?.isGfi ?? false) || isGfiRange, displayedDice?.pickupTarget ?? null,
-            isLooseBall, targetDescription, blockDiceCount,
+            isLooseBall, targetDescription, blockFace,
             displayedDice?.passTarget ?? null, displayedDice?.catchTarget ?? null,
           )}
           pieceTeam={piece?.team ?? null}
@@ -710,7 +713,7 @@ export function Pitch({
           stepIsPreview={!!previewStep}
           pathTrails={pathTrails}
           dice={displayedDice}
-          blockDice={blockDiceCount}
+          blockDice={blockFace}
           ghost={showGhost && selectedPiece
             ? {
                 team: selectedPiece.team,
