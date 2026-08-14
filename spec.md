@@ -29,6 +29,7 @@ carries a **Status** line — read it before treating a section as work to do.
 | BB Tactics — Tabletop Playbook Home Redesign | Shipped |
 | Leaderboard and Report Integrity | **Planned** |
 | Player Config Screen | Phase 1 Shipped, Phase 2 **Planned** |
+| Block Outcomes as Board-State Branches | **Planned** (supersedes the block outcome checklist) |
 
 Durable behavior that has already shipped belongs in `docs/agent-context/`, not
 here. When a plan below ships, move the facts worth keeping into the matching
@@ -3190,7 +3191,7 @@ a real pass/fail dice roll.
 
 # Block and Blitz Actions
 
-**Status:** Shipped, with rules simplifications. Live. Later fixes made a knocked-down carrier drop the ball, made a Blitz block cost a square of movement, and excluded marked assisters. Still simplified: no Guard, no armour/injury rolls, and no chain pushes.
+**Status:** Shipped, with rules simplifications. Live. Later fixes made a knocked-down carrier drop the ball, made a Blitz block cost a square of movement, and excluded marked assisters. Still simplified: no Guard, no armour/injury rolls, and no chain pushes. The outcome-checklist design below is **superseded** by *Block Outcomes as Board-State Branches* (planned); the ST/dice/assist and push-back rules in this section remain current.
 
 ## Problem Statement
 
@@ -3267,6 +3268,13 @@ defender vacated.
 - No crowd push / pitch-invasion / multi-block mechanics.
 
 ## Design: modeling block dice inside the probability-tracking model
+
+> **Superseded.** This checklist design shipped as a deliberate stopgap and is
+> replaced by *Block Outcomes as Board-State Branches* at the end of this file.
+> It is kept because it describes what is currently live, and because the
+> combined-probability formula below survives as the degenerate case of the
+> replacement. The part being replaced is the player declaring which faces
+> count as success — in a real game you do not choose the result.
 
 Every other action in this codebase computes one target number and treats
 that roll as "always succeeding," multiplying its chance into
@@ -4181,3 +4189,275 @@ deliberately deferred rather than folded in:
   skill-group rings and letter badges remain visible in Detailed and Tactical,
   contrast, while Plain deliberately removes that decoration.
 - Nothing added in this phase makes a network request.
+
+---
+
+# Block Outcomes as Board-State Branches
+
+**Status:** **Planned.** Supersedes the outcome-checklist design in *Block and
+Blitz Actions* (see "Design: modeling block dice inside the probability-tracking
+model", marked superseded there). Nothing in this section has been built.
+
+## Problem Statement
+
+The shipped outcome checklist asks the player which block faces they would
+"accept" as the block succeeding, then applies exactly one of them to the board.
+That is a stopgap, and the part that is wrong is specific: **it lets the player
+choose what the dice did.** In a real game you do not choose; you get a result
+and then decide what to do about it.
+
+It also cannot express the two situations that motivate this whole feature,
+because neither of them maps onto a contiguous set of die faces:
+
+- *"I just need this defender out of my carrier's lane."* Satisfied by the two
+  pushed states — but the defender still projects a tackle zone from wherever it
+  lands, so the follow-on move may still need a dodge.
+- *"My blitzer has Block and I need the tackle zone gone."* Satisfied by the two
+  down states — and one of those (Both Down against a defender without Block)
+  does not vacate the square at all.
+
+"Push Back" and "Defender Down" are the same face-set in neither case. Thinking
+in faces is the bug. Thinking in **resulting board states** is the fix.
+
+A second, subtler problem: with 2 or 3 dice the picking side chooses a die
+*after seeing the roll*. That is a decision made under information — a max node,
+not a chance node. The checklist approximates it with a static accept/reject
+mask declared before the roll. That approximation is why the model has never
+been able to say anything true about a puzzle with more than one block in it.
+
+## What the engine already gets right
+
+Worth stating, because it bounds the change. Every other roll in the game —
+dodge, GFI, pickup, catch, pass — has exactly one live branch: you succeed and
+play continues, or you fail, the turn is over, and that line is worth zero.
+That is why `pendingProb *= p` has always been correct.
+
+**A block die is simply the first roll with more than one live branch.** This is
+not a new system bolted onto the side of the engine; it is the general case of
+what the engine already does. Dodges and GFIs keep multiplying exactly as they
+do today — they are the degenerate one-branch case and need no changes.
+
+## The model
+
+### Branches carry weight
+
+Replace the single `GameState` with a **branch set**. Each branch holds:
+
+| Field | Meaning |
+| --- | --- |
+| `state` | a full `GameState` — board, ball, log, activation |
+| `weight` | P(reaching this branch), with every prior roll folded in |
+| `status` | `following` \| `diverged` \| `needs-attention` \| `scored` \| `conceded` |
+| `id`, `parentId` | tree structure |
+| `label` | derived from the board states that created it |
+
+**Score = Σ weight over branches whose status is `scored`.**
+
+That is the whole scoring rule. Today's multiplicative score is the special case
+where the set never grows beyond one branch. Failure branches (failed dodge,
+Attacker Down) are never materialised — they are worth zero and there is nothing
+to author in them — so live weights sum to less than 1, and the shortfall is
+exactly the accumulated dead mass. That shortfall is directly displayable:
+*"this line is already dead 31% of the time."*
+
+### Faces collapse into board states at creation
+
+The face-to-state mapping, with skills resolved up front:
+
+| Face(s) | Weight | Resulting board state |
+| --- | --- | --- |
+| Attacker Down | 1/6 | attacker falls → turnover → **dead, not materialised** |
+| Both Down | 1/6 | depends entirely on Block/Wrestle — see below |
+| Push Back | 2/6 | defender pushed, **standing** |
+| Defender Stumbles | 1/6 | same board as Push if defender has Dodge and attacker lacks Tackle; otherwise same board as Defender Down |
+| Defender Down | 1/6 | defender pushed **and down** |
+
+Both Down resolves to a live state only when the attacker has Block:
+
+| Attacker | Defender | Result |
+| --- | --- | --- |
+| Block | Block | nobody falls — **board unchanged** ("no effect") |
+| Block | no Block | **defender down in place, not pushed**; attacker stands |
+| no Block | any | attacker falls → turnover → **dead** |
+| Wrestle (no Block) | any | both placed prone → attacker down → turnover → **dead** |
+
+So for the canonical case (attacker has Block, defender has no Dodge), five
+faces collapse to **three live board states plus one dead one**:
+
+| Board state | Weight |
+| --- | --- |
+| defender down in place, square not vacated | 1/6 |
+| defender pushed, standing | 2/6 |
+| defender pushed and down | 2/6 |
+| *(dead — attacker down)* | *1/6* |
+
+Stumbles and Defender Down are literally the same board once skills resolve, so
+they merge on creation rather than being tracked separately and reconciled later.
+
+### The picker is a max node, and it has a closed form
+
+With N dice the picking side sees N faces and takes one. Since only the
+resulting board state matters, the optimal policy is a **preference ordering
+over board states**: take the best available one.
+
+The player does not author that ordering. The engine **derives** it, because it
+already knows what each branch is worth once its continuation is authored:
+
+1. Enumerate the live board states `S₁…Sₖ` with their face weights.
+2. The player authors a continuation from each (or concedes it → `V = 0`).
+3. `V(Sᵢ)` = that subtree's conditional probability of scoring.
+4. Sort by `V` descending; dead states sort last at `V = 0`.
+5. Weights follow in closed form. With `qₖ` = summed face-probability of states
+   ranked *k or worse* and `rₖ` = summed face-probability of states ranked
+   *k or better*:
+   - **attacker picks:** `P(Sₖ) = qₖᴺ − qₖ₊₁ᴺ` (all dice at rank ≥ k, minus all strictly worse)
+   - **defender picks:** `P(Sₖ) = rₖᴺ − rₖ₋₁ᴺ` (mirror — the defender takes the worst)
+6. Node value = `Σ P(Sᵢ) · V(Sᵢ)`.
+
+No enumeration of the 21 unordered dice pairs is needed, and this is provably
+the optimal policy — greedy argmax per roll is optimal when the choice is made
+with full knowledge of the roll and nothing downstream depends on which physical
+die was used.
+
+**This strictly generalises the shipped formula.** Set `V = 1` for the accepted
+faces and `V = 0` for the rest: the ordering puts all accepted states above all
+rejected ones, and step 5 reduces to `1 − (1 − p)ᴺ` for attacker-picks and `pᴺ`
+for defender-picks — exactly `blockCombinedProbability`. The checklist was a
+crude, player-authored, binary special case of the ordering the engine can now
+work out for itself.
+
+One consequence to design the UI around: **branch weights move while you
+author.** Writing a better contingency for the Push branch can make the
+Defender Down branch *less* likely, because the attacker would now sometimes
+prefer the push. That is not a glitch — it is the actual game — and it is the
+single most instructive thing the tool will show.
+
+### Merging
+
+After every committed action, hash each live branch and fold equal hashes
+together, summing their weights.
+
+Hash over: sorted `(pieceId, col, row, down, activated)`, ball position or
+carrier id, `blitzUsed`, `passUsed`, `blitzResumeId`, `selectedPieceId`, and —
+only while an activation is open — `remainingMa` / `remainingGfi`.
+
+Merging is always sound: if the board is identical, any continuation legal in
+one branch is legal in the other. Reconvergence is common in practice — the two
+"defender is down" states differ only in which square the defender occupies, so
+they merge the moment the plan stops caring about that square. The surviving
+branch keeps a compound label (*"Pushed + Down / Down in place"*) and both logs
+are retained for display. This is what keeps a three-block puzzle from being 27
+independent authoring jobs.
+
+## Authoring: free navigation
+
+The checklist modal is deleted outright. There is no pre-declaration step. A
+block simply splits the branch set and play continues.
+
+**Lockstep replay.** An action authored while viewing one branch is attempted in
+every branch still in lockstep with it (same authored action sequence since
+divergence):
+
+- **Legal there** → applied, with roll targets recomputed against *that*
+  branch's board. A still-standing defender correctly adds a dodge that the
+  pushed-and-down branch does not need.
+- **Illegal there** → that branch leaves the group and is flagged
+  `needs-attention`.
+
+So a typical block costs zero extra authoring, and pulls you in precisely when
+your plan genuinely breaks.
+
+**Navigation is free.** A branch strip is always visible and always clickable:
+one chip per live branch showing label, weight, current `V`, and status. Author
+in whatever order you like. Switching branches ghosts the board — only pieces
+whose position or down-state differs from the branch you were just in are drawn
+as ghosts, so the overlay stays readable instead of turning to soup.
+
+**Submit is gated** on every live branch being terminal: `scored`, `conceded`,
+or dead. Conceding is one click and costs no authoring; it just contributes
+zero. The branch strip doubles as the to-do list.
+
+**Rollback.** Cancelling an activation rolls back across the entire lockstep
+group, not just the viewed branch — `activationSnapshot` and `activationLogStart`
+become per-branch, restored as a set.
+
+**Push square and follow-up stay in-branch player choices, not branches.** Only
+dice fork the world. This is a deliberate line: pushing is a genuine free choice
+made with full information, and forking on it would multiply the tree by 3 for
+no gain in truth.
+
+## Scoring, validation, migration
+
+- **Score becomes honest expected value.** A branch you cannot handle drags the
+  number down by its weight. That is the point of the change.
+- **`diceCount` tie-break generalises to expected dice count** — the
+  weight-weighted mean over leaves. Fewest-dice-wins is preserved in spirit and
+  stays comparable within the new model.
+- **`shared/scoreValidation.js` must be rewritten.** `validateMoves` currently
+  asserts the claimed probability equals the *product* of per-move `actionProb`
+  (`shared/scoreValidation.js:161`). A policy score is a sum over leaves, so
+  submissions carry a branch tree and the validator recomputes it: per-node
+  face groupings against the recorded ST/skills, the derived ordering, the
+  closed-form weights, then `Σ` scoring-leaf weights against the claim. Keep the
+  existing posture — this catches nonsense, it is not a cheat-proof boundary.
+- **Leaderboards reset where blocks are involved.** Per-puzzle leaderboards
+  containing any entry with a `block` move are cleared on release; puzzles never
+  blocked in are untouched. Series leaderboards are cleared for any series
+  containing an affected puzzle, since a partially-migrated average is
+  meaningless. *Open decision: whether to snapshot the cleared entries anywhere
+  before dropping them.*
+
+## Non-goals
+
+- Chain pushes, crowd pushes, armour/injury rolls, standing up — all still out,
+  as in the shipped section.
+- Guard, Frenzy, Juggernaut, Stand Firm — still out. Block, Wrestle, Dodge and
+  Tackle are the only skills that affect the face-to-state mapping.
+- No opponent turn. A puzzle is still exactly one turn.
+- No branching on push square or follow-up.
+- No branch-count cap and no weight-floor pruning: the score is always exact.
+  Merging is the only thing keeping the tree small, and it is enough.
+
+## Acceptance Criteria
+
+1. With attacker Block vs defender no-Dodge on 1 die, a block produces exactly
+   three live branches weighted 1/6, 2/6, 2/6, and live weights sum to 5/6.
+2. Setting `V = 1` on a set of states and `V = 0` on the rest reproduces
+   `blockCombinedProbability` exactly for all `diceCount` × `picker`
+   combinations — asserted as a property test against the existing function
+   before it is retired.
+3. Both Down against a defender *with* Block and an attacker *with* Block yields
+   a single "board unchanged" state; against an attacker without Block it is not
+   materialised at all.
+4. A move authored in one branch is applied to lockstep siblings with roll
+   targets recomputed per branch — a dodge required in one and not in another is
+   covered by a test.
+5. Two branches reaching an identical board hash merge, and the merged weight
+   equals the sum of the two.
+6. Improving a conceded branch's continuation visibly changes the *weights* of
+   its siblings under a 2-dice attacker-picks block.
+7. Submit is blocked while any branch is non-terminal; conceding all
+   non-terminal branches unblocks it.
+8. The server validator accepts a correctly computed tree and rejects one whose
+   claimed probability, node weights, or orderings disagree.
+9. Cancelling an activation restores every branch in the lockstep group.
+
+## Implementation Approach
+
+Sequenced so each phase is independently testable and nothing lands half-wired.
+
+1. **Pure resolution engine** — `blockBoardStates(attacker, defender, diceCount,
+   picker)` plus the ordering/weight closed form, in `bfs.ts` or a new
+   `blockBranching.ts`. Headless, no UI, no state changes. Property test against
+   `blockCombinedProbability` (criterion 2) lands here.
+2. **Branch set in `useGameState`** — replace the single state with a branch set,
+   implement lockstep replay, merging, and group rollback. Still no UI: drive it
+   entirely from tests. This is the large phase.
+3. **UI** — branch strip, ghost overlay, submit gating. Delete
+   `BlockOutcomePanel.tsx`, `isBlockOutcomeSelectable`, and the checklist role of
+   `blockCombinedProbability`.
+4. **Scoring** — branch-tree log format, validator rewrite, expected dice count.
+5. **Migration** — leaderboard clearing script and release note.
+
+Phases 1–2 carry essentially all of the risk; phases 3–5 are mechanical once the
+branch set is real.
