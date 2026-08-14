@@ -122,24 +122,6 @@ export function ScenarioSelect({
     return progressFromEntries(seriesLeaderboard, localScores[SERIES_SCORE_KEY], userId);
   }, [progress, localScores, userId]);
 
-  const individualProgress = useMemo(() => {
-    const items = scenarios.map(scenario => scenarioProgress[scenario.id]).filter(Boolean);
-    const playedItems = items.filter(item => item.played && item.bestPercent !== null);
-    if (playedItems.length === 0) {
-      return {
-        played: false,
-        bestPercent: null,
-        rank: null,
-        entries: items.reduce((total, item) => total + item.entries, 0),
-      };
-    }
-
-    return playedItems.reduce((best, item) => {
-      if (!best || (item.bestPercent ?? 0) > (best.bestPercent ?? 0)) return item;
-      return best;
-    });
-  }, [scenarios, scenarioProgress]);
-
   return (
     <div className="scenario-select">
       <div className="scenario-select__header">
@@ -223,7 +205,6 @@ export function ScenarioSelect({
               <h2 className="challenge-section__title">Single Plays</h2>
               <p className="challenge-section__subtitle">Choose a ranked board.</p>
             </div>
-            <div className="challenge-section__summary">{formatProgress(individualProgress)}</div>
           </div>
 
           <div className="challenge-tile-grid">
