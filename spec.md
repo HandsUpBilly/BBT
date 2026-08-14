@@ -29,7 +29,7 @@ carries a **Status** line — read it before treating a section as work to do.
 | BB Tactics — Tabletop Playbook Home Redesign | Shipped |
 | Leaderboard and Report Integrity | **Planned** |
 | Player Config Screen | Phase 1 Shipped, Phase 2 **Planned** |
-| Block Outcomes as Board-State Branches | Phases 0–2a Shipped (dark), Phases 2b–6 **Planned** |
+| Block Outcomes as Board-State Branches | Phases 0–2b Shipped (dark), Phases 3–6 **Planned** |
 
 Durable behavior that has already shipped belongs in `docs/agent-context/`, not
 here. When a plan below ships, move the facts worth keeping into the matching
@@ -4195,10 +4195,11 @@ deliberately deferred rather than folded in:
 # Block Outcomes as Board-State Branches
 
 **Status:** In progress, behind the `blockBranching` preference (Settings →
-Experimental, off by default). Phase 0 (feature flag), phase 1 (resolution
-engine, `client/src/blockBranching.ts`) and phase 2a (tree evaluation and replay
-primitives, `client/src/blockBranchTree.ts` + `client/src/branchReplay.ts`) are
-shipped dark and reach no UI; phases 2b–6 are outstanding. Supersedes the outcome-checklist design in
+Experimental, off by default). Phases 0–2b are shipped dark and reach no UI —
+the feature flag, the resolution engine (`blockBranching.ts`), tree evaluation
+and replay primitives (`blockBranchTree.ts`, `branchReplay.ts`), and the run
+model (`branchRun.ts`, `useBranchRun.ts`). Phases 3–6 are outstanding, and the
+declaration handlers still need to be made group-aware (see phase 2b). Supersedes the outcome-checklist design in
 *Block and Blitz Actions* (see "Design: modeling block dice inside the
 probability-tracking model", marked superseded there), which stays live until
 phase 5 removes it.
@@ -4495,9 +4496,22 @@ Sequenced so each phase is independently testable and nothing lands half-wired.
      (what a click *means* on a board) and pure appliers, so a click can be
      replayed into a sibling and checked for still meaning the same thing.
      Behaviour-preserving: the existing suite passes untouched.
-   - **2b — the hook itself.** Hold a branch tree instead of one `GameState`,
-     split it on a block, navigate between branches, concede a branch, and roll
-     an activation back across a whole lockstep group. Still no UI.
+   - **2b — the run itself. Done.** `client/src/branchRun.ts` holds a tree of
+     board states instead of one `GameState`: `splitOnBlock` replaces the
+     checklist with one branch per live board state, `clickSquare` /
+     `choosePush` / `cancelActivation` author the viewed branch and replay into
+     its lockstep group, and `concedeBranch` / `selectBranch` / `branchStrip`
+     cover navigation. `client/src/useBranchRun.ts` is the React wrapper, thin
+     enough that everything worth testing is tested without React.
+
+     **Known gap before the UI can work.** Only the transitions the core loop
+     needs are group-aware. The declaration handlers — `handleBlockAction`,
+     `handleBlockTarget`, `handleHandoffAction`, `handleHandoffTarget`,
+     `handlePassAction`, `handlePassTarget` — still operate on a single
+     `GameState` inside `useGameState`. Each needs its pure body extracted and
+     routed through `authorAcrossGroup`, exactly as `applyCancelSelection` and
+     `applyPushChoice` already are. Mechanical, but it has to land before or
+     alongside phase 4.
 3. **Merging** — apply `groupByBoard` to fold reconverged branches, which turns
    the tree into a DAG and means evaluation has to memoise by node identity and
    accumulate incoming weight before descending. Deliberately sequenced *after*
@@ -4509,5 +4523,6 @@ Sequenced so each phase is independently testable and nothing lands half-wired.
    `isBlockOutcomeSelectable`, the checklist role of
    `blockCombinedProbability`, and the preference itself.
 
-Phase 2b carries most of the remaining risk; 3–6 are mechanical once the branch
-set is real.
+The risky phases are done: the branch set is real and evaluated. What is left
+is display (3–4), the submission format (5), and cleanup (6), plus the
+declaration-handler gap noted under 2b.

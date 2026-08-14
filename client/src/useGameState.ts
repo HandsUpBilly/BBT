@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react';
 import type { GameState, PlayerPiece, Position, ActionLogEntry, Scenario, BlockOutcomeFace } from './types';
 import type { PathStep } from './bfs';
+import type { BlockBoardState } from './blockBranching';
 import {
   computeReachable, findShortestPath, key, fromKey, neighbours, catchTargetAt, passTargetAt, computePassRange,
   rangeBandForPass, countEligibleAssists, blockDiceCount, blockOutcomeProbabilities, blockCombinedProbability,
@@ -692,6 +693,193 @@ export function applyClick(state: GameState, pos: Position): GameState {
     case 'deselect':       return clearSelection(state, true);
     case 'none':           return state;
   }
+}
+
+/** Pure body of `handleCancelSelection`, so a whole lockstep group can rewind. */
+export function applyCancelSelection(state: GameState): GameState {
+  // Backing out of receiver targeting keeps the carrier selected so the
+  // player can pick a different action; everything else is a full cancel,
+  // which also rewinds the board via the activation snapshot.
+  if (state.isHandoffTargeting) {
+    return { ...state, pendingHandoff: false, isHandoffTargeting: false, handoffTargets: new Set() };
+  }
+  if (state.isPassTargeting) {
+    return { ...state, pendingPass: false, isPassTargeting: false, passRangeKeys: new Map(), passReceiverKeys: new Set() };
+  }
+  return state.selectedPieceId ? clearSelection(state, true) : state;
+}
+
+/** Pure body of `handlePushChoice`, so a push can be replayed across branches. */
+export function applyPushChoice(prev: GameState, pos: Position, followUp: boolean): GameState {
+  if (!prev.pendingBlockResolution) return prev;
+  const resolution = prev.pendingBlockResolution;
+  const targetKey = key(pos);
+  if (!prev.pushTargetKeys.has(targetKey)) return prev;
+
+  const attacker = prev.pieces.find(p => p.id === resolution.attackerId);
+  const attackerFollowsUp = resolution.offerFollowUp && followUp;
+
+  const pushed = prev.pieces.map(p => {
+    if (p.id === resolution.defenderId) {
+      return { ...p, position: pos, down: resolution.defenderFalls };
+    }
+    if (p.id === resolution.attackerId) {
+      return {
+        ...p,
+        position: attackerFollowsUp ? resolution.defenderFrom : p.position,
+        activated: !resolution.isBlitz,
+      };
+    }
+    return p;
+  });
+
+  // A pushed-and-downed carrier drops the ball on the square it lands in.
+  const { pieces, ballPosition } = dropBallIfCarrying(
+    pushed, prev.ballPosition, resolution.defenderFalls ? [resolution.defenderId] : [],
+  );
+
+  // Log the follow-up as a free move step so the committed-movement
+  // trail extends into the vacated square, matching the attacker's
+  // actual final position.
+  const cumulativeProb = prev.actionLog.length > 0
+    ? prev.actionLog[prev.actionLog.length - 1].cumulativeProb : 1;
+  const actionLog = attackerFollowsUp && attacker
+    ? [...prev.actionLog, {
+        kind: 'move' as const,
+        pieceName: attacker.name,
+        pieceRole: attacker.role ?? attacker.team,
+        from: attacker.position,
+        to: resolution.defenderFrom,
+        steps: 1,
+        dodgeTarget: null,
+        isGfi: false,
+        pickupTarget: null,
+        actionProb: 1,
+        cumulativeProb,
+      }]
+    : prev.actionLog;
+
+  const nextState = {
+    ...prev,
+    pieces,
+    ballPosition,
+    actionLog,
+    pendingBlockResolution: null,
+    pushTargetKeys: new Set<string>(),
+  };
+  return resolution.isBlitz
+    ? resumeMovementAfterBlitz(nextState, pieces, resolution.attackerId)
+    : clearSelection(nextState);
+}
+
+export interface BlockSplitContext {
+  attackerId: string;
+  defenderId: string;
+  isBlitz: boolean;
+}
+
+/**
+ * Apply one board state from a block, **without folding any probability into
+ * the log**. Under branching the split owns the block's probability — it is
+ * derived from what each branch turns out to be worth — so the block entry is
+ * logged at `actionProb: 1` and `cumulativeProb` carries only the ordinary
+ * rolls. That is what lets a branch's segment probability be read straight back
+ * off its log.
+ *
+ * The interim log shape reuses `BlockLogEntry` with the board state's faces as
+ * `acceptedFaces`; the branch-tree log format is a later phase.
+ */
+export function applyBlockBoardState(
+  prev: GameState,
+  boardState: BlockBoardState,
+  ctx: BlockSplitContext,
+): GameState {
+  const attacker = prev.pieces.find(p => p.id === ctx.attackerId);
+  const defender = prev.pieces.find(p => p.id === ctx.defenderId);
+  if (!attacker || !defender) return prev;
+
+  const choice = prev.blockChoice;
+  const cumulativeProb = prev.actionLog.length > 0
+    ? prev.actionLog[prev.actionLog.length - 1].cumulativeProb : 1;
+
+  const blockEntry: ActionLogEntry = {
+    kind: 'block',
+    isBlitz: ctx.isBlitz,
+    pieceName: attacker.name,
+    pieceRole: attacker.role ?? attacker.team,
+    receiverName: defender.name,
+    receiverRole: defender.role ?? defender.team,
+    from: attacker.position,
+    to: defender.position,
+    diceCount: choice?.diceCount ?? 1,
+    picker: choice?.picker ?? 'attacker',
+    outcomeProbs: choice?.outcomeProbs ?? blockOutcomeProbabilities(1, 'attacker'),
+    acceptedFaces: boardState.faces,
+    resolvedFace: boardState.faces[0],
+    actionProb: 1,
+    cumulativeProb,
+    dodgeTarget: null,
+    isGfi: false,
+  };
+
+  const base = {
+    ...prev,
+    actionLog: [...prev.actionLog, blockEntry],
+    blitzUsed: ctx.isBlitz ? true : prev.blitzUsed,
+    blockChoice: null,
+  };
+
+  // Neither player is pushed: the defender either falls where it stands or the
+  // block does nothing at all. Both leave the attacker upright.
+  if (!boardState.defenderPushed) {
+    const knocked = base.pieces.map(p => {
+      if (p.id === defender.id) return { ...p, down: boardState.defenderFalls };
+      if (p.id === attacker.id) return { ...p, activated: !ctx.isBlitz };
+      return p;
+    });
+    const { pieces, ballPosition } = dropBallIfCarrying(
+      knocked, base.ballPosition, boardState.defenderFalls ? [defender.id] : [],
+    );
+    const nextState = { ...base, pieces, ballPosition };
+    return ctx.isBlitz
+      ? resumeMovementAfterBlitz(nextState, pieces, attacker.id)
+      : clearSelection(nextState);
+  }
+
+  const allPositions = base.pieces.map(p => p.position);
+  const pushCandidates = pushBackCandidates(attacker.position, defender.position, allPositions);
+
+  if (pushCandidates.length === 0) {
+    // No legal square to push into — defender stays in place but still falls
+    // per the board state (crowd-push mechanics are out of scope).
+    const knocked = base.pieces.map(p => {
+      if (p.id === defender.id) return { ...p, down: boardState.defenderFalls };
+      if (p.id === attacker.id) return { ...p, activated: !ctx.isBlitz };
+      return p;
+    });
+    const { pieces, ballPosition } = dropBallIfCarrying(
+      knocked, base.ballPosition, boardState.defenderFalls ? [defender.id] : [],
+    );
+    const nextState = { ...base, pieces, ballPosition };
+    return ctx.isBlitz
+      ? resumeMovementAfterBlitz(nextState, pieces, attacker.id)
+      : clearSelection(nextState);
+  }
+
+  // Which square, and whether to follow up, stay in-branch player choices.
+  return {
+    ...base,
+    pushTargetKeys: new Set(pushCandidates.map(key)),
+    pendingBlockResolution: {
+      attackerId: attacker.id,
+      defenderId: defender.id,
+      resolvedFace: boardState.faces[0],
+      defenderFalls: boardState.defenderFalls,
+      defenderFrom: defender.position,
+      offerFollowUp: true,
+      isBlitz: ctx.isBlitz,
+    },
+  };
 }
 
 // ── Hook ─────────────────────────────────────────────────────────────────────
