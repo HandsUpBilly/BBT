@@ -8,6 +8,7 @@ import type { PathTrail } from './movementTrail';
 import { passTrajectoryPath } from './passTrajectory';
 import { skillGroupsFor, skillMarkersFor } from './skillPresentation';
 import type { PitchSurface, TokenStyle } from './prefs';
+import type { GhostPiece } from './branchRun';
 import { RoleGlyph } from './RoleGlyph';
 import { roleCodeFor } from './rolePresentation';
 import { DEFAULT_PLAYER_ROLE, playerPortraitFor } from './playerPortraits';
@@ -256,6 +257,8 @@ interface SquareProps {
   dice: DiceInfo | null;
   blockDice: 1 | 2 | 3 | null;
   ghost: { team: Team; role?: string; skills: readonly string[]; hasBall: boolean } | null;
+  /** Where this piece stands in *other* live branches — see BranchStrip. */
+  branchGhosts: readonly BranchGhostView[];
   focusable: boolean;
   onSquareClick: (col: number, row: number) => void;
   onPieceClick: (col: number, row: number, x: number, y: number) => void;
@@ -272,7 +275,8 @@ interface SquareProps {
  */
 const Square = memo(function Square({
   pCol, pRow, name, portrait, classes, label, pieceTeam, pieceRole, pieceSkills, pieceClasses, pieceHasBall,
-  looseBall, inTackleZone, actionLabel, displayStep, stepIsPreview, pathTrails, dice, blockDice, ghost, focusable,
+  looseBall, inTackleZone, actionLabel, displayStep, stepIsPreview, pathTrails, dice, blockDice, ghost,
+  branchGhosts, focusable,
   onSquareClick, onPieceClick, onSquareHover, onSquareLeave,
 }: SquareProps) {
   const activate = useCallback((clientX: number, clientY: number) => {
@@ -356,6 +360,25 @@ const Square = memo(function Square({
 
       {blockDice !== null && <BlockDiceFace count={blockDice} />}
 
+      {branchGhosts.map(branchGhost => {
+        const key = `${branchGhost.down}-${branchGhost.labels.join()}`;
+        const where = branchGhost.labels.join(', ');
+        return branchGhost.stateOnly ? (
+          <div
+            key={key}
+            className={`square__branch-flag square__branch-flag--${branchGhost.down ? 'down' : 'standing'}`}
+            title={branchGhost.down ? `Down here in: ${where}` : `Still standing in: ${where}`}
+          />
+        ) : (
+          <div
+            key={key}
+            className={`piece piece--${branchGhost.team} piece--branch-ghost${branchGhost.down ? ' piece--down' : ''}`}
+            title={`Also here in: ${where}`}
+          >
+            <PieceIcon team={branchGhost.team} role={branchGhost.role} skills={branchGhost.skills} />
+          </div>
+        );
+      })}
       {ghost && (
         <div className={`piece piece--${ghost.team} piece--ghost`}>
           <PieceIcon team={ghost.team} role={ghost.role} skills={ghost.skills} />
@@ -385,13 +408,65 @@ interface Props {
   tokenStyle?: TokenStyle;
   pitchSurface?: PitchSurface;
   showCoordinates?: boolean;
+  /**
+   * Where pieces stand in the other live branches of a block, drawn faintly
+   * over the viewed board. Only pieces that actually differ are included —
+   * see `ghostPieces` in branchRun.ts.
+   */
+  branchGhosts?: readonly GhostPiece[];
 }
+
+/** A branch ghost resolved against the viewed board, ready to draw. */
+interface BranchGhostView {
+  team: Team;
+  role?: string;
+  skills: readonly string[];
+  down: boolean;
+  labels: string[];
+  /**
+   * The same piece is already on this square in the viewed branch and only its
+   * prone state differs. Drawing a translucent copy of a token on top of itself
+   * says nothing, so these render as a corner pip instead — and the standing
+   * case is the one that matters, because a standing player still projects a
+   * tackle zone the viewed board does not have.
+   */
+  stateOnly: boolean;
+}
+
+const NO_BRANCH_GHOSTS: readonly BranchGhostView[] = [];
 
 export function Pitch({
   state, onSquareClick, onPieceClick, onSquareHover, onSquareLeave, zoomBounds,
   orientation = 'landscape', tokenStyle = 'portrait', pitchSurface = 'grass', showCoordinates = true,
+  branchGhosts,
 }: Props) {
   const portrait = orientation === 'portrait';
+
+  // Resolve each ghost against the viewed board, which is where the piece's
+  // team, role and skills come from — a ghost only records where it stands.
+  const branchGhostMap = useMemo(() => {
+    const map = new Map<string, BranchGhostView[]>();
+    if (!branchGhosts?.length) return map;
+
+    const byId = new Map(state.pieces.map(p => [p.id, p]));
+    for (const ghost of branchGhosts) {
+      const piece = byId.get(ghost.pieceId);
+      if (!piece) continue;
+      const k = key(ghost.position);
+      const views = map.get(k) ?? [];
+      views.push({
+        team: piece.team,
+        role: piece.role,
+        skills: piece.skills,
+        down: ghost.down,
+        labels: ghost.labels,
+        stateOnly: piece.position.col === ghost.position.col
+          && piece.position.row === ghost.position.row,
+      });
+      map.set(k, views);
+    }
+    return map;
+  }, [branchGhosts, state.pieces]);
   const pieceMap = useMemo(
     () => new Map(state.pieces.map(p => [key(p.position), p])),
     [state.pieces],
@@ -617,6 +692,7 @@ export function Pitch({
       const isBlitzTarget     = piece?.id === state.blitzTargetId;
       const isPushTarget      = state.pushTargetKeys.has(k);
       const isLooseBall       = looseBallKey === k;
+      const squareBranchGhosts = branchGhostMap.get(k) ?? NO_BRANCH_GHOSTS;
 
       const classes = [
         'square',
@@ -640,6 +716,7 @@ export function Pitch({
         isBlockTarget  ? 'square--block-target'  : '',
         isBlitzTarget  ? 'square--blitz-target'  : '',
         isPushTarget   ? 'square--push-target'   : '',
+        squareBranchGhosts.length > 0 ? 'square--branch-ghost' : '',
       ].filter(Boolean).join(' ');
 
       const squaresWalked = selectedPiece ? selectedPiece.ma - state.remainingMa : 0;
@@ -681,7 +758,8 @@ export function Pitch({
           name={squareName(pCol, pRow)}
           portrait={portrait}
           classes={classes}
-          label={describeSquare(
+          branchGhosts={squareBranchGhosts}
+          label={[describeSquare(
             pCol, pRow,
             describedPiece?.name ?? null, describedPiece?.team ?? null, describedPiece?.role,
             describedPiece?.skills ?? EMPTY_SKILLS, !piece && !!showGhost,
@@ -690,7 +768,11 @@ export function Pitch({
             (displayedDice?.isGfi ?? false) || isGfiRange, displayedDice?.pickupTarget ?? null,
             isLooseBall, targetDescription, blockDiceCount,
             displayedDice?.passTarget ?? null, displayedDice?.catchTarget ?? null,
-          )}
+          ),
+          squareBranchGhosts.length > 0
+            ? `occupied in other outcomes: ${squareBranchGhosts.flatMap(g => g.labels).join(', ')}`
+            : '',
+          ].filter(Boolean).join(', ')}
           pieceTeam={piece?.team ?? null}
           pieceRole={piece?.role}
           pieceSkills={piece?.skills ?? EMPTY_SKILLS}

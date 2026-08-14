@@ -29,7 +29,7 @@ carries a **Status** line — read it before treating a section as work to do.
 | BB Tactics — Tabletop Playbook Home Redesign | Shipped |
 | Leaderboard and Report Integrity | **Planned** |
 | Player Config Screen | Phase 1 Shipped, Phase 2 **Planned** |
-| Block Outcomes as Board-State Branches | Phases 0–2c Shipped (dark), Phases 3–6 **Planned** |
+| Block Outcomes as Board-State Branches | Phases 0–4 Shipped (behind flag), Phases 5–6 **Planned** |
 
 Durable behavior that has already shipped belongs in `docs/agent-context/`, not
 here. When a plan below ships, move the facts worth keeping into the matching
@@ -4215,8 +4215,10 @@ deliberately deferred rather than folded in:
 Experimental, off by default). Phases 0–2b are shipped dark and reach no UI —
 the feature flag, the resolution engine (`blockBranching.ts`), tree evaluation
 and replay primitives (`blockBranchTree.ts`, `branchReplay.ts`), and the run
-model (`branchRun.ts`, `useBranchRun.ts`), including group-aware declarations.
-Phases 3–6 are outstanding. Supersedes the outcome-checklist design in
+model (`branchRun.ts`, `useBranchRun.ts`), including group-aware declarations,
+and the UI is wired up behind the flag. Phases 5–6 are outstanding: leaderboard
+submission is disabled while branching is on, because the score is a sum over
+branches and the submission format still carries a product. Supersedes the outcome-checklist design in
 *Block and Blitz Actions* (see "Design: modeling block dice inside the
 probability-tracking model", marked superseded there), which stays live until
 phase 5 removes it.
@@ -4538,12 +4540,29 @@ Sequenced so each phase is independently testable and nothing lands half-wired.
    accumulate incoming weight before descending. Deliberately sequenced *after*
    the hook: merging changes how much authoring a puzzle costs, not what it
    scores, so nothing upstream depends on it being in place.
-4. **UI** — branch strip, ghost overlay, submit gating, behind the flag.
+4. **UI. Done.** `BranchStrip.tsx` (live branch chips with derived weights,
+   status, and a one-click concede), branch ghosts on the pitch, and
+   `BranchRunSummary.tsx` for the end of a run. `App` instantiates both models
+   and picks between them; the preference is frozen per attempt by
+   `useBlockBranchingForAttempt`, and a board reset reaches both so switching
+   models between attempts cannot land on a stale board.
+
+   Two things the overlay learned from actually being looked at. A ghost drawn
+   on the square the piece already occupies says nothing — those are prone-state
+   differences, and they render as a corner pip instead, loud when the piece is
+   still *standing* in the other branch, because that is the tackle zone the
+   viewed board does not have. And expected dice is averaged over the lines that
+   score, so a run scoring nowhere has nothing to average and hides the row
+   rather than reporting a flat 0.0.
+
+   **Submission is deliberately disabled under the flag.** A policy score is a
+   sum over branches and `shared/scoreValidation.js` still checks a product, so
+   a branching run shows its number and says why it stops there rather than
+   posting one the server would reject. Phase 5 lifts this.
 5. **Scoring** — branch-tree log format, validator rewrite, expected dice count.
 6. **Flag removal** — delete `BlockOutcomePanel.tsx`,
    `isBlockOutcomeSelectable`, the checklist role of
    `blockCombinedProbability`, and the preference itself.
 
-The risky phases are done: the branch set is real, evaluated, and drivable
-end to end. What is left is display (3–4), the submission format (5), and
-cleanup (6).
+The risky phases are done and the model is playable behind the flag. What is
+left is the submission format (5) and cleanup (6).
