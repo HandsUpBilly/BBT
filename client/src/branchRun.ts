@@ -254,9 +254,14 @@ export function declareBlock(run: BranchRun, pieceId: string, isBlitz: boolean):
  * Pick the defender to block. Dice count and picker are recomputed per branch,
  * since assists depend on who is standing where — so the same blitz can be two
  * dice in one branch and one in another.
+ *
+ * Resolving the block splits immediately: there is no step in between where the
+ * player says what they would accept, because that is the thing this model
+ * exists to remove. (For a Blitz the first click only nominates the target, so
+ * the split waits for the second.)
  */
 export function chooseBlockTarget(run: BranchRun, pos: Position): BranchRun {
-  return authorUniform(run, state => applyBlockTarget(state, pos));
+  return splitOnBlock(authorUniform(run, state => applyBlockTarget(state, pos)));
 }
 
 /** True once the viewed branch has a block resolved and waiting to be split. */
@@ -358,6 +363,21 @@ export function splitOnBlock(run: BranchRun): BranchRun {
   return { ...withLines({ ...run, seq }, updates), viewedId };
 }
 
+/**
+ * Edit the viewed branch's board directly.
+ *
+ * An escape hatch for the surrounding app (resetting a phase flag, say), not a
+ * way to author play: it bypasses lockstep entirely, so siblings do not follow.
+ */
+export function updateViewedState(
+  run: BranchRun,
+  update: (state: GameState) => GameState,
+): BranchRun {
+  const viewed = viewedLine(run);
+  const next = update(viewed.state);
+  return next === viewed.state ? run : withLines(run, [{ ...viewed, state: next }]);
+}
+
 /** Give up on a branch. It keeps its weight and contributes nothing. */
 export function concedeBranch(run: BranchRun, id: string): BranchRun {
   const line = run.lines[id];
@@ -408,6 +428,53 @@ export interface BranchStripEntry {
   value: number;
   status: 'scored' | 'conceded' | 'needs-attention' | 'authoring';
   isViewed: boolean;
+}
+
+export interface GhostPiece {
+  pieceId: string;
+  position: Position;
+  down: boolean;
+  /** Branches this placement occurs in, for the tooltip. */
+  labels: string[];
+}
+
+/**
+ * Where pieces sit in the *other* live branches, for the overlay.
+ *
+ * Only pieces whose square or prone state actually differs from the viewed
+ * board are returned — drawing every piece of every branch is what turns the
+ * overlay into soup once there is more than one block in play.
+ */
+export function ghostPieces(run: BranchRun): GhostPiece[] {
+  const viewed = viewedLine(run);
+  const here = new Map(viewed.state.pieces.map(p => [p.id, p]));
+  const ghosts = new Map<string, GhostPiece>();
+
+  for (const line of Object.values(run.lines)) {
+    if (line.split || line.conceded || line.id === viewed.id) continue;
+
+    for (const piece of line.state.pieces) {
+      const mine = here.get(piece.id);
+      if (!mine) continue;
+      const samePlace = mine.position.col === piece.position.col
+        && mine.position.row === piece.position.row;
+      if (samePlace && mine.down === piece.down) continue;
+
+      const id = `${piece.id}@${piece.position.col},${piece.position.row}:${piece.down}`;
+      const existing = ghosts.get(id);
+      if (existing) existing.labels.push(line.label);
+      else {
+        ghosts.set(id, {
+          pieceId: piece.id,
+          position: piece.position,
+          down: piece.down,
+          labels: [line.label],
+        });
+      }
+    }
+  }
+
+  return [...ghosts.values()];
 }
 
 /** Everything the branch strip needs, for branches that are still leaves. */

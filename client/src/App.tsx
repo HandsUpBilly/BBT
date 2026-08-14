@@ -1,5 +1,8 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { useGameState, makeEmptyState, makeScenarioState, pathPreviewProb, passActionAvailability } from './useGameState';
+import { useBranchRun } from './useBranchRun';
+import { BranchStrip } from './BranchStrip';
+import { BranchRunSummary } from './BranchRunSummary';
 import { Pitch } from './Pitch';
 import type { PitchOrientation } from './Pitch';
 import { PieceMenu } from './PieceMenu';
@@ -38,7 +41,7 @@ import { defaultSeries as staticSeries } from './series';
 import { PuzzleEditor } from './editor/PuzzleEditor';
 import { useAuth } from './auth';
 import type {
-  AppMode, PlayerPiece, Scenario, LeaderboardEntry,
+  AppMode, GameState, PlayerPiece, Scenario, LeaderboardEntry,
   SeriesLeaderboardEntry, SeriesPuzzleResult, RiskyMove, ActionLogEntry,
 } from './types';
 import { key, computeZoomBounds } from './bfs';
@@ -63,6 +66,27 @@ const ADMIN_EMAILS = new Set(
     .map((email: string) => email.trim().toLowerCase())
     .filter(Boolean),
 );
+
+/**
+ * Freezes the block-branching preference for the length of one attempt.
+ *
+ * The two models score differently, so a single run must never straddle them:
+ * flipping the setting mid-puzzle takes effect on the next puzzle, not this
+ * one. Re-freezing is keyed on the scenario changing, which is exactly when a
+ * new attempt begins.
+ */
+function useBlockBranchingForAttempt(preference: boolean, scenarioId: string | undefined): boolean {
+  const [frozen, setFrozen] = useState(preference);
+  const attemptRef = useRef(scenarioId);
+
+  useEffect(() => {
+    if (attemptRef.current === scenarioId) return;
+    attemptRef.current = scenarioId;
+    setFrozen(preference);
+  }, [scenarioId, preference]);
+
+  return frozen;
+}
 
 type LocalScoreMap = Record<string, string[]>;
 
@@ -428,13 +452,39 @@ export default function App() {
     return computeZoomBounds(positions, 1);
   }, []);
 
-  // Game state — reinitialised when mode/scenario changes
+  // Game state — reinitialised when mode/scenario changes.
+  //
+  // Both models are instantiated because hooks cannot be called conditionally;
+  // each is a `useState` over a plain object, so the unused one costs nothing.
+  // `branchingEnabled` is frozen for the duration of an attempt (see below):
+  // the two models score differently, so a single run must not straddle them.
+  const singleBoard = useGameState(makeEmptyState());
+  const branchedBoards = useBranchRun(makeEmptyState());
+  const branchingEnabled = useBlockBranchingForAttempt(prefs.blockBranching ?? false, activeScenario?.id);
+  const game = branchingEnabled ? branchedBoards : singleBoard;
+
   const { state, setState, handleSquareClick: hookSquareClick, handleSquareHover: hookSquareHover,
           handleSquareLeave: hookSquareLeave, handleCancelSelection,
           handleHandoffAction, handleHandoffTarget,
           handlePassAction, handlePassTarget,
-          handleBlockAction, handleBlockTarget, handleBlockOutcomeChoice, handlePushChoice }
-    = useGameState(makeEmptyState());
+          handleBlockAction, handleBlockTarget, handlePushChoice } = game;
+  const { handleBlockOutcomeChoice } = singleBoard;
+
+  // A board reset — loading a scenario, restarting a turn — has to reach both
+  // models rather than only the active one. Otherwise toggling the preference
+  // between attempts drops the player onto a stale board from the model they
+  // just left.
+  const setSingleState = singleBoard.setState;
+  const setBranchedState = branchedBoards.setState;
+  // `phase: 'touchdown'` marks one branch scoring, not the run finishing, so
+  // the branching summary needs its own dismissal flag rather than borrowing
+  // the single-board trick of rewinding the phase.
+  const [branchSummaryDismissed, setBranchSummaryDismissed] = useState(false);
+  const resetBoards = useCallback((next: GameState) => {
+    setSingleState(next);
+    setBranchedState(next);
+    setBranchSummaryDismissed(false);
+  }, [setSingleState, setBranchedState]);
 
   const identityName = currentUser ? googleAliases[currentUser.id] ?? '' : guestAlias;
   const identityReady = Boolean(identityName.trim());
@@ -516,19 +566,19 @@ export default function App() {
     setEditorPreviewScenario(null);
     setActiveScenario(scenario);
     const s = makeScenarioState(scenario);
-    setState(s);
+    resetBoards(s);
     setZoomBounds(computeStartOfPlayZoom(s.pieces, s.activeTeam));
     setAppMode('puzzle');
-  }, [setState, computeStartOfPlayZoom]);
+  }, [resetBoards, computeStartOfPlayZoom]);
 
   const previewPuzzle = useCallback((scenario: Scenario) => {
     setEditorPreviewScenario(scenario);
     setActiveScenario(scenario);
     const s = makeScenarioState(scenario);
-    setState(s);
+    resetBoards(s);
     setZoomBounds(computeStartOfPlayZoom(s.pieces, s.activeTeam));
     setAppMode('puzzle');
-  }, [setState, computeStartOfPlayZoom]);
+  }, [resetBoards, computeStartOfPlayZoom]);
 
   const goLeaderboard = useCallback((scenario: Scenario) => {
     setActiveScenario(scenario);
@@ -807,9 +857,9 @@ export default function App() {
   const handleRestartTurn = useCallback(() => {
     if (!activeScenario) return;
     const s = makeScenarioState(activeScenario);
-    setState(s);
+    resetBoards(s);
     setZoomBounds(computeStartOfPlayZoom(s.pieces, s.activeTeam));
-  }, [activeScenario, setState, computeStartOfPlayZoom]);
+  }, [activeScenario, resetBoards, computeStartOfPlayZoom]);
 
   // ── Series mode handlers ──────────────────────────────────────────────────
   const startSeries = useCallback(() => {
@@ -819,10 +869,10 @@ export default function App() {
     setSeriesRun({ playerName: identityName, puzzleIndex: 0, results: [] });
     setActiveScenario(firstScenario);
     const s = makeScenarioState(firstScenario);
-    setState(s);
+    resetBoards(s);
     setZoomBounds(computeStartOfPlayZoom(s.pieces, s.activeTeam));
     setAppMode('series-puzzle');
-  }, [identityName, seriesScenarios, setState, computeStartOfPlayZoom]);
+  }, [identityName, seriesScenarios, resetBoards, computeStartOfPlayZoom]);
 
   // Called when the player continues past a touchdown while in a series run.
   // Submits the puzzle's score to its individual leaderboard, records the
@@ -856,7 +906,7 @@ export default function App() {
       setSeriesRun({ ...seriesRun, puzzleIndex: nextIndex, results });
       setActiveScenario(nextScenario);
       const s = makeScenarioState(nextScenario);
-      setState(s);
+      resetBoards(s);
       setZoomBounds(computeStartOfPlayZoom(s.pieces, s.activeTeam));
       return;
     }
@@ -883,7 +933,7 @@ export default function App() {
       // than losing every puzzle they just played.
       setSubmitError(describeSubmitError(error));
     }
-  }, [activeScenario, seriesRun, seriesScenarios, state.actionLog, setState, idToken, computeStartOfPlayZoom]);
+  }, [activeScenario, seriesRun, seriesScenarios, state.actionLog, resetBoards, setState, idToken, computeStartOfPlayZoom]);
 
   const requestLeaveSeries = useCallback(() => {
     setConfirmLeaveSeries(true);
@@ -1192,6 +1242,16 @@ export default function App() {
           hasPushTargets={!!state.pendingBlockResolution}
         />
 
+        {branchingEnabled && (
+          <BranchStrip
+            branches={branchedBoards.strip}
+            deadWeight={branchedBoards.summary.deadWeight}
+            score={branchedBoards.summary.score}
+            onSelect={branchedBoards.handleSelectBranch}
+            onConcede={branchedBoards.handleConcedeBranch}
+          />
+        )}
+
         <ActionLogMenu log={state.actionLog} />
 
         {reportButton('hud')}
@@ -1210,6 +1270,7 @@ export default function App() {
             tokenStyle={prefs.tokenStyle ?? 'portrait'}
             pitchSurface={prefs.pitchSurface ?? 'grass'}
             showCoordinates={prefs.showCoordinates ?? true}
+            branchGhosts={branchingEnabled ? branchedBoards.ghosts : undefined}
           />
         </main>
 
@@ -1272,7 +1333,7 @@ export default function App() {
           }
         />
       )}
-      {state.phase === 'touchdown' && effectiveAppMode === 'puzzle' && activeScenario && (
+      {!branchingEnabled && state.phase === 'touchdown' && effectiveAppMode === 'puzzle' && activeScenario && (
         <SubmitModal
           scenario={activeScenario}
           actionLog={state.actionLog}
@@ -1281,6 +1342,17 @@ export default function App() {
           defaultName={identityName}
           signedInName={identityName}
           error={submitError}
+        />
+      )}
+
+      {/* Branching runs finish when every branch is resolved, not when one scores. */}
+      {branchingEnabled && branchedBoards.complete && !branchSummaryDismissed
+        && effectiveAppMode === 'puzzle' && activeScenario && (
+        <BranchRunSummary
+          scenarioName={activeScenario.name}
+          summary={branchedBoards.summary}
+          branches={branchedBoards.strip}
+          onDismiss={() => setBranchSummaryDismissed(true)}
         />
       )}
 
@@ -1325,8 +1397,8 @@ export default function App() {
         );
       })()}
 
-      {/* Block outcome checklist */}
-      {state.blockChoice && state.selectedPieceId && (() => {
+      {/* Block outcome checklist — single-board model only */}
+      {!branchingEnabled && state.blockChoice && state.selectedPieceId && (() => {
         const { blockChoice } = state;
         const attacker = state.pieces.find(p => p.id === state.selectedPieceId);
         const defender = state.pieces.find(p => p.id === blockChoice.defenderId);

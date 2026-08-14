@@ -13,6 +13,7 @@ import {
   concedeBranch,
   declareBlock,
   declareHandoff,
+  ghostPieces,
   isRunComplete,
   runSummary,
   selectBranch,
@@ -292,6 +293,42 @@ describe('a second block', () => {
     run = clickSquare(run, { col: 5, row: 0 });
 
     expect(runSummary(run).expectedDice).toBeCloseTo(2, 12);
+  });
+});
+
+describe('ghostPieces', () => {
+  it('reports only the pieces that actually differ from the viewed board', () => {
+    const run = choosePush(blockRun(), { col: 7, row: 8 }, false);
+    const ghosts = ghostPieces(run);
+
+    // The attacker stands still in every branch; only the defender moves or
+    // falls, so it is the only thing worth drawing over the board.
+    expect(ghosts.every(g => g.pieceId === 'defender')).toBe(true);
+    expect(ghosts.length).toBeGreaterThan(0);
+  });
+
+  it('places a ghost on the square the defender holds in another branch', () => {
+    const run = choosePush(blockRun(), { col: 7, row: 8 }, false);
+    const ghosts = ghostPieces(run);
+
+    // Viewed branch is "Pushed + Down" at (7,8); "Down in place" keeps (7,9).
+    const inPlace = ghosts.find(g => g.position.col === 7 && g.position.row === 9);
+    expect(inPlace?.labels).toContain('Down in place');
+  });
+
+  it('distinguishes a standing ghost from a prone one on the same square', () => {
+    const run = choosePush(blockRun(), { col: 7, row: 8 }, false);
+    const standing = ghostPieces(run).find(g =>
+      g.position.col === 7 && g.position.row === 8 && !g.down);
+
+    // "Pushed" leaves the defender upright on the very square the viewed
+    // branch has it lying on — same square, different board.
+    expect(standing?.labels).toContain('Pushed');
+  });
+
+  it('returns nothing once every branch agrees', () => {
+    // Before any block there is only one board, so there is nothing to ghost.
+    expect(ghostPieces(startRun(declaredBlock()))).toEqual([]);
   });
 });
 

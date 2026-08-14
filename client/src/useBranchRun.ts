@@ -5,6 +5,11 @@
  * this hook is a `useState` and a handful of callbacks. All the behaviour worth
  * testing lives in branchRun.ts and is tested without React.
  *
+ * The returned shape deliberately mirrors `useGameState` — same `state`, same
+ * handler names, same signatures — so `App` can pick between the two models
+ * with one line instead of forking every call site. `state` is the *viewed*
+ * branch's board, which is what the pitch draws.
+ *
  * Only used when the `blockBranching` preference is on; the checklist path
  * still goes through `useGameState` unchanged.
  */
@@ -13,48 +18,98 @@ import { useCallback, useMemo, useState } from 'react';
 import type { GameState } from './types';
 import {
   branchStrip,
-  cancelActivation as cancelActivationIn,
-  choosePush as choosePushIn,
-  clickSquare as clickSquareIn,
-  concedeBranch as concedeBranchIn,
+  cancelActivation,
+  chooseBlockTarget,
+  chooseHandoffTarget,
+  choosePassTarget,
+  choosePush,
+  clickSquare,
+  concedeBranch,
+  declareBlock,
+  declareHandoff,
+  declarePass,
+  ghostPieces,
   isRunComplete,
   runSummary,
-  selectBranch as selectBranchIn,
-  splitOnBlock as splitOnBlockIn,
+  selectBranch,
   startRun,
+  updateViewedState,
   viewedLine,
   type BranchRun,
 } from './branchRun';
 
+type StateUpdate = GameState | ((prev: GameState) => GameState);
+
 export function useBranchRun(initialState: GameState) {
   const [run, setRun] = useState<BranchRun>(() => startRun(initialState));
+
+  const viewed = viewedLine(run);
 
   // Recomputed whenever the run changes, which is what keeps branch weights
   // honest while the player authors: improving one branch moves the others.
   const summary = useMemo(() => runSummary(run), [run]);
   const strip = useMemo(() => branchStrip(run), [run]);
+  const ghosts = useMemo(() => ghostPieces(run), [run]);
+
+  /**
+   * `useGameState`-shaped setter.
+   *
+   * A whole `GameState` means "start again from this board" — loading a
+   * scenario or resetting a puzzle — so it restarts the run. An updater
+   * function edits the viewed branch only, as an escape hatch; it bypasses
+   * lockstep, so it is not the way to author play.
+   */
+  const setState = useCallback((next: StateUpdate) => {
+    setRun(prev => (typeof next === 'function'
+      ? updateViewedState(prev, next as (prev: GameState) => GameState)
+      : startRun(next)));
+  }, []);
 
   return {
-    run,
-    setRun,
-    /** The branch the player is looking at — its board drives the pitch. */
-    viewed: viewedLine(run),
-    summary,
-    strip,
-    complete: isRunComplete(run),
+    // ── useGameState-compatible surface ──
+    state: viewed.state,
+    setState,
     handleSquareClick: useCallback((col: number, row: number) => {
-      setRun(prev => clickSquareIn(prev, { col, row }));
+      setRun(prev => clickSquare(prev, { col, row }));
+    }, []),
+    // Hover is pure preview state on one board and never branches, so it is
+    // deliberately left as a no-op rather than replayed across the group.
+    handleSquareHover: useCallback(() => {}, []),
+    handleSquareLeave: useCallback(() => {}, []),
+    handleCancelSelection: useCallback(() => setRun(cancelActivation), []),
+    handleHandoffAction: useCallback((pieceId: string) => {
+      setRun(prev => declareHandoff(prev, pieceId));
+    }, []),
+    handleHandoffTarget: useCallback((col: number, row: number) => {
+      setRun(prev => chooseHandoffTarget(prev, { col, row }));
+    }, []),
+    handlePassAction: useCallback((pieceId: string) => {
+      setRun(prev => declarePass(prev, pieceId));
+    }, []),
+    handlePassTarget: useCallback((col: number, row: number) => {
+      setRun(prev => choosePassTarget(prev, { col, row }));
+    }, []),
+    handleBlockAction: useCallback((pieceId: string, isBlitz: boolean) => {
+      setRun(prev => declareBlock(prev, pieceId, isBlitz));
+    }, []),
+    handleBlockTarget: useCallback((col: number, row: number) => {
+      setRun(prev => chooseBlockTarget(prev, { col, row }));
     }, []),
     handlePushChoice: useCallback((col: number, row: number, followUp: boolean) => {
-      setRun(prev => choosePushIn(prev, { col, row }, followUp));
+      setRun(prev => choosePush(prev, { col, row }, followUp));
     }, []),
-    handleCancelSelection: useCallback(() => setRun(cancelActivationIn), []),
-    handleResolveBlock: useCallback(() => setRun(splitOnBlockIn), []),
-    handleConcedeBranch: useCallback((id: string) => {
-      setRun(prev => concedeBranchIn(prev, id));
-    }, []),
+
+    // ── branch-only surface ──
+    run,
+    summary,
+    strip,
+    ghosts,
+    complete: isRunComplete(run),
     handleSelectBranch: useCallback((id: string) => {
-      setRun(prev => selectBranchIn(prev, id));
+      setRun(prev => selectBranch(prev, id));
+    }, []),
+    handleConcedeBranch: useCallback((id: string) => {
+      setRun(prev => concedeBranch(prev, id));
     }, []),
   };
 }
