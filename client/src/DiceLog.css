@@ -111,6 +111,12 @@
   font-weight: 700;
 }
 
+.dice-log__dodge-tag {
+  color: #c07a35;
+  font-size: 0.68rem;
+  font-weight: 700;
+}
+
 .dice-log__block-tag {
   color: #cf9b90;
   font-size: 0.68rem;
