@@ -1,0 +1,148 @@
+.play-diagram {
+  width: 100%;
+  margin: 0;
+  padding: 10px 12px 8px;
+  color: var(--color-text-muted);
+  background:
+    linear-gradient(rgba(255, 255, 255, 0.018), rgba(255, 255, 255, 0.006)),
+    #151917;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-card);
+}
+
+.play-diagram__heading {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 7px;
+  color: var(--color-text);
+  font-family: var(--font-display);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.play-diagram__key {
+  color: var(--color-text-disabled);
+  font-family: var(--font-sans);
+  font-size: 0.62rem;
+  font-weight: 500;
+  letter-spacing: 0.03em;
+}
+
+.play-diagram__svg {
+  display: block;
+  width: 100%;
+  max-height: 230px;
+}
+
+.play-diagram__board {
+  fill: #242a26;
+  stroke: #a19f94;
+  stroke-width: 1.5;
+}
+
+.play-diagram__grid line {
+  stroke: #d7d3c6;
+  stroke-width: 0.45;
+  opacity: 0.09;
+}
+
+.play-diagram__markings line {
+  stroke: #d7d3c6;
+  stroke-width: 1.5;
+  opacity: 0.28;
+  stroke-dasharray: 4 4;
+}
+
+.play-diagram__player {
+  fill: rgba(36, 42, 38, 0.88);
+  stroke: #ddd8c9;
+  stroke-width: 2.5;
+}
+
+.play-diagram__player--opposition {
+  stroke: #b8b5aa;
+}
+
+.play-diagram__player--down {
+  opacity: 0.42;
+}
+
+.play-diagram__ball {
+  fill: #c9853c;
+  stroke: #f0c47d;
+  stroke-width: 1;
+}
+
+.play-diagram__route {
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.play-diagram__route--movement {
+  stroke: #f1ede2;
+  stroke-width: 2.5;
+  stroke-dasharray: 5 4;
+}
+
+.play-diagram__route--pass,
+.play-diagram__route--handoff {
+  stroke: #d9a34e;
+  stroke-width: 3;
+}
+
+.play-diagram__route--handoff {
+  stroke-dasharray: 2 3;
+}
+
+.play-diagram__route--block {
+  stroke: #c95b47;
+  stroke-width: 4;
+}
+
+.play-diagram__arrowhead--movement {
+  fill: #f1ede2;
+}
+
+.play-diagram__arrowhead--ball {
+  fill: #d9a34e;
+}
+
+.play-diagram__block-mark {
+  fill: #6d2f26;
+  stroke: #e18a78;
+  stroke-width: 1.5;
+}
+
+.play-diagram__block-dice {
+  fill: #f5ddd5;
+  font-family: var(--font-mono);
+  font-size: 8px;
+  font-weight: 700;
+  text-anchor: middle;
+}
+
+.play-diagram figcaption {
+  margin-top: 5px;
+  color: var(--color-text-disabled);
+  font-size: 0.68rem;
+  line-height: 1.3;
+  text-align: left;
+}
+
+@media (max-width: 480px) {
+  .play-diagram {
+    padding-inline: 8px;
+  }
+
+  .play-diagram__key {
+    display: none;
+  }
+
+  .play-diagram__svg {
+    max-height: 180px;
+  }
+}

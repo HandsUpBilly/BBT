@@ -132,6 +132,26 @@ The identity gate and `home` mode use the tabletop-playbook visual shell:
   screens while growing normally on long pages instead of leaving the footer
   floating inside a stale viewport-sized box.
 
+## Touchdown Play Diagram
+
+The touchdown summary includes a chalkboard-style SVG generated from the
+completed puzzle session. `PlayDiagram.tsx` receives the active scenario and
+the full `actionLog`, so it can show the starting formation as well as every
+committed movement route, pass, handoff, and block. It is not a generic or
+pre-rendered football play.
+
+Movement entries are grouped only while their squares remain contiguous. This
+preserves separate activations and restarted routes, while still turning the
+rules engine's one-entry-per-square log into a readable line. Passes use a
+curved amber trajectory, handoffs a short dotted amber line, and blocks a red
+contact marker labelled with the dice count. Cancelled activations need no
+special handling because rollback already removes them from `actionLog`.
+
+The diagram currently belongs to the live touchdown summary. Leaderboard
+entries persist risky moves rather than the complete action log, so a saved
+leaderboard summary does not have enough data to reconstruct the full run and
+must not display a partial diagram as if it were complete.
+
 ## Player-Facing Brand
 
 - The app name is **Turn 16**, referring to the final turn of a Blood Bowl

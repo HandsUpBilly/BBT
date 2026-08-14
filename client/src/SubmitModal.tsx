@@ -1,8 +1,10 @@
 import { useState } from 'react';
-import type { ActionLogEntry } from './types';
+import { PlayDiagram } from './PlayDiagram';
+import type { ActionLogEntry, Scenario } from './types';
 import './SubmitModal.css';
 
 interface Props {
+  scenario: Scenario;
   actionLog: ActionLogEntry[];
   onSubmit: (name: string) => void;
   onDismiss: () => void;
@@ -65,7 +67,7 @@ function capitalize(s: string): string {
   return s.charAt(0).toUpperCase() + s.slice(1);
 }
 
-export function SubmitModal({ actionLog, onSubmit, onDismiss, seriesMode, continueLabel, defaultName = '', signedInName, error }: Props) {
+export function SubmitModal({ scenario, actionLog, onSubmit, onDismiss, seriesMode, continueLabel, defaultName = '', signedInName, error }: Props) {
   const [name, setName] = useState(defaultName);
   const [submitting, setSubmitting] = useState(false);
 
@@ -89,6 +91,8 @@ export function SubmitModal({ actionLog, onSubmit, onDismiss, seriesMode, contin
     <div className="modal-backdrop">
       <div className="modal submit-modal">
         <div className="submit-modal__td">🏈 TOUCHDOWN!</div>
+
+        <PlayDiagram scenario={scenario} actionLog={actionLog} />
 
         {riskyMoves.length > 0 ? (
           <div className="submit-modal__moves">
