@@ -486,7 +486,11 @@ export default function App() {
     />
   );
   const aboutModal = aboutOpen && (
-    <AboutDialog version={__BBT_VERSION__} onClose={() => setAboutOpen(false)} />
+    <AboutDialog
+      version={__BBT_VERSION__}
+      deployedAt={__BBT_DEPLOYED_AT__}
+      onClose={() => setAboutOpen(false)}
+    />
   );
   const handleSignOut = useCallback(() => {
     if (currentUser) {
