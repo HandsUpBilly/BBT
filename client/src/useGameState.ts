@@ -155,8 +155,8 @@ function recomputeReachable(
  * cost — while leaving the piece at its new square and still unactivated, which
  * was a free-movement exploit against the score.
  */
-function takeSnapshot(state: GameState): GameState['activationSnapshot'] {
-  return { pieces: state.pieces, ballPosition: state.ballPosition };
+function takeSnapshot(state: GameState, remainingMa: number, remainingGfi: number): GameState['activationSnapshot'] {
+  return { pieces: state.pieces, ballPosition: state.ballPosition, remainingMa, remainingGfi };
 }
 
 /**
@@ -171,6 +171,15 @@ function clearSelection(state: GameState, cancelActivation = false): GameState {
     ? { pieces: state.activationSnapshot.pieces, ballPosition: state.activationSnapshot.ballPosition }
     : { pieces: state.pieces, ballPosition: state.ballPosition };
 
+  // Deselecting the piece still spending its post-Blitz leftover movement is a
+  // pause, not a true cancel — the block already resolved and committed. Keep
+  // it resumable with the MA/GFI it actually had left, instead of wiping the
+  // marker and letting a later reselect grant a fresh full MA pool. See #191.
+  const isBlitzPause = cancelActivation
+    && state.blitzResumeId !== null
+    && state.blitzResumeId === state.selectedPieceId
+    && state.activationSnapshot !== null;
+
   return {
     ...state,
     ...restored,
@@ -180,14 +189,14 @@ function clearSelection(state: GameState, cancelActivation = false): GameState {
     committedPath: [],
     walkedSquares: [],
     pathPreview: [],
-    remainingMa: 0,
-    remainingGfi: 0,
+    remainingMa: isBlitzPause ? state.activationSnapshot!.remainingMa : 0,
+    remainingGfi: isBlitzPause ? state.activationSnapshot!.remainingGfi : 0,
     pendingDodgeTargets: [],
     dodgeRerollAvailability: 0,
     pendingProb: 1,
     activationLogStart: 0,
-    activationSnapshot: null,
-    blitzResumeId: null,
+    activationSnapshot: isBlitzPause ? state.activationSnapshot : null,
+    blitzResumeId: isBlitzPause ? state.blitzResumeId : null,
     pendingHandoff: false,
     isHandoffTargeting: false,
     handoffTargets: new Set(),
@@ -231,7 +240,7 @@ function beginActivation(
     pendingProb: 1,
     reachableKeys,
     activationLogStart: state.actionLog.length,
-    activationSnapshot: takeSnapshot(state),
+    activationSnapshot: takeSnapshot(state, ma, gfi),
     blitzResumeId: null,
   };
 }
@@ -274,7 +283,12 @@ function resumeMovementAfterBlitz(
     activationLogStart: state.actionLog.length,
     // The block is resolved and irreversible; from here on a cancel should only
     // undo the movement that follows it, so re-baseline the snapshot.
-    activationSnapshot: { pieces, ballPosition: state.ballPosition },
+    activationSnapshot: {
+      pieces,
+      ballPosition: state.ballPosition,
+      remainingMa: state.remainingMa,
+      remainingGfi: state.remainingGfi,
+    },
     // Marks this piece as mid-leftover-movement so switching to a different
     // piece finalizes it instead of leaving it reselectable later — see #161.
     blitzResumeId: attackerId,
@@ -664,6 +678,13 @@ function selectPiece(prev: GameState, pos: Position): GameState {
   const clickedKey = key(pos);
   const pieceOnSquare = prev.pieces.find(p => key(p.position) === clickedKey);
   if (!pieceOnSquare) return prev;
+
+  // Reselecting the piece still paused mid-post-Blitz leftover movement
+  // resumes it with whatever MA/GFI it actually had left, not a fresh full
+  // pool. See #191.
+  if (prev.blitzResumeId === pieceOnSquare.id) {
+    return resumeMovementAfterBlitz(prev, prev.pieces, pieceOnSquare.id);
+  }
 
   // If a different piece is still spending its post-Blitz leftover
   // movement (block already resolved and committed), finalize it

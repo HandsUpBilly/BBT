@@ -172,6 +172,11 @@ export type AppMode =
 export interface ActivationSnapshot {
   pieces: PlayerPiece[];
   ballPosition: Position | null;
+  // MA/GFI available at the moment of the snapshot, so pausing and resuming a
+  // piece mid-post-Blitz leftover movement (deselect, then reselect the same
+  // piece) restores exactly what was left rather than a fresh full pool.
+  remainingMa: number;
+  remainingGfi: number;
 }
 
 export interface GameState {

@@ -101,6 +101,14 @@ Regression tests: `client/src/activationRollback.test.ts`.
   the ball at all.
 - **A Blitz block costs one square of movement**, deducted from `remainingMa`
   (or `remainingGfi`). Without it a blitzing piece effectively had MA + 1.
+- **Deselecting the piece mid-post-Blitz leftover movement is a pause, not a
+  cancel.** `blitzResumeId` marks a piece whose block has resolved but hasn't
+  spent (or finished spending) its remaining movement. Clicking off it and
+  reselecting it must resume with the MA/GFI it actually had left —
+  `ActivationSnapshot.remainingMa`/`remainingGfi` preserve that across the
+  deselect. Without it, `clearSelection` wiped `blitzResumeId` and reset
+  `remainingMa` to 0, so reselecting the same piece granted a fresh full MA
+  pool (#191).
 - Push outcomes require a legal push-back square. All three push-back results
   (Push, Defender Stumbles, Defender Down) offer the attacker a follow-up into
   the vacated square, since the attacker stays standing in each case.

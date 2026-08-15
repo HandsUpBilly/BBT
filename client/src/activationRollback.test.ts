@@ -106,6 +106,33 @@ describe('cancelling an activation rewinds the board', () => {
     expect(result.current.state.blitzUsed).toBe(true);
     expect(result.current.state.pieces.find(p => p.id === 'orc1')!.position).toEqual({ col: 7, row: 8 });
   });
+
+  it('reselecting a piece paused mid-post-Blitz leftover movement resumes with its leftover MA, not a fresh full pool (#191)', () => {
+    const state = makeState([
+      blocker({ position: { col: 7, row: 10 } }), // MA 6
+      orc({ position: { col: 7, row: 9 } }),
+    ]);
+    const { result } = renderHook(() => useGameState(state));
+
+    act(() => result.current.handleBlockAction('human1', true));
+    act(() => result.current.handleBlockTarget(7, 9)); // choose target (already adjacent)
+    act(() => result.current.handleBlockTarget(7, 9)); // throw the block
+    act(() => result.current.handleBlockOutcomeChoice(['push'], 'push'));
+    act(() => result.current.handlePushChoice(7, 8, false));
+
+    expect(result.current.state.remainingMa).toBe(5);
+
+    // Click off the piece without following up (deselect), as the bug report
+    // describes, then click back on it.
+    act(() => result.current.handleSquareClick(0, 0));
+    expect(result.current.state.selectedPieceId).toBeNull();
+    expect(result.current.state.pieces.find(p => p.id === 'human1')!.activated).toBe(false);
+
+    act(() => result.current.handleSquareClick(7, 10));
+
+    expect(result.current.state.selectedPieceId).toBe('human1');
+    expect(result.current.state.remainingMa).toBe(5);
+  });
 });
 
 /**

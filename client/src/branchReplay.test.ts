@@ -33,7 +33,7 @@ describe('boardHash', () => {
         dodgeTarget: 3, isGfi: false, pickupTarget: null,
         actionProb: 0.5, cumulativeProb: 0.5,
       }],
-      activationSnapshot: { pieces: base.pieces, ballPosition: null },
+      activationSnapshot: { pieces: base.pieces, ballPosition: null, remainingMa: 0, remainingGfi: 0 },
     };
 
     // Two branches being merged always differ in exactly these fields — that is
