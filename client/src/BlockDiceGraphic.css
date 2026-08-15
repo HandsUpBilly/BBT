@@ -12,6 +12,30 @@
   display: block;
 }
 
+.block-die-icon--animated {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: block-die-tumble 3s ease-in-out infinite;
+}
+
+.block-die-icon__face {
+  opacity: 0;
+  animation: block-die-face-cycle 3s steps(1, end) infinite;
+}
+
+@keyframes block-die-tumble {
+  0%, 100% { transform: rotate(0deg) scale(1); }
+  20% { transform: rotate(-9deg) scale(1.04); }
+  40% { transform: rotate(7deg) scale(0.98); }
+  60% { transform: rotate(-5deg) scale(1.03); }
+  80% { transform: rotate(8deg) scale(1); }
+}
+
+@keyframes block-die-face-cycle {
+  0%, 19.999% { opacity: 1; }
+  20%, 100% { opacity: 0; }
+}
+
 /* Shrink as more dice join the row, same shrink-to-fit spirit as the
    movement-roll dice (square__roll-die's max-height) — a lone die reads
    large, two or three share the row without ballooning past it. */
@@ -25,4 +49,19 @@
 
 .block-dice-graphic[data-count="3"] .block-die-icon {
   width: 19%;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .block-die-icon--animated,
+  .block-die-icon__face {
+    animation: none;
+  }
+
+  .block-die-icon__face {
+    opacity: 0;
+  }
+
+  .block-die-icon__face[data-face="push"] {
+    opacity: 1;
+  }
 }

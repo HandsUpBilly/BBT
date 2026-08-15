@@ -1,18 +1,15 @@
 import type { CSSProperties } from 'react';
 import type { BlockOutcomeFace } from './types';
 import { BLOCK_FACE_LABELS, BLOCK_FACE_GLYPHS } from './blockFacePresentation';
+import { BLOCK_OUTCOME_FACES } from './bfs';
 import './BlockDiceGraphic.css';
 
 // Block dice don't carry a single target number the way a dodge or pick-up
-// roll does (a block roll picks from up to 5 outcome faces, not a threshold),
-// so while a block is still being decided (BlockDiceGraphic's dice-count
-// display, before the player has rolled) these icons are decorative — they
-// show recognisable block-die iconography (skull for a "down" result,
-// starburst "pow" for an impact result) rather than a literal rolled face,
-// cycling so a 2- or 3-dice block reads as a genuine handful of block dice
-// instead of identical repeated pips. Once a block has resolved,
+// roll does (a block has five possible face types, not a threshold), so while
+// a block is still being decided these icons cycle through every possible
+// face. They remain a preview rather than a literal rolled result. Once a
+// block has resolved,
 // `BlockFaceGraphic` below shows the actual `resolvedFace` instead.
-export type BlockDieSymbol = 'skull' | 'pow';
 
 /**
  * Which side of the block the dice favour, from the player's point of view.
@@ -26,34 +23,40 @@ export type BlockDieSymbol = 'skull' | 'pow';
  */
 export type BlockDiceFavor = 'attacker' | 'defender';
 
-const FACE_PATTERN: Record<1 | 2 | 3, BlockDieSymbol[]> = {
-  1: ['skull'],
-  2: ['skull', 'pow'],
-  3: ['skull', 'pow', 'skull'],
-};
-
 const FAVOR_COLORS: Record<BlockDiceFavor, { bg: string; stroke: string; pip: string }> = {
   defender: { bg: 'rgba(60,8,8,0.85)', stroke: 'rgba(255,90,90,0.95)', pip: 'rgba(255,150,150,0.95)' },
   attacker: { bg: 'rgba(22,22,26,0.85)', stroke: 'rgba(228,228,235,0.95)', pip: 'rgba(228,228,235,0.95)' },
 };
 
-function BlockDieIcon({ symbol, favor, style }: { symbol: BlockDieSymbol; favor: BlockDiceFavor; style?: CSSProperties }) {
+function BlockDieIcon({ favor, style, dieIndex }: {
+  favor: BlockDiceFavor;
+  style?: CSSProperties;
+  dieIndex: number;
+}) {
   const { bg, stroke, pip } = FAVOR_COLORS[favor];
   return (
-    <svg className="block-die-icon" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg" style={style}>
+    <svg
+      className="block-die-icon block-die-icon--animated"
+      viewBox="0 0 20 20"
+      xmlns="http://www.w3.org/2000/svg"
+      style={{ ...style, animationDelay: `-${dieIndex * 0.17}s` }}
+    >
       <rect x="1" y="1" width="18" height="18" rx="3" ry="3" fill={bg} stroke={stroke} strokeWidth="1.5" />
-      {symbol === 'skull' ? (
-        <>
-          <circle cx="10" cy="8" r="5" fill={pip} />
-          <circle cx="7.6" cy="8" r="1.3" fill={bg} />
-          <circle cx="12.4" cy="8" r="1.3" fill={bg} />
-          <rect x="7" y="12.3" width="6" height="2.6" rx="0.8" fill={pip} />
-          <line x1="9" y1="12.3" x2="9" y2="15" stroke={bg} strokeWidth="0.7" />
-          <line x1="11" y1="12.3" x2="11" y2="15" stroke={bg} strokeWidth="0.7" />
-        </>
-      ) : (
-        <polygon points="10,2 12,8 18,10 12,12 10,18 8,12 2,10 8,8" fill={pip} />
-      )}
+      {BLOCK_OUTCOME_FACES.map((face, faceIndex) => (
+        <text
+          key={face}
+          className="block-die-icon__face"
+          data-face={face}
+          x="10"
+          y="14"
+          textAnchor="middle"
+          fontSize={face === 'both-down' ? 7 : 11}
+          fill={pip}
+          style={{ animationDelay: `-${faceIndex * 0.6 + dieIndex * 0.17}s` }}
+        >
+          {BLOCK_FACE_GLYPHS[face]}
+        </text>
+      ))}
     </svg>
   );
 }
@@ -67,7 +70,7 @@ interface BlockDiceGraphicProps {
 }
 
 export function BlockDiceGraphic({ count, favor, className, size }: BlockDiceGraphicProps) {
-  const label = `Block: ${count} block ${count === 1 ? 'die' : 'dice'} · ${favor === 'attacker' ? 'you pick' : 'defender picks'}`;
+  const label = `Block: ${count} block ${count === 1 ? 'die' : 'dice'} · possible outcomes`;
   const iconStyle = size ? { width: size, height: size } : undefined;
   return (
     <div
@@ -77,8 +80,8 @@ export function BlockDiceGraphic({ count, favor, className, size }: BlockDiceGra
       title={label}
       aria-hidden="true"
     >
-      {FACE_PATTERN[count].map((symbol, i) => (
-        <BlockDieIcon key={i} symbol={symbol} favor={favor} style={iconStyle} />
+      {Array.from({ length: count }, (_, i) => (
+        <BlockDieIcon key={i} favor={favor} style={iconStyle} dieIndex={i} />
       ))}
     </div>
   );

@@ -47,6 +47,8 @@ function declaredBlock(extraPieces: PlayerPiece[] = []): GameState {
       isBlitz: false,
       diceCount: 1,
       picker: 'attacker',
+      attackerAssists: 0,
+      defenderAssists: 0,
       outcomeProbs: blockOutcomeProbabilities(1, 'attacker'),
     },
   };
@@ -570,4 +572,3 @@ describe('scoring a run', () => {
     expect(pushed.weight).toBeCloseTo(2 / 6, 12);
   });
 });
-

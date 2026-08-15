@@ -241,6 +241,8 @@ export interface GameState {
     isBlitz: boolean;
     diceCount: 1 | 2 | 3;
     picker: 'attacker' | 'defender';
+    attackerAssists: number;
+    defenderAssists: number;
     outcomeProbs: Record<BlockOutcomeFace, number>;
   } | null;
   pushTargetKeys: Set<string>;   // candidate push-back squares once an outcome is resolved

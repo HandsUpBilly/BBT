@@ -1,6 +1,8 @@
 import { useId } from 'react';
 import { blockStateProbabilities, type BlockResolution } from './blockBranching';
 import { BOARD_STATE_LABELS } from './branchRun';
+import { BLOCK_OUTCOME_FACES } from './bfs';
+import { BLOCK_FACE_LABELS } from './blockFacePresentation';
 import { useModalFocus } from './useModalFocus';
 import { BlockDiceGraphic } from './BlockDiceGraphic';
 import './SubmitModal.css'; // shared modal-backdrop/modal styles
@@ -9,6 +11,10 @@ import './BlockSplitPanel.css';
 interface Props {
   attackerName: string;
   defenderName: string;
+  attackerStrength: number;
+  attackerAssists: number;
+  defenderStrength: number;
+  defenderAssists: number;
   diceCount: 1 | 2 | 3;
   picker: 'attacker' | 'defender';
   resolution: BlockResolution;
@@ -35,7 +41,9 @@ function pct(p: number): string {
  * like a fixed quote.
  */
 export function BlockSplitPanel({
-  attackerName, defenderName, diceCount, picker, resolution, onAccept, onReject,
+  attackerName, defenderName,
+  attackerStrength, attackerAssists, defenderStrength, defenderAssists,
+  diceCount, picker, resolution, onAccept, onReject,
 }: Props) {
   const titleId = useId();
   const ref = useModalFocus<HTMLDivElement>(onReject);
@@ -44,6 +52,12 @@ export function BlockSplitPanel({
   const { probabilities, deadProbability } = blockStateProbabilities(
     resolution, states.map(() => 1), diceCount, picker,
   );
+  const liveFaces = new Set(states.flatMap(state => state.faces));
+  const turnoverFaces = BLOCK_OUTCOME_FACES.filter(face => !liveFaces.has(face));
+  const attackerEffectiveStrength = attackerStrength + attackerAssists;
+  const defenderEffectiveStrength = defenderStrength + defenderAssists;
+  const slope = diceCount === 1 ? 'even strength' : picker === 'attacker' ? 'downhill' : 'uphill';
+  const diceLabel = `${diceCount} ${diceCount === 1 ? 'die' : 'dice'} · ${slope}`;
 
   return (
     <div className="modal-backdrop">
@@ -58,23 +72,45 @@ export function BlockSplitPanel({
         <h2 id={titleId} className="modal__title">{attackerName} blocks {defenderName}</h2>
         <BlockDiceGraphic
           count={diceCount} favor={picker}
-          className="block-split__dice-graphic" size={40}
+          className="block-split__dice-graphic" size={64}
         />
-        <p className="modal__desc">
-          {diceCount} {diceCount === 1 ? 'die' : 'dice'} ·{' '}
-          {picker === 'attacker' ? 'you pick which one counts' : 'the defender picks which one counts'}
-        </p>
+        <p className="block-split__possible">Possible outcomes</p>
+
+        <div className="block-split__strength" aria-label="Block strength calculation">
+          <div className="block-split__strength-side">
+            <span>{attackerName}</span>
+            <strong>
+              ST {attackerStrength} + {attackerAssists} {attackerAssists === 1 ? 'assist' : 'assists'}
+              {' = '}{attackerEffectiveStrength}
+            </strong>
+          </div>
+          <span className="block-split__versus">vs</span>
+          <div className="block-split__strength-side">
+            <span>{defenderName}</span>
+            <strong>
+              ST {defenderStrength} + {defenderAssists} {defenderAssists === 1 ? 'assist' : 'assists'}
+              {' = '}{defenderEffectiveStrength}
+            </strong>
+          </div>
+          <p className="block-split__dice-label">{diceLabel}</p>
+        </div>
 
         <div className="block-split__rows">
           {states.map((state, i) => (
             <div key={state.kind} className="block-split__row">
-              <span className="block-split__row-label">{BOARD_STATE_LABELS[state.kind]}</span>
+              <span className="block-split__row-label">
+                <strong>{BOARD_STATE_LABELS[state.kind]}</strong>
+                <small>{state.faces.map(face => BLOCK_FACE_LABELS[face]).join(' · ')}</small>
+              </span>
               <span className="block-split__row-prob">{pct(probabilities[i])}</span>
             </div>
           ))}
           {deadFaceCount > 0 && (
             <div className="block-split__row block-split__row--dead">
-              <span className="block-split__row-label">Turnover — drive ends here</span>
+              <span className="block-split__row-label">
+                <strong>Turnover — drive ends here</strong>
+                <small>{turnoverFaces.map(face => BLOCK_FACE_LABELS[face]).join(' · ')}</small>
+              </span>
               <span className="block-split__row-prob">{pct(deadProbability)}</span>
             </div>
           )}
@@ -86,7 +122,7 @@ export function BlockSplitPanel({
         </p>
 
         <div className="submit-modal__actions">
-          <button className="modal__roll-btn" onClick={onAccept}>Roll the Dice</button>
+          <button className="modal__roll-btn" onClick={onAccept}>Progress</button>
           <button className="modal__continue-btn" onClick={onReject}>Cancel</button>
         </div>
       </div>

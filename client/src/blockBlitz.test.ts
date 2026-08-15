@@ -100,6 +100,8 @@ describe('plain Block (no movement)', () => {
     expect(blockChoice).not.toBeNull();
     expect(blockChoice!.diceCount).toBe(1);
     expect(blockChoice!.picker).toBe('attacker');
+    expect(blockChoice!.attackerAssists).toBe(0);
+    expect(blockChoice!.defenderAssists).toBe(0);
     expect(blockChoice!.outcomeProbs).toEqual(blockOutcomeProbabilities(1, 'attacker'));
   });
 
@@ -118,6 +120,8 @@ describe('plain Block (no movement)', () => {
     const { blockChoice } = result.current.state;
     expect(blockChoice!.diceCount).toBe(2);
     expect(blockChoice!.picker).toBe('attacker');
+    expect(blockChoice!.attackerAssists).toBe(1);
+    expect(blockChoice!.defenderAssists).toBe(0);
   });
 
   it('does not count an assister marked by another standing opponent', () => {

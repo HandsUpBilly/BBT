@@ -1449,6 +1449,10 @@ export default function App() {
           <BlockSplitPanel
             attackerName={attacker.name}
             defenderName={defender.name}
+            attackerStrength={attacker.st}
+            attackerAssists={blockChoice.attackerAssists}
+            defenderStrength={defender.st}
+            defenderAssists={blockChoice.defenderAssists}
             diceCount={blockChoice.diceCount}
             picker={blockChoice.picker}
             resolution={blockBoardStates(attacker.skills, defender.skills)}
