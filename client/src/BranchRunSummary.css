@@ -70,12 +70,24 @@
 .branch-summary__branch {
   display: grid;
   grid-template-columns: 1fr auto auto;
+  align-items: center;
   gap: 12px;
+  width: 100%;
   padding: 6px 8px;
+  font: inherit;
   font-size: 0.82rem;
+  color: inherit;
+  text-align: left;
   background: var(--color-surface-2);
+  border: none;
   border-left: 3px solid var(--color-border);
   border-radius: 4px;
+  cursor: pointer;
+}
+
+.branch-summary__branch:hover,
+.branch-summary__branch:focus-visible {
+  background: var(--color-surface-hover);
 }
 
 .branch-summary__branch--scored {
@@ -85,6 +97,13 @@
 .branch-summary__branch--conceded {
   border-left-color: var(--color-border);
   opacity: 0.6;
+}
+
+.branch-summary__branch-path {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .branch-summary__branch-weight {
@@ -98,6 +117,26 @@
   color: var(--color-text-muted);
   min-width: 8ch;
   text-align: right;
+}
+
+.branch-summary__back {
+  align-self: flex-start;
+  margin-bottom: 4px;
+  padding: 4px 0;
+  font-size: 0.82rem;
+  color: var(--color-text-muted);
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+.branch-summary__back:hover {
+  color: var(--color-text);
+}
+
+.branch-summary__detail-title {
+  align-self: flex-start;
+  text-align: left;
 }
 
 .branch-summary__note {

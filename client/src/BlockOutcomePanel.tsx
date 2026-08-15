@@ -66,7 +66,7 @@ export function BlockOutcomePanel({
         tabIndex={-1}
       >
         <h2 id={titleId} className="modal__title">{attackerName} blocks {defenderName}</h2>
-        <BlockDiceGraphic count={diceCount} className="block-outcome__dice-graphic" size={40} />
+        <BlockDiceGraphic count={diceCount} favor={picker} className="block-outcome__dice-graphic" size={40} />
         <p className="modal__desc">
           {diceCount} {diceCount === 1 ? 'die' : 'dice'} · {picker === 'attacker' ? 'Attacker' : 'Defender'} picks —
           check which outcome(s) you'd accept as this block "succeeding"

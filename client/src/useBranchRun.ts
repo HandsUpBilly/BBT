@@ -29,9 +29,11 @@ import {
   declareHandoff,
   declarePass,
   ghostPieces,
+  isBlockPending,
   isRunComplete,
   runSummary,
   selectBranch,
+  splitOnBlock,
   startRun,
   updateViewedState,
   viewedLine,
@@ -105,6 +107,10 @@ export function useBranchRun(initialState: GameState) {
     strip,
     ghosts,
     complete: isRunComplete(run),
+    /** A block has been targeted and is waiting for splitOnBlock — see blockPending. */
+    blockPending: isBlockPending(run),
+    /** Roll the declared block: splits the viewed branch's group into its board states. */
+    handleResolveBlock: useCallback(() => setRun(splitOnBlock), []),
     handleSelectBranch: useCallback((id: string) => {
       setRun(prev => selectBranch(prev, id));
     }, []),

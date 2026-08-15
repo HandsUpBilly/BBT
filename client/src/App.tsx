@@ -17,6 +17,8 @@ import { SeriesLeaderboard } from './SeriesLeaderboard';
 import { SeriesScoreSummary } from './SeriesScoreSummary';
 import { ConfirmDialog } from './ConfirmDialog';
 import { BlockOutcomePanel } from './BlockOutcomePanel';
+import { BlockSplitPanel } from './BlockSplitPanel';
+import { blockBoardStates } from './blockBranching';
 import { blockActionAvailability } from './blockActionAvailability';
 import { UserMenu } from './UserMenu';
 import { LegendMenu } from './LegendMenu';
@@ -1132,7 +1134,6 @@ export default function App() {
     ? state.pathPreview[state.pathPreview.length - 1].pos
     : null;
 
-  const teamLabel = state.activeTeam === 'human' ? 'Human' : 'Orc';
   // Every piece on the active team has had its go. (This used to inspect only
   // the *first* piece on the team, so the status line was wrong the moment a
   // scenario had more than one.)
@@ -1214,11 +1215,6 @@ export default function App() {
         <div className="hud__prob">
           {!compact && seriesCounter && <>{seriesCounter}{' · '}</>}
           <SuccessChanceReadout probability={liveProbPct} visible={showSuccessChance} />
-        </div>
-
-        <div className="hud__team">
-          <span className={`hud__dot hud__dot--${state.activeTeam}`} />
-          <strong>{teamLabel}'s Turn</strong>
         </div>
 
         {!compact && statusLine}
@@ -1368,6 +1364,8 @@ export default function App() {
         && effectiveAppMode === 'puzzle' && activeScenario && (
         <BranchRunSummary
           scenarioName={activeScenario.name}
+          scenario={activeScenario}
+          run={branchedBoards.run}
           summary={branchedBoards.summary}
           branches={branchedBoards.strip}
           onSubmit={handleBranchSubmit}
@@ -1435,6 +1433,27 @@ export default function App() {
             outcomeProbs={blockChoice.outcomeProbs}
             onConfirm={handleBlockOutcomeChoice}
             onCancel={handleCancelSelection}
+          />
+        );
+      })()}
+
+      {/* Declare-time block preview — branching model only. No checklist: the
+          player just sees the dice and the die's rough shape before rolling,
+          then either rolls (splits into board-state branches) or backs out. */}
+      {branchingEnabled && state.blockChoice && state.selectedPieceId && (() => {
+        const { blockChoice } = state;
+        const attacker = state.pieces.find(p => p.id === state.selectedPieceId);
+        const defender = state.pieces.find(p => p.id === blockChoice.defenderId);
+        if (!attacker || !defender) return null;
+        return (
+          <BlockSplitPanel
+            attackerName={attacker.name}
+            defenderName={defender.name}
+            diceCount={blockChoice.diceCount}
+            picker={blockChoice.picker}
+            resolution={blockBoardStates(attacker.skills, defender.skills)}
+            onAccept={branchedBoards.handleResolveBlock}
+            onReject={handleCancelSelection}
           />
         );
       })()}

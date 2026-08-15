@@ -5,6 +5,7 @@ import { applyClick } from './useGameState';
 import { makeState, humanBlocker, orcBlocker, humanThrower } from './test/gameState';
 import { validateScoreSubmission } from '../../shared/scoreValidation.js';
 import {
+  branchPath,
   branchStrip,
   cancelActivation,
   chooseBlockTarget,
@@ -15,6 +16,7 @@ import {
   declareBlock,
   declareHandoff,
   ghostPieces,
+  isBlockPending,
   isRunComplete,
   runSummary,
   selectBranch,
@@ -107,6 +109,37 @@ describe('splitOnBlock', () => {
     const line = viewedLine(run);
     expect(line.state.actionLog.at(-1)).toMatchObject({ kind: 'block', actionProb: 1 });
     expect(line.startCumProb).toBe(1);
+  });
+
+  it('records who was blocking whom on the split, not just the dice', () => {
+    const run = blockRun();
+    const split = Object.values(run.lines).find(l => l.split)!.split!;
+
+    expect(split.attackerName).toBe('Aldric Swiftfoot');
+    expect(split.defenderName).toBe('Grukk Ironjaw');
+  });
+});
+
+describe('branchPath', () => {
+  it('is just the line label before anything has split', () => {
+    const run = startRun(declaredBlock());
+    expect(branchPath(run, run.rootId)).toBe('Main');
+  });
+
+  it('ties a leaf to the specific block that created it', () => {
+    const run = blockRun();
+    const pushed = branchStrip(run).find(e => e.label === 'Pushed')!;
+
+    // A bare "Pushed" says nothing about which block produced it; the path
+    // names the attacker and defender the same way the pre-roll dialog does.
+    expect(branchPath(run, pushed.id)).toBe('Aldric Swiftfoot ⚔ Grukk Ironjaw: Pushed');
+  });
+
+  it('agrees with what branchStrip reports for the same line', () => {
+    const run = blockRun();
+    for (const entry of branchStrip(run)) {
+      expect(branchPath(run, entry.id)).toBe(entry.path);
+    }
   });
 });
 
@@ -245,11 +278,56 @@ describe('declarations across a group', () => {
   });
 });
 
+describe('declaring a block waits for a roll', () => {
+  // Built from a plain board via declareBlock + chooseBlockTarget, unlike
+  // blockRun() above which starts from a blockChoice already set — this is
+  // what App actually drives the pitch through before the split.
+  function declaredNotSplit(): BranchRun {
+    const attacker = humanBlocker({ id: 'attacker', position: { col: 7, row: 10 }, skills: ['Block'] });
+    const defender = orcBlocker({ id: 'defender', position: { col: 7, row: 9 } });
+    let run = startRun(applyClick(makeState([attacker, defender]), { col: 7, row: 10 }));
+    run = declareBlock(run, 'attacker', false);
+    return chooseBlockTarget(run, { col: 7, row: 9 });
+  }
+
+  it('sets blockChoice without splitting the run', () => {
+    const run = declaredNotSplit();
+
+    // The player has picked a target and seen the dice, but nothing has
+    // rolled yet — there is still exactly one line, not three.
+    expect(isBlockPending(run)).toBe(true);
+    expect(viewedLine(run).state.blockChoice).not.toBeNull();
+    expect(branchStrip(run)).toHaveLength(1);
+  });
+
+  it('splits into branches once the roll is accepted', () => {
+    const run = splitOnBlock(declaredNotSplit());
+
+    expect(isBlockPending(run)).toBe(false);
+    expect(branchStrip(run)).toHaveLength(3);
+  });
+
+  it('cancelling the declared block clears it without ever splitting', () => {
+    const run = cancelActivation(declaredNotSplit());
+
+    expect(viewedLine(run).state.blockChoice).toBeNull();
+    expect(viewedLine(run).state.selectedPieceId).toBeNull();
+    expect(branchStrip(run)).toHaveLength(1);
+  });
+});
+
 describe('a second block', () => {
-  /** A separate pairing far from the first, so the two blocks are independent. */
+  /**
+   * A separate pairing far from the first, so the two blocks are independent.
+   * Named differently from blockRun()'s attacker/defender so path tests below
+   * can tell the two blocks apart by name, not just by position.
+   */
   const attacker2 = () =>
-    humanBlocker({ id: 'attacker2', position: { col: 2, row: 10 }, skills: ['Block'] });
-  const defender2 = () => orcBlocker({ id: 'defender2', position: { col: 2, row: 9 } });
+    humanBlocker({
+      id: 'attacker2', name: 'Cedric Linebreaker', position: { col: 2, row: 10 }, skills: ['Block'],
+    });
+  const defender2 = () =>
+    orcBlocker({ id: 'defender2', name: 'Muzgash Skullkrak', position: { col: 2, row: 9 } });
   const carrier = () => humanThrower({ id: 'carrier', position: { col: 5, row: 1 } });
 
   function twoBlocks(): BranchRun {
@@ -295,6 +373,18 @@ describe('a second block', () => {
     run = clickSquare(run, { col: 5, row: 0 });
 
     expect(runSummary(run).expectedDice).toBeCloseTo(2, 12);
+  });
+
+  it('ties every leaf back to both blocks that produced it, not just the nearer one', () => {
+    const run = twoBlocks();
+    const paths = branchStrip(run).map(e => e.path);
+
+    // Nine leaves, but each bare state name ("Pushed", "Down in place",
+    // "Pushed + Down") recurs three times over — once per outcome of the
+    // first block. Only the full path is actually unique per leaf.
+    expect(new Set(paths).size).toBe(9);
+    expect(paths.every(p => p.includes('Aldric Swiftfoot ⚔ Grukk Ironjaw:'))).toBe(true);
+    expect(paths.every(p => p.includes('Cedric Linebreaker ⚔ Muzgash Skullkrak:'))).toBe(true);
   });
 });
 
@@ -347,6 +437,7 @@ describe('submission tree', () => {
     let run = choosePush(blockRun([attacker2, defender2, carrier()]), { col: 7, row: 8 }, false);
     run = declareBlock(run, 'attacker2', false);
     run = chooseBlockTarget(run, { col: 2, row: 9 });
+    run = splitOnBlock(run);
     run = choosePush(run, { col: 2, row: 8 }, false);
     run = clickSquare(run, { col: 5, row: 1 });
     run = clickSquare(run, { col: 5, row: 0 });
@@ -397,7 +488,9 @@ describe('ghostPieces', () => {
 
     // Viewed branch is "Pushed + Down" at (7,8); "Down in place" keeps (7,9).
     const inPlace = ghosts.find(g => g.position.col === 7 && g.position.row === 9);
-    expect(inPlace?.labels).toContain('Down in place');
+    // The label is the full block path now, not the bare state name — a
+    // ghost tooltip has to say which block put a piece where.
+    expect(inPlace?.labels).toContain('Aldric Swiftfoot ⚔ Grukk Ironjaw: Down in place');
   });
 
   it('distinguishes a standing ghost from a prone one on the same square', () => {
@@ -407,7 +500,7 @@ describe('ghostPieces', () => {
 
     // "Pushed" leaves the defender upright on the very square the viewed
     // branch has it lying on — same square, different board.
-    expect(standing?.labels).toContain('Pushed');
+    expect(standing?.labels).toContain('Aldric Swiftfoot ⚔ Grukk Ironjaw: Pushed');
   });
 
   it('returns nothing once every branch agrees', () => {

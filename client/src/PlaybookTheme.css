@@ -258,22 +258,6 @@
   font-weight: 600;
 }
 
-.app--game .hud__team {
-  font-family: var(--font-display);
-  font-size: 0.94rem;
-  font-weight: 600;
-  letter-spacing: 0.03em;
-  text-transform: uppercase;
-}
-
-.app--game .hud__dot--human { background-color: var(--team-human); }
-.app--game .hud__dot--orc { background-color: var(--team-orc); }
-
-.app--game .hud__dot {
-  border-color: rgba(222, 217, 203, 0.28);
-  box-shadow: none;
-}
-
 /* ── Legend ───────────────────────────────────────────────────────────
    Each entry keeps its own hue — the colour is the key to the overlay it
    describes — but sits on a common dark chip instead of a paper tag. */
@@ -1401,10 +1385,6 @@
      counter stays — it is the only place the run's progress is shown. */
   .app--game .hud__prob-label:not(.hud__prob-label--series) {
     display: none;
-  }
-
-  .app--game .hud__team {
-    font-size: 0.78rem;
   }
 
   .app--game .hud .user-menu__name,

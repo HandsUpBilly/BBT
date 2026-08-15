@@ -1,0 +1,99 @@
+import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { BranchRunSummary } from './BranchRunSummary';
+import { branchStrip, choosePush, clickSquare, runSummary, splitOnBlock, startRun } from './branchRun';
+import { applyClick } from './useGameState';
+import { blockOutcomeProbabilities } from './bfs';
+import { makeState, humanBlocker, humanThrower, orcBlocker } from './test/gameState';
+import type { Scenario } from './types';
+
+afterEach(cleanup);
+
+/**
+ * Attacker with Block vs a plain defender, plus a carrier who can walk the
+ * ball in regardless of which board state the block leaves behind — i.e. a
+ * run that finishes with every branch scored, exactly what BranchRunSummary
+ * expects to receive.
+ */
+function scoredRun() {
+  const attacker = humanBlocker({ id: 'attacker', position: { col: 7, row: 10 }, skills: ['Block'] });
+  const defender = orcBlocker({ id: 'defender', position: { col: 7, row: 9 } });
+  const carrier = humanThrower({ id: 'carrier', position: { col: 5, row: 1 } });
+  const selected = applyClick(makeState([attacker, defender, carrier]), { col: 7, row: 10 });
+  const declared = {
+    ...selected,
+    blockChoice: {
+      defenderId: 'defender', isBlitz: false, diceCount: 1 as const, picker: 'attacker' as const,
+      outcomeProbs: blockOutcomeProbabilities(1, 'attacker'),
+    },
+  };
+
+  let run = splitOnBlock(startRun(declared));
+  run = choosePush(run, { col: 7, row: 8 }, false);
+  run = clickSquare(run, { col: 5, row: 1 });
+  run = clickSquare(run, { col: 5, row: 0 });
+  return run;
+}
+
+const scenario: Scenario = {
+  id: 'test-scenario',
+  name: 'Test Play',
+  description: '',
+  activeTeam: 'human',
+  pieces: [
+    { id: 'attacker', team: 'human', role: 'blocker', name: 'Aldric Swiftfoot', ma: 6, st: 3, ag: 3, pa: 3, av: 8, skills: ['Block'], position: { col: 7, row: 10 }, hasBall: false },
+    { id: 'defender', team: 'orc', role: 'blocker', name: 'Grukk Ironjaw', ma: 4, st: 3, ag: 3, pa: 6, av: 9, skills: [], position: { col: 7, row: 9 }, hasBall: false },
+    { id: 'carrier', team: 'human', role: 'thrower', name: 'Sera Quickhand', ma: 6, st: 3, ag: 3, pa: 3, av: 8, skills: [], position: { col: 5, row: 1 }, hasBall: true },
+  ],
+};
+
+function baseProps() {
+  const run = scoredRun();
+  return {
+    scenarioName: scenario.name,
+    scenario,
+    run,
+    summary: runSummary(run),
+    branches: branchStrip(run),
+    onSubmit: vi.fn(),
+    onDismiss: vi.fn(),
+    defaultName: 'Coach',
+  };
+}
+
+describe('BranchRunSummary branch list', () => {
+  it('shows each branch labelled with the block that produced it, not a bare state name', () => {
+    render(<BranchRunSummary {...baseProps()} />);
+
+    // "Pushed" alone would not say which block; the row shows the full path.
+    expect(screen.getByText('Aldric Swiftfoot ⚔ Grukk Ironjaw: Pushed')).toBeTruthy();
+    expect(screen.getByText('Aldric Swiftfoot ⚔ Grukk Ironjaw: Down in place')).toBeTruthy();
+  });
+
+  it('opens a branch\'s own action summary and play diagram on click', () => {
+    render(<BranchRunSummary {...baseProps()} />);
+
+    // Exact match: "Pushed" alone would also match the "Pushed + Down" row.
+    fireEvent.click(screen.getByRole('button', { name: 'View Aldric Swiftfoot ⚔ Grukk Ironjaw: Pushed' }));
+
+    // Detail view: heading is the branch's path, summary body is gone,
+    // and the play diagram + move table (ActionLogDetail) are in its place —
+    // this branch's own block, resolved as a Push Back, shows up as a row.
+    expect(screen.getByRole('heading', { name: 'Aldric Swiftfoot ⚔ Grukk Ironjaw: Pushed' })).toBeTruthy();
+    expect(screen.queryByText(/run complete/)).toBeNull();
+    expect(screen.getByText('Block → Push Back')).toBeTruthy();
+    expect(screen.getByRole('button', { name: /Back to summary/ })).toBeTruthy();
+  });
+
+  it('returns to the summary and its submit controls on Back', () => {
+    const props = baseProps();
+    render(<BranchRunSummary {...props} />);
+
+    fireEvent.click(screen.getAllByRole('button', { name: /^View / })[0]);
+    fireEvent.click(screen.getByRole('button', { name: /Back to summary/ }));
+
+    expect(screen.getByText(/run complete/)).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Submit Score' })).toBeTruthy();
+    expect(props.onSubmit).not.toHaveBeenCalled();
+  });
+});

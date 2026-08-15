@@ -4384,8 +4384,20 @@ independent authoring jobs.
 
 ## Authoring: free navigation
 
-The checklist modal is deleted outright. There is no pre-declaration step. A
-block simply splits the branch set and play continues.
+The checklist is gone, but not the dialog. A block still shows a modal before
+it rolls — dice count, who picks (coloured red when the defender does, white/
+neutral when the attacker does — always the player, since only the active
+piece can declare a block), and the resulting board-state split — the same way
+a dodge shows its target before you click into it. What's gone is the
+checklist part: no checkboxes, no choosing which outcomes count as "success".
+The player either rolls (splitting the branch set) or backs out; there is
+nothing to configure in between.
+
+The split shown in that dialog is computed by valuing every live board state
+equally (nothing has been authored yet, so nothing else is knowable) — which
+is exactly the split the branch strip itself shows the instant the dice are
+rolled. The dialog says plainly that authoring will move these numbers, so a
+pre-roll figure never reads as a promise.
 
 **Lockstep replay.** An action authored while viewing one branch is attempted in
 every branch still in lockstep with it (same authored action sequence since
@@ -4559,6 +4571,26 @@ Sequenced so each phase is independently testable and nothing lands half-wired.
    sum over branches and `shared/scoreValidation.js` still checks a product, so
    a branching run shows its number and says why it stops there rather than
    posting one the server would reject. Phase 5 lifts this.
+
+   **Every branch is labelled by the block that created it, not just its board
+   state.** A bare state name like "Pushed" is not an identity — any block can
+   produce a Pushed branch, so a puzzle with two blocks in it produces leaves
+   that share a short label while meaning entirely different things.
+   `branchPath` walks a line back to the root, collecting `attacker ⚔
+   defender: state` at every split it passes through and joining them with
+   `→`, e.g. `"Cedric ⚔ Muzgash: Pushed → Bramm ⚔ Dorg: Push Back"`. This is
+   what the branch strip, the ghost-overlay tooltips, and the run summary all
+   show — `RunLine.label` stays the bare state name underneath, since that is
+   still what internal lookups and the submission tree key off; `path` is
+   purely the display form.
+
+   **Each branch in the run summary opens its own play-by-play.** Clicking a
+   row swaps the same dialog to that branch's `ActionLogDetail` — the play
+   diagram and move table, sourced straight from `run.lines[id].state.actionLog`
+   — with a Back control returning to the branch list and the submit controls.
+   `ActionLogDetail` is extracted out of `SubmitModal`, which now renders it
+   too, so the single-line and branching models show a move genuinely the same
+   way instead of two components maintaining the same table by hand.
 5. **Scoring. Done.** A branching run submits the tree it was scored from, and
    the server recomputes it. `shared/blockWeights.js` holds the closed form so
    client and validator reach the identical number — two implementations would

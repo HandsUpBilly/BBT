@@ -347,26 +347,6 @@ body,
 }
 .hud__prob-value--risky { color: var(--color-warning); }
 
-/* Active team */
-.hud__team {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  font-size: 1rem;
-}
-
-.hud__dot {
-  display: inline-block;
-  width: 14px;
-  height: 14px;
-  border-radius: 50%;
-  border: 2px solid rgba(255, 255, 255, 0.25);
-  flex-shrink: 0;
-}
-
-.hud__dot--human { background-color: var(--team-human); }
-.hud__dot--orc   { background-color: var(--team-orc); }
-
 /* Status */
 .hud__status {
   flex: 1;
@@ -772,19 +752,6 @@ body,
   .hud__prob {
     min-width: 0;
     flex-shrink: 1;
-  }
-
-  .hud__team {
-    /* The turn indicator is the dot; the words are the first thing to go
-       when a 320px row has to hold five controls. The dot itself must not
-       shrink — left shrinkable it was squeezed to zero width and the only
-       human/orc cue on the screen disappeared. */
-    flex-shrink: 0;
-    gap: 0;
-  }
-
-  .hud__team strong {
-    display: none;
   }
 }
 
