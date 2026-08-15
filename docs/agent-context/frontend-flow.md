@@ -48,9 +48,11 @@ signed in, otherwise clears the guest alias.
 
 The account menu also opens **About** beside Settings and Log Out. Its
 focus-trapped dialog is the single player-facing location for the build version
-(`__BBT_VERSION__`); the home masthead no longer carries a separate version
-label. Because `UserMenu` is shared, About remains available from home,
-archives, Admin Mode, Settings, and the game HUD.
+(`__BBT_VERSION__`) and deployment time (`__BBT_DEPLOYED_AT__`), formatted in
+the viewer's local timezone. Vite stamps the deployment time when it builds the
+bundle; `VITE_DEPLOYED_AT` can override it with an ISO timestamp. The home
+masthead carries neither label. Because `UserMenu` is shared, About remains
+available from home, archives, Admin Mode, Settings, and the game HUD.
 
 ## Settings Screen and Player Prefs
 
@@ -408,7 +410,7 @@ weight. On the home screen it sits beside a deliberately larger account
 trigger in a group anchored 10–12px from the masthead's top-right corner.
 Archive screens use the same control group in the fixed top-right position.
 `__BBT_VERSION__` comes from the root package version at build time (or
-`VITE_APP_VERSION` when supplied) and is displayed in the home masthead.
+`VITE_APP_VERSION` when supplied) and is displayed in About.
 
 ### Published roster portraits
 

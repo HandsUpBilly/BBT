@@ -21,3 +21,27 @@
   font-size: 0.9rem;
   font-variant-numeric: tabular-nums;
 }
+
+.about-dialog__build {
+  display: grid;
+  gap: 8px;
+  padding: 12px 18px;
+  border-block: 1px solid var(--color-border);
+}
+
+.about-dialog__deployment {
+  display: grid;
+  gap: 3px;
+  color: var(--color-text-muted);
+  font-size: 0.82rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.about-dialog__deployment span {
+  color: var(--color-text-disabled);
+  font-family: var(--font-display);
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}

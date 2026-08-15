@@ -173,7 +173,8 @@ Never hand-edit `netlify/functions/scenarioSeed.js`.
 | `VITE_ADMIN_EMAILS` | `client/src/App.tsx` | Same list, controls Admin Mode tab visibility only — not a security boundary |
 | `EDITOR_ALLOW_UNAUTHENTICATED` | `shared/googleAuth.js` | Set to `false` to fail closed when no allowlist is set. Defaults **true** everywhere |
 | `GITHUB_ISSUES_TOKEN` | `shared/githubIssues.js` | Fine-grained token, `HandsUpBilly/BBT` + Issues:RW. Server-only — never a `VITE_` var |
-| `VITE_APP_VERSION` / `COMMIT_REF` | `vite.config.ts` | Build identifier shown in the masthead and attached to reports |
+| `VITE_APP_VERSION` / `COMMIT_REF` | `vite.config.ts` | Build identifier shown in About and attached to reports |
+| `VITE_DEPLOYED_AT` | `vite.config.ts` | Optional ISO timestamp overriding the About dialog's build-time deployment stamp |
 
 ### Editor auth policy
 
