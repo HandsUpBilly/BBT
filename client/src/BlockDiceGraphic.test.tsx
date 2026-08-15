@@ -3,18 +3,19 @@ import { describe, expect, it } from 'vitest';
 import { BlockDiceGraphic, BlockFaceGraphic } from './BlockDiceGraphic';
 
 describe('BlockDiceGraphic', () => {
-  it('draws one icon per die and records who picks', () => {
+  it('draws one animated icon per die with every possible face', () => {
     const { container } = render(<BlockDiceGraphic count={2} favor="defender" />);
     const graphic = container.querySelector('.block-dice-graphic');
 
     expect(graphic?.querySelectorAll('.block-die-icon')).toHaveLength(2);
+    expect(graphic?.querySelectorAll('.block-die-icon__face')).toHaveLength(10);
     expect(graphic?.getAttribute('data-favor')).toBe('defender');
-    expect(graphic?.getAttribute('title')).toContain('defender picks');
+    expect(graphic?.getAttribute('title')).toContain('possible outcomes');
   });
 
-  it('labels the attacker-picks case as the player picking', () => {
+  it('does not describe either side as picking in its player-facing label', () => {
     const { container } = render(<BlockDiceGraphic count={1} favor="attacker" />);
-    expect(container.querySelector('.block-dice-graphic')?.getAttribute('title')).toContain('you pick');
+    expect(container.querySelector('.block-dice-graphic')?.getAttribute('title')).not.toContain('pick');
   });
 });
 

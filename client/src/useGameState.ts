@@ -1130,6 +1130,8 @@ export function applyBlockTarget(prev: GameState, pos: Position): GameState {
       isBlitz: prev.pendingBlockIsBlitz,
       diceCount,
       picker,
+      attackerAssists,
+      defenderAssists,
       outcomeProbs,
     },
   };

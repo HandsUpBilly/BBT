@@ -14,6 +14,8 @@ describe('BlockSplitPanel', () => {
     render(
       <BlockSplitPanel
         attackerName="Aldric" defenderName="Grukk"
+        attackerStrength={3} attackerAssists={0}
+        defenderStrength={3} defenderAssists={0}
         diceCount={1} picker="attacker" resolution={resolution}
         onAccept={vi.fn()} onReject={vi.fn()}
       />,
@@ -23,6 +25,8 @@ describe('BlockSplitPanel', () => {
     expect(screen.getByText('Down in place')).toBeTruthy();
     expect(screen.getByText('Pushed')).toBeTruthy();
     expect(screen.getByText('Turnover — drive ends here')).toBeTruthy();
+    expect(screen.getByText('Attacker Down')).toBeTruthy();
+    expect(screen.getByText('Possible outcomes')).toBeTruthy();
     expect(screen.queryByRole('checkbox')).toBeNull();
   });
 
@@ -32,12 +36,14 @@ describe('BlockSplitPanel', () => {
     render(
       <BlockSplitPanel
         attackerName="Aldric" defenderName="Grukk"
+        attackerStrength={3} attackerAssists={0}
+        defenderStrength={3} defenderAssists={0}
         diceCount={1} picker="attacker" resolution={resolution}
         onAccept={onAccept} onReject={onReject}
       />,
     );
 
-    fireEvent.click(screen.getByRole('button', { name: /Roll the Dice/ }));
+    fireEvent.click(screen.getByRole('button', { name: 'Progress' }));
     expect(onAccept).toHaveBeenCalledOnce();
     expect(onReject).not.toHaveBeenCalled();
 
@@ -45,23 +51,45 @@ describe('BlockSplitPanel', () => {
     expect(onReject).toHaveBeenCalledOnce();
   });
 
-  it('names who picks, matching the dice graphic', () => {
+  it('explains the effective Strength calculation and uphill/downhill dice', () => {
     const { rerender } = render(
       <BlockSplitPanel
         attackerName="Aldric" defenderName="Grukk"
+        attackerStrength={3} attackerAssists={0}
+        defenderStrength={4} defenderAssists={0}
         diceCount={2} picker="defender" resolution={resolution}
         onAccept={vi.fn()} onReject={vi.fn()}
       />,
     );
-    expect(screen.getByText(/the defender picks which one counts/)).toBeTruthy();
+    expect(screen.getByText('ST 3 + 0 assists = 3')).toBeTruthy();
+    expect(screen.getByText('ST 4 + 0 assists = 4')).toBeTruthy();
+    expect(screen.getByText('2 dice · uphill')).toBeTruthy();
+    expect(screen.queryByText(/pick/i)).toBeNull();
 
     rerender(
       <BlockSplitPanel
         attackerName="Aldric" defenderName="Grukk"
+        attackerStrength={3} attackerAssists={1}
+        defenderStrength={3} defenderAssists={0}
         diceCount={2} picker="attacker" resolution={resolution}
         onAccept={vi.fn()} onReject={vi.fn()}
       />,
     );
-    expect(screen.getByText(/you pick which one counts/)).toBeTruthy();
+    expect(screen.getByText('ST 3 + 1 assist = 4')).toBeTruthy();
+    expect(screen.getByText('2 dice · downhill')).toBeTruthy();
+  });
+
+  it('lists every die face that leads to turnover', () => {
+    render(
+      <BlockSplitPanel
+        attackerName="Aldric" defenderName="Grukk"
+        attackerStrength={3} attackerAssists={0}
+        defenderStrength={3} defenderAssists={0}
+        diceCount={1} picker="attacker" resolution={blockBoardStates([], [])}
+        onAccept={vi.fn()} onReject={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByText('Attacker Down · Both Down')).toBeTruthy();
   });
 });

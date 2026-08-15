@@ -91,6 +91,12 @@ Regression tests: `client/src/activationRollback.test.ts`.
   the two players directly involved in the block do not cancel assists.
   Downed players neither assist nor exert tackle zones and cannot be selected
   or targeted.
+- The branching block preview exposes that calculation directly: each player's
+  base ST plus eligible assists, effective ST versus effective ST, and whether
+  the resulting 1–3 dice are even, uphill, or downhill. It is an outcome
+  preview, not a face-selection step: live board states name the die faces that
+  produce them, turnover names every face that ends the drive, and **Progress**
+  commits the split.
 - Block dice use 1–3 dice from the effective-Strength comparison. The player
   chooses acceptable faces; probability is combined according to whether the
   attacker or defender picks the result.
@@ -178,10 +184,9 @@ cancel rolls the block entry back out of the log. A square blocked more than
 once in a turn (defender not pushed off it) shows only the most recent
 block's outcome, matching the movement-dice overwrite-on-repeat convention.
 `BlockDiceGraphic.tsx`'s `BlockFaceGraphic` renders the resolved-face marker;
-its sibling `BlockDiceGraphic` component stays decorative (skull/pow cycling
-by dice count) because it is only ever shown before a block resolves, in
-`BlockOutcomePanel`'s outcome-choice dialog, where no single face is "the"
-result yet.
+its sibling `BlockDiceGraphic` is a pre-roll preview that animates each die
+through all five block-face types, with a static Push face under
+`prefers-reduced-motion`. No single face is "the" result yet.
 
 A resolved push (push / defender-stumbles-falls / defender-down with a legal
 push square) also draws a pushed-from/pushed-to indicator: an ice-blue arc
@@ -203,6 +208,7 @@ rather than displacing it.
 | `bfs.test.ts` | pathfinding, reachability, roll targets, pass ranges, block dice, pushes |
 | `useGameState.test.ts` | pass/handoff regressions, loose-ball pickup, touchdowns |
 | `blockBlitz.test.ts` | block/blitz targeting, assists, outcomes, pushes, follow-ups |
+| `BlockSplitPanel.test.tsx` | possible outcomes, turnover faces, ST/assist arithmetic, uphill/downhill dice |
 | `activationRollback.test.ts` | cancel-rewind, ball-drop-on-knockdown, blitz movement cost |
 
 Run everything (lint + shared + client + build) from the repo root:

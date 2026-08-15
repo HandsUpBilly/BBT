@@ -24,6 +24,7 @@ function scoredRun() {
     ...selected,
     blockChoice: {
       defenderId: 'defender', isBlitz: false, diceCount: 1 as const, picker: 'attacker' as const,
+      attackerAssists: 0, defenderAssists: 0,
       outcomeProbs: blockOutcomeProbabilities(1, 'attacker'),
     },
   };

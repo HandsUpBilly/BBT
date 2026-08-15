@@ -4,8 +4,74 @@
 }
 
 .block-split__dice-graphic {
-  margin: 4px 0 2px;
-  gap: 10px;
+  margin: 2px 0 0;
+  gap: 14px;
+}
+
+.block-split__possible {
+  color: var(--color-text-strong);
+  font-family: var(--font-display);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.block-split__strength {
+  width: 100%;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+  padding: 9px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  background: var(--color-surface-1);
+}
+
+.block-split__strength-side {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+  text-align: left;
+}
+
+.block-split__strength-side:last-of-type {
+  text-align: right;
+}
+
+.block-split__strength-side span {
+  overflow: hidden;
+  color: var(--color-text-muted);
+  font-size: 0.72rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.block-split__strength-side strong {
+  color: var(--color-text-strong);
+  font-size: 0.82rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.block-split__versus {
+  color: var(--color-text-disabled);
+  font-family: var(--font-display);
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.block-split__dice-label {
+  grid-column: 1 / -1;
+  padding-top: 6px;
+  border-top: 1px solid var(--color-border-subtle);
+  color: var(--color-accent);
+  font-family: var(--font-display);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
 }
 
 .block-split__rows {
@@ -33,8 +99,19 @@
 }
 
 .block-split__row-label {
+  display: grid;
+  gap: 2px;
   color: var(--color-text);
   text-align: left;
+}
+
+.block-split__row-label strong {
+  font-weight: 600;
+}
+
+.block-split__row-label small {
+  color: var(--color-text-muted);
+  font-size: 0.7rem;
 }
 
 .block-split__row-prob {
@@ -46,6 +123,10 @@
 
 .block-split__row--dead .block-split__row-label {
   color: var(--color-text-muted);
+}
+
+.block-split__row--dead .block-split__row-label small {
+  color: var(--color-warning);
 }
 
 .block-split__row--dead .block-split__row-prob {

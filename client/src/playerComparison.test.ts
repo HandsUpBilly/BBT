@@ -21,6 +21,7 @@ const twoPlayerStates: Array<[string, GameState]> = [
   ['a block resolving its outcome', stateWith({
     blockChoice: {
       defenderId: 'defender', isBlitz: false, diceCount: 2, picker: 'attacker',
+      attackerAssists: 0, defenderAssists: 0,
       outcomeProbs: {
         'attacker-down': 0, 'both-down': 0, push: 0, 'defender-stumbles': 0, 'defender-down': 0,
       },

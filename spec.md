@@ -4385,13 +4385,13 @@ independent authoring jobs.
 ## Authoring: free navigation
 
 The checklist is gone, but not the dialog. A block still shows a modal before
-it rolls — dice count, who picks (coloured red when the defender does, white/
-neutral when the attacker does — always the player, since only the active
-piece can declare a block), and the resulting board-state split — the same way
-a dodge shows its target before you click into it. What's gone is the
-checklist part: no checkboxes, no choosing which outcomes count as "success".
-The player either rolls (splitting the branch set) or backs out; there is
-nothing to configure in between.
+it progresses: large dice cycling through all possible faces; base ST plus
+assists and effective ST versus effective ST; whether the resulting dice are
+even, uphill, or downhill; and the resulting board-state split. Each outcome
+names the faces that lead to it, including every face grouped under Turnover.
+The heading is **Possible outcomes**, not language about choosing which result
+counts. There are no checkboxes and no outcomes to configure; **Progress**
+splits the branch set and Cancel backs out.
 
 The split shown in that dialog is computed by valuing every live board state
 equally (nothing has been authored yet, so nothing else is knowable) — which
