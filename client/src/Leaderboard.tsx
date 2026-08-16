@@ -68,18 +68,18 @@ export function Leaderboard({ scenario, onBack, highlightId, initialEntries, onE
         <button className="lb-back-btn" onClick={onBack}>← Back</button>
         <div>
           <h2 className="leaderboard__title">{scenario.name}</h2>
-          <p className="leaderboard__subtitle">Top plays by success probability</p>
+          <p className="leaderboard__subtitle">RANKING: Highest success probability first.</p>
         </div>
         <button className="lb-reload-btn" onClick={load} disabled={loading} title="Reload">
-          {loading ? '…' : '↻'}
+          {loading ? '...' : '↻'}
         </button>
       </div>
 
-      {loading && <div className="leaderboard__state">Loading…</div>}
+      {loading && <div className="leaderboard__state">Loading...</div>}
       {error   && <div className="leaderboard__state leaderboard__state--error">{error}</div>}
 
       {!loading && !error && entries.length === 0 && (
-        <div className="leaderboard__state">No scores yet — be the first!</div>
+        <div className="leaderboard__state">No scores recorded.</div>
       )}
 
       {!loading && !error && entries.length > 0 && (

@@ -1,7 +1,7 @@
 {
   "id": "default",
   "name": "Tutorial",
-  "description": "Learn movement, dodging, handoffs, passing, blocks, loose-ball pickups, and Parallel Universes across six guided touchdown plays.",
+  "description": "Six drills cover Movement, Dodging, Hand-offs, Passing, Blocking, Pickups, and Parallel Universes. Score a touchdown in each drill.",
   "scenarioIds": [
     "scenario-001",
     "scenario-004",

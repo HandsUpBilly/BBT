@@ -26,7 +26,7 @@ export function TutorialLessonDialog({ lesson, step, total, onDismiss }: Props) 
         aria-labelledby={titleId}
         tabIndex={-1}
       >
-        <p className="tutorial-lesson__progress">Tutorial {step} of {total}</p>
+        <p className="tutorial-lesson__progress">Tutorial Drill {step} / {total}</p>
         <h2 id={titleId} className="modal__title">{lesson.title}</h2>
         <div className="tutorial-lesson__copy">
           {lesson.paragraphs.map(paragraph => <p key={paragraph}>{paragraph}</p>)}
@@ -37,7 +37,7 @@ export function TutorialLessonDialog({ lesson, step, total, onDismiss }: Props) 
             checked={disableFutureLessons}
             onChange={event => setDisableFutureLessons(event.target.checked)}
           />
-          <span>Don't show tutorial lessons again</span>
+          <span>Do not show these rules briefings again</span>
         </label>
         <div className="submit-modal__actions">
           <button
@@ -45,7 +45,7 @@ export function TutorialLessonDialog({ lesson, step, total, onDismiss }: Props) 
             className="modal__roll-btn"
             onClick={() => onDismiss(disableFutureLessons)}
           >
-            Start puzzle
+            Begin Puzzle
           </button>
         </div>
       </div>

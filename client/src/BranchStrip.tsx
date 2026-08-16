@@ -50,7 +50,7 @@ export function BranchStrip({ branches, deadWeight, score, onSelect, onConcede }
         )}
         {needsAttention > 0 && (
           <span className="branch-strip__alert" role="status">
-            {needsAttention} universe{needsAttention === 1 ? '' : 's'} need a plan
+            {needsAttention} universe{needsAttention === 1 ? '' : 's'} unresolved
           </span>
         )}
       </header>
@@ -76,7 +76,7 @@ export function BranchStrip({ branches, deadWeight, score, onSelect, onConcede }
               <button
                 type="button"
                 className="branch-chip__concede"
-                title={`Give up on "${branch.path}" — costs ${pct(branch.weight)}`}
+                title={`Give up on "${branch.path}"; cost ${pct(branch.weight)}`}
                 aria-label={`Give up on ${branch.path}`}
                 onClick={() => onConcede(branch.id)}
               >
@@ -89,7 +89,7 @@ export function BranchStrip({ branches, deadWeight, score, onSelect, onConcede }
 
       {unresolved.length > 0 && (
         <p className="branch-strip__hint">
-          Every universe needs to score or be given up before the run is finished.
+          Resolve every universe. Score or give it up.
         </p>
       )}
     </section>

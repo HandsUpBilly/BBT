@@ -48,7 +48,7 @@ describe('display name', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Save' }));
 
     expect(props.onRename).not.toHaveBeenCalled();
-    expect(screen.getByText(/starts fresh/)).toBeTruthy();
+    expect(screen.getByText(/starts a new record/)).toBeTruthy();
 
     fireEvent.click(screen.getByRole('button', { name: 'Change Name' }));
     expect(props.onRename).toHaveBeenCalledWith('New Name');
@@ -142,7 +142,7 @@ describe('pitch display', () => {
 describe('tutorial guidance', () => {
   it('is on by default and reports being turned off', () => {
     const props = renderScreen({ showTutorialGuidance: true });
-    const toggle = screen.getByRole('checkbox', { name: /Tutorial guidance/ });
+    const toggle = screen.getByRole('checkbox', { name: /Rules briefings/ });
 
     expect((toggle as HTMLInputElement).checked).toBe(true);
     fireEvent.click(toggle);
@@ -151,7 +151,7 @@ describe('tutorial guidance', () => {
 
   it('reports being turned back on', () => {
     const props = renderScreen({ showTutorialGuidance: false });
-    fireEvent.click(screen.getByRole('checkbox', { name: /Tutorial guidance/ }));
+    fireEvent.click(screen.getByRole('checkbox', { name: /Rules briefings/ }));
     expect(props.onShowTutorialGuidanceChange).toHaveBeenCalledWith(true);
   });
 });

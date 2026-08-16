@@ -6,7 +6,7 @@ import {
 } from './tutorialLessons';
 
 describe('tutorial lessons', () => {
-  it('uses the progressive tutorial order', () => {
+  it('matches the Tutorial drill order', () => {
     expect(TUTORIAL_LESSON_IDS).toEqual([
       'scenario-001',
       'scenario-004',

@@ -71,7 +71,7 @@ export async function startGame(page: Page, playerName = 'E2E Tester'): Promise<
 
   // A fresh identity sees the first Tutorial lesson before the board accepts
   // input. Layout tests exercise the game surface itself, so acknowledge it.
-  const startPuzzle = page.getByRole('button', { name: 'Start puzzle' });
+  const startPuzzle = page.getByRole('button', { name: 'Begin Puzzle' });
   if (await startPuzzle.isVisible()) await startPuzzle.click();
 }
 

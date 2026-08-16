@@ -75,14 +75,14 @@ function progressFromEntries(
 function formatProgress(progress?: ScenarioProgress): string {
   if (!progress) return 'Checking history...';
   if (!progress.played) {
-    return progress.entries > 0 ? `Not played · ${progress.entries} ranked` : 'Not played';
+    return progress.entries > 0 ? `Not played, ${progress.entries} ranked` : 'Not played';
   }
   // Rank is only meaningful while the entry is inside the returned top slice.
   // Outside it we still know the player's own best, so show that alone rather
   // than an invented position.
   return progress.rank === null
     ? `Best ${pct(progress.bestPercent ?? 0)}`
-    : `Best ${pct(progress.bestPercent ?? 0)} · Rank #${progress.rank}`;
+    : `Best ${pct(progress.bestPercent ?? 0)}, Rank #${progress.rank}`;
 }
 
 export function ScenarioSelect({
@@ -124,7 +124,7 @@ export function ScenarioSelect({
     <div className="scenario-select">
       <div className="scenario-select__header">
         <div className="scenario-select__brand">
-          <span className="scenario-select__eyebrow">The final turn · Do or die</span>
+          <span className="scenario-select__eyebrow">The final turn: Do or die</span>
           <h1 className="scenario-select__title">Turn 16</h1>
           <p className="scenario-select__subtitle">
             One turn left. Control the risk. Put the Reavers in the end zone.

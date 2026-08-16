@@ -123,7 +123,7 @@ function DiceFace({ target }: { target: number }) {
 function GfiFace() {
   // Die showing face 2 — blue tint to distinguish from dodge dice
   return (
-    <RollDie label="Go For It roll: 2+">
+    <RollDie label="Rush roll: 2+">
       <svg className="gfi-die" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
         <rect x="1" y="1" width="18" height="18" rx="3" ry="3"
           fill="rgba(10,20,40,0.80)" stroke="rgba(80,160,255,0.95)" strokeWidth="1.5" />
@@ -600,7 +600,7 @@ export function Pitch({
     : state.isPassTargeting
       ? 'Pass'
       : state.isHandoffTargeting
-        ? 'Hand Off'
+        ? 'Hand-off'
         : state.pendingBlockIsBlitz
           ? 'Blitz'
         : 'Move';
@@ -690,7 +690,7 @@ export function Pitch({
     }
     if (isTarget) parts.push(isTarget);
     else if (reachable) parts.push('reachable');
-    if (gfi) parts.push('Go For It 2 plus');
+    if (gfi) parts.push('Rush 2 plus');
     if (dodge !== null) parts.push(`dodge ${dodge} plus`);
     if (pickup !== null) parts.push(`pickup ${pickup} plus`);
     if (blockFace !== null) parts.push(`block result: ${BLOCK_FACE_LABELS[blockFace]}`);
@@ -806,7 +806,7 @@ export function Pitch({
         ? movementStartMap.get(k) ?? null
         : null;
 
-      const targetDescription = isHandoffTarget ? 'handoff target'
+      const targetDescription = isHandoffTarget ? 'hand-off target'
         : isPassReceiver ? 'pass target'
         : isBlockTarget ? 'block target'
         : isPushTarget ? 'push-back square'

@@ -58,18 +58,18 @@ export function SeriesLeaderboard({ onBack, highlightId, initialEntries, onEntri
         <button className="lb-back-btn" onClick={onBack}>← Back</button>
         <div>
           <h2 className="leaderboard__title">Series Leaderboard</h2>
-          <p className="leaderboard__subtitle">Top runs by average success probability across all puzzles</p>
+          <p className="leaderboard__subtitle">RANKING: Highest average success probability first.</p>
         </div>
         <button className="lb-reload-btn" onClick={load} disabled={loading} title="Reload">
-          {loading ? '…' : '↻'}
+          {loading ? '...' : '↻'}
         </button>
       </div>
 
-      {loading && <div className="leaderboard__state">Loading…</div>}
+      {loading && <div className="leaderboard__state">Loading...</div>}
       {error   && <div className="leaderboard__state leaderboard__state--error">{error}</div>}
 
       {!loading && !error && entries.length === 0 && (
-        <div className="leaderboard__state">No series runs yet — be the first!</div>
+        <div className="leaderboard__state">No series runs recorded.</div>
       )}
 
       {!loading && !error && entries.length > 0 && (

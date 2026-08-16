@@ -23,7 +23,7 @@ interface Props {
 
 const ACTIONS: PieceMenuAction[] = [
   { label: 'Move', key: 'move' },
-  { label: 'Hand Off', key: 'handoff' },
+  { label: 'Hand-off', key: 'handoff' },
   { label: 'Pass', key: 'pass' },
   { label: 'Block', key: 'block' },
   { label: 'Blitz', key: 'blitz' },

@@ -75,7 +75,7 @@ export function useBranchRun(initialState: GameState) {
     handleSquareClick: useCallback((col: number, row: number) => {
       setRun(prev => clickSquare(prev, { col, row }));
     }, []),
-    // Hover is preview-only, so update just the viewed universe.
+    // Hover is preview-only, so update only the viewed universe.
     handleSquareHover: useCallback((col: number, row: number) => {
       setRun(prev => updateViewedState(prev, state => applySquareHover(state, { col, row })));
     }, []),

@@ -1,7 +1,7 @@
 {
   "id": "scenario-001",
   "name": "Reikland's Opening Drive",
-  "description": "Nuffle smiles on the Reavers' first snap. Swiftfoot has the ball and two Orc Linemen stand between him and glory — find the safest path to the end zone.",
+  "description": "OBJECTIVE: Carry the ball into the Human End Zone. Two Orc Linemen block the direct route. Choose the safest path.",
   "activeTeam": "human",
   "published": true,
   "pieces": [

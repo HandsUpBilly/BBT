@@ -154,7 +154,7 @@ function describeSubmitError(error: unknown): string {
   if (error instanceof ApiError) {
     if (error.status === 401) return 'Your sign-in expired. Sign in again and resubmit.';
     if (error.status === 400) return error.message;
-    if (error.status === 429) return 'Too many submissions just now — wait a moment and try again.';
+    if (error.status === 429) return 'SUBMISSION HALTED: Wait a moment, then try again.';
     if (error.status >= 500) return 'The leaderboard is unavailable right now. Try again shortly.';
     return error.message;
   }
@@ -200,7 +200,7 @@ function IdentityGate({ authConfigured, googleSignedIn, onGoogleSignIn, onAlias 
     <div className="identity-gate">
       <div className="identity-gate__panel">
         <div className="identity-gate__header">
-          <span className="identity-gate__eyebrow">The final turn · Do or die</span>
+          <span className="identity-gate__eyebrow">The final turn: Do or die</span>
           <h1 className="identity-gate__title">Turn 16</h1>
           <p className="identity-gate__subtitle">
             One turn remains. Sign the team sheet and find the route to the end zone.
@@ -446,7 +446,7 @@ export default function App() {
   // would 401. Offer the fix before they lose a run to it.
   const expiredBanner = sessionExpired && (
     <div className="app__notice app__notice--warning" role="status">
-      <span>Your Google sign-in has expired — scores won't save until you sign in again.</span>
+      <span>SIGN-IN EXPIRED: Scores cannot be saved until you sign in again.</span>
       <button type="button" className="app__notice-action" onClick={() => { void signIn(); }}>
         Sign in again
       </button>
@@ -1150,28 +1150,28 @@ export default function App() {
     ? state.pieces.find(piece => piece.id === state.blitzTargetId) ?? null
     : null;
   const activationStatus = state.isHandoffTargeting
-    ? 'Select a receiver to hand off to · Esc to cancel'
+    ? 'HAND-OFF: Select a receiver. Press Esc to cancel.'
     : state.isPassTargeting
-    ? 'Select a receiver to throw to · Esc to cancel'
+    ? 'PASS: Select a receiver. Press Esc to cancel.'
     : state.isBlockTargeting
     ? (state.pendingBlockIsBlitz
-        ? 'Select the opponent to Blitz · Esc to cancel'
-        : 'Select an adjacent opponent to block · Esc to cancel')
+        ? 'BLITZ: Select the target. Press Esc to cancel.'
+        : 'BLOCK: Select an adjacent opponent. Press Esc to cancel.')
     : state.pendingBlockResolution
     ? (state.pendingBlockResolution.offerFollowUp
-        ? 'Choose a push-back square (Defender Down allows a follow-up)'
-        : 'Choose a push-back square')
+        ? 'PUSH BACK: Choose a square. Defender Down allows a Follow-up.'
+        : 'PUSH BACK: Choose a square.')
     : state.pendingHandoff
-    ? `Hand Off declared — move up to ${state.remainingMa} MA, then click piece to hand off · Esc to cancel`
+    ? `HAND-OFF DECLARED: Move up to ${state.remainingMa} MA, then select the receiver. Press Esc to cancel.`
     : state.pendingPass
-    ? `Pass declared — move up to ${state.remainingMa} MA, then click piece to throw · Esc to cancel`
+    ? `PASS DECLARED: Move up to ${state.remainingMa} MA, then select the receiver. Press Esc to cancel.`
     : state.pendingBlock
-    ? `Blitz ${blitzTarget?.name ?? 'target'} — move into contact, then click the target to block · ${state.remainingMa} MA left`
+    ? `BLITZ: Move into contact with ${blitzTarget?.name ?? 'the target'}, then select the target. ${state.remainingMa} MA remaining.`
     : allActivated && !state.selectedPieceId
-    ? 'Every player has acted — Restart to try a different line'
+    ? 'TURN COMPLETE: Every player has been activated. Restart to test another play.'
     : state.selectedPieceId
-    ? `Planning — ${state.remainingMa} MA left · Esc to cancel`
-    : 'Select your piece to move';
+    ? `ACTIVATION: ${state.remainingMa} MA remaining. Press Esc to cancel.`
+    : 'ACTIVATION: Select a player.';
 
   // Live probability: committed actions × pending rolls not yet committed ×
   // the rolls on the route currently being previewed. The preview factor is
@@ -1202,7 +1202,7 @@ export default function App() {
   ) : null;
   const statusLine = (
     <div className="hud__status">
-      {compact && seriesCounter && <>{seriesCounter}{' · '}</>}
+      {compact && seriesCounter && <>{seriesCounter}{': '}</>}
       {activationStatus}
     </div>
   );
@@ -1220,7 +1220,7 @@ export default function App() {
         {accountMenu}
 
         <div className="hud__prob">
-          {!compact && seriesCounter && <>{seriesCounter}{' · '}</>}
+          {!compact && seriesCounter && <>{seriesCounter}{': '}</>}
           <SuccessChanceReadout probability={liveProbPct} visible={showSuccessChance} />
         </div>
 
@@ -1230,7 +1230,7 @@ export default function App() {
           className={`hud__zoom${zoomEnabled ? ' hud__zoom--active' : ''}`}
           onClick={() => setZoomOverride(!zoomEnabled)}
           title="Zoom to legal moves"
-          aria-label={zoomEnabled ? 'Zoom on — show the whole pitch' : 'Zoom to legal moves'}
+          aria-label={zoomEnabled ? 'Zoom on. Show the whole pitch' : 'Zoom to legal moves'}
           aria-pressed={zoomEnabled}
         >
           <span className="hud__btn-icon" aria-hidden="true">🔍</span>
@@ -1426,7 +1426,7 @@ export default function App() {
         const { canBlock, canBlitz } = blockActionAvailability(menuPiece, state);
         const menuActions: PieceMenuAction[] = [
           { label: 'Move',     key: 'move' },
-          { label: 'Hand Off', key: 'handoff', disabled: !canHandoff },
+          { label: 'Hand-off', key: 'handoff', disabled: !canHandoff },
           { label: 'Pass',     key: 'pass',    disabled: !canPass },
           { label: 'Block',    key: 'block',   disabled: !canBlock },
           { label: 'Blitz',    key: 'blitz',   disabled: !canBlitz },

@@ -3,7 +3,7 @@ import { scenarios } from '../scenarios';
 import { defaultSeries, resolveSeriesScenarios } from '.';
 
 describe('Tutorial series', () => {
-  it('uses the progressive six-puzzle order', () => {
+  it('uses the six Tutorial drills in rules order', () => {
     expect(defaultSeries.name).toBe('Tutorial');
     expect(resolveSeriesScenarios(defaultSeries, scenarios).map(scenario => scenario.id)).toEqual([
       'scenario-001',

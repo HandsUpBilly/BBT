@@ -18,7 +18,7 @@ function pct(p: number): string {
 
 function when(iso: string): string {
   const date = new Date(iso);
-  if (Number.isNaN(date.getTime())) return '—';
+  if (Number.isNaN(date.getTime())) return 'N/A';
   return date.toLocaleString(undefined, {
     month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit',
   });
@@ -77,8 +77,7 @@ export function AttemptHistory({ scenarioId }: Props) {
       <section className="attempts" aria-labelledby="attempts-title">
         <h3 className="attempts__title" id="attempts-title">Your attempts</h3>
         <p className="attempts__empty">
-          Every run you finish at this puzzle is recorded here, on this device,
-          so you can see whether your line is getting better.
+          Completed runs are recorded on this device. Use them to compare each play.
         </p>
       </section>
     );
@@ -164,7 +163,7 @@ export function AttemptHistory({ scenarioId }: Props) {
 
       <table className="attempts__table">
         <caption className="attempts__caption">
-          Kept on this device only — signing in elsewhere won&rsquo;t bring it along.
+          LOCAL ONLY: This record does not follow your account to another device.
         </caption>
         <thead>
           <tr>

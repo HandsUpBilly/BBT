@@ -338,7 +338,7 @@ export function PuzzleEditor({ onBack, onPlay, previewScenario, idToken }: Props
   function requestPublish() {
     setConfirm({
       title: 'Publish drafts to players?',
-      message: 'Every saved draft change — new puzzles, edits, deletions, and enable/disable flags — becomes live for players immediately.',
+      message: 'PUBLISH: Every saved change becomes live immediately. This includes new puzzles, edits, deletions, and enabled or disabled puzzles.',
       confirmLabel: 'Publish',
       run: () => { void publish(); },
     });
@@ -464,7 +464,7 @@ export function PuzzleEditor({ onBack, onPlay, previewScenario, idToken }: Props
         </div>
         <div className="editor__header-actions">
           {hasUnsavedChanges && (
-            <span className="editor__unsaved">Unsaved changes — save before publishing</span>
+            <span className="editor__unsaved">Unsaved changes. Save before publishing.</span>
           )}
           <button className="btn btn--secondary" onClick={() => guardUnsaved(onBack, 'Leaving the editor')}>Back</button>
           <button className="btn btn--primary" onClick={() => onPlay(draft)} disabled={validationErrors.length > 0}>
@@ -473,10 +473,10 @@ export function PuzzleEditor({ onBack, onPlay, previewScenario, idToken }: Props
           <button
             className="btn btn--primary"
             disabled={publishing || hasUnsavedChanges}
-            title={hasUnsavedChanges ? 'Save your changes before publishing — Publish only pushes saved drafts live.' : undefined}
+            title={hasUnsavedChanges ? 'Save changes before publishing. Only saved drafts can be published.' : undefined}
             onClick={requestPublish}
           >
-            {publishing ? 'Publishing…' : 'Publish Drafts'}
+            {publishing ? 'Publishing...' : 'Publish Drafts'}
           </button>
         </div>
       </header>
@@ -500,8 +500,8 @@ export function PuzzleEditor({ onBack, onPlay, previewScenario, idToken }: Props
                   <span>{scenario.id}</span>
                   <span className="editor__puzzle-desc">{scenario.description}</span>
                   <span>
-                    {scenario.activeTeam === 'orc' ? 'Orcs' : 'Humans'} active ·{' '}
-                    {scenario.pieces.length} player{scenario.pieces.length === 1 ? '' : 's'} ·{' '}
+                    {scenario.activeTeam === 'orc' ? 'Orcs' : 'Humans'} active,{' '}
+                    {scenario.pieces.length} player{scenario.pieces.length === 1 ? '' : 's'},{' '}
                     {scenario.published === false ? 'Disabled' : 'Enabled'}
                   </span>
                   <span className={position >= 0 ? 'editor__puzzle-series' : 'editor__puzzle-series editor__puzzle-series--out'}>

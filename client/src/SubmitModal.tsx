@@ -52,7 +52,7 @@ export function SubmitModal({ scenario, actionLog, onSubmit, onDismiss, seriesMo
         {seriesMode ? (
           <div className="submit-modal__actions">
             <button className="modal__roll-btn" disabled={submitting} onClick={() => runSubmit('')}>
-              {submitting ? 'Saving…' : error ? 'Try Again' : continueLabel ?? 'Continue'}
+              {submitting ? 'Saving...' : error ? 'Try Again' : continueLabel ?? 'Continue'}
             </button>
             {onReviewBoard && (
               <button className="modal__continue-btn" disabled={submitting} onClick={onReviewBoard}>
@@ -85,7 +85,7 @@ export function SubmitModal({ scenario, actionLog, onSubmit, onDismiss, seriesMo
                 disabled={!name.trim() || submitting}
                 onClick={() => runSubmit(name.trim())}
               >
-                {submitting ? 'Saving…' : error ? 'Try Again' : 'Submit Score'}
+                {submitting ? 'Saving...' : error ? 'Try Again' : 'Submit Score'}
               </button>
               <button className="modal__continue-btn" disabled={submitting} onClick={onDismiss}>
                 Skip

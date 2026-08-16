@@ -24,7 +24,7 @@ test('explains the dice and fits every supported viewport', async ({ page }) => 
   const dialog = page.locator('.block-split');
   await expect(dialog.getByText('Possible outcomes')).toBeVisible();
   await expect(dialog.getByText(/ST \d+ \+ \d+ assists? = \d+/).first()).toBeVisible();
-  await expect(dialog.getByText(/\d dice? · (even strength|uphill|downhill)/)).toBeVisible();
+  await expect(dialog.getByText(/\d dice?, (even strength|uphill|downhill)/)).toBeVisible();
   await expect(dialog.locator('.block-split__row--dead small')).not.toBeEmpty();
   await expect(dialog.getByRole('button', { name: 'Progress' })).toBeVisible();
   await expect(dialog.getByText(/pick/i)).toHaveCount(0);

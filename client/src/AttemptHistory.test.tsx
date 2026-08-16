@@ -36,7 +36,7 @@ describe('AttemptHistory', () => {
   it('explains itself rather than showing an empty table before the first run', () => {
     render(<AttemptHistory scenarioId="scn-001" />);
 
-    expect(screen.getByText(/every run you finish/i)).toBeTruthy();
+    expect(screen.getByText(/completed runs are recorded/i)).toBeTruthy();
     expect(screen.queryByRole('table')).toBeNull();
   });
 
@@ -131,6 +131,6 @@ describe('AttemptHistory', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Clear history' }));
 
     expect(screen.queryByRole('table')).toBeNull();
-    expect(screen.getByText(/every run you finish/i)).toBeTruthy();
+    expect(screen.getByText(/completed runs are recorded/i)).toBeTruthy();
   });
 });

@@ -5,7 +5,7 @@ import type { Scenario } from './types';
 
 const scenario: Scenario = {
   id: 'scenario-002',
-  name: 'The Reikland Handoff',
+  name: 'The Reikland Hand-off',
   description: 'Score with a handoff.',
   activeTeam: 'human',
   pieces: [{

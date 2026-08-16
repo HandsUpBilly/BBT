@@ -1,7 +1,7 @@
 {
   "id": "scenario-005",
   "name": "Reikland's Last Stand",
-  "description": "Last chance for the score. Swiftfoot must dodge free and hand off to Quickhand, who still has to beat blitzers Bonecruncher and Headsmash to the line.",
+  "description": "OBJECTIVE: Score this turn. Swiftfoot must escape, complete a Hand-off to Quickhand, and clear the remaining defenders.",
   "activeTeam": "human",
   "published": true,
   "pieces": [

@@ -23,14 +23,14 @@ function colLabel(col: number) { return String.fromCharCode(65 + col); }
 function posLabel(p: { col: number; row: number }) { return `${colLabel(p.col)}${p.row + 1}`; }
 
 function actionLabel(e: ActionLogEntry): string {
-  if (e.kind === 'handoff')    return `Handoff ${e.catchTarget}+`;
+  if (e.kind === 'handoff')    return `Hand-off ${e.catchTarget}+`;
   if (e.kind === 'pass')       return `${BAND_LABEL[e.rangeBand]} Pass ${e.passTarget}+`;
   if (e.kind === 'pass-catch') return `Catch ${e.catchTarget}+`;
   if (e.kind === 'block')      return `${e.isBlitz ? 'Blitz' : 'Block'} → ${FACE_LABEL[e.resolvedFace]}`;
-  const pickupSuffix = e.kind === 'move' && e.pickupTarget ? ` · Pickup ${e.pickupTarget}+` : '';
+  const pickupSuffix = e.kind === 'move' && e.pickupTarget ? `, Pickup ${e.pickupTarget}+` : '';
   const rerollSuffix = e.kind === 'move' && e.dodgeSkillReroll ? ' (skill reroll)' : '';
-  if (e.isGfi && e.dodgeTarget !== null) return `GFI 2+ · Dodge ${e.dodgeTarget}+${rerollSuffix}${pickupSuffix}`;
-  if (e.isGfi) return `Go For It 2+${pickupSuffix}`;
+  if (e.isGfi && e.dodgeTarget !== null) return `Rush 2+, Dodge ${e.dodgeTarget}+${rerollSuffix}${pickupSuffix}`;
+  if (e.isGfi) return `Rush 2+${pickupSuffix}`;
   if (e.dodgeTarget !== null) return `Dodge ${e.dodgeTarget}+${rerollSuffix}${pickupSuffix}`;
   return `Pickup ${e.kind === 'move' ? e.pickupTarget : ''}+`;
 }
@@ -103,7 +103,7 @@ export function ActionLogDetail({ scenario, actionLog }: Props) {
           </div>
         </div>
       ) : (
-        <p className="submit-modal__no-risk">Clean run — no rolls needed!</p>
+        <p className="submit-modal__no-risk">CLEAN PLAY: No rolls required.</p>
       )}
     </>
   );

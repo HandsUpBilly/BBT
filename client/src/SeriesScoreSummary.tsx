@@ -19,7 +19,7 @@ export function SeriesScoreSummary({ entry, onBack }: Props) {
         <div>
           <h2 className="score-summary__name">{entry.name}</h2>
           <p className="score-summary__meta">
-            {new Date(entry.date).toLocaleDateString()} · Average {pct(entry.probability)}
+            {new Date(entry.date).toLocaleDateString()}, Average {pct(entry.probability)}
           </p>
         </div>
       </div>

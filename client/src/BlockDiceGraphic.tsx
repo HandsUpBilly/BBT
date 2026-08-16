@@ -70,7 +70,7 @@ interface BlockDiceGraphicProps {
 }
 
 export function BlockDiceGraphic({ count, favor, className, size }: BlockDiceGraphicProps) {
-  const label = `Block: ${count} block ${count === 1 ? 'die' : 'dice'} · possible outcomes`;
+  const label = `Block: ${count} block ${count === 1 ? 'die' : 'dice'}, possible outcomes`;
   const iconStyle = size ? { width: size, height: size } : undefined;
   return (
     <div

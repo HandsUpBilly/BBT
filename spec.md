@@ -31,6 +31,7 @@ carries a **Status** line — read it before treating a section as work to do.
 | Player Config Screen | Phase 1 Shipped, Phase 2 **Planned** |
 | Block Outcomes as Board-State Branches | Shipped as the standard Parallel Universes block model |
 | Tutorial Series and Parallel Universes Onboarding | Shipped |
+| Full-game Rulebook Copy Audit | Shipped |
 
 Durable behavior that has already shipped belongs in `docs/agent-context/`, not
 here. When a plan below ships, move the facts worth keeping into the matching
@@ -4636,9 +4637,9 @@ existing guarded flow.
 
 ## Goal and Decisions
 
-Turn the current default series into a progressive, opt-out tutorial. Each
-puzzle in a Tutorial run opens with concise instructions for the concept it
-introduces, while Single Plays and editor previews remain interruption-free.
+Turn the current default series into a six-drill tutorial. Each puzzle in a
+Tutorial run opens with a rules briefing. Single Plays and editor previews do
+not show these briefings.
 Graduate the shipped block-branching engine from an experimental opt-in to the
 only block-resolution model and call its player-facing board states **Parallel
 Universes**.
@@ -4653,7 +4654,7 @@ The following decisions are fixed for this implementation:
 - Parallel Universes is standard for every puzzle mode and every player. Remove
   the old block-outcome checklist and the experimental preference; this is not
   a gameplay option once this plan ships.
-- Settings controls tutorial guidance only. Turning guidance off must not turn
+- Settings controls rules briefings only. Turning briefings off must not turn
   Parallel Universes or any other game rule off.
 
 ## Tutorial Experience Requirements
@@ -4672,10 +4673,10 @@ The following decisions are fixed for this implementation:
   the current puzzle, reviewing its completed board, visiting Settings, or
   leaving and starting another Tutorial run must not redisplay an already-seen
   lesson.
-- Every lesson includes a checkbox labelled **Don't show tutorial lessons
+- Every lesson includes a checkbox labelled **Do not show these rules briefings
   again**. Continuing with it checked disables all later Tutorial lesson
   dialogs for that identity, including unseen lessons.
-- Add a normal (not Experimental) **Tutorial guidance** switch in Settings.
+- Add a normal (not Experimental) **Rules briefings** switch in Settings.
   It defaults on for identities without a stored value. Switching it off
   suppresses all lesson dialogs. Switching it back on clears the seen-lesson
   list so the lessons can be replayed from the start on the next Tutorial run.
@@ -4691,8 +4692,8 @@ The following decisions are fixed for this implementation:
   accessible title, initial focus inside, trapped Tab navigation, Escape as a
   normal dismissal, and focus restoration to the control that started or
   advanced the run.
-- Show `Tutorial N of 6`, a concept title, short scannable instruction blocks,
-  the opt-out checkbox, and a primary **Start puzzle** action. Escape dismissal
+- Show `Tutorial Drill N / 6`, a rules title, labelled instruction blocks,
+  the opt-out checkbox, and a primary **Begin Puzzle** action. Escape dismissal
   counts as seen but never silently opts out of later lessons.
 - Dialog copy must explain controls and scoring without prescribing one exact
   route. It must fit a 320 px-wide viewport with internal scrolling, no page
@@ -4711,12 +4712,12 @@ preserve every fact below and add no unsupported Blood Bowl rules.
 
 | Step | Puzzle | Concept and required explanation |
 | --- | --- | --- |
-| 1 | `scenario-001` | **Move and score.** The whole puzzle is one turn; get the ball into the Human end zone. Select a player, choose Move, preview a destination/path, then commit it. Each player can activate once. Movement up to MA is free; extra rush/GFI squares and squares requiring a dodge show rolls before commitment. The displayed success chance is the cumulative probability of the plan and is the score. |
-| 2 | `scenario-004` | **Tackle zones and dodging.** Moving away from a standing opponent's tackle zone can require an Agility roll; more opposing tackle zones make the roll harder. The route preview marks risky squares and shows their effect on the running success chance. Sera's Dodge skill supplies one reroll for a failed dodge during her activation. Failed lines are not played out: their probability is the part removed from the score. |
-| 3 | `scenario-002` | **Hand off.** Choose the ball carrier and Hand Off, optionally move, then finish the carrier's movement and select an adjacent teammate. The receiver makes the catch roll and receiving the ball does not spend that player's activation, so the receiver may still move afterward. A turn has one shared pass-or-handoff resource. |
-| 4 | `scenario-003` | **Pass.** Choose Pass on the carrier, optionally move to improve the throw, finish movement, and select a highlighted receiver. The overlay shows legal pass range; the throw uses the passer's PA and the receiver then catches, with modifiers reflected in the preview. The receiver may still activate after the catch. A pass uses the same once-per-turn resource as a handoff. |
-| 5 | `scenario-005` | **Combine the plan.** Reinforce that activation order matters because every piece acts once and the ball action is limited. Preview the carrier's escape, handoff, and receiver's route before committing where possible. Every dodge, catch, rush, pickup, pass, handoff, and block roll that is committed compounds into the run's success chance; there is no End Turn or fresh probability chain. |
-| 6 | `scenario-006` | **Block, loose-ball pickup, and Parallel Universes.** A Block hits an adjacent standing opponent without movement; a Blitz declares a reachable target, moves into contact, spends one square for the hit, and only one Blitz is available. Effective ST plus eligible assists determines 1–3 dice and which side picks. Progressing the block creates one Parallel Universe for each distinct live board state the dice can leave; turnover results are already-lost probability rather than playable universes. The universe strip switches boards, shows changing weights/status, replays legal actions in lockstep, and requires every universe to score or be given up before completion. A better continuation can change which die result would be chosen and therefore shift universe weights. Walking onto the loose ball attempts a pickup; after success that player may continue and may pass or hand off if the shared ball action remains. The final score is the sum of the probability of universes that score. |
+| 1 | `scenario-001` | **Movement.** State the objective, one-activation limit, route preview, MA, Rush and Dodge tests, and probability score. |
+| 2 | `scenario-004` | **Tackle Zones and Dodging.** State when a Dodge is required, how extra Tackle Zones affect it, how the route shows tests, Sera's Dodge reroll, and how failure reduces the score. |
+| 3 | `scenario-002` | **Hand-off Action.** State the action order, Catch roll, receiver activation rule, and shared Pass or Hand-off limit. |
+| 4 | `scenario-003` | **Pass Action.** State the action order, PA test, Catch roll, preview modifiers, receiver activation rule, and shared Pass or Hand-off limit. |
+| 5 | `scenario-005` | **The Drive.** State the activation limit, order-of-play requirement, cumulative risk, one-turn limit, and prohibition on resetting the probability chain. |
+| 6 | `scenario-006` | **Blocking and Parallel Universes.** State Block and Blitz movement rules, Blitz limit, ST and assists, dice ownership, live universes, Turnover probability, universe controls, completion rule, final score, and Pickup rules. |
 
 ## Parallel Universes Graduation
 
@@ -4728,8 +4729,8 @@ preserve every fact below and add no unsupported Blood Bowl rules.
   strip, hints, buttons, summaries, tooltips, accessible names, Settings, and
   errors. Natural rules terms such as **Possible outcomes** and the names of
   die faces remain unchanged.
-- Examples include **N universes need a plan**, **Every universe needs to score
-  or be given up**, **Scored in N of M universes**, and ghost descriptions such
+- Examples include **N universes unresolved**, **Resolve every universe. Score
+  or give it up.**, **Universes scored: N of M**, and ghost descriptions such
   as **occupied in other universes**.
 - Internal TypeScript names (`BranchRun`, `branchSummary`, submission `tree`,
   and related filenames) may remain technical implementation terminology.
@@ -4771,7 +4772,7 @@ preserve every fact below and add no unsupported Blood Bowl rules.
   migration.
 - Extend `SeriesPuzzleResult`, the series API payload, and
   `shared/scoreValidation.js` so a series puzzle that used Parallel Universes
-  carries and validates its tree exactly as an individual submission does.
+  carries and validates its tree as an individual submission does.
   Recompute its probability and expected dice from that tree; do not pass the
   root score through the existing flat `validateMoves` product check.
 - Series aggregate probability remains the average of its six validated
@@ -4788,10 +4789,8 @@ preserve every fact below and add no unsupported Blood Bowl rules.
 
 - A puzzle is still exactly one turn. Do not add End Turn, turn counters,
   halves, a running match score, or Free Play.
-- Do not change scenario formations, names, descriptions, ids, or rules-engine
-  math merely to create the tutorial. The only scenario/series data change is
-  the default series name, description as needed to describe it as a tutorial,
-  and `scenarioIds` order.
+- Do not change scenario formations, ids, or rules-engine math. Scenario names
+  and descriptions may change under the full-game copy audit below.
 - Do not show automatic lesson dialogs in Single Plays, editor previews,
   leaderboards, settings, or completed-board review.
 - Do not add a server account setting or sync tutorial progress between
@@ -4811,11 +4810,11 @@ preserve every fact below and add no unsupported Blood Bowl rules.
 
 | Area | Responsibility |
 | --- | --- |
-| `client/src/series/default.json` | Rename the series to Tutorial, use the decided order, and describe the progressive learning path. |
+| `client/src/series/default.json` | Rename the series to Tutorial, use the decided order, and list the six drills. |
 | New `client/src/tutorialLessons.ts` | Own the closed lesson/scenario id mapping, ordered typed content, current-id sanitization helpers, and lookup. No React and no alternate scenario titles. |
 | New `client/src/TutorialLessonDialog.tsx` plus scoped CSS | Render the accessible, responsive lesson modal and global opt-out checkbox. |
 | `client/src/prefs.ts` | Persist `showTutorialGuidance` and bounded `seenTutorialLessons`; ignore obsolete `blockBranching` on sanitized reads. |
-| `client/src/SettingsScreen.tsx` | Add the Tutorial guidance section/switch and remove Experimental block settings. Re-enabling invokes an explicit reset of seen lessons. |
+| `client/src/SettingsScreen.tsx` | Add the Rules briefings switch and remove Experimental block settings. Re-enabling resets seen lessons. |
 | `client/src/App.tsx` | Open lessons only at Tutorial puzzle entry/advance, record dismissal/opt-out, use one `useBranchRun` model, and route flat versus Parallel Universes completion correctly for standalone and series play. |
 | `client/src/BranchStrip.tsx`, `BranchRunSummary.tsx`, `Pitch.tsx`, `BlockSplitPanel.tsx` | Adopt player-facing universe terminology while preserving the proven internal branch model and calculations. |
 | `client/src/types.ts`, `client/src/api.ts`, `shared/scoreValidation.js` | Carry optional per-puzzle submission trees through series results and validate/aggregate tree scores and fractional expected dice without client/server drift. |
@@ -4826,7 +4825,7 @@ preserve every fact below and add no unsupported Blood Bowl rules.
 
 1. Add typed lesson content and preference sanitization tests. Extend
    `PlayerPrefs` with Tutorial guidance/seen ids, define off/on/reset behavior,
-   and deliberately drop the obsolete block flag during sanitization.
+   and drop the obsolete block flag during sanitization.
 2. Build the accessible lesson dialog and tests for focus, Escape, continue,
    per-lesson seen state, global opt-out, and compact overflow. Wire it only to
    `startSeries` and series advancement; verify standalone/editor entry never
@@ -4853,7 +4852,7 @@ preserve every fact below and add no unsupported Blood Bowl rules.
 ## Success Criteria
 
 - The home screen calls the default series **Tutorial**, and starting it plays
-  exactly scenarios `001 → 004 → 002 → 003 → 005 → 006` with correct counters.
+  scenarios `001`, `004`, `002`, `003`, `005`, `006` with correct counters.
 - Each unseen lesson appears before its Tutorial puzzle is interactive, once
   per identity/device; it never appears from Single Plays or editor preview.
 - Dismissing records only the current lesson, the dialog checkbox disables all
@@ -4875,3 +4874,35 @@ preserve every fact below and add no unsupported Blood Bowl rules.
   continue to work.
 - `npm run verify` and the mobile Playwright suite pass, with no unused symbols,
   shared-package imports, generated-seed hand edits, or 320 px overflow.
+
+---
+
+# Full-game Rulebook Copy Audit
+
+**Status:** Shipped.
+
+## Requirements
+
+- Review every player-facing string in the client, including Tutorial dialogs,
+  home, game status, logs, summaries, rankings, Settings, reports, Admin Mode,
+  scenario metadata, accessible labels, errors, and empty states.
+- Use short rules language. Prefer labelled clauses such as OBJECTIVE, ACTION,
+  TEST, LIMIT, STATUS, and SCORE when the text explains play.
+- Use current player-facing terms: Rush, Hand-off, Tackle Zone, End Zone,
+  Block, Blitz, Pickup, Pass, Catch, Turnover, and Parallel Universes.
+- Do not use en dashes, em dashes, typographic ellipses, or decorative middle
+  dots in player-facing prose. Board notation may retain arrows, crosses,
+  dice, and other symbols that convey game state.
+- Keep technical comments, tests, and internal documentation technical. They
+  are not game copy and do not need the rulebook voice.
+- Do not change any game rule, scenario formation, score, or control flow.
+
+## Success Criteria
+
+- Every scenario description starts with OBJECTIVE and states the required play.
+- Tutorial briefings use labelled rules clauses and explain all six drills.
+- Game status messages identify the current action before giving the instruction.
+- Rankings, local history, settings, errors, and editor messages use direct text
+  without promotional or conversational filler.
+- No player-facing prose contains an en dash, em dash, typographic ellipsis, or
+  decorative middle dot.

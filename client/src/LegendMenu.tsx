@@ -83,13 +83,13 @@ export function LegendMenu({ isPassTargeting, isBlockTargeting, hasPushTargets }
             <div className="legend" role="list" aria-label="Pitch state legend">
               <span className="legend__item legend__item--tz" role="listitem">Tackle Zone</span>
               <span className="legend__item legend__item--free" role="listitem">Free Move</span>
-              <span className="legend__item legend__item--gfi" role="listitem">Go For It · outer 2 squares</span>
+              <span className="legend__item legend__item--gfi" role="listitem">Rush: final 2 squares</span>
               <span className="legend__item legend__item--dodge" role="listitem">Dodge Required</span>
               {isPassTargeting && <>
-                <span className="legend__item legend__item--pass-range legend__item--range-quick" role="listitem">Quick Pass · 0–3 squares</span>
-                <span className="legend__item legend__item--pass-range legend__item--range-short" role="listitem">Short Pass · 4–6 squares</span>
-                <span className="legend__item legend__item--pass-range legend__item--range-long" role="listitem">Long Pass · 7–9 squares</span>
-                <span className="legend__item legend__item--pass-range legend__item--range-bomb" role="listitem">Long Bomb · 10–13 squares</span>
+                <span className="legend__item legend__item--pass-range legend__item--range-quick" role="listitem">Quick Pass: 0-3 squares</span>
+                <span className="legend__item legend__item--pass-range legend__item--range-short" role="listitem">Short Pass: 4-6 squares</span>
+                <span className="legend__item legend__item--pass-range legend__item--range-long" role="listitem">Long Pass: 7-9 squares</span>
+                <span className="legend__item legend__item--pass-range legend__item--range-bomb" role="listitem">Long Bomb: 10-13 squares</span>
               </>}
               {isBlockTargeting && (
                 <span className="legend__item legend__item--block-target" role="listitem">Block Target</span>

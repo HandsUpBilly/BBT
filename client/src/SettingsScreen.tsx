@@ -95,7 +95,7 @@ export function SettingsScreen({
         <button className="lb-back-btn" onClick={onBack}>← Back</button>
         <div>
           <h2 className="settings-screen__title">Settings</h2>
-          <p className="settings-screen__subtitle">Your profile and display preferences</p>
+          <p className="settings-screen__subtitle">Profile, pitch, and Tutorial rules</p>
         </div>
       </div>
 
@@ -103,7 +103,7 @@ export function SettingsScreen({
         <h3 className="settings-screen__section-title">Display name</h3>
         <p className="settings-screen__section-help">
           This is the name shown on leaderboards and reports.
-          {isGuest && ' Changing it starts a new personal best — your current one stays under the old name.'}
+          {isGuest && ' Changing it starts a new personal best. The current best stays under the old name.'}
         </p>
         <div className="settings-screen__name-row">
           <input
@@ -124,7 +124,7 @@ export function SettingsScreen({
       <section className="settings-screen__section">
         <h3 className="settings-screen__section-title">Pitch</h3>
         <p className="settings-screen__section-help">
-          Choose the playing surface and whether coordinate labels surround the board.
+          Set the playing surface and coordinate labels.
         </p>
         <div className="settings-screen__surface-toggle" role="radiogroup" aria-label="Pitch surface">
           <button
@@ -168,7 +168,7 @@ export function SettingsScreen({
         ) : (
           <>
             <p className="settings-screen__section-help">
-              Shown only to you, on this device — not on leaderboards.
+              LOCAL ONLY: This image is stored on this device and is not shown on leaderboards.
             </p>
             <div className="settings-screen__avatar-row">
               <span className="settings-screen__avatar-preview">
@@ -195,7 +195,7 @@ export function SettingsScreen({
                   disabled={avatarBusy}
                   onClick={() => fileInputRef.current?.click()}
                 >
-                  {avatarBusy ? 'Processing…' : avatar ? 'Change avatar' : 'Upload avatar'}
+                  {avatarBusy ? 'Processing...' : avatar ? 'Change avatar' : 'Upload avatar'}
                 </button>
                 {avatar && (
                   <button className="btn btn--ghost" onClick={() => onAvatarChange(undefined)}>
@@ -227,7 +227,7 @@ export function SettingsScreen({
             </span>
             <span className="settings-screen__token-copy">
               <strong>Detailed</strong>
-              <span>Full portraits and textured tabletop turf</span>
+              <span>Player portraits on a grass pitch</span>
             </span>
           </button>
           <button
@@ -242,7 +242,7 @@ export function SettingsScreen({
             </span>
             <span className="settings-screen__token-copy">
               <strong>Tactical</strong>
-              <span>Position symbols on a restrained tactical grid</span>
+              <span>Position symbols on a tactical grid</span>
             </span>
           </button>
           <button
@@ -257,7 +257,7 @@ export function SettingsScreen({
             </span>
             <span className="settings-screen__token-copy">
               <strong>Plain</strong>
-              <span>Role codes on a clean diagrammatic pitch</span>
+              <span>Role codes on a plain pitch</span>
             </span>
           </button>
         </div>
@@ -266,14 +266,14 @@ export function SettingsScreen({
       <section className="settings-screen__section">
         <h3 className="settings-screen__section-title">Tutorial</h3>
         <p className="settings-screen__section-help">
-          Control the lessons shown while playing the Tutorial series.
+          Rules briefings for the six Tutorial drills.
         </p>
         <label className="settings-screen__coordinate-toggle">
           <span>
-            <strong>Tutorial guidance</strong>
+            <strong>Rules briefings</strong>
             <small>
-              Show each puzzle lesson once. Turning this back on restarts the lessons
-              from the beginning of your next Tutorial run.
+              Show the briefing before each Tutorial puzzle. Switching this on
+              resets all briefings for the next Tutorial run.
             </small>
           </span>
           <input
@@ -287,7 +287,7 @@ export function SettingsScreen({
       {pendingRename !== null && (
         <ConfirmDialog
           title="Change display name?"
-          message={`Your personal bests are tracked under "${identityName}". Renaming to "${pendingRename}" starts fresh — the old name's scores stay on the board under that name.`}
+          message={`Your personal bests are tracked under "${identityName}". Renaming to "${pendingRename}" starts a new record. Scores under the old name remain on the board.`}
           confirmLabel="Change Name"
           cancelLabel="Keep Current Name"
           onConfirm={() => { commitRename(pendingRename); setPendingRename(null); }}

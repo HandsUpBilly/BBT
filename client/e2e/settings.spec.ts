@@ -34,7 +34,7 @@ test('game HUD keeps the account menu and Settings reachable', async ({ page }) 
   await page.getByRole('button', { name: '← Back' }).click();
   await page.getByRole('button', { name: /start series/i }).click();
   await page.locator('.pitch__grid .square').first().waitFor({ state: 'visible' });
-  const startPuzzle = page.getByRole('button', { name: 'Start puzzle' });
+  const startPuzzle = page.getByRole('button', { name: 'Begin Puzzle' });
   if (await startPuzzle.isVisible()) await startPuzzle.click();
 
   const account = page.getByRole('button', { name: /player menu for/i });

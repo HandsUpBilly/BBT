@@ -89,17 +89,17 @@ export function BranchRunSummary({
           </>
         ) : (
           <>
-            <h2 id={titleId} className="modal__title">{scenarioName} — run complete</h2>
+            <h2 id={titleId} className="modal__title">{scenarioName}: run complete</h2>
 
             <p className="branch-summary__score">
               <strong>{pct(summary.score)}</strong>
-              <span>chance this plan scores</span>
+              <span>SCORING CHANCE</span>
             </p>
 
             <dl className="branch-summary__breakdown">
               <div>
-                <dt>Scored in</dt>
-                <dd>{scored.length} of {branches.length} universes</dd>
+                <dt>Universes scored</dt>
+                <dd>{scored.length} of {branches.length}</dd>
               </div>
               <div>
                 <dt>Lost to knockdowns</dt>
@@ -174,7 +174,7 @@ export function BranchRunSummary({
                 title={summary.score <= 0 ? 'A run that scores nowhere has nothing to submit' : undefined}
                 onClick={() => runSubmit(submitName)}
               >
-                {submitting ? 'Saving…' : error ? 'Try Again' : seriesMode ? continueLabel ?? 'Continue' : 'Submit Score'}
+                {submitting ? 'Saving...' : error ? 'Try Again' : seriesMode ? continueLabel ?? 'Continue' : 'Submit Score'}
               </button>
               {onReviewBoard ? (
                 <button className="modal__continue-btn" disabled={submitting} onClick={onReviewBoard}>
