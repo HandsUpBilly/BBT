@@ -8,7 +8,7 @@ export const STATIC_SCENARIOS = [
   {
     "id": "scenario-001",
     "name": "Reikland's Opening Drive",
-    "description": "Nuffle smiles on the Reavers' first snap. Swiftfoot has the ball and two Orc Linemen stand between him and glory — find the safest path to the end zone.",
+    "description": "OBJECTIVE: Carry the ball into the Human End Zone. Two Orc Linemen block the direct route. Choose the safest path.",
     "activeTeam": "human",
     "published": true,
     "pieces": [
@@ -70,8 +70,8 @@ export const STATIC_SCENARIOS = [
   },
   {
     "id": "scenario-002",
-    "name": "The Reikland Handoff",
-    "description": "Swiftfoot can't carry it home alone this time. Feed the ball to Quickhand and dodge her clear of the green-skin line before Nuffle changes his mind.",
+    "name": "The Reikland Hand-off",
+    "description": "OBJECTIVE: Score with Quickhand. Swiftfoot carries the ball and must complete a Hand-off before Quickhand runs for the End Zone.",
     "activeTeam": "human",
     "published": true,
     "pieces": [
@@ -211,7 +211,7 @@ export const STATIC_SCENARIOS = [
   {
     "id": "scenario-003",
     "name": "Swiftfoot's Long Bomb",
-    "description": "Ironjaw's boys have shut the ground game down cold. Step clear of their tackle zones and launch a long pass downfield to Quickhand before the whistle blows.",
+    "description": "OBJECTIVE: Score with Quickhand. Move Swiftfoot clear of the Tackle Zones, then complete the Pass and Catch.",
     "activeTeam": "human",
     "published": true,
     "ballPosition": null,
@@ -383,7 +383,7 @@ export const STATIC_SCENARIOS = [
   {
     "id": "scenario-004",
     "name": "Ironjaw's Gauntlet",
-    "description": "A full line of Orcs — Bonecruncher, Gutripper, and the rest of Ironjaw's crew — stands between your ball carrier and glory. Thread the tackle zones; one bad dodge ends the drive.",
+    "description": "OBJECTIVE: Carry the ball through Ironjaw's defensive line. Every failed Dodge ends the drive.",
     "activeTeam": "human",
     "published": true,
     "pieces": [
@@ -523,7 +523,7 @@ export const STATIC_SCENARIOS = [
   {
     "id": "scenario-005",
     "name": "Reikland's Last Stand",
-    "description": "Last chance for the score. Swiftfoot must dodge free and hand off to Quickhand, who still has to beat blitzers Bonecruncher and Headsmash to the line.",
+    "description": "OBJECTIVE: Score this turn. Swiftfoot must escape, complete a Hand-off to Quickhand, and clear the remaining defenders.",
     "activeTeam": "human",
     "published": true,
     "pieces": [
@@ -680,7 +680,7 @@ export const STATIC_SCENARIOS = [
   {
     "id": "scenario-006",
     "name": "Loose Ball on the Goal Line",
-    "description": "Bonecruncher's hit jarred the ball loose five squares short of the line, and Skullkrak is guarding it. Knock him away, scoop it up, then pick your route home — Swiftfoot's legs, Quickstep waiting across the paint, or Quickhand breaking from the slot.",
+    "description": "OBJECTIVE: Recover the loose ball and score. Block Skullkrak away from the ball, complete the Pickup, then choose the scoring route.",
     "activeTeam": "human",
     "published": true,
     "ballPosition": {
@@ -994,13 +994,13 @@ export const STATIC_SCENARIOS = [
 
 export const STATIC_SERIES = {
   "id": "default",
-  "name": "Humans vs Orcs: Touchdown or Bust",
-  "description": "Lead the Reikland attack through green-skin pressure, chain the cleanest route, and cross the line before the Orcs turn the drive into a scrum.",
+  "name": "Tutorial",
+  "description": "Six drills cover Movement, Dodging, Hand-offs, Passing, Blocking, Pickups, and Parallel Universes. Score a touchdown in each drill.",
   "scenarioIds": [
     "scenario-001",
+    "scenario-004",
     "scenario-002",
     "scenario-003",
-    "scenario-004",
     "scenario-005",
     "scenario-006"
   ]

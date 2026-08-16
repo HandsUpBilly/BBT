@@ -62,6 +62,18 @@ server then rejected with a 400.
 
 Default series metadata lives in `client/src/series/default.json`.
 
+Scenario JSON remains the source of truth for the puzzle name and description.
+Descriptions use an OBJECTIVE clause followed by the rules needed to read the
+board. Keep this copy factual. Do not prescribe a single solved route unless
+the puzzle itself requires that action.
+
+The default series is player-facing **Tutorial** and uses this rules order:
+`scenario-001`, `scenario-004`, `scenario-002`, `scenario-003`,
+`scenario-005`, `scenario-006` (movement, dodging, handoff, pass, combined
+play, then blocks/loose-ball pickup/Parallel Universes). Tutorial briefing copy
+lives separately in `client/src/tutorialLessons.ts`; it does not override
+scenario names or descriptions and is shown only in series play.
+
 `resolveSeriesScenarios()` in `client/src/series/index.ts` resolves series
 `scenarioIds` to scenario objects. Series Play should use the resolved series
 list, not all scenarios sorted by id.
@@ -91,4 +103,3 @@ Drop the `.json` file in `client/src/scenarios/`. The client picks it up via
 `scripts/generate-scenario-seed.mjs` during the build. No manual import
 registration in either place — and never hand-edit
 `netlify/functions/scenarioSeed.js`.
-

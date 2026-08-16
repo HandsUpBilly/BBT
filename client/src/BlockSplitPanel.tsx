@@ -57,7 +57,7 @@ export function BlockSplitPanel({
   const attackerEffectiveStrength = attackerStrength + attackerAssists;
   const defenderEffectiveStrength = defenderStrength + defenderAssists;
   const slope = diceCount === 1 ? 'even strength' : picker === 'attacker' ? 'downhill' : 'uphill';
-  const diceLabel = `${diceCount} ${diceCount === 1 ? 'die' : 'dice'} · ${slope}`;
+  const diceLabel = `${diceCount} ${diceCount === 1 ? 'die' : 'dice'}, ${slope}`;
 
   return (
     <div className="modal-backdrop">
@@ -100,7 +100,7 @@ export function BlockSplitPanel({
             <div key={state.kind} className="block-split__row">
               <span className="block-split__row-label">
                 <strong>{BOARD_STATE_LABELS[state.kind]}</strong>
-                <small>{state.faces.map(face => BLOCK_FACE_LABELS[face]).join(' · ')}</small>
+                <small>{state.faces.map(face => BLOCK_FACE_LABELS[face]).join(', ')}</small>
               </span>
               <span className="block-split__row-prob">{pct(probabilities[i])}</span>
             </div>
@@ -108,8 +108,8 @@ export function BlockSplitPanel({
           {deadFaceCount > 0 && (
             <div className="block-split__row block-split__row--dead">
               <span className="block-split__row-label">
-                <strong>Turnover — drive ends here</strong>
-                <small>{turnoverFaces.map(face => BLOCK_FACE_LABELS[face]).join(' · ')}</small>
+                <strong>Turnover: drive ends here</strong>
+                <small>{turnoverFaces.map(face => BLOCK_FACE_LABELS[face]).join(', ')}</small>
               </span>
               <span className="block-split__row-prob">{pct(deadProbability)}</span>
             </div>
@@ -117,8 +117,9 @@ export function BlockSplitPanel({
         </div>
 
         <p className="block-split__note">
-          This split assumes every result is equally useful to you. Once you play a
-          result out, the weights shift toward whichever one you can actually use.
+          PARALLEL UNIVERSES: Each live result creates a new board. These
+          percentages treat every result as equal. They change when one
+          continuation becomes stronger than another.
         </p>
 
         <div className="submit-modal__actions">

@@ -7,11 +7,6 @@ test.beforeEach(async ({ page }) => {
   await page.locator('.identity-gate__input').fill('Block Dialog Tester');
   await page.getByRole('button', { name: /^continue$/i }).click();
 
-  await page.getByRole('button', { name: /player menu for/i }).click();
-  await page.getByRole('menuitem', { name: 'Settings' }).click();
-  await page.getByRole('checkbox', { name: /Block outcome branching/ }).check();
-  await page.getByRole('button', { name: '← Back' }).click();
-
   await page.getByRole('tab', { name: /single plays/i }).click();
   await page.locator('.challenge-tile', { hasText: 'Loose Ball on the Goal Line' })
     .getByRole('button', { name: /^play$/i }).click();
@@ -29,7 +24,7 @@ test('explains the dice and fits every supported viewport', async ({ page }) => 
   const dialog = page.locator('.block-split');
   await expect(dialog.getByText('Possible outcomes')).toBeVisible();
   await expect(dialog.getByText(/ST \d+ \+ \d+ assists? = \d+/).first()).toBeVisible();
-  await expect(dialog.getByText(/\d dice? · (even strength|uphill|downhill)/)).toBeVisible();
+  await expect(dialog.getByText(/\d dice?, (even strength|uphill|downhill)/)).toBeVisible();
   await expect(dialog.locator('.block-split__row--dead small')).not.toBeEmpty();
   await expect(dialog.getByRole('button', { name: 'Progress' })).toBeVisible();
   await expect(dialog.getByText(/pick/i)).toHaveCount(0);

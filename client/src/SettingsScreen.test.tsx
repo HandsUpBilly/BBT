@@ -18,8 +18,8 @@ function renderScreen(overrides: Partial<ComponentProps<typeof SettingsScreen>> 
     onPitchSurfaceChange: vi.fn(),
     showCoordinates: true,
     onShowCoordinatesChange: vi.fn(),
-    blockBranching: false,
-    onBlockBranchingChange: vi.fn(),
+    showTutorialGuidance: true,
+    onShowTutorialGuidanceChange: vi.fn(),
     onBack: vi.fn(),
     ...overrides,
   };
@@ -48,7 +48,7 @@ describe('display name', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Save' }));
 
     expect(props.onRename).not.toHaveBeenCalled();
-    expect(screen.getByText(/starts fresh/)).toBeTruthy();
+    expect(screen.getByText(/starts a new record/)).toBeTruthy();
 
     fireEvent.click(screen.getByRole('button', { name: 'Change Name' }));
     expect(props.onRename).toHaveBeenCalledWith('New Name');
@@ -139,20 +139,20 @@ describe('pitch display', () => {
   });
 });
 
-describe('experimental features', () => {
-  it('is off by default and reports being turned on', () => {
-    const props = renderScreen({ blockBranching: false });
-    const toggle = screen.getByRole('checkbox', { name: /Block outcome branching/ });
+describe('tutorial guidance', () => {
+  it('is on by default and reports being turned off', () => {
+    const props = renderScreen({ showTutorialGuidance: true });
+    const toggle = screen.getByRole('checkbox', { name: /Rules briefings/ });
 
-    expect((toggle as HTMLInputElement).checked).toBe(false);
+    expect((toggle as HTMLInputElement).checked).toBe(true);
     fireEvent.click(toggle);
-    expect(props.onBlockBranchingChange).toHaveBeenCalledWith(true);
+    expect(props.onShowTutorialGuidanceChange).toHaveBeenCalledWith(false);
   });
 
-  it('reports being turned back off', () => {
-    const props = renderScreen({ blockBranching: true });
-    fireEvent.click(screen.getByRole('checkbox', { name: /Block outcome branching/ }));
-    expect(props.onBlockBranchingChange).toHaveBeenCalledWith(false);
+  it('reports being turned back on', () => {
+    const props = renderScreen({ showTutorialGuidance: false });
+    fireEvent.click(screen.getByRole('checkbox', { name: /Rules briefings/ }));
+    expect(props.onShowTutorialGuidanceChange).toHaveBeenCalledWith(true);
   });
 });
 

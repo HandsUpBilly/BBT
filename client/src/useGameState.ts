@@ -730,6 +730,32 @@ export function applyCancelSelection(state: GameState): GameState {
   return state.selectedPieceId ? clearSelection(state, true) : state;
 }
 
+/** Pure hover preview used by both the one-board hook and Parallel Universes. */
+export function applySquareHover(prev: GameState, hovered: Position): GameState {
+  if (prev.phase !== 'playing' || !prev.selectedPieceId) return prev;
+  if (!prev.reachableKeys.has(key(hovered))) {
+    return prev.pathPreview.length === 0 ? prev : { ...prev, pathPreview: [] };
+  }
+
+  const tip = prev.committedPath.length > 0
+    ? prev.committedPath[prev.committedPath.length - 1]
+    : prev.originPos;
+  const piece = prev.pieces.find(p => p.id === prev.selectedPieceId);
+  if (!tip || !piece) return prev;
+
+  const opponents = prev.pieces.filter(p => p.team !== piece.team && !p.down).map(p => p.position);
+  const others = prev.pieces.filter(p => p.id !== piece.id).map(p => p.position);
+  const path = findShortestPath(
+    tip, hovered, prev.remainingMa, others, opponents,
+    piece.ag, prev.remainingGfi, prev.ballPosition,
+  );
+  return { ...prev, pathPreview: path ?? [] };
+}
+
+export function applySquareLeave(prev: GameState): GameState {
+  return prev.pathPreview.length === 0 ? prev : { ...prev, pathPreview: [] };
+}
+
 /** Pure body of `handlePushChoice`, so a push can be replayed across branches. */
 export function applyPushChoice(prev: GameState, pos: Position, followUp: boolean): GameState {
   if (!prev.pendingBlockResolution) return prev;
@@ -1279,34 +1305,11 @@ export function useGameState(initialState: GameState) {
    * to the hovered square and store it as pathPreview.
    */
   const handleSquareHover = useCallback((col: number, row: number) => {
-    setState(prev => {
-      if (prev.phase !== 'playing' || !prev.selectedPieceId) return prev;
-
-      const hovered: Position = { col, row };
-      const hoveredKey = key(hovered);
-
-      // Only preview if the square is reachable
-      if (!prev.reachableKeys.has(hoveredKey)) {
-        return prev.pathPreview.length === 0 ? prev : { ...prev, pathPreview: [] };
-      }
-
-      // Path tip = last committed square, or origin
-      const tip = prev.committedPath.length > 0
-        ? prev.committedPath[prev.committedPath.length - 1]
-        : prev.originPos;
-      const piece = prev.pieces.find(p => p.id === prev.selectedPieceId);
-      if (!tip || !piece) return prev;
-
-      const opponents = prev.pieces.filter(p => p.team !== piece.team && !p.down).map(p => p.position);
-      const others    = prev.pieces.filter(p => p.id !== piece.id).map(p => p.position);
-
-      const path = findShortestPath(tip, hovered, prev.remainingMa, others, opponents, piece.ag, prev.remainingGfi, prev.ballPosition);
-      return { ...prev, pathPreview: path ?? [] };
-    });
+    setState(prev => applySquareHover(prev, { col, row }));
   }, []);
 
   const handleSquareLeave = useCallback(() => {
-    setState(prev => (prev.pathPreview.length === 0 ? prev : { ...prev, pathPreview: [] }));
+    setState(applySquareLeave);
   }, []);
 
   /**

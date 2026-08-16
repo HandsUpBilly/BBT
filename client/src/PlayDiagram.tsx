@@ -66,7 +66,7 @@ export function PlayDiagram({ scenario, actionLog }: Props) {
   const description = [
     `${routes.length} movement ${routes.length === 1 ? 'route' : 'routes'}`,
     passes.length ? `${passes.length} ${passes.length === 1 ? 'pass' : 'passes'}` : '',
-    handoffs.length ? `${handoffs.length} ${handoffs.length === 1 ? 'handoff' : 'handoffs'}` : '',
+    handoffs.length ? `${handoffs.length} ${handoffs.length === 1 ? 'hand-off' : 'hand-offs'}` : '',
     blocks.length ? `${blocks.length} ${blocks.length === 1 ? 'block' : 'blocks'}` : '',
   ].filter(Boolean).join(', ');
 
@@ -74,7 +74,7 @@ export function PlayDiagram({ scenario, actionLog }: Props) {
     <figure className="play-diagram">
       <div className="play-diagram__heading">
         <span>Play diagram</span>
-        <span className="play-diagram__key" aria-hidden="true">○ Your team · × Opposition</span>
+        <span className="play-diagram__key" aria-hidden="true">○ Your team, × Opposition</span>
       </div>
       <svg
         className="play-diagram__svg"
@@ -115,12 +115,12 @@ export function PlayDiagram({ scenario, actionLog }: Props) {
             const active = piece.team === scenario.activeTeam;
             return active ? (
               <g key={piece.id} className={`play-diagram__player play-diagram__player--active${piece.down ? ' play-diagram__player--down' : ''}`}>
-                <title>{piece.name} — starting square</title>
+                <title>{piece.name}: starting square</title>
                 <circle cx={p.x} cy={p.y} r="6.5" />
               </g>
             ) : (
               <g key={piece.id} className={`play-diagram__player play-diagram__player--opposition${piece.down ? ' play-diagram__player--down' : ''}`}>
-                <title>{piece.name} — starting square</title>
+                <title>{piece.name}: starting square</title>
                 <path d={`M ${p.x - 5} ${p.y - 5} L ${p.x + 5} ${p.y + 5} M ${p.x + 5} ${p.y - 5} L ${p.x - 5} ${p.y + 5}`} />
               </g>
             );

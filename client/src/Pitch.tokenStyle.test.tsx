@@ -117,7 +117,7 @@ describe('Pitch roll dice', () => {
     const square = container.querySelector('[data-square="11H"]');
     expect(square?.querySelector('.piece')).toBeTruthy();
     expect(square?.querySelector('.square__dice')).toBeTruthy();
-    expect(square?.getAttribute('aria-label')).toContain('Go For It 2 plus');
+    expect(square?.getAttribute('aria-label')).toContain('Rush 2 plus');
     expect(square?.getAttribute('aria-label')).toContain('dodge 3 plus');
     expect(square?.getAttribute('aria-label')).toContain('pickup 4 plus');
   });
@@ -138,7 +138,7 @@ describe('Pitch roll dice', () => {
       <Pitch state={previewState} onSquareClick={noop} onPieceClick={noop} onSquareHover={noop} onSquareLeave={noop} />,
     );
 
-    expect(getByTitle('Go For It roll: 2+')).toBeTruthy();
+    expect(getByTitle('Rush roll: 2+')).toBeTruthy();
     expect(getByTitle('Dodge roll: 3+')).toBeTruthy();
     expect(getByTitle('Pick-up roll: 4+')).toBeTruthy();
   });

@@ -39,7 +39,7 @@ export function AboutDialog({ version, deployedAt, onClose }: Props) {
         aria-describedby={descriptionId}
         tabIndex={-1}
       >
-        <span className="about-dialog__eyebrow">The final turn · Do or die</span>
+        <span className="about-dialog__eyebrow">The final turn: Do or die</span>
         <h2 id={titleId} className="modal__title">About Turn 16</h2>
         <p id={descriptionId} className="modal__desc">
           An unofficial, independent Blood Bowl puzzle and risk-training tool.

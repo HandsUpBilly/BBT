@@ -78,7 +78,7 @@ export function createGoogleAuth({ verifyIdToken, adminEmails, allowUnauthentica
   // log line or health check that would reveal it.
   if (allowlist.size === 0 && allowUnauthenticated) {
     console.warn(
-      '[auth] ADMIN_EMAILS is empty — every /api/editor/* route is unrestricted. ' +
+      '[auth] ADMIN_EMAILS is empty. Every /api/editor/* route is unrestricted. ' +
       'Set EDITOR_ALLOW_UNAUTHENTICATED=false to fail closed instead.',
     );
   }

@@ -1,7 +1,7 @@
 {
   "id": "scenario-002",
-  "name": "The Reikland Handoff",
-  "description": "Swiftfoot can't carry it home alone this time. Feed the ball to Quickhand and dodge her clear of the green-skin line before Nuffle changes his mind.",
+  "name": "The Reikland Hand-off",
+  "description": "OBJECTIVE: Score with Quickhand. Swiftfoot carries the ball and must complete a Hand-off before Quickhand runs for the End Zone.",
   "activeTeam": "human",
   "published": true,
   "pieces": [

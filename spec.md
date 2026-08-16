@@ -29,7 +29,9 @@ carries a **Status** line — read it before treating a section as work to do.
 | BB Tactics — Tabletop Playbook Home Redesign | Shipped |
 | Leaderboard and Report Integrity | **Planned** |
 | Player Config Screen | Phase 1 Shipped, Phase 2 **Planned** |
-| Block Outcomes as Board-State Branches | Phases 0–5 Shipped (behind flag), Phase 6 **Planned** |
+| Block Outcomes as Board-State Branches | Shipped as the standard Parallel Universes block model |
+| Tutorial Series and Parallel Universes Onboarding | Shipped |
+| Full-game Rulebook Copy Audit | Shipped |
 
 Durable behavior that has already shipped belongs in `docs/agent-context/`, not
 here. When a plan below ships, move the facts worth keeping into the matching
@@ -3191,7 +3193,7 @@ a real pass/fail dice roll.
 
 # Block and Blitz Actions
 
-**Status:** Shipped, with rules simplifications. Live. Later fixes made a knocked-down carrier drop the ball, made a Blitz block cost a square of movement, and excluded marked assisters. Still simplified: no Guard, no armour/injury rolls, and no chain pushes. The outcome-checklist design below is **superseded** by *Block Outcomes as Board-State Branches* (planned); the ST/dice/assist and push-back rules in this section remain current.
+**Status:** Shipped, with rules simplifications. Live. Later fixes made a knocked-down carrier drop the ball, made a Blitz block cost a square of movement, and excluded marked assisters. Still simplified: no Guard, no armour/injury rolls, and no chain pushes. The outcome-checklist design below is **superseded** by the shipped Parallel Universes model; the ST/dice/assist and push-back rules in this section remain current.
 
 ## Problem Statement
 
@@ -4211,17 +4213,14 @@ deliberately deferred rather than folded in:
 
 # Block Outcomes as Board-State Branches
 
-**Status:** In progress, behind the `blockBranching` preference (Settings →
-Experimental, off by default). Phases 0–2b are shipped dark and reach no UI —
-the feature flag, the resolution engine (`blockBranching.ts`), tree evaluation
-and replay primitives (`blockBranchTree.ts`, `branchReplay.ts`), and the run
-model (`branchRun.ts`, `useBranchRun.ts`), including group-aware declarations,
-the UI is wired up behind the flag, and branching runs submit to the leaderboard
-with the server recomputing their branch tree. Only phase 6 is outstanding:
-deleting the checklist, the flag, and the code that serves them. Supersedes the outcome-checklist design in
-*Block and Blitz Actions* (see "Design: modeling block dice inside the
-probability-tracking model", marked superseded there), which stays live until
-phase 5 removes it.
+**Status:** Shipped. The resolution engine (`blockBranching.ts`), tree
+evaluation and replay primitives (`blockBranchTree.ts`, `branchReplay.ts`), run
+model (`branchRun.ts`, `useBranchRun.ts`), UI, and server-side score validation
+are the standard block model. Player-facing board states are called **Parallel
+Universes**; the old checklist, experimental preference, and feature flag have
+been removed. Supersedes the outcome-checklist design in *Block and Blitz
+Actions* (see "Design: modeling block dice inside the probability-tracking
+model", marked superseded there).
 
 ## Problem Statement
 
@@ -4629,3 +4628,281 @@ reveals the final pitch without saving the result or advancing to the next
 puzzle. A persistent **View Analysis & Continue** control returns to the same
 analysis, so score submission and series progression still happen through the
 existing guarded flow.
+
+---
+
+# Tutorial Series and Parallel Universes Onboarding
+
+**Status:** Shipped.
+
+## Goal and Decisions
+
+Turn the current default series into a six-drill tutorial. Each puzzle in a
+Tutorial run opens with a rules briefing. Single Plays and editor previews do
+not show these briefings.
+Graduate the shipped block-branching engine from an experimental opt-in to the
+only block-resolution model and call its player-facing board states **Parallel
+Universes**.
+
+The following decisions are fixed for this implementation:
+
+- Rename the default series to **Tutorial**.
+- Order its puzzles `scenario-001`, `scenario-004`, `scenario-002`,
+  `scenario-003`, `scenario-005`, `scenario-006`.
+- Show lesson dialogs only in `series-puzzle` mode, never when the same scenario
+  is opened through Single Plays or the editor preview.
+- Parallel Universes is standard for every puzzle mode and every player. Remove
+  the old block-outcome checklist and the experimental preference; this is not
+  a gameplay option once this plan ships.
+- Settings controls rules briefings only. Turning briefings off must not turn
+  Parallel Universes or any other game rule off.
+
+## Tutorial Experience Requirements
+
+### Entry, frequency, and persistence
+
+- When a Tutorial run starts or advances to its next puzzle, initialize the
+  puzzle first and then open that puzzle's lesson before the pitch accepts
+  input. The dialog is not part of the scored action log and must not alter or
+  restart either the puzzle or series run.
+- A lesson appears once per identity on the current device. Store its stable
+  lesson/scenario id in the existing identity-keyed, junk-tolerant
+  `bbt.prefs.v1` record. Google users remain keyed by subject id and guests by
+  `GUEST_PREFS_KEY`.
+- Closing or continuing from a lesson records that lesson as seen. Restarting
+  the current puzzle, reviewing its completed board, visiting Settings, or
+  leaving and starting another Tutorial run must not redisplay an already-seen
+  lesson.
+- Every lesson includes a checkbox labelled **Do not show these rules briefings
+  again**. Continuing with it checked disables all later Tutorial lesson
+  dialogs for that identity, including unseen lessons.
+- Add a normal (not Experimental) **Rules briefings** switch in Settings.
+  It defaults on for identities without a stored value. Switching it off
+  suppresses all lesson dialogs. Switching it back on clears the seen-lesson
+  list so the lessons can be replayed from the start on the next Tutorial run.
+- Reads must tolerate missing, malformed, duplicated, or obsolete lesson ids.
+  Writes must keep a deduplicated bounded list containing only current lesson
+  ids. Existing preference records, including a stale `blockBranching` field,
+  must continue to load without breaking Settings.
+
+### Dialog behavior and accessibility
+
+- Add one reusable, focus-trapped `TutorialLessonDialog`, using the same modal
+  shell and `useModalFocus` behavior as existing dialogs: `role="dialog"`, an
+  accessible title, initial focus inside, trapped Tab navigation, Escape as a
+  normal dismissal, and focus restoration to the control that started or
+  advanced the run.
+- Show `Tutorial Drill N / 6`, a rules title, labelled instruction blocks,
+  the opt-out checkbox, and a primary **Begin Puzzle** action. Escape dismissal
+  counts as seen but never silently opts out of later lessons.
+- Dialog copy must explain controls and scoring without prescribing one exact
+  route. It must fit a 320 px-wide viewport with internal scrolling, no page
+  overflow, and no dependence on hover-only explanations.
+- Keep lesson content in a typed, React-free module keyed by stable scenario
+  id. Do not put title/description overrides in it: scenario JSON remains the
+  source of truth for scenario names and descriptions.
+- If a published Tutorial series contains an unknown scenario id or a known
+  scenario without lesson content, play must continue without a dialog. A
+  missing lesson must never make a published series unplayable.
+
+### Required lesson content
+
+The implementation may tighten phrasing for the available space, but it must
+preserve every fact below and add no unsupported Blood Bowl rules.
+
+| Step | Puzzle | Concept and required explanation |
+| --- | --- | --- |
+| 1 | `scenario-001` | **Movement.** State the objective, one-activation limit, route preview, MA, Rush and Dodge tests, and probability score. |
+| 2 | `scenario-004` | **Tackle Zones and Dodging.** State when a Dodge is required, how extra Tackle Zones affect it, how the route shows tests, Sera's Dodge reroll, and how failure reduces the score. |
+| 3 | `scenario-002` | **Hand-off Action.** State the action order, Catch roll, receiver activation rule, and shared Pass or Hand-off limit. |
+| 4 | `scenario-003` | **Pass Action.** State the action order, PA test, Catch roll, preview modifiers, receiver activation rule, and shared Pass or Hand-off limit. |
+| 5 | `scenario-005` | **The Drive.** State the activation limit, order-of-play requirement, cumulative risk, one-turn limit, and prohibition on resetting the probability chain. |
+| 6 | `scenario-006` | **Blocking and Parallel Universes.** State Block and Blitz movement rules, Blitz limit, ST and assists, dice ownership, live universes, Turnover probability, universe controls, completion rule, final score, and Pickup rules. |
+
+## Parallel Universes Graduation
+
+### Player-facing language
+
+- Use **Parallel Universes** as the feature/concept name and **universe** for a
+  playable resulting board. Replace player-visible `branch`, `branching`,
+  `board-state branch`, and `block outcome branching` language in the live
+  strip, hints, buttons, summaries, tooltips, accessible names, Settings, and
+  errors. Natural rules terms such as **Possible outcomes** and the names of
+  die faces remain unchanged.
+- Examples include **N universes unresolved**, **Resolve every universe. Score
+  or give it up.**, **Universes scored: N of M**, and ghost descriptions such
+  as **occupied in other universes**.
+- Internal TypeScript names (`BranchRun`, `branchSummary`, submission `tree`,
+  and related filenames) may remain technical implementation terminology.
+  Avoid a risky mechanical rename that adds no player value.
+
+### One standard rules path
+
+- Remove `PlayerPrefs.blockBranching`, `useBlockBranchingForAttempt`, the
+  Settings Experimental block toggle, conditional dual-model selection in
+  `App.tsx`, `BlockOutcomePanel`, and checklist-only outcome-selection
+  helpers/handlers once no production caller remains.
+- Use `useBranchRun` as the single application game model. Before the first
+  block it behaves as the existing one-line game, so movement, dodge, pickup,
+  pass, handoff, cancel/rollback, probability preview, and the one-turn rule
+  remain unchanged.
+- Keep the declare-time `BlockSplitPanel`, but present it as the preview before
+  entering Parallel Universes. Preserve ST/assist math, dice ownership,
+  face-to-board collapse, turnover mass, lockstep replay, merging, conceding,
+  ghost boards, expected-value scoring, and server recomputation already
+  specified in *Block Outcomes as Board-State Branches*.
+- Existing stored `blockBranching: false` values are ignored after migration;
+  no player can retain the obsolete checklist model. No leaderboard wipe or
+  data migration is part of this change.
+
+### Completion and leaderboard compatibility
+
+- Graduation must work in both standalone and Tutorial series play. The
+  current experimental path only completes/submits a tree correctly in
+  standalone mode; it must not let the first universe that reaches the end zone
+  prematurely advance a series puzzle.
+- A run completes only when all live universes are scored or given up. A
+  one-line/no-block run completes normally when that line scores.
+- Use the normal touchdown analysis for a run that never splits. Use the
+  Parallel Universes summary when at least one block created multiple live
+  boards; retain per-universe play-by-play and Review Board behavior.
+- Individual leaderboard submission must send the representation its validator
+  expects: a validated tree for a Parallel Universes run, while an unsplit run
+  may continue using the flat payload if that avoids needless storage/display
+  migration.
+- Extend `SeriesPuzzleResult`, the series API payload, and
+  `shared/scoreValidation.js` so a series puzzle that used Parallel Universes
+  carries and validates its tree as an individual submission does.
+  Recompute its probability and expected dice from that tree; do not pass the
+  root score through the existing flat `validateMoves` product check.
+- Series aggregate probability remains the average of its six validated
+  puzzle probabilities. The tie-break becomes the sum of per-puzzle dice
+  counts, which can be fractional because a Parallel Universes puzzle uses
+  expected dice. Update numeric validation and display formatting accordingly
+  without weakening finite/range checks.
+- Best-effort submission to the individual puzzle leaderboard and final series
+  submission must use the same computed probability/tree. A failure in the
+  individual write remains a surfaced non-blocking notice and must not discard
+  Tutorial progress.
+
+## Constraints and Non-goals
+
+- A puzzle is still exactly one turn. Do not add End Turn, turn counters,
+  halves, a running match score, or Free Play.
+- Do not change scenario formations, ids, or rules-engine math. Scenario names
+  and descriptions may change under the full-game copy audit below.
+- Do not show automatic lesson dialogs in Single Plays, editor previews,
+  leaderboards, settings, or completed-board review.
+- Do not add a server account setting or sync tutorial progress between
+  devices. This follows the existing local, identity-keyed display preference
+  architecture.
+- Do not put tutorial fields into scenario JSON or shared scenario validation.
+  Lessons are product guidance, not published puzzle definitions, and must not
+  create client/server/editor schema drift.
+- Do not make Parallel Universes optional, tutorial-only, or dependent on the
+  tutorial-guidance setting.
+- Rules simplifications already documented for blocking remain in force: no
+  chain/crowd pushes, armour/injury, Guard, Frenzy, Juggernaut, or Stand Firm.
+- `shared/` remains dependency-free. Any series tree validation added there
+  must reuse its existing plain ESM helpers and import no package.
+
+## Architecture
+
+| Area | Responsibility |
+| --- | --- |
+| `client/src/series/default.json` | Rename the series to Tutorial, use the decided order, and list the six drills. |
+| New `client/src/tutorialLessons.ts` | Own the closed lesson/scenario id mapping, ordered typed content, current-id sanitization helpers, and lookup. No React and no alternate scenario titles. |
+| New `client/src/TutorialLessonDialog.tsx` plus scoped CSS | Render the accessible, responsive lesson modal and global opt-out checkbox. |
+| `client/src/prefs.ts` | Persist `showTutorialGuidance` and bounded `seenTutorialLessons`; ignore obsolete `blockBranching` on sanitized reads. |
+| `client/src/SettingsScreen.tsx` | Add the Rules briefings switch and remove Experimental block settings. Re-enabling resets seen lessons. |
+| `client/src/App.tsx` | Open lessons only at Tutorial puzzle entry/advance, record dismissal/opt-out, use one `useBranchRun` model, and route flat versus Parallel Universes completion correctly for standalone and series play. |
+| `client/src/BranchStrip.tsx`, `BranchRunSummary.tsx`, `Pitch.tsx`, `BlockSplitPanel.tsx` | Adopt player-facing universe terminology while preserving the proven internal branch model and calculations. |
+| `client/src/types.ts`, `client/src/api.ts`, `shared/scoreValidation.js` | Carry optional per-puzzle submission trees through series results and validate/aggregate tree scores and fractional expected dice without client/server drift. |
+| Existing/new focused tests | Cover lesson gating/persistence/order/accessibility, standard-universe gameplay, obsolete-pref migration, and individual/series tree submission. |
+| `docs/agent-context/*.md` | After shipping, record Tutorial entry behavior/preferences in `frontend-flow.md`, order/content ownership in `scenarios-and-series.md`, and standard Parallel Universes rules in `game-rules-engine.md`. |
+
+## Implementation Steps
+
+1. Add typed lesson content and preference sanitization tests. Extend
+   `PlayerPrefs` with Tutorial guidance/seen ids, define off/on/reset behavior,
+   and drop the obsolete block flag during sanitization.
+2. Build the accessible lesson dialog and tests for focus, Escape, continue,
+   per-lesson seen state, global opt-out, and compact overflow. Wire it only to
+   `startSeries` and series advancement; verify standalone/editor entry never
+   opens it.
+3. Rename/reorder `default.json` and update series/select tests to assert the
+   exact `1, 4, 2, 3, 5, 6` resolved order and six-step counter.
+4. Make `useBranchRun` the sole game path. Remove the experimental Settings UI,
+   attempt-frozen preference, checklist rendering and dead checklist code, then
+   update all player-visible text to Parallel Universes.
+5. Unify completion handling so unsplit runs retain the ordinary analysis and
+   split runs use the universe summary in both standalone and Tutorial modes,
+   including Review Board, restart, leave-series confirmation, and progression.
+6. Extend series result serialization and dependency-free shared validation to
+   accept and recompute per-puzzle trees and fractional expected dice. Add
+   rejection tests for altered root values, weights, orderings, probability,
+   and dice totals, plus a real scenario-006 Tutorial round trip.
+7. Remove unused imports/components/helpers, regenerate only outputs produced
+   by normal build scripts, and update the three durable context docs.
+8. Run `npm run verify`. Because this touches gameplay modal/layout and compact
+   HUD behavior, also run `npm --prefix client run test:e2e:mobile` after browser
+   binaries are available and manually exercise a complete Tutorial run at
+   desktop and 320 px width.
+
+## Success Criteria
+
+- The home screen calls the default series **Tutorial**, and starting it plays
+  scenarios `001`, `004`, `002`, `003`, `005`, `006` with correct counters.
+- Each unseen lesson appears before its Tutorial puzzle is interactive, once
+  per identity/device; it never appears from Single Plays or editor preview.
+- Dismissing records only the current lesson, the dialog checkbox disables all
+  future lessons, Settings can disable them, and re-enabling resets the lesson
+  history so the Tutorial can teach from the beginning again.
+- All six dialogs contain the required rules/control explanations and remain
+  keyboard- and screen-reader-usable on desktop and compact layouts.
+- Every player uses the Parallel Universes block model regardless of old stored
+  preferences. The old checklist, experimental setting, and runtime flag are
+  absent, and no player-facing branch terminology remains in this feature.
+- Scenario 006 can split into universes during a Tutorial run; one universe
+  scoring does not advance the puzzle, all universes must resolve, and the
+  validated expected-value result advances and submits correctly.
+- Standalone and series leaderboards accept honest flat and universe runs,
+  reject tampered trees/aggregates, retain personal-best behavior, and format
+  fractional expected dice consistently.
+- Movement, pass, handoff, dodge, pickup, block math, cancellation, one-turn
+  behavior, settings return-to-game behavior, and published scenario fallback
+  continue to work.
+- `npm run verify` and the mobile Playwright suite pass, with no unused symbols,
+  shared-package imports, generated-seed hand edits, or 320 px overflow.
+
+---
+
+# Full-game Rulebook Copy Audit
+
+**Status:** Shipped.
+
+## Requirements
+
+- Review every player-facing string in the client, including Tutorial dialogs,
+  home, game status, logs, summaries, rankings, Settings, reports, Admin Mode,
+  scenario metadata, accessible labels, errors, and empty states.
+- Use short rules language. Prefer labelled clauses such as OBJECTIVE, ACTION,
+  TEST, LIMIT, STATUS, and SCORE when the text explains play.
+- Use current player-facing terms: Rush, Hand-off, Tackle Zone, End Zone,
+  Block, Blitz, Pickup, Pass, Catch, Turnover, and Parallel Universes.
+- Do not use en dashes, em dashes, typographic ellipses, or decorative middle
+  dots in player-facing prose. Board notation may retain arrows, crosses,
+  dice, and other symbols that convey game state.
+- Keep technical comments, tests, and internal documentation technical. They
+  are not game copy and do not need the rulebook voice.
+- Do not change any game rule, scenario formation, score, or control flow.
+
+## Success Criteria
+
+- Every scenario description starts with OBJECTIVE and states the required play.
+- Tutorial briefings use labelled rules clauses and explain all six drills.
+- Game status messages identify the current action before giving the instruction.
+- Rankings, local history, settings, errors, and editor messages use direct text
+  without promotional or conversational filler.
+- No player-facing prose contains an en dash, em dash, typographic ellipsis, or
+  decorative middle dot.

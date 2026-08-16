@@ -100,6 +100,13 @@ public avatars).
   slate/tile can be paired with any of the three token levels. Coordinate
   labels default on and can be hidden without changing square names in DOM,
   action logs, accessibility labels, or written solutions.
+- **Tutorial rules briefings are local and identity-keyed.** The Tutorial
+  series opens one focus-trapped briefing before each unseen puzzle. Single
+  Plays and editor previews never open briefings. `showTutorialGuidance` defaults on and
+  `seenTutorialLessons` records current scenario ids in `bbt.prefs.v1`.
+  Dismissing a briefing marks only that briefing seen. Its opt-out disables all
+  later briefings. Settings can turn briefings off. Turning them back on clears
+  the seen list so the Tutorial restarts from drill one.
 - **The game HUD keeps the account menu near the front on compact screens.**
   The toolbar is intentionally one row with overflow clipped; leaving the
   account trigger at the far end made Settings and About unreachable on narrow
@@ -111,10 +118,16 @@ public avatars).
 
 ## Home Screen
 
+Player-facing prose uses a compact rulebook voice. Rules instructions use
+labels such as OBJECTIVE, ACTION, TEST, LIMIT, STATUS, and SCORE. Prose uses
+plain punctuation. Arrows, crosses, dice, and other board symbols remain valid
+when they carry rules information rather than joining sentences.
+
 `ScenarioSelect.tsx` owns the main Series/Single Plays switch and exposes
 Admin Mode as a third tab for allowlisted admins.
 
-- Series tab shows the default series row from `client/src/series/default.json`.
+- Series tab shows **Tutorial**, the default series row from
+  `client/src/series/default.json`.
 - Single Plays tab shows published scenario tiles.
 - Do not reintroduce per-screen scenario title override maps. Scenario
   `name`/`description` JSON is the source of truth.

@@ -120,10 +120,14 @@
   }
 
   .legend-menu__dropdown {
-    /* Anchored to the toolbar but allowed the full width beneath it. */
-    right: auto;
-    left: 50%;
-    transform: translateX(-50%);
-    width: min(360px, calc(100vw - 16px));
+    /* The trigger can sit near either viewport edge in the clipped compact
+       toolbar. Fix the panel to the viewport so centering on that trigger
+       cannot push half of the key off-screen. */
+    position: fixed;
+    top: 52px;
+    right: 8px;
+    left: 8px;
+    width: auto;
+    transform: none;
   }
 }

@@ -454,7 +454,7 @@ export function validateSeriesSubmission(body, user) {
   }
 
   const probability = validProbability(body.probability, 'probability');
-  const diceCount = validDiceCount(body.diceCount, 'diceCount');
+  const diceCount = validExpectedDice(body.diceCount, 'diceCount');
 
   const puzzles = Array.isArray(body.puzzles) ? body.puzzles : [];
   if (puzzles.length === 0) throw new ScoreValidationError('A series score must include its puzzle results');
@@ -467,8 +467,24 @@ export function validateSeriesSubmission(body, user) {
     if (!puzzle || typeof puzzle !== 'object') throw new ScoreValidationError('Invalid puzzle result');
     const label = `Puzzle ${index + 1}`;
     const puzzleProbability = validProbability(puzzle.probability, `${label} probability`);
-    const puzzleDice = validDiceCount(puzzle.diceCount, `${label} diceCount`);
-    const moves = validateMoves(puzzle.moves ?? [], puzzleProbability, puzzleDice, label);
+    let puzzleDice;
+    let moves;
+    let branching = false;
+    if (puzzle.tree !== undefined) {
+      const computed = validateBranchTree(puzzle.tree, label);
+      if (!closeEnough(computed.probability, puzzleProbability)) {
+        throw new ScoreValidationError(`${label} probability does not match its branch tree`);
+      }
+      puzzleDice = validExpectedDice(puzzle.diceCount, `${label} diceCount`);
+      if (!closeEnough(computed.expectedDice, puzzleDice)) {
+        throw new ScoreValidationError(`${label} diceCount does not match its branch tree`);
+      }
+      moves = sanitizeDisplayMoves(puzzle.moves ?? [], label);
+      branching = true;
+    } else {
+      puzzleDice = validDiceCount(puzzle.diceCount, `${label} diceCount`);
+      moves = validateMoves(puzzle.moves ?? [], puzzleProbability, puzzleDice, label);
+    }
 
     probabilitySum += puzzleProbability;
     diceTotal += puzzleDice;
@@ -479,13 +495,14 @@ export function validateSeriesSubmission(body, user) {
       probability: puzzleProbability,
       diceCount: puzzleDice,
       moves,
+      ...(branching ? { branching: true } : {}),
     };
   });
 
   if (!closeEnough(probabilitySum / validated.length, probability)) {
     throw new ScoreValidationError('Series probability must be the average of its puzzle probabilities');
   }
-  if (diceTotal !== diceCount) {
+  if (!closeEnough(diceTotal, diceCount)) {
     throw new ScoreValidationError('Series diceCount must be the total across its puzzles');
   }
 

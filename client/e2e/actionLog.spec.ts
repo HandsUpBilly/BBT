@@ -56,7 +56,7 @@ test.describe('action log', () => {
     await page.locator('.action-log-menu__trigger').tap();
     await expect(page.locator('.action-log-menu__dropdown')).toBeVisible();
 
-    await page.locator('.hud__team').tap();
+    await page.locator('.hud__prob').tap();
     await expect(page.locator('.action-log-menu__dropdown')).toBeHidden();
   });
 

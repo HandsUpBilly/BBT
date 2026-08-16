@@ -1,7 +1,7 @@
 {
   "id": "scenario-003",
   "name": "Swiftfoot's Long Bomb",
-  "description": "Ironjaw's boys have shut the ground game down cold. Step clear of their tackle zones and launch a long pass downfield to Quickhand before the whistle blows.",
+  "description": "OBJECTIVE: Score with Quickhand. Move Swiftfoot clear of the Tackle Zones, then complete the Pass and Catch.",
   "activeTeam": "human",
   "published": true,
   "ballPosition": null,

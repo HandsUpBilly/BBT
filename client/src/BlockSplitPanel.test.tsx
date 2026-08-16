@@ -24,7 +24,7 @@ describe('BlockSplitPanel', () => {
     expect(screen.getByText('Pushed + Down')).toBeTruthy();
     expect(screen.getByText('Down in place')).toBeTruthy();
     expect(screen.getByText('Pushed')).toBeTruthy();
-    expect(screen.getByText('Turnover — drive ends here')).toBeTruthy();
+    expect(screen.getByText('Turnover: drive ends here')).toBeTruthy();
     expect(screen.getByText('Attacker Down')).toBeTruthy();
     expect(screen.getByText('Possible outcomes')).toBeTruthy();
     expect(screen.queryByRole('checkbox')).toBeNull();
@@ -63,7 +63,7 @@ describe('BlockSplitPanel', () => {
     );
     expect(screen.getByText('ST 3 + 0 assists = 3')).toBeTruthy();
     expect(screen.getByText('ST 4 + 0 assists = 4')).toBeTruthy();
-    expect(screen.getByText('2 dice · uphill')).toBeTruthy();
+    expect(screen.getByText('2 dice, uphill')).toBeTruthy();
     expect(screen.queryByText(/pick/i)).toBeNull();
 
     rerender(
@@ -76,7 +76,7 @@ describe('BlockSplitPanel', () => {
       />,
     );
     expect(screen.getByText('ST 3 + 1 assist = 4')).toBeTruthy();
-    expect(screen.getByText('2 dice · downhill')).toBeTruthy();
+    expect(screen.getByText('2 dice, downhill')).toBeTruthy();
   });
 
   it('lists every die face that leads to turnover', () => {
@@ -90,6 +90,6 @@ describe('BlockSplitPanel', () => {
       />,
     );
 
-    expect(screen.getByText('Attacker Down · Both Down')).toBeTruthy();
+    expect(screen.getByText('Attacker Down, Both Down')).toBeTruthy();
   });
 });

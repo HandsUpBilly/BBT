@@ -393,6 +393,36 @@ test('accepts a fractional dice count and rejects one that disagrees', () => {
   assert.throws(() => validateScoreSubmission(treeBody(tree, probability, 9)), /diceCount does not match/);
 });
 
+test('series submissions validate Parallel Universe trees and fractional dice totals', () => {
+  const inner = branchBlock([scoredLeaf(), scoredLeaf(), scoredLeaf()]);
+  const tree = branchBlock([inner, scoredLeaf(), scoredLeaf()]);
+  const treeProbability = (2 / 6) * (5 / 6) + 3 / 6;
+  const treeDice = ((2 / 6) * (5 / 6) * 2 + (3 / 6)) / treeProbability;
+  const puzzles = [
+    { scenarioId: 'a', scenarioName: 'Clean', probability: 1, diceCount: 0, moves: [] },
+    {
+      scenarioId: 'b', scenarioName: 'Universes', probability: treeProbability,
+      diceCount: treeDice, moves: [], tree,
+    },
+  ];
+  const result = validateSeriesSubmission({
+    name: 'Coach',
+    probability: (1 + treeProbability) / 2,
+    diceCount: treeDice,
+    puzzles,
+  });
+
+  assert.equal(result.puzzles[1].branching, true);
+  assert.ok(Math.abs(result.diceCount - treeDice) < 1e-9);
+  assert.throws(
+    () => validateSeriesSubmission({
+      name: 'Coach', probability: (1 + treeProbability) / 2,
+      diceCount: treeDice, puzzles: [{ ...puzzles[1], probability: 0.99 }],
+    }),
+    /does not match its branch tree/,
+  );
+});
+
 test('keeps a branching run primary-line moves for display without a product check', () => {
   const tree = branchBlock([scoredLeaf(), scoredLeaf(), scoredLeaf()]);
   const result = validateScoreSubmission(treeBody(tree, 5 / 6, 1, {

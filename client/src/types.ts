@@ -322,13 +322,15 @@ export interface SeriesPuzzleResult {
   probability: number;
   diceCount: number;
   moves: RiskyMove[];
+  /** Present when a block created Parallel Universes; validated server-side. */
+  tree?: import('./branchRun').SubmissionNode;
 }
 
 export interface SeriesLeaderboardEntry {
   id: string;
   name: string;
   probability: number;   // average of the puzzle probabilities
-  diceCount: number;     // total dice rolls across all puzzles (tie-break)
+  diceCount: number;     // sum of per-puzzle dice counts; may be fractional
   date: string;
   puzzles: SeriesPuzzleResult[];
   userId?: string;

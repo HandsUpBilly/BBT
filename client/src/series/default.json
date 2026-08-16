@@ -1,12 +1,12 @@
 {
   "id": "default",
-  "name": "Humans vs Orcs: Touchdown or Bust",
-  "description": "Lead the Reikland attack through green-skin pressure, chain the cleanest route, and cross the line before the Orcs turn the drive into a scrum.",
+  "name": "Tutorial",
+  "description": "Six drills cover Movement, Dodging, Hand-offs, Passing, Blocking, Pickups, and Parallel Universes. Score a touchdown in each drill.",
   "scenarioIds": [
     "scenario-001",
+    "scenario-004",
     "scenario-002",
     "scenario-003",
-    "scenario-004",
     "scenario-005",
     "scenario-006"
   ]

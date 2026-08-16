@@ -9,11 +9,11 @@ interface Props {
 }
 
 function formatPercent(value: number | null): string {
-  return value === null ? '—' : `${(value * 100).toFixed(1)}%`;
+  return value === null ? 'N/A' : `${(value * 100).toFixed(1)}%`;
 }
 
 function formatDice(value: number | null): string {
-  return value === null ? '—' : value.toFixed(1);
+  return value === null ? 'N/A' : value.toFixed(1);
 }
 
 function formatDate(value: string | null): string {
@@ -69,7 +69,7 @@ export function AdminStatistics({ idToken, onBack }: Props) {
         <div className="editor__header-actions">
           <button className="btn btn--secondary" onClick={onBack}>Back</button>
           <button className="btn btn--primary" disabled={loading} onClick={() => { void load(); }}>
-            {loading ? 'Loading…' : 'Refresh'}
+            {loading ? 'Loading...' : 'Refresh'}
           </button>
         </div>
       </header>
@@ -86,7 +86,7 @@ export function AdminStatistics({ idToken, onBack }: Props) {
         </div>
       )}
 
-      {loading && !statistics && <p className="admin-statistics__status" role="status">Loading player statistics…</p>}
+      {loading && !statistics && <p className="admin-statistics__status" role="status">Loading player statistics...</p>}
 
       {statistics && (
         <>

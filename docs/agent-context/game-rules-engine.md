@@ -78,6 +78,16 @@ Regression tests: `client/src/activationRollback.test.ts`.
 
 ## Block / Blitz Invariants
 
+Block dice use **Parallel Universes** as the only player-facing resolution
+model. The retired outcome checklist and `blockBranching` preference no longer
+select a second rules path. Internally the implementation retains its branch
+types/files: a block creates one playable universe per distinct live resulting
+board, turnover mass is dead, legal actions replay across lockstep siblings,
+and every universe must score or be conceded before the run completes. The
+score is the summed weight of scoring universes. Series submissions carry the
+same tree as individual submissions so `shared/scoreValidation.js` recomputes
+the expected-value score and fractional dice tie-break.
+
 - A plain Block targets an adjacent standing opponent without movement.
 - A Blitz chooses a reachable standing opponent first, moves into contact,
   resolves the block and any follow-up, then may spend its remaining movement.

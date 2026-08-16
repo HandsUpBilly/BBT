@@ -1,7 +1,7 @@
 {
   "id": "scenario-006",
   "name": "Loose Ball on the Goal Line",
-  "description": "Bonecruncher's hit jarred the ball loose five squares short of the line, and Skullkrak is guarding it. Knock him away, scoop it up, then pick your route home — Swiftfoot's legs, Quickstep waiting across the paint, or Quickhand breaking from the slot.",
+  "description": "OBJECTIVE: Recover the loose ball and score. Block Skullkrak away from the ball, complete the Pickup, then choose the scoring route.",
   "activeTeam": "human",
   "published": true,
   "ballPosition": { "col": 7, "row": 5 },

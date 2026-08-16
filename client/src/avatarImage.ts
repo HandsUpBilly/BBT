@@ -28,7 +28,7 @@ export function validateAvatarFile(file: File): string | null {
     return 'Choose a PNG, JPEG, or WebP image.';
   }
   if (file.size > AVATAR_MAX_SOURCE_BYTES) {
-    return 'That image is too large — choose one under 8 MB.';
+    return 'IMAGE REJECTED: File is too large. Choose one under 8 MB.';
   }
   return null;
 }
@@ -57,7 +57,7 @@ export async function encodeAvatarFile(file: File): Promise<string> {
 
     const dataUrl = canvas.toDataURL('image/webp', 0.85);
     if (dataUrl.length > AVATAR_MAX_DATA_URL_LENGTH) {
-      throw new Error('Could not shrink that image enough — try a simpler photo.');
+      throw new Error('IMAGE REJECTED: Choose a simpler image.');
     }
     return dataUrl;
   } finally {

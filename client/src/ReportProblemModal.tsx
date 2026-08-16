@@ -155,7 +155,7 @@ export function ReportProblemModal({ defaultReporterName, context, idToken, onCl
           <div className="report-problem-modal__actions">
             <button className="report-problem-modal__secondary" type="button" onClick={onClose} disabled={submitting}>Cancel</button>
             <button className="report-problem-modal__submit" type="submit" disabled={submitting}>
-              {submitting ? 'Sending…' : 'Send report'}
+              {submitting ? 'Sending...' : 'Send report'}
             </button>
           </div>
         </form>

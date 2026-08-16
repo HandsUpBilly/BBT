@@ -10,12 +10,13 @@
  * with one line instead of forking every call site. `state` is the *viewed*
  * branch's board, which is what the pitch draws.
  *
- * Only used when the `blockBranching` preference is on; the checklist path
- * still goes through `useGameState` unchanged.
+ * This is the standard game model. Before a block splits the board it behaves
+ * as a single line; afterward it authors the Parallel Universes together.
  */
 
 import { useCallback, useMemo, useState } from 'react';
 import type { GameState } from './types';
+import { applySquareHover, applySquareLeave } from './useGameState';
 import {
   branchStrip,
   cancelActivation,
@@ -74,10 +75,13 @@ export function useBranchRun(initialState: GameState) {
     handleSquareClick: useCallback((col: number, row: number) => {
       setRun(prev => clickSquare(prev, { col, row }));
     }, []),
-    // Hover is pure preview state on one board and never branches, so it is
-    // deliberately left as a no-op rather than replayed across the group.
-    handleSquareHover: useCallback(() => {}, []),
-    handleSquareLeave: useCallback(() => {}, []),
+    // Hover is preview-only, so update only the viewed universe.
+    handleSquareHover: useCallback((col: number, row: number) => {
+      setRun(prev => updateViewedState(prev, state => applySquareHover(state, { col, row })));
+    }, []),
+    handleSquareLeave: useCallback(() => {
+      setRun(prev => updateViewedState(prev, applySquareLeave));
+    }, []),
     handleCancelSelection: useCallback(() => setRun(cancelActivation), []),
     handleHandoffAction: useCallback((pieceId: string) => {
       setRun(prev => declareHandoff(prev, pieceId));
@@ -107,6 +111,7 @@ export function useBranchRun(initialState: GameState) {
     strip,
     ghosts,
     complete: isRunComplete(run),
+    hasSplit: Object.values(run.lines).some(line => line.split !== null),
     /** A block has been targeted and is waiting for splitOnBlock — see blockPending. */
     blockPending: isBlockPending(run),
     /** Roll the declared block: splits the viewed branch's group into its board states. */

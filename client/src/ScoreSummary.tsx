@@ -30,11 +30,11 @@ function actionLabel(m: LeaderboardEntry['moves'][number]): string {
     return `${BAND_LABEL[m.rangeBand]} Pass ${m.passTarget}+`;
   if (m.catchTarget !== undefined && m.passTarget === undefined && m.receiverName === undefined)
     return `Catch ${m.catchTarget}+`;   // pass-catch
-  if (m.catchTarget !== undefined) return `Handoff ${m.catchTarget}+`;
-  const pickupSuffix = m.pickupTarget ? ` · Pickup ${m.pickupTarget}+` : '';
+  if (m.catchTarget !== undefined) return `Hand-off ${m.catchTarget}+`;
+  const pickupSuffix = m.pickupTarget ? `, Pickup ${m.pickupTarget}+` : '';
   const rerollSuffix = m.dodgeSkillReroll ? ' (skill reroll)' : '';
-  if (m.isGfi && m.dodgeTarget !== null) return `GFI 2+ · Dodge ${m.dodgeTarget}+${rerollSuffix}${pickupSuffix}`;
-  if (m.isGfi) return `Go For It 2+${pickupSuffix}`;
+  if (m.isGfi && m.dodgeTarget !== null) return `Rush 2+, Dodge ${m.dodgeTarget}+${rerollSuffix}${pickupSuffix}`;
+  if (m.isGfi) return `Rush 2+${pickupSuffix}`;
   if (m.dodgeTarget !== null) return `Dodge ${m.dodgeTarget}+${rerollSuffix}${pickupSuffix}`;
   return `Pickup ${m.pickupTarget}+`;
 }
@@ -60,7 +60,7 @@ export function ScoreSummary({ entry, scenario, onBack }: Props) {
         <div>
           <h2 className="score-summary__name">{entry.name}</h2>
           <p className="score-summary__meta">
-            {new Date(entry.date).toLocaleDateString()} · {pct(entry.probability)}
+            {new Date(entry.date).toLocaleDateString()}, {pct(entry.probability)}
           </p>
         </div>
       </div>

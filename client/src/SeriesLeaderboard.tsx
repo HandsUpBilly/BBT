@@ -13,6 +13,7 @@ interface Props {
 }
 
 function pct(p: number) { return `${Math.round(p * 100)}%`; }
+function dice(value: number) { return Number.isInteger(value) ? String(value) : value.toFixed(1); }
 
 function initials(name: string): string {
   const trimmed = name.trim();
@@ -57,18 +58,18 @@ export function SeriesLeaderboard({ onBack, highlightId, initialEntries, onEntri
         <button className="lb-back-btn" onClick={onBack}>← Back</button>
         <div>
           <h2 className="leaderboard__title">Series Leaderboard</h2>
-          <p className="leaderboard__subtitle">Top runs by average success probability across all puzzles</p>
+          <p className="leaderboard__subtitle">RANKING: Highest average success probability first.</p>
         </div>
         <button className="lb-reload-btn" onClick={load} disabled={loading} title="Reload">
-          {loading ? '…' : '↻'}
+          {loading ? '...' : '↻'}
         </button>
       </div>
 
-      {loading && <div className="leaderboard__state">Loading…</div>}
+      {loading && <div className="leaderboard__state">Loading...</div>}
       {error   && <div className="leaderboard__state leaderboard__state--error">{error}</div>}
 
       {!loading && !error && entries.length === 0 && (
-        <div className="leaderboard__state">No series runs yet — be the first!</div>
+        <div className="leaderboard__state">No series runs recorded.</div>
       )}
 
       {!loading && !error && entries.length > 0 && (
@@ -101,7 +102,7 @@ export function SeriesLeaderboard({ onBack, highlightId, initialEntries, onEntri
                 </td>
                 <td className="lb-table__name">{e.name}</td>
                 <td className="lb-table__prob">{pct(e.probability)}</td>
-                <td className="lb-table__dice">{e.diceCount}</td>
+                <td className="lb-table__dice">{dice(e.diceCount)}</td>
                 <td className="lb-table__date">{new Date(e.date).toLocaleDateString()}</td>
               </tr>
             ))}
