@@ -62,6 +62,13 @@ server then rejected with a 400.
 
 Default series metadata lives in `client/src/series/default.json`.
 
+The default series is player-facing **Tutorial** and deliberately teaches in
+this order: `scenario-001`, `scenario-004`, `scenario-002`, `scenario-003`,
+`scenario-005`, `scenario-006` (movement, dodging, handoff, pass, combined
+play, then blocks/loose-ball pickup/Parallel Universes). Tutorial lesson copy
+lives separately in `client/src/tutorialLessons.ts`; it does not override
+scenario names or descriptions and is shown only in series play.
+
 `resolveSeriesScenarios()` in `client/src/series/index.ts` resolves series
 `scenarioIds` to scenario objects. Series Play should use the resolved series
 list, not all scenarios sorted by id.
@@ -91,4 +98,3 @@ Drop the `.json` file in `client/src/scenarios/`. The client picks it up via
 `scripts/generate-scenario-seed.mjs` during the build. No manual import
 registration in either place — and never hand-edit
 `netlify/functions/scenarioSeed.js`.
-

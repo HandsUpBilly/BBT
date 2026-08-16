@@ -1,6 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import type { PlayerPiece } from './types';
-import { clampMenuPosition } from './blockControls';
+import { clampMenuPosition } from './menuPosition';
 import './PieceMenu.css';
 
 export interface PieceMenuAction {

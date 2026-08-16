@@ -20,6 +20,9 @@ interface Props {
   signedInName?: string;
   /** Submission failure — keeps the dialog open so the player can retry. */
   error?: string;
+  seriesMode?: boolean;
+  continueLabel?: string;
+  onReviewBoard?: () => void;
 }
 
 function pct(value: number): string {
@@ -44,6 +47,7 @@ function pct(value: number): string {
  */
 export function BranchRunSummary({
   scenarioName, scenario, run, summary, branches, onSubmit, onDismiss, defaultName, signedInName, error,
+  seriesMode = false, continueLabel, onReviewBoard,
 }: Props) {
   const titleId = useId();
   const ref = useModalFocus<HTMLDivElement>(onDismiss);
@@ -95,7 +99,7 @@ export function BranchRunSummary({
             <dl className="branch-summary__breakdown">
               <div>
                 <dt>Scored in</dt>
-                <dd>{scored.length} of {branches.length} branches</dd>
+                <dd>{scored.length} of {branches.length} universes</dd>
               </div>
               <div>
                 <dt>Lost to knockdowns</dt>
@@ -124,7 +128,7 @@ export function BranchRunSummary({
               )}
             </dl>
 
-            <ul className="branch-summary__branches">
+            <ul className="branch-summary__branches" aria-label="Parallel Universes">
               {branches.map(branch => (
                 <li key={branch.id}>
                   <button
@@ -145,7 +149,7 @@ export function BranchRunSummary({
 
             {error && <p className="submit-modal__error" role="alert">{error}</p>}
 
-            {signedInName ? (
+            {seriesMode ? null : signedInName ? (
               <p className="submit-modal__prompt">Submit as {signedInName}</p>
             ) : (
               <>
@@ -170,11 +174,17 @@ export function BranchRunSummary({
                 title={summary.score <= 0 ? 'A run that scores nowhere has nothing to submit' : undefined}
                 onClick={() => runSubmit(submitName)}
               >
-                {submitting ? 'Saving…' : error ? 'Try Again' : 'Submit Score'}
+                {submitting ? 'Saving…' : error ? 'Try Again' : seriesMode ? continueLabel ?? 'Continue' : 'Submit Score'}
               </button>
-              <button className="modal__continue-btn" disabled={submitting} onClick={onDismiss}>
-                Skip
-              </button>
+              {onReviewBoard ? (
+                <button className="modal__continue-btn" disabled={submitting} onClick={onReviewBoard}>
+                  Review Board
+                </button>
+              ) : (
+                <button className="modal__continue-btn" disabled={submitting} onClick={onDismiss}>
+                  Skip
+                </button>
+              )}
             </div>
           </>
         )}

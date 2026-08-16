@@ -38,7 +38,7 @@ export function BranchStrip({ branches, deadWeight, score, onSelect, onConcede }
   const unresolved = branches.filter(b => b.status === 'authoring' || b.status === 'needs-attention');
 
   return (
-    <section className="branch-strip" aria-label="Block outcomes">
+    <section className="branch-strip" aria-label="Parallel Universes">
       <header className="branch-strip__header">
         <span className="branch-strip__score">
           Scoring chance <strong>{pct(score)}</strong>
@@ -50,7 +50,7 @@ export function BranchStrip({ branches, deadWeight, score, onSelect, onConcede }
         )}
         {needsAttention > 0 && (
           <span className="branch-strip__alert" role="status">
-            {needsAttention} branch{needsAttention === 1 ? '' : 'es'} need a plan
+            {needsAttention} universe{needsAttention === 1 ? '' : 's'} need a plan
           </span>
         )}
       </header>
@@ -89,7 +89,7 @@ export function BranchStrip({ branches, deadWeight, score, onSelect, onConcede }
 
       {unresolved.length > 0 && (
         <p className="branch-strip__hint">
-          Every branch needs to score or be given up before the run is finished.
+          Every universe needs to score or be given up before the run is finished.
         </p>
       )}
     </section>

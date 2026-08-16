@@ -49,9 +49,15 @@ describe('writing and reading back', () => {
     expect(readPrefs('user-1')).toEqual({ pitchSurface: 'slate', showCoordinates: false });
   });
 
-  it('persists the block branching opt-in', () => {
-    writePrefs('user-1', { blockBranching: true });
-    expect(readPrefs('user-1')).toEqual({ blockBranching: true });
+  it('persists tutorial guidance and seen lessons', () => {
+    writePrefs('user-1', {
+      showTutorialGuidance: false,
+      seenTutorialLessons: ['scenario-001', 'scenario-004'],
+    });
+    expect(readPrefs('user-1')).toEqual({
+      showTutorialGuidance: false,
+      seenTutorialLessons: ['scenario-001', 'scenario-004'],
+    });
   });
 
   it('persists an avatar data URL', () => {
@@ -90,9 +96,19 @@ describe('tolerating junk', () => {
     expect(readPrefs('user-1')).toEqual({});
   });
 
-  it('drops a non-boolean block branching flag', () => {
-    storage.setItem(KEY, JSON.stringify({ 'user-1': { blockBranching: 'yes' } }));
+  it('drops the obsolete block branching flag', () => {
+    storage.setItem(KEY, JSON.stringify({ 'user-1': { blockBranching: false } }));
     expect(readPrefs('user-1')).toEqual({});
+  });
+
+  it('sanitizes tutorial preferences and deduplicates current lesson ids', () => {
+    storage.setItem(KEY, JSON.stringify({
+      'user-1': {
+        showTutorialGuidance: 'yes',
+        seenTutorialLessons: ['scenario-001', 'obsolete', 'scenario-001', 4],
+      },
+    }));
+    expect(readPrefs('user-1')).toEqual({ seenTutorialLessons: ['scenario-001'] });
   });
 
   it('ignores an avatar value that is not a data:image URL', () => {

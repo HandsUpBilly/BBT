@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
-import { useGameState, makeEmptyState, makeScenarioState, pathPreviewProb, passActionAvailability } from './useGameState';
+import { makeEmptyState, makeScenarioState, pathPreviewProb, passActionAvailability } from './useGameState';
 import { useBranchRun } from './useBranchRun';
 import { BranchStrip } from './BranchStrip';
 import { BranchRunSummary } from './BranchRunSummary';
@@ -16,7 +16,6 @@ import { ScoreSummary } from './ScoreSummary';
 import { SeriesLeaderboard } from './SeriesLeaderboard';
 import { SeriesScoreSummary } from './SeriesScoreSummary';
 import { ConfirmDialog } from './ConfirmDialog';
-import { BlockOutcomePanel } from './BlockOutcomePanel';
 import { BlockSplitPanel } from './BlockSplitPanel';
 import { blockBoardStates } from './blockBranching';
 import { blockActionAvailability } from './blockActionAvailability';
@@ -31,6 +30,9 @@ import { ReportProblemButton } from './ReportProblemButton';
 import { ReportProblemModal } from './ReportProblemModal';
 import { AboutDialog } from './AboutDialog';
 import { SettingsScreen } from './SettingsScreen';
+import { TutorialLessonDialog } from './TutorialLessonDialog';
+import { tutorialLessonFor } from './tutorialLessons';
+import type { TutorialLesson } from './tutorialLessons';
 import { submitScore, fetchLeaderboard, submitSeriesScore, fetchSeriesLeaderboard, fetchProgress, ApiError } from './api';
 import type { ProgressData } from './api';
 import { recordAttempt } from './attemptStore';
@@ -71,27 +73,6 @@ const ADMIN_EMAILS = new Set(
     .map((email: string) => email.trim().toLowerCase())
     .filter(Boolean),
 );
-
-/**
- * Freezes the block-branching preference for the length of one attempt.
- *
- * The two models score differently, so a single run must never straddle them:
- * flipping the setting mid-puzzle takes effect on the next puzzle, not this
- * one. Re-freezing is keyed on the scenario changing, which is exactly when a
- * new attempt begins.
- */
-function useBlockBranchingForAttempt(preference: boolean, scenarioId: string | undefined): boolean {
-  const [frozen, setFrozen] = useState(preference);
-  const attemptRef = useRef(scenarioId);
-
-  useEffect(() => {
-    if (attemptRef.current === scenarioId) return;
-    attemptRef.current = scenarioId;
-    setFrozen(preference);
-  }, [scenarioId, preference]);
-
-  return frozen;
-}
 
 type LocalScoreMap = Record<string, string[]>;
 
@@ -344,6 +325,7 @@ export default function App() {
   const [selectedSeriesEntry, setSelectedSeriesEntry] = useState<SeriesLeaderboardEntry | undefined>();
   const [confirmLeaveSeries, setConfirmLeaveSeries] = useState(false);
   const [reviewingCompletedBoard, setReviewingCompletedBoard] = useState(false);
+  const [tutorialLesson, setTutorialLesson] = useState<{ lesson: TutorialLesson; step: number } | null>(null);
   const [reportOpen, setReportOpen] = useState(false);
   const [aboutOpen, setAboutOpen] = useState(false);
   // Blocking failure on the touchdown submit — keeps the SubmitModal open so
@@ -351,6 +333,23 @@ export default function App() {
   const [submitError, setSubmitError] = useState<string | undefined>();
   // Non-blocking notice (e.g. a best-effort individual submit failed mid-series).
   const [submitNotice, setSubmitNotice] = useState<string | undefined>();
+
+  const queueTutorialLesson = useCallback((scenario: Scenario, step: number) => {
+    const lesson = tutorialLessonFor(scenario.id);
+    const guidanceEnabled = prefs.showTutorialGuidance ?? true;
+    const alreadySeen = prefs.seenTutorialLessons?.includes(scenario.id) ?? false;
+    setTutorialLesson(lesson && guidanceEnabled && !alreadySeen ? { lesson, step } : null);
+  }, [prefs.showTutorialGuidance, prefs.seenTutorialLessons]);
+
+  const dismissTutorialLesson = useCallback((disableFutureLessons: boolean) => {
+    if (!tutorialLesson) return;
+    const seen = [...new Set([...(prefs.seenTutorialLessons ?? []), tutorialLesson.lesson.scenarioId])];
+    setPrefs({
+      seenTutorialLessons: seen,
+      ...(disableFutureLessons ? { showTutorialGuidance: false } : {}),
+    });
+    setTutorialLesson(null);
+  }, [prefs.seenTutorialLessons, setPrefs, tutorialLesson]);
 
   // ── Viewport shape ───────────────────────────────────────────────────────
   // Three separate questions — see useMediaQuery.ts for why none of them is a
@@ -397,16 +396,10 @@ export default function App() {
     return computeZoomBounds(positions, 1);
   }, []);
 
-  // Game state — reinitialised when mode/scenario changes.
-  //
-  // Both models are instantiated because hooks cannot be called conditionally;
-  // each is a `useState` over a plain object, so the unused one costs nothing.
-  // `branchingEnabled` is frozen for the duration of an attempt (see below):
-  // the two models score differently, so a single run must not straddle them.
-  const singleBoard = useGameState(makeEmptyState());
+  // Parallel Universes is the standard game model. Before the first block it
+  // contains one line and behaves like the ordinary one-board game.
   const branchedBoards = useBranchRun(makeEmptyState());
-  const branchingEnabled = useBlockBranchingForAttempt(prefs.blockBranching ?? false, activeScenario?.id);
-  const game = branchingEnabled ? branchedBoards : singleBoard;
+  const game = branchedBoards;
   const branchedSummary = branchedBoards.summary;
 
   const { state, setState, handleSquareClick: hookSquareClick, handleSquareHover: hookSquareHover,
@@ -414,23 +407,16 @@ export default function App() {
           handleHandoffAction, handleHandoffTarget,
           handlePassAction, handlePassTarget,
           handleBlockAction, handleBlockTarget, handlePushChoice } = game;
-  const { handleBlockOutcomeChoice } = singleBoard;
 
-  // A board reset — loading a scenario, restarting a turn — has to reach both
-  // models rather than only the active one. Otherwise toggling the preference
-  // between attempts drops the player onto a stale board from the model they
-  // just left.
-  const setSingleState = singleBoard.setState;
   const setBranchedState = branchedBoards.setState;
   // `phase: 'touchdown'` marks one branch scoring, not the run finishing, so
   // the branching summary needs its own dismissal flag rather than borrowing
   // the single-board trick of rewinding the phase.
   const [branchSummaryDismissed, setBranchSummaryDismissed] = useState(false);
   const resetBoards = useCallback((next: GameState) => {
-    setSingleState(next);
     setBranchedState(next);
     setBranchSummaryDismissed(false);
-  }, [setSingleState, setBranchedState]);
+  }, [setBranchedState]);
 
   const identityName = currentUser ? googleAliases[currentUser.id] ?? '' : guestAlias;
   const identityReady = Boolean(identityName.trim());
@@ -526,6 +512,7 @@ export default function App() {
   );
 
   const startPuzzle = useCallback((scenario: Scenario) => {
+    setTutorialLesson(null);
     setEditorPreviewScenario(null);
     setActiveScenario(scenario);
     const s = makeScenarioState(scenario);
@@ -535,6 +522,7 @@ export default function App() {
   }, [resetBoards, computeStartOfPlayZoom]);
 
   const previewPuzzle = useCallback((scenario: Scenario) => {
+    setTutorialLesson(null);
     setEditorPreviewScenario(scenario);
     setActiveScenario(scenario);
     const s = makeScenarioState(scenario);
@@ -774,7 +762,7 @@ export default function App() {
   // being viewed happens to score — and its probability is the whole run's, not
   // the viewed line's. Recording the viewed line here would file an attempt at a
   // number the leaderboard never sees.
-  const runFinished = branchingEnabled ? branchedBoards.complete : state.phase === 'touchdown';
+  const runFinished = branchedBoards.complete;
   useEffect(() => {
     if (!runFinished) {
       attemptRecordedRef.current = false;
@@ -783,7 +771,7 @@ export default function App() {
     if (attemptRecordedRef.current || !activeScenario) return;
     attemptRecordedRef.current = true;
 
-    const { probability, diceCount } = branchingEnabled
+    const { probability, diceCount } = branchedBoards.hasSplit
       ? { probability: branchedSummary.score, diceCount: branchedSummary.expectedDice }
       : (({ cumulativeProb, diceCount }) => ({ probability: cumulativeProb, diceCount }))(
           summarizeActionLog(state.actionLog));
@@ -793,7 +781,7 @@ export default function App() {
       probability,
       diceCount,
     });
-  }, [runFinished, branchingEnabled, branchedSummary, state.actionLog, activeScenario]);
+  }, [runFinished, branchedBoards.hasSplit, branchedSummary, state.actionLog, activeScenario]);
 
   // Submission handler (standalone puzzle mode)
   const handleSubmit = useCallback(async (name: string) => {
@@ -873,22 +861,30 @@ export default function App() {
     const s = makeScenarioState(firstScenario);
     resetBoards(s);
     setZoomBounds(computeStartOfPlayZoom(s.pieces, s.activeTeam));
+    queueTutorialLesson(firstScenario, 1);
     setAppMode('series-puzzle');
-  }, [identityName, seriesScenarios, resetBoards, computeStartOfPlayZoom]);
+  }, [identityName, seriesScenarios, resetBoards, computeStartOfPlayZoom, queueTutorialLesson]);
 
   // Called when the player continues past a touchdown while in a series run.
   // Submits the puzzle's score to its individual leaderboard, records the
   // result, then either advances to the next puzzle or finalizes the series.
   const handleSeriesContinue = useCallback(async () => {
     if (!activeScenario || !seriesRun) return;
-    const { cumulativeProb, diceCount, moves } = summarizeActionLog(state.actionLog);
+    const flat = summarizeActionLog(state.actionLog);
+    const tree = branchedBoards.hasSplit ? toSubmissionTree(branchedBoards.run) : undefined;
+    const probability = tree ? branchedBoards.summary.score : flat.cumulativeProb;
+    const diceCount = tree ? branchedBoards.summary.expectedDice : flat.diceCount;
+    const moves = flat.moves;
     setSubmitError(undefined);
 
     // Submit to the puzzle's own leaderboard too (best-effort — the series run
     // is the thing being scored, so a failure here must not cost the player
     // their progress. It is surfaced as a non-blocking notice instead).
     try {
-      await submitScore(activeScenario.id, seriesRun.playerName, cumulativeProb, diceCount, moves, state.actionLog, idToken);
+      await submitScore(
+        activeScenario.id, seriesRun.playerName, probability, diceCount,
+        moves, state.actionLog, idToken, tree,
+      );
     } catch (error) {
       setSubmitNotice(`This puzzle's individual score wasn't saved (${describeSubmitError(error)}). Your series run continues.`);
     }
@@ -896,9 +892,10 @@ export default function App() {
     const result: SeriesPuzzleResult = {
       scenarioId: activeScenario.id,
       scenarioName: activeScenario.name,
-      probability: cumulativeProb,
+      probability,
       diceCount,
       moves,
+      ...(tree ? { tree } : {}),
     };
     const results = [...seriesRun.results, result];
     const nextIndex = seriesRun.puzzleIndex + 1;
@@ -911,6 +908,7 @@ export default function App() {
       const s = makeScenarioState(nextScenario);
       resetBoards(s);
       setZoomBounds(computeStartOfPlayZoom(s.pieces, s.activeTeam));
+      queueTutorialLesson(nextScenario, nextIndex + 1);
       return;
     }
 
@@ -937,7 +935,9 @@ export default function App() {
       // than losing every puzzle they just played.
       setSubmitError(describeSubmitError(error));
     }
-  }, [activeScenario, seriesRun, seriesScenarios, state.actionLog, resetBoards, setState, idToken, computeStartOfPlayZoom]);
+  }, [activeScenario, seriesRun, seriesScenarios, state.actionLog, branchedBoards.hasSplit,
+      branchedBoards.run, branchedBoards.summary, resetBoards, setState, idToken,
+      computeStartOfPlayZoom, queueTutorialLesson]);
 
   const requestLeaveSeries = useCallback(() => {
     setConfirmLeaveSeries(true);
@@ -1071,8 +1071,11 @@ export default function App() {
           onPitchSurfaceChange={pitchSurface => setPrefs({ pitchSurface })}
           showCoordinates={prefs.showCoordinates ?? true}
           onShowCoordinatesChange={showCoordinates => setPrefs({ showCoordinates })}
-          blockBranching={prefs.blockBranching ?? false}
-          onBlockBranchingChange={blockBranching => setPrefs({ blockBranching })}
+          showTutorialGuidance={prefs.showTutorialGuidance ?? true}
+          onShowTutorialGuidanceChange={showTutorialGuidance => setPrefs({
+            showTutorialGuidance,
+            ...(showTutorialGuidance ? { seenTutorialLessons: [] } : {}),
+          })}
           onBack={() => setAppMode(settingsReturnMode)}
         />
         {notice}
@@ -1247,15 +1250,13 @@ export default function App() {
           hasPushTargets={!!state.pendingBlockResolution}
         />
 
-        {branchingEnabled && (
-          <BranchStrip
-            branches={branchedBoards.strip}
-            deadWeight={branchedBoards.summary.deadWeight}
-            score={branchedBoards.summary.score}
-            onSelect={branchedBoards.handleSelectBranch}
-            onConcede={branchedBoards.handleConcedeBranch}
-          />
-        )}
+        <BranchStrip
+          branches={branchedBoards.strip}
+          deadWeight={branchedBoards.summary.deadWeight}
+          score={branchedBoards.summary.score}
+          onSelect={branchedBoards.handleSelectBranch}
+          onConcede={branchedBoards.handleConcedeBranch}
+        />
 
         <ActionLogMenu log={state.actionLog} />
 
@@ -1275,7 +1276,7 @@ export default function App() {
             tokenStyle={prefs.tokenStyle ?? 'portrait'}
             pitchSurface={prefs.pitchSurface ?? 'grass'}
             showCoordinates={prefs.showCoordinates ?? true}
-            branchGhosts={branchingEnabled ? branchedBoards.ghosts : undefined}
+            branchGhosts={branchedBoards.ghosts}
           />
         </main>
 
@@ -1323,7 +1324,7 @@ export default function App() {
       )}
 
       {/* Touchdown — show summary and submit score */}
-      {state.phase === 'touchdown' && effectiveAppMode === 'series-puzzle' && seriesRun && activeScenario && !reviewingCompletedBoard && (
+      {!branchedBoards.hasSplit && branchedBoards.complete && effectiveAppMode === 'series-puzzle' && seriesRun && activeScenario && !reviewingCompletedBoard && (
         <SubmitModal
           scenario={activeScenario}
           actionLog={state.actionLog}
@@ -1339,7 +1340,28 @@ export default function App() {
           }
         />
       )}
-      {state.phase === 'touchdown' && effectiveAppMode === 'series-puzzle' && seriesRun && reviewingCompletedBoard && (
+      {branchedBoards.hasSplit && branchedBoards.complete && effectiveAppMode === 'series-puzzle'
+        && seriesRun && activeScenario && !reviewingCompletedBoard && (
+        <BranchRunSummary
+          scenarioName={activeScenario.name}
+          scenario={activeScenario}
+          run={branchedBoards.run}
+          summary={branchedBoards.summary}
+          branches={branchedBoards.strip}
+          onSubmit={handleSeriesContinue}
+          onDismiss={handleSeriesContinue}
+          signedInName={seriesRun.playerName}
+          error={submitError}
+          seriesMode
+          onReviewBoard={() => setReviewingCompletedBoard(true)}
+          continueLabel={
+            seriesRun.puzzleIndex + 1 < seriesScenarios.length
+              ? `Continue to Puzzle ${seriesRun.puzzleIndex + 2}`
+              : 'Finish Series'
+          }
+        />
+      )}
+      {branchedBoards.complete && effectiveAppMode === 'series-puzzle' && seriesRun && reviewingCompletedBoard && (
         <div className="touchdown-review-bar" role="region" aria-label="Completed board review">
           <span>Reviewing the completed board</span>
           <button
@@ -1351,7 +1373,7 @@ export default function App() {
           </button>
         </div>
       )}
-      {!branchingEnabled && state.phase === 'touchdown' && effectiveAppMode === 'puzzle' && activeScenario && (
+      {!branchedBoards.hasSplit && state.phase === 'touchdown' && effectiveAppMode === 'puzzle' && activeScenario && (
         <SubmitModal
           scenario={activeScenario}
           actionLog={state.actionLog}
@@ -1364,7 +1386,7 @@ export default function App() {
       )}
 
       {/* Branching runs finish when every branch is resolved, not when one scores. */}
-      {branchingEnabled && branchedBoards.complete && !branchSummaryDismissed
+      {branchedBoards.hasSplit && branchedBoards.complete && !branchSummaryDismissed
         && effectiveAppMode === 'puzzle' && activeScenario && (
         <BranchRunSummary
           scenarioName={activeScenario.name}
@@ -1421,30 +1443,9 @@ export default function App() {
         );
       })()}
 
-      {/* Block outcome checklist — single-board model only */}
-      {!branchingEnabled && state.blockChoice && state.selectedPieceId && (() => {
-        const { blockChoice } = state;
-        const attacker = state.pieces.find(p => p.id === state.selectedPieceId);
-        const defender = state.pieces.find(p => p.id === blockChoice.defenderId);
-        if (!attacker || !defender) return null;
-        return (
-          <BlockOutcomePanel
-            attackerName={attacker.name}
-            attackerSkills={attacker.skills}
-            defenderName={defender.name}
-            diceCount={blockChoice.diceCount}
-            picker={blockChoice.picker}
-            outcomeProbs={blockChoice.outcomeProbs}
-            onConfirm={handleBlockOutcomeChoice}
-            onCancel={handleCancelSelection}
-          />
-        );
-      })()}
-
-      {/* Declare-time block preview — branching model only. No checklist: the
-          player just sees the dice and the die's rough shape before rolling,
-          then either rolls (splits into board-state branches) or backs out. */}
-      {branchingEnabled && state.blockChoice && state.selectedPieceId && (() => {
+      {/* Declare-time block preview. Progressing creates Parallel Universes for
+          every live board the dice can leave behind. */}
+      {state.blockChoice && state.selectedPieceId && (() => {
         const { blockChoice } = state;
         const attacker = state.pieces.find(p => p.id === state.selectedPieceId);
         const defender = state.pieces.find(p => p.id === blockChoice.defenderId);
@@ -1481,6 +1482,14 @@ export default function App() {
             handlePushChoice(pendingPushSquare.col, pendingPushSquare.row, false);
             setPendingPushSquare(null);
           }}
+        />
+      )}
+      {effectiveAppMode === 'series-puzzle' && tutorialLesson && (
+        <TutorialLessonDialog
+          lesson={tutorialLesson.lesson}
+          step={tutorialLesson.step}
+          total={seriesScenarios.length}
+          onDismiss={dismissTutorialLesson}
         />
       )}
       {notice}

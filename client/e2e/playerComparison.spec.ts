@@ -81,7 +81,7 @@ test.describe('two-player comparison', () => {
     await page.locator('.square[data-square="6F"]').hover();
     await expect(page.locator('.side-col--right .panel')).toHaveCount(2);
 
-    await page.locator('.hud__team').hover();
+    await page.locator('.hud').hover();
 
     await expect(page.locator('.side-col--right .panel')).toHaveCount(1);
     await expect(page.locator('.panel__role-tag')).toHaveCount(0);

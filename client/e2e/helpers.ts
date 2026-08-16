@@ -22,7 +22,8 @@ export const MIN_TAP_TARGET = 44;
  * relative width-usage assertion in layout.spec.ts, which is what actually
  * catches wasted space; these are a backstop against outright collapse.
  */
-export const MIN_SQUARE_SIZE_PORTRAIT = 19;
+// WebKit reports the 19px CSS track as 18.92px after device-scale rounding.
+export const MIN_SQUARE_SIZE_PORTRAIT = 18.9;
 export const MIN_SQUARE_SIZE_LANDSCAPE = 15;
 
 export interface Box {
@@ -67,6 +68,11 @@ export async function startGame(page: Page, playerName = 'E2E Tester'): Promise<
 
   // The pitch is the signal that the game screen has actually mounted.
   await page.locator('.pitch__grid .square').first().waitFor({ state: 'visible' });
+
+  // A fresh identity sees the first Tutorial lesson before the board accepts
+  // input. Layout tests exercise the game surface itself, so acknowledge it.
+  const startPuzzle = page.getByRole('button', { name: 'Start puzzle' });
+  if (await startPuzzle.isVisible()) await startPuzzle.click();
 }
 
 /**

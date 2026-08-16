@@ -1,3 +1,9 @@
+.block-outcome {
+  width: min(480px, calc(100vw - 20px));
+  min-width: min(420px, 100%);
+  max-width: 480px;
+}
+
 .block-split {
   min-width: min(420px, 100%);
   max-width: 480px;

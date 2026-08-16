@@ -117,8 +117,9 @@ export function BlockSplitPanel({
         </div>
 
         <p className="block-split__note">
-          This split assumes every result is equally useful to you. Once you play a
-          result out, the weights shift toward whichever one you can actually use.
+          Each live result becomes a Parallel Universe. The initial split assumes
+          every result is equally useful; universe weights shift as you play out
+          which continuations you can actually use.
         </p>
 
         <div className="submit-modal__actions">

@@ -100,6 +100,13 @@ public avatars).
   slate/tile can be paired with any of the three token levels. Coordinate
   labels default on and can be hidden without changing square names in DOM,
   action logs, accessibility labels, or written solutions.
+- **Tutorial guidance is local and identity-keyed.** The Tutorial series opens
+  one focus-trapped lesson before each unseen puzzle; Single Plays and editor
+  previews never open lessons. `showTutorialGuidance` defaults on and
+  `seenTutorialLessons` records current scenario ids in `bbt.prefs.v1`.
+  Dismissing a lesson marks only that lesson seen; its opt-out disables all
+  later lessons. Settings can turn guidance off, and turning it back on clears
+  the seen list so the Tutorial restarts from lesson one.
 - **The game HUD keeps the account menu near the front on compact screens.**
   The toolbar is intentionally one row with overflow clipped; leaving the
   account trigger at the far end made Settings and About unreachable on narrow
@@ -114,7 +121,8 @@ public avatars).
 `ScenarioSelect.tsx` owns the main Series/Single Plays switch and exposes
 Admin Mode as a third tab for allowlisted admins.
 
-- Series tab shows the default series row from `client/src/series/default.json`.
+- Series tab shows **Tutorial**, the default series row from
+  `client/src/series/default.json`.
 - Single Plays tab shows published scenario tiles.
 - Do not reintroduce per-screen scenario title override maps. Scenario
   `name`/`description` JSON is the source of truth.

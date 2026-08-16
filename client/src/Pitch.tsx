@@ -376,7 +376,7 @@ const Square = memo(function Square({
           <div
             key={key}
             className={`square__branch-flag square__branch-flag--${branchGhost.down ? 'down' : 'standing'}`}
-            title={branchGhost.down ? `Down here in: ${where}` : `Still standing in: ${where}`}
+            title={branchGhost.down ? `Down here in universes: ${where}` : `Still standing in universes: ${where}`}
           />
         ) : (
           <div
@@ -836,7 +836,7 @@ export function Pitch({
             displayedDice?.passTarget ?? null, displayedDice?.catchTarget ?? null, trailStartNumber,
           ),
           squareBranchGhosts.length > 0
-            ? `occupied in other outcomes: ${squareBranchGhosts.flatMap(g => g.labels).join(', ')}`
+            ? `occupied in other universes: ${squareBranchGhosts.flatMap(g => g.labels).join(', ')}`
             : '',
           isPushOrigin ? 'pushed from here' : '',
           isPushDestination ? 'pushed to here' : '',

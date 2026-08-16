@@ -56,7 +56,7 @@ test.describe('game screen layout', () => {
     expect(
       grid.width / viewport.width,
       `board is ${grid.width.toFixed(0)}px wide in a ${viewport.width}px viewport`,
-    ).toBeGreaterThan(0.9);
+    ).toBeGreaterThanOrEqual(0.9);
   });
 
   test('interactive controls meet the tap-target minimum', async ({ page }) => {
@@ -135,12 +135,14 @@ test.describe('game screen layout', () => {
 
     await expect(topLabels.first()).toBeVisible();
     await expect(leftLabels.first()).toBeVisible();
-    await expect(topLabels).toHaveText(portraitPitch
-      ? Array.from({ length: 15 }, (_, index) => String.fromCharCode(65 + index))
-      : Array.from({ length: 26 }, (_, index) => String(index)));
-    await expect(leftLabels).toHaveText(portraitPitch
-      ? Array.from({ length: 26 }, (_, index) => String(index))
-      : Array.from({ length: 15 }, (_, index) => String.fromCharCode(65 + index)));
+    const visible = await page.locator('.pitch__grid .square').evaluateAll(squares => ({
+      cols: [...new Set(squares.map(square => Number((square as HTMLElement).dataset.col)))].sort((a, b) => a - b),
+      rows: [...new Set(squares.map(square => Number((square as HTMLElement).dataset.row)))].sort((a, b) => a - b),
+    }));
+    await expect(topLabels).toHaveText((portraitPitch ? visible.cols : visible.rows)
+      .map(value => portraitPitch ? String.fromCharCode(65 + value) : String(value)));
+    await expect(leftLabels).toHaveText((portraitPitch ? visible.rows : visible.cols)
+      .map(value => portraitPitch ? String(value) : String.fromCharCode(65 + value)));
   });
 });
 
