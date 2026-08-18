@@ -106,7 +106,9 @@ public avatars).
   `seenTutorialLessons` records current scenario ids in `bbt.prefs.v1`.
   Dismissing a briefing marks only that briefing seen. Its opt-out disables all
   later briefings. Settings can turn briefings off. Turning them back on clears
-  the seen list so the Tutorial restarts from drill one.
+  the seen list so the Tutorial restarts from drill one. The Blocking and
+  Parallel Universes briefing alone includes the pointed decision-tree artwork;
+  the modal scrolls internally so its rules and controls remain reachable.
 - **The game HUD keeps the account menu near the front on compact screens.**
   The toolbar is intentionally one row with overflow clipped; leaving the
   account trigger at the far end made Settings and About unreachable on narrow

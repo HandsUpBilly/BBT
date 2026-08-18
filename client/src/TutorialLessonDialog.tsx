@@ -1,4 +1,5 @@
 import { useId, useState } from 'react';
+import parallelUniversesArtwork from './assets/parallel-universes-decision-tree.webp';
 import type { TutorialLesson } from './tutorialLessons';
 import { useModalFocus } from './useModalFocus';
 import './SubmitModal.css';
@@ -11,10 +12,18 @@ interface Props {
   onDismiss: (disableFutureLessons: boolean) => void;
 }
 
+const ARTWORK = {
+  'parallel-universes': {
+    src: parallelUniversesArtwork,
+    alt: 'A pointed iron decision tree splitting one block into six parallel board states',
+  },
+} as const;
+
 export function TutorialLessonDialog({ lesson, step, total, onDismiss }: Props) {
   const titleId = useId();
   const [disableFutureLessons, setDisableFutureLessons] = useState(false);
   const ref = useModalFocus<HTMLDivElement>(() => onDismiss(false));
+  const artwork = lesson.artwork ? ARTWORK[lesson.artwork] : undefined;
 
   return (
     <div className="modal-backdrop">
@@ -28,6 +37,13 @@ export function TutorialLessonDialog({ lesson, step, total, onDismiss }: Props) 
       >
         <p className="tutorial-lesson__progress">Tutorial Drill {step} / {total}</p>
         <h2 id={titleId} className="modal__title">{lesson.title}</h2>
+        {artwork && (
+          <img
+            className="tutorial-lesson__artwork"
+            src={artwork.src}
+            alt={artwork.alt}
+          />
+        )}
         <div className="tutorial-lesson__copy">
           {lesson.paragraphs.map(paragraph => <p key={paragraph}>{paragraph}</p>)}
         </div>

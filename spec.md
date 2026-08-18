@@ -4695,6 +4695,11 @@ The following decisions are fixed for this implementation:
 - Show `Tutorial Drill N / 6`, a rules title, labelled instruction blocks,
   the opt-out checkbox, and a primary **Begin Puzzle** action. Escape dismissal
   counts as seen but never silently opts out of later lessons.
+- The `scenario-006` briefing shows the pointed Parallel Universes decision
+  tree above its rules copy. Other briefings remain text-only. The artwork must
+  have descriptive alternative text, stay within the dialog at every supported
+  viewport, and preserve access to the opt-out and **Begin Puzzle** controls by
+  internal scrolling.
 - Dialog copy must explain controls and scoring without prescribing one exact
   route. It must fit a 320 px-wide viewport with internal scrolling, no page
   overflow, and no dependence on hover-only explanations.
@@ -4717,7 +4722,7 @@ preserve every fact below and add no unsupported Blood Bowl rules.
 | 3 | `scenario-002` | **Hand-off Action.** State the action order, Catch roll, receiver activation rule, and shared Pass or Hand-off limit. |
 | 4 | `scenario-003` | **Pass Action.** State the action order, PA test, Catch roll, preview modifiers, receiver activation rule, and shared Pass or Hand-off limit. |
 | 5 | `scenario-005` | **The Drive.** State the activation limit, order-of-play requirement, cumulative risk, one-turn limit, and prohibition on resetting the probability chain. |
-| 6 | `scenario-006` | **Blocking and Parallel Universes.** State Block and Blitz movement rules, Blitz limit, ST and assists, dice ownership, live universes, Turnover probability, universe controls, completion rule, final score, and Pickup rules. |
+| 6 | `scenario-006` | **Blocking and Parallel Universes.** Show the decision-tree artwork. State Block and Blitz movement rules, Blitz limit, ST and assists, dice ownership, live universes, Turnover probability, universe controls, completion rule, final score, and Pickup rules. |
 
 ## Parallel Universes Graduation
 

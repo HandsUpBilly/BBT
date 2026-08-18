@@ -2,6 +2,7 @@ export interface TutorialLesson {
   scenarioId: string;
   title: string;
   paragraphs: readonly string[];
+  artwork?: 'parallel-universes';
 }
 
 export const TUTORIAL_LESSONS: readonly TutorialLesson[] = [
@@ -56,6 +57,7 @@ export const TUTORIAL_LESSONS: readonly TutorialLesson[] = [
   {
     scenarioId: 'scenario-006',
     title: 'Blocking and Parallel Universes',
+    artwork: 'parallel-universes',
     paragraphs: [
       'BLOCK ACTION: A standing player may Block an adjacent standing opponent. The attacker does not move before the Block.',
       'BLITZ ACTION: Declare a target, move into contact, then Block. The hit costs one square of MA. The team may make one Blitz during the turn.',

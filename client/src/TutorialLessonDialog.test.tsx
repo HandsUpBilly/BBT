@@ -12,6 +12,7 @@ describe('TutorialLessonDialog', () => {
 
     expect(screen.getByText('Tutorial Drill 1 / 6')).toBeTruthy();
     expect(screen.getByRole('heading', { name: 'Movement' })).toBeTruthy();
+    expect(screen.queryByRole('img')).toBeNull();
     fireEvent.click(screen.getByRole('button', { name: 'Begin Puzzle' }));
     expect(onDismiss).toHaveBeenCalledWith(false);
   });
@@ -20,6 +21,7 @@ describe('TutorialLessonDialog', () => {
     const onDismiss = vi.fn();
     render(<TutorialLessonDialog lesson={TUTORIAL_LESSONS[5]} step={6} total={6} onDismiss={onDismiss} />);
 
+    expect(screen.getByRole('img', { name: /decision tree splitting one block/i })).toBeTruthy();
     fireEvent.click(screen.getByRole('checkbox', { name: /Do not show these rules briefings again/ }));
     fireEvent.click(screen.getByRole('button', { name: 'Begin Puzzle' }));
     expect(onDismiss).toHaveBeenCalledWith(true);
