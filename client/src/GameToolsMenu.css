@@ -1,0 +1,60 @@
+.game-tools-menu {
+  position: relative;
+  flex: 0 0 auto;
+}
+
+.game-tools-menu__trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0 7px;
+  color: var(--color-text-muted);
+  background: transparent;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-button);
+  font-size: 0.85rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+}
+
+.game-tools-menu__trigger--active {
+  color: var(--color-text-strong);
+  background: #1b1d1b;
+  border-color: var(--color-border-selected);
+}
+
+.game-tools-menu__dropdown {
+  position: fixed;
+  top: calc(env(safe-area-inset-top) + 56px);
+  right: 8px;
+  z-index: 90;
+  display: grid;
+  width: min(240px, calc(100vw - 16px));
+  padding: 6px;
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-panel);
+  box-shadow: var(--shadow-overlay);
+}
+
+.game-tools-menu__dropdown button {
+  min-height: 44px;
+  padding: 8px 10px;
+  color: var(--color-text);
+  background: transparent;
+  border: 0;
+  border-radius: var(--radius-button);
+  font: 600 0.8rem var(--font-display);
+  letter-spacing: 0.04em;
+  text-align: left;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.game-tools-menu__dropdown button:hover,
+.game-tools-menu__dropdown button:focus-visible {
+  background: var(--color-surface-hover);
+}

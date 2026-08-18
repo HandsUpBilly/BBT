@@ -106,11 +106,14 @@ public avatars).
   `seenTutorialLessons` records current scenario ids in `bbt.prefs.v1`.
   Dismissing a briefing marks only that briefing seen. Its opt-out disables all
   later briefings. Settings can turn briefings off. Turning them back on clears
-  the seen list so the Tutorial restarts from drill one.
-- **The game HUD keeps the account menu near the front on compact screens.**
-  The toolbar is intentionally one row with overflow clipped; leaving the
-  account trigger at the far end made Settings and About unreachable on narrow
-  iPhones.
+  the seen list so the Tutorial restarts from drill one. The Blocking and
+  Parallel Universes briefing alone includes the pointed decision-tree artwork;
+  the modal scrolls internally so its rules and controls remain reachable.
+- **The compact game HUD keeps every control inside the viewport.** Account
+  remains near the front. Zoom, restart, and reporting share the `GameToolsMenu`
+  trigger, while the Key and action log retain their own triggers. Compact
+  dropdowns use viewport-fixed geometry so no parent can clip them. The empty
+  100% success readout leaves the row until a roll puts probability at risk.
   The `?` control is the pitch/skill Key, not Settings.
 - **`UserMenu`'s avatar falls back to initials on load failure**, not just on
   absence — a corrupted or future-format data URL degrades the same way a
@@ -364,14 +367,21 @@ pickup stacking on one square; keep the two together and keep
 
 - HUD is one row of 44px controls, icon-only (`.hud__btn-text` is hidden). The
   status line is mounted below the board in `.status-strip` instead, and the
-  series counter rides with it.
+  series counter rides with it. `GameToolsMenu` combines zoom, restart, and
+  reporting so account, tools, Key, and action log all fit at 320px.
 - The action log is a toolbar dropdown (`ActionLogMenu`), following
   `UserMenu`'s pattern so the neighbouring controls behave alike. Its badge
   shows `rollCount(log)` — rolls, not steps — because that count is what the
   score is built from. It is touch-only; the pointer-fine layout keeps
   `DiceLog` in its always-visible side column.
-- `MobileInfoSheet` restores the player card, collapsed by default so the
-  board keeps the height.
+- `MobileInfoSheet` restores the complete MA, ST, AG, PA, and AV player card.
+  It starts collapsed so the board keeps the height, opens when the player taps
+  a player who has no action menu, and opens after an action is chosen. The
+  action menu itself carries the same five-stat summary, so stats never depend
+  on finding a separate gesture.
+- `BranchStrip` is a sibling below the HUD, never a child of it. Compact
+  universe cards scroll horizontally inside the strip; neither the selector
+  nor its scroll width may enlarge the page viewport.
 - In landscape under 600px tall, `.app--game` becomes a grid that puts status
   and sheet in a column beside the board, recovering the height the board is
   starved of.

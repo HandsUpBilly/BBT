@@ -91,10 +91,11 @@
   }
 
   .action-log-menu__dropdown {
-    /* Anchored to the toolbar but allowed the full width beneath it. */
-    right: auto;
-    left: 50%;
-    transform: translateX(-50%);
-    width: min(360px, calc(100vw - 16px));
+    position: fixed;
+    top: calc(env(safe-area-inset-top) + 56px);
+    right: 8px;
+    left: 8px;
+    width: auto;
+    transform: none;
   }
 }

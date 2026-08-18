@@ -192,3 +192,13 @@
     min-height: 44px;
   }
 }
+
+@media (max-width: 1024px) {
+  .app--game .hud .user-menu__dropdown {
+    position: fixed;
+    top: calc(env(safe-area-inset-top) + 56px);
+    right: 8px;
+    left: 8px;
+    min-width: 0;
+  }
+}

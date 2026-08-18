@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import type { PlayerPiece } from './types';
 import { PlayerPanel } from './PlayerPanel';
 import './MobileInfoSheet.css';
@@ -11,6 +10,8 @@ interface Props {
    * so the comparison reaches this sheet by the same route.
    */
   comparisonPiece?: PlayerPiece | null;
+  open: boolean;
+  onToggle: () => void;
 }
 
 /**
@@ -28,13 +29,7 @@ interface Props {
  * follows whichever piece was last tapped, so it reads better as a panel that
  * sits under the board it refers to.
  */
-export function MobileInfoSheet({ piece, comparisonPiece }: Props) {
-  // Collapsed by default. Open, the panel competes with the board for height,
-  // and on a 320×568 phone the board loses — squares drop from 20px to 17px.
-  // The board is the game, so it keeps the space until the player asks for
-  // something else; the toggle alone costs 50px.
-  const [open, setOpen] = useState(false);
-
+export function MobileInfoSheet({ piece, comparisonPiece, open, onToggle }: Props) {
   return (
     <section
       className={`info-sheet${open ? ' info-sheet--open' : ''}`}
@@ -47,11 +42,11 @@ export function MobileInfoSheet({ piece, comparisonPiece }: Props) {
           aria-expanded={open}
           aria-controls="info-sheet-panel-player"
           className={`info-sheet__tab${open ? ' info-sheet__tab--active' : ''}`}
-          onClick={() => setOpen(o => !o)}
+          onClick={onToggle}
         >
           {comparisonPiece && piece
             ? `${piece.name} vs ${comparisonPiece.name}`
-            : piece ? piece.name : 'Player'}
+            : piece ? `Stats: ${piece.name}` : 'Tap a player for stats'}
         </button>
       </div>
 

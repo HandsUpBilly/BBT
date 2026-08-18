@@ -71,11 +71,16 @@ test.describe('game screen layout', () => {
   });
 
   test('the report launcher stays visually tucked away', async ({ page }) => {
-    const reportButton = page.getByRole('button', { name: 'Report a problem' });
+    if (await isCompact(page)) {
+      await page.getByRole('button', { name: 'Game tools' }).click();
+    }
+    const reportButton = (await isCompact(page))
+      ? page.getByRole('menuitem', { name: 'Report a problem' })
+      : page.getByRole('button', { name: 'Report a problem' });
     const box = await boxOf(reportButton);
     const background = await reportButton.evaluate((button) => getComputedStyle(button).backgroundColor);
 
-    if (await isTouch(page)) {
+    if (await isTouch(page) || await isCompact(page)) {
       expect(Math.min(box.width, box.height), 'touch hit target').toBeGreaterThanOrEqual(MIN_TAP_TARGET);
     } else {
       expect(Math.max(box.width, box.height), 'pointer-sized launcher').toBeLessThanOrEqual(32);
