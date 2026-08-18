@@ -98,6 +98,12 @@ export async function startScenario(
     .getByRole('button', { name: /^play$/i }).click();
 
   await page.locator('.pitch__grid .square').first().waitFor({ state: 'visible' });
+
+  // Single-play puzzles can show the same first-visit briefing as a series
+  // puzzle. A modal left over the board intercepts every interaction in the
+  // scenario-specific layout specs.
+  const beginPuzzle = page.getByRole('button', { name: 'Begin Puzzle' });
+  if (await beginPuzzle.isVisible()) await beginPuzzle.click();
 }
 
 /**
