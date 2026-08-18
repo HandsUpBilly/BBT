@@ -100,9 +100,9 @@ public avatars).
   slate/tile can be paired with any of the three token levels. Coordinate
   labels default on and can be hidden without changing square names in DOM,
   action logs, accessibility labels, or written solutions.
-- **Tutorial rules briefings are local and identity-keyed.** The Tutorial
-  series opens one focus-trapped briefing before every puzzle. Single Plays
-  and editor previews never open briefings. `showTutorialGuidance` defaults on.
+- **Tutorial rules briefings are local and identity-keyed.** Every Tutorial
+  series puzzle and matching Single Play opens with its focus-trapped briefing.
+  Editor previews never open briefings. `showTutorialGuidance` defaults on.
   Reading or dismissing a briefing never suppresses it on a later run. Only
   checking its opt-out or turning briefings off in Settings disables automatic
   briefings; Settings can turn them back on. The Blocking and

@@ -32,7 +32,7 @@ import { ReportProblemModal } from './ReportProblemModal';
 import { AboutDialog } from './AboutDialog';
 import { SettingsScreen } from './SettingsScreen';
 import { TutorialLessonDialog } from './TutorialLessonDialog';
-import { tutorialLessonFor } from './tutorialLessons';
+import { TUTORIAL_LESSON_IDS, tutorialLessonFor } from './tutorialLessons';
 import type { TutorialLesson } from './tutorialLessons';
 import { submitScore, fetchLeaderboard, submitSeriesScore, fetchSeriesLeaderboard, fetchProgress, ApiError } from './api';
 import type { ProgressData } from './api';
@@ -348,10 +348,15 @@ export default function App() {
   }, [setPrefs, tutorialLesson]);
 
   const showCurrentTutorialLesson = useCallback(() => {
-    if (appMode !== 'series-puzzle' || !activeScenario || !seriesRun) return;
+    const isPlayablePuzzle = appMode === 'series-puzzle' || appMode === 'puzzle';
+    if (!isPlayablePuzzle || !activeScenario || editorPreviewScenario) return;
     const lesson = tutorialLessonFor(activeScenario.id);
-    if (lesson) setTutorialLesson({ lesson, step: seriesRun.puzzleIndex + 1 });
-  }, [activeScenario, appMode, seriesRun]);
+    const lessonIndex = TUTORIAL_LESSON_IDS.indexOf(activeScenario.id);
+    const step = appMode === 'series-puzzle' && seriesRun
+      ? seriesRun.puzzleIndex + 1
+      : lessonIndex + 1;
+    if (lesson && step > 0) setTutorialLesson({ lesson, step });
+  }, [activeScenario, appMode, editorPreviewScenario, seriesRun]);
 
   // ── Viewport shape ───────────────────────────────────────────────────────
   // Three separate questions — see useMediaQuery.ts for why none of them is a
@@ -518,14 +523,15 @@ export default function App() {
   );
 
   const startPuzzle = useCallback((scenario: Scenario) => {
-    setTutorialLesson(null);
     setEditorPreviewScenario(null);
     setActiveScenario(scenario);
     const s = makeScenarioState(scenario);
     resetBoards(s);
     setZoomBounds(computeStartOfPlayZoom(s.pieces, s.activeTeam));
+    const lessonIndex = TUTORIAL_LESSON_IDS.indexOf(scenario.id);
+    queueTutorialLesson(scenario, lessonIndex + 1);
     setAppMode('puzzle');
-  }, [resetBoards, computeStartOfPlayZoom]);
+  }, [resetBoards, computeStartOfPlayZoom, queueTutorialLesson]);
 
   const previewPuzzle = useCallback((scenario: Scenario) => {
     setTutorialLesson(null);
@@ -1238,7 +1244,11 @@ export default function App() {
         {compact ? (
           <GameToolsMenu
             zoomEnabled={zoomEnabled}
-            onTutorialBriefing={appMode === 'series-puzzle' ? showCurrentTutorialLesson : undefined}
+            onTutorialBriefing={
+              (appMode === 'series-puzzle' || (appMode === 'puzzle' && !editorPreviewScenario))
+                ? showCurrentTutorialLesson
+                : undefined
+            }
             onToggleZoom={() => setZoomOverride(!zoomEnabled)}
             onRestart={handleRestartTurn}
             onReport={() => setReportOpen(true)}
@@ -1512,11 +1522,11 @@ export default function App() {
           }}
         />
       )}
-      {effectiveAppMode === 'series-puzzle' && tutorialLesson && (
+      {(effectiveAppMode === 'series-puzzle' || effectiveAppMode === 'puzzle') && tutorialLesson && (
         <TutorialLessonDialog
           lesson={tutorialLesson.lesson}
           step={tutorialLesson.step}
-          total={seriesScenarios.length}
+          total={TUTORIAL_LESSON_IDS.length}
           onDismiss={dismissTutorialLesson}
         />
       )}

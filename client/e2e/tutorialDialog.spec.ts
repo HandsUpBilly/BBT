@@ -49,6 +49,32 @@ test('the Parallel Universes briefing shows its decision tree without breaking t
   await expect(beginButton).toBeVisible();
 });
 
+test('an individual play opens its matching rules briefing', async ({ page }) => {
+  await page.route('**/api/scenarios', route => route.fulfill({
+    status: 200,
+    contentType: 'application/json',
+    body: JSON.stringify({
+      scenarios: [scenario],
+      series: {
+        id: 'default',
+        name: 'Tutorial',
+        description: 'One drill introducing Blocking and Parallel Universes.',
+        scenarioIds: [scenario.id],
+      },
+    }),
+  }));
+
+  await page.goto('/');
+  await page.getByRole('button', { name: /play as guest/i }).click();
+  await page.locator('.identity-gate__input').fill('Single Play Briefing Tester');
+  await page.getByRole('button', { name: /^continue$/i }).click();
+  await page.getByRole('tab', { name: /single plays/i }).click();
+  await page.locator('.challenge-tile', { hasText: scenario.name })
+    .getByRole('button', { name: /^play$/i }).click();
+
+  await expect(page.getByRole('dialog', { name: 'Blocking and Parallel Universes' })).toBeVisible();
+});
+
 test('seen history never suppresses a phone briefing and Game Tools can reopen it', async ({ page }) => {
   test.skip((page.viewportSize()?.width ?? 0) > 1024, 'Game Tools is the compact-screen route');
 

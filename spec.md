@@ -4638,8 +4638,8 @@ existing guarded flow.
 ## Goal and Decisions
 
 Turn the current default series into a six-drill tutorial. Each puzzle in a
-Tutorial run opens with a rules briefing. Single Plays and editor previews do
-not show these briefings.
+Tutorial run and the matching Single Play opens with a rules briefing. Editor
+previews do not show these briefings.
 Graduate the shipped block-branching engine from an experimental opt-in to the
 only block-resolution model and call its player-facing board states **Parallel
 Universes**.
@@ -4649,8 +4649,8 @@ The following decisions are fixed for this implementation:
 - Rename the default series to **Tutorial**.
 - Order its puzzles `scenario-001`, `scenario-004`, `scenario-002`,
   `scenario-003`, `scenario-005`, `scenario-006`.
-- Show lesson dialogs only in `series-puzzle` mode, never when the same scenario
-  is opened through Single Plays or the editor preview.
+- Show lesson dialogs in `series-puzzle` mode and when the same scenario is
+  opened through Single Plays. Editor previews remain excluded.
 - Parallel Universes is standard for every puzzle mode and every player. Remove
   the old block-outcome checklist and the experimental preference; this is not
   a gameplay option once this plan ships.
