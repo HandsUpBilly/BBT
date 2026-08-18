@@ -352,6 +352,12 @@ export default function App() {
     setTutorialLesson(null);
   }, [prefs.seenTutorialLessons, setPrefs, tutorialLesson]);
 
+  const showCurrentTutorialLesson = useCallback(() => {
+    if (appMode !== 'series-puzzle' || !activeScenario || !seriesRun) return;
+    const lesson = tutorialLessonFor(activeScenario.id);
+    if (lesson) setTutorialLesson({ lesson, step: seriesRun.puzzleIndex + 1 });
+  }, [activeScenario, appMode, seriesRun]);
+
   // ── Viewport shape ───────────────────────────────────────────────────────
   // Three separate questions — see useMediaQuery.ts for why none of them is a
   // proxy for the others.
@@ -1240,6 +1246,7 @@ export default function App() {
         {compact ? (
           <GameToolsMenu
             zoomEnabled={zoomEnabled}
+            onTutorialBriefing={appMode === 'series-puzzle' ? showCurrentTutorialLesson : undefined}
             onToggleZoom={() => setZoomOverride(!zoomEnabled)}
             onRestart={handleRestartTurn}
             onReport={() => setReportOpen(true)}

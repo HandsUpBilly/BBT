@@ -3,12 +3,19 @@ import './GameToolsMenu.css';
 
 interface Props {
   zoomEnabled: boolean;
+  onTutorialBriefing?: () => void;
   onToggleZoom: () => void;
   onRestart: () => void;
   onReport: () => void;
 }
 
-export function GameToolsMenu({ zoomEnabled, onToggleZoom, onRestart, onReport }: Props) {
+export function GameToolsMenu({
+  zoomEnabled,
+  onTutorialBriefing,
+  onToggleZoom,
+  onRestart,
+  onReport,
+}: Props) {
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
   const close = useCallback(() => setOpen(false), []);
@@ -51,6 +58,11 @@ export function GameToolsMenu({ zoomEnabled, onToggleZoom, onRestart, onReport }
       </button>
       {open && (
         <div className="game-tools-menu__dropdown" role="menu" aria-label="Game tools">
+          {onTutorialBriefing && (
+            <button type="button" role="menuitem" onClick={() => run(onTutorialBriefing)}>
+              Tutorial briefing
+            </button>
+          )}
           <button type="button" role="menuitem" onClick={() => run(onToggleZoom)}>
             {zoomEnabled ? 'Show whole pitch' : 'Zoom to legal moves'}
           </button>
