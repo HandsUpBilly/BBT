@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useRef } from 'react';
+import { useState, useCallback, useEffect, useLayoutEffect, useRef } from 'react';
 import { makeEmptyState, makeScenarioState, pathPreviewProb, passActionAvailability } from './useGameState';
 import { useBranchRun } from './useBranchRun';
 import { BranchStrip } from './BranchStrip';
@@ -23,6 +23,7 @@ import { UserMenu } from './UserMenu';
 import { LegendMenu } from './LegendMenu';
 import { MobileInfoSheet } from './MobileInfoSheet';
 import { ActionLogMenu } from './ActionLogMenu';
+import { GameToolsMenu } from './GameToolsMenu';
 import { AppFooter } from './AppFooter';
 import { CommitBar } from './CommitBar';
 import { SuccessChanceReadout } from './SuccessChanceReadout';
@@ -430,6 +431,10 @@ export default function App() {
   // The real gate is server-side (ADMIN_EMAILS check on the write endpoints).
   // Render 'home' instead of setState-in-effect to avoid an extra render pass.
   const effectiveAppMode = appMode === 'admin' && !isAdmin ? 'home' : appMode;
+  useLayoutEffect(() => {
+    if (effectiveAppMode !== 'puzzle' && effectiveAppMode !== 'series-puzzle') return;
+    window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+  }, [effectiveAppMode, activeScenario?.id]);
   const reportScenario = effectiveAppMode === 'puzzle' || effectiveAppMode === 'series-puzzle' || effectiveAppMode === 'leaderboard'
     ? activeScenario
     : null;
@@ -558,6 +563,7 @@ export default function App() {
   // Which player's card the side panel / bottom sheet is showing. Follows the
   // cursor on a mouse and the last tapped square on touch.
   const [hoveredPiece, setHoveredPiece] = useState<PlayerPiece | null>(null);
+  const [mobileInfoOpen, setMobileInfoOpen] = useState(false);
 
   // The armed key carries the piece and how far it has already walked, so
   // selecting a different piece or committing a step invalidates it without
@@ -637,6 +643,7 @@ export default function App() {
     // which player to show — including opponents, whose skills are exactly
     // what you need before deciding whether to block them.
     if (!hoverCapable) setHoveredPiece(piece);
+    if (compact) setMobileInfoOpen(true);
 
     // During handoff targeting, clicking a highlighted receiver executes the handoff
     if (state.isHandoffTargeting) {
@@ -693,6 +700,7 @@ export default function App() {
 
     // Own unactivated piece — show context menu
     if (piece.team === state.activeTeam && !piece.activated) {
+      if (compact) setMobileInfoOpen(false);
       setPieceMenu({ piece, x, y });
       return;
     }
@@ -703,12 +711,13 @@ export default function App() {
       state.isHandoffTargeting, state.handoffTargets, state.isPassTargeting, state.passReceiverKeys,
       state.isBlockTargeting, state.blockTargets, state.pendingBlockIsBlitz, state.blitzTargetId,
       hookSquareClick, handleHandoffTarget, handlePassTarget, handleBlockTarget, handleCancelSelection,
-      previewBeforeCommit, disarm, hoverCapable]);
+      previewBeforeCommit, disarm, hoverCapable, compact]);
 
   const handleMenuAction = useCallback((actionKey: string, moveFirst: boolean) => {
     if (!pieceMenu) return;
     const { col, row } = pieceMenu.piece.position;
     setPieceMenu(null);
+    if (compact) setMobileInfoOpen(true);
     if (actionKey === 'move') {
       hookSquareClick(col, row);
     } else if (actionKey === 'handoff') {
@@ -727,9 +736,12 @@ export default function App() {
     } else if (actionKey === 'blitz') {
       handleBlockAction(pieceMenu.piece.id, true);
     }
-  }, [pieceMenu, hookSquareClick, handleHandoffAction, handlePassAction, handleBlockAction]);
+  }, [pieceMenu, hookSquareClick, handleHandoffAction, handlePassAction, handleBlockAction, compact]);
 
-  const dismissMenu = useCallback(() => setPieceMenu(null), []);
+  const dismissMenu = useCallback(() => {
+    setPieceMenu(null);
+    if (compact) setMobileInfoOpen(true);
+  }, [compact]);
 
   const handleSquareHover = useCallback((col: number, row: number) => {
     // Suppressed only where hover does not really exist. A tap on such a
@@ -1215,32 +1227,42 @@ export default function App() {
           <span className="hud__btn-text">{backLabel}</span>
         </button>
 
-        {/* Keep account/Settings/About ahead of optional tools on narrow one-row
-            HUDs, where controls at the far end are intentionally clipped. */}
+        {/* Keep account/Settings/About ahead of the game tools on narrow HUDs. */}
         {accountMenu}
 
-        <div className="hud__prob">
+        <div className={`hud__prob${compact && !showSuccessChance ? ' hud__prob--empty' : ''}`}>
           {!compact && seriesCounter && <>{seriesCounter}{': '}</>}
           <SuccessChanceReadout probability={liveProbPct} visible={showSuccessChance} />
         </div>
 
         {!compact && statusLine}
 
-        <button
-          className={`hud__zoom${zoomEnabled ? ' hud__zoom--active' : ''}`}
-          onClick={() => setZoomOverride(!zoomEnabled)}
-          title="Zoom to legal moves"
-          aria-label={zoomEnabled ? 'Zoom on. Show the whole pitch' : 'Zoom to legal moves'}
-          aria-pressed={zoomEnabled}
-        >
-          <span className="hud__btn-icon" aria-hidden="true">🔍</span>
-          <span className="hud__btn-text">{zoomEnabled ? 'Zoom On' : 'Zoom'}</span>
-        </button>
+        {compact ? (
+          <GameToolsMenu
+            zoomEnabled={zoomEnabled}
+            onToggleZoom={() => setZoomOverride(!zoomEnabled)}
+            onRestart={handleRestartTurn}
+            onReport={() => setReportOpen(true)}
+          />
+        ) : (
+          <>
+            <button
+              className={`hud__zoom${zoomEnabled ? ' hud__zoom--active' : ''}`}
+              onClick={() => setZoomOverride(!zoomEnabled)}
+              title="Zoom to legal moves"
+              aria-label={zoomEnabled ? 'Zoom on. Show the whole pitch' : 'Zoom to legal moves'}
+              aria-pressed={zoomEnabled}
+            >
+              <span className="hud__btn-icon" aria-hidden="true">🔍</span>
+              <span className="hud__btn-text">{zoomEnabled ? 'Zoom On' : 'Zoom'}</span>
+            </button>
 
-        <button className="hud__restart" onClick={handleRestartTurn} aria-label="Restart turn">
-          <span className="hud__btn-icon" aria-hidden="true">↺</span>
-          <span className="hud__btn-text">Restart</span>
-        </button>
+            <button className="hud__restart" onClick={handleRestartTurn} aria-label="Restart turn">
+              <span className="hud__btn-icon" aria-hidden="true">↺</span>
+              <span className="hud__btn-text">Restart</span>
+            </button>
+          </>
+        )}
 
         {/* The key is reference material on every screen size, so it is behind
             this button on every screen size — see LegendMenu. */}
@@ -1250,18 +1272,18 @@ export default function App() {
           hasPushTargets={!!state.pendingBlockResolution}
         />
 
-        <BranchStrip
-          branches={branchedBoards.strip}
-          deadWeight={branchedBoards.summary.deadWeight}
-          score={branchedBoards.summary.score}
-          onSelect={branchedBoards.handleSelectBranch}
-          onConcede={branchedBoards.handleConcedeBranch}
-        />
-
         <ActionLogMenu log={state.actionLog} />
 
-        {reportButton('hud')}
+        {!compact && reportButton('hud')}
       </header>
+
+      <BranchStrip
+        branches={branchedBoards.strip}
+        deadWeight={branchedBoards.summary.deadWeight}
+        score={branchedBoards.summary.score}
+        onSelect={branchedBoards.handleSelectBranch}
+        onConcede={branchedBoards.handleConcedeBranch}
+      />
 
       <div className="game-area">
         <main className="pitch-wrapper">
@@ -1301,7 +1323,14 @@ export default function App() {
           sheet now lives in the toolbar. A sibling of .game-area rather than
           a child, so the landscape grid can move it into the column beside
           the board instead of stacking it under one that has no height. */}
-      {compact && <MobileInfoSheet piece={inspectedPiece} comparisonPiece={comparisonPiece} />}
+      {compact && (
+        <MobileInfoSheet
+          piece={inspectedPiece}
+          comparisonPiece={comparisonPiece}
+          open={mobileInfoOpen}
+          onToggle={() => setMobileInfoOpen(value => !value)}
+        />
+      )}
 
       {compact && <div className="status-strip">{statusLine}</div>}
 

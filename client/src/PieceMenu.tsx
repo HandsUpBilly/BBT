@@ -115,7 +115,19 @@ export function PieceMenu({ piece, x, y, actions, onAction, onDismiss }: Props) 
       className="piece-menu"
       style={position}
     >
-      <div className="piece-menu__header">{piece.name}</div>
+      <div className="piece-menu__header">
+        <span className="piece-menu__identity">
+          <strong>{piece.name}</strong>
+          <small>{piece.role ?? 'Lineman'}</small>
+        </span>
+        <span className="piece-menu__stats" aria-label={`${piece.name} stats`}>
+          <span><b>MA</b> {piece.ma}</span>
+          <span><b>ST</b> {piece.st}</span>
+          <span><b>AG</b> {piece.ag}+</span>
+          <span><b>PA</b> {piece.pa}+</span>
+          <span><b>AV</b> {piece.av}+</span>
+        </span>
+      </div>
       <div className="piece-menu__actions">
         {actions.map(action => {
           const isExclusiveLockedOut = EXCLUSIVE_KEYS.includes(action.key)

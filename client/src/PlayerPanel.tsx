@@ -45,7 +45,9 @@ function StatBadge({ team, stat, label, value }: StatProps) {
   const icon = STAT_ICONS[team][stat];
   return (
     <div className="panel__stat">
-      <img className="panel__stat-icon" src={icon} alt={label} draggable={false} />
+      {icon
+        ? <img className="panel__stat-icon" src={icon} alt="" draggable={false} />
+        : <span className="panel__stat-symbol" aria-hidden="true">{label}</span>}
       <span className="panel__stat-value">{value}</span>
       <span className="panel__stat-label">{label}</span>
     </div>
@@ -102,6 +104,7 @@ export function PlayerPanel({ piece, side, role }: Props) {
         <StatBadge team={piece.team} stat="ma" label="MA" value={piece.ma} />
         <StatBadge team={piece.team} stat="st" label="ST" value={piece.st} />
         <StatBadge team={piece.team} stat="ag" label="AG" value={piece.ag} />
+        <StatBadge team={piece.team} stat="pa" label="PA" value={piece.pa} />
         <StatBadge team={piece.team} stat="av" label="AV" value={piece.av} />
       </div>
 

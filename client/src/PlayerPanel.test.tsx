@@ -32,15 +32,16 @@ describe('PlayerPanel', () => {
   });
 
   it('still shows the stats being compared', () => {
-    const piece = orcBlocker({ st: 4, ma: 5, ag: 3, av: 9 });
+    const piece = orcBlocker({ st: 4, ma: 5, ag: 3, pa: 4, av: 9 });
     render(<PlayerPanel piece={piece} side="right" role="target" />);
 
-    const value = (label: string) =>
-      screen.getByAltText(label).parentElement?.querySelector('.panel__stat-value')?.textContent;
+    const value = (label: string) => screen.getByText(label, { selector: '.panel__stat-label' })
+      .parentElement?.querySelector('.panel__stat-value')?.textContent;
 
     expect(value('MA')).toBe('5');
     expect(value('ST')).toBe('4');
     expect(value('AG')).toBe('3');
+    expect(value('PA')).toBe('4');
     expect(value('AV')).toBe('9');
   });
 
