@@ -9,6 +9,7 @@ describe('BlockDiceGraphic', () => {
 
     expect(graphic?.querySelectorAll('.block-die-icon')).toHaveLength(2);
     expect(graphic?.querySelectorAll('.block-die-icon__face')).toHaveLength(10);
+    expect(graphic?.querySelectorAll('img')).toHaveLength(10);
     expect(graphic?.getAttribute('data-favor')).toBe('defender');
     expect(graphic?.getAttribute('title')).toContain('possible outcomes');
   });
@@ -23,6 +24,7 @@ describe('BlockFaceGraphic', () => {
   it('defaults to a single die when no count is given', () => {
     const { container } = render(<BlockFaceGraphic face="push" />);
     expect(container.querySelectorAll('.block-die-icon')).toHaveLength(1);
+    expect(container.querySelector('img')?.getAttribute('src')).toContain('push');
   });
 
   it('repeats the resolved face once per die actually rolled', () => {
