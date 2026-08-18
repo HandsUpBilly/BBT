@@ -204,7 +204,9 @@ block's outcome, matching the movement-dice overwrite-on-repeat convention.
 `BlockDiceGraphic.tsx`'s `BlockFaceGraphic` renders the resolved-face marker;
 its sibling `BlockDiceGraphic` is a pre-roll preview that animates each die
 through all five block-face types, with a static Push face under
-`prefers-reduced-motion`. No single face is "the" result yet.
+`prefers-reduced-motion`. Both use the generated worn-iron WebP faces in
+`assets/block-dice/`; picker advantage remains a CSS outline rather than a
+second image set. No single face is "the" result yet.
 
 A resolved push (push / defender-stumbles-falls / defender-down with a legal
 push square) also draws a pushed-from/pushed-to indicator: an ice-blue arc

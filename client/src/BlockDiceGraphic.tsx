@@ -1,7 +1,12 @@
 import type { CSSProperties } from 'react';
 import type { BlockOutcomeFace } from './types';
-import { BLOCK_FACE_LABELS, BLOCK_FACE_GLYPHS } from './blockFacePresentation';
+import { BLOCK_FACE_LABELS } from './blockFacePresentation';
 import { BLOCK_OUTCOME_FACES } from './bfs';
+import attackerDownDie from './assets/block-dice/attacker-down.webp';
+import bothDownDie from './assets/block-dice/both-down.webp';
+import pushDie from './assets/block-dice/push.webp';
+import defenderStumblesDie from './assets/block-dice/defender-stumbles.webp';
+import defenderDownDie from './assets/block-dice/defender-down.webp';
 import './BlockDiceGraphic.css';
 
 // Block dice don't carry a single target number the way a dodge or pick-up
@@ -15,7 +20,7 @@ import './BlockDiceGraphic.css';
  * Which side of the block the dice favour, from the player's point of view.
  * The attacker in block terms is always the piece the player just declared a
  * block with, so 'attacker' always means "you pick" and 'defender' always
- * means "the opponent picks" — never the reverse. Coloured red when the
+ * means "the opponent picks" — never the reverse. Outlined red when the
  * opponent is the one choosing which die counts, white/neutral when the
  * player is, so the declare-time dialog and the resolved pitch marker both
  * read the same risk at a glance without the player doing the ST-comparison
@@ -23,9 +28,12 @@ import './BlockDiceGraphic.css';
  */
 export type BlockDiceFavor = 'attacker' | 'defender';
 
-const FAVOR_COLORS: Record<BlockDiceFavor, { bg: string; stroke: string; pip: string }> = {
-  defender: { bg: 'rgba(60,8,8,0.85)', stroke: 'rgba(255,90,90,0.95)', pip: 'rgba(255,150,150,0.95)' },
-  attacker: { bg: 'rgba(22,22,26,0.85)', stroke: 'rgba(228,228,235,0.95)', pip: 'rgba(228,228,235,0.95)' },
+const BLOCK_FACE_IMAGES: Record<BlockOutcomeFace, string> = {
+  'attacker-down': attackerDownDie,
+  'both-down': bothDownDie,
+  push: pushDie,
+  'defender-stumbles': defenderStumblesDie,
+  'defender-down': defenderDownDie,
 };
 
 function BlockDieIcon({ favor, style, dieIndex }: {
@@ -33,31 +41,24 @@ function BlockDieIcon({ favor, style, dieIndex }: {
   style?: CSSProperties;
   dieIndex: number;
 }) {
-  const { bg, stroke, pip } = FAVOR_COLORS[favor];
   return (
-    <svg
+    <span
       className="block-die-icon block-die-icon--animated"
-      viewBox="0 0 20 20"
-      xmlns="http://www.w3.org/2000/svg"
       style={{ ...style, animationDelay: `-${dieIndex * 0.17}s` }}
+      data-favor={favor}
     >
-      <rect x="1" y="1" width="18" height="18" rx="3" ry="3" fill={bg} stroke={stroke} strokeWidth="1.5" />
       {BLOCK_OUTCOME_FACES.map((face, faceIndex) => (
-        <text
+        <img
           key={face}
           className="block-die-icon__face"
           data-face={face}
-          x="10"
-          y="14"
-          textAnchor="middle"
-          fontSize={face === 'both-down' ? 7 : 11}
-          fill={pip}
+          src={BLOCK_FACE_IMAGES[face]}
+          alt=""
+          draggable={false}
           style={{ animationDelay: `-${faceIndex * 0.6 + dieIndex * 0.17}s` }}
-        >
-          {BLOCK_FACE_GLYPHS[face]}
-        </text>
+        />
       ))}
-    </svg>
+    </span>
   );
 }
 
@@ -88,14 +89,10 @@ export function BlockDiceGraphic({ count, favor, className, size }: BlockDiceGra
 }
 
 function BlockFaceIcon({ face, favor, style }: { face: BlockOutcomeFace; favor: BlockDiceFavor; style?: CSSProperties }) {
-  const { bg, stroke, pip } = FAVOR_COLORS[favor];
   return (
-    <svg className="block-die-icon" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg" style={style}>
-      <rect x="1" y="1" width="18" height="18" rx="3" ry="3" fill={bg} stroke={stroke} strokeWidth="1.5" />
-      <text x="10" y="14" textAnchor="middle" fontSize={face === 'both-down' ? 7 : 11} fill={pip}>
-        {BLOCK_FACE_GLYPHS[face]}
-      </text>
-    </svg>
+    <span className="block-die-icon" style={style} data-favor={favor}>
+      <img className="block-die-icon__art" src={BLOCK_FACE_IMAGES[face]} alt="" draggable={false} />
+    </span>
   );
 }
 

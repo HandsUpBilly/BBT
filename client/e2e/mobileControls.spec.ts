@@ -67,6 +67,11 @@ test('keeps Parallel Universe selectors below the HUD and within the screen', as
   await page.locator('.piece-menu__item', { hasText: 'Block' }).locator('input').check({ force: true });
   await page.locator('.piece-menu__confirm').click({ force: true });
   await page.locator('.square[data-square="6F"]').click({ force: true });
+
+  const blockDice = page.getByRole('dialog').locator('.block-die-icon__face');
+  await expect(blockDice.first()).toBeVisible();
+  expect(await blockDice.first().evaluate(image => (image as HTMLImageElement).naturalWidth)).toBe(256);
+
   await page.getByRole('button', { name: 'Progress' }).click({ force: true });
 
   const strip = page.locator('.branch-strip');
