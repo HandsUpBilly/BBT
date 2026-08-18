@@ -39,4 +39,22 @@ describe('GameToolsMenu', () => {
     expect(onReport).toHaveBeenCalledOnce();
     expect(screen.queryByRole('menu')).toBeNull();
   });
+
+  it('can reopen the current Tutorial briefing', () => {
+    const onTutorialBriefing = vi.fn();
+    render(
+      <GameToolsMenu
+        zoomEnabled={false}
+        onTutorialBriefing={onTutorialBriefing}
+        onToggleZoom={vi.fn()}
+        onRestart={vi.fn()}
+        onReport={vi.fn()}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Game tools' }));
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Tutorial briefing' }));
+    expect(onTutorialBriefing).toHaveBeenCalledOnce();
+    expect(screen.queryByRole('menu')).toBeNull();
+  });
 });

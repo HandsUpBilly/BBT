@@ -48,3 +48,40 @@ test('the Parallel Universes briefing shows its decision tree without breaking t
   await beginButton.scrollIntoViewIfNeeded();
   await expect(beginButton).toBeVisible();
 });
+
+test('a phone can reopen a previously seen Tutorial briefing from Game Tools', async ({ page }) => {
+  test.skip((page.viewportSize()?.width ?? 0) > 1024, 'Game Tools is the compact-screen route');
+
+  await page.addInitScript((scenarioId) => {
+    window.localStorage.setItem('bbt.prefs.v1', JSON.stringify({
+      guest: {
+        showTutorialGuidance: true,
+        seenTutorialLessons: [scenarioId],
+      },
+    }));
+  }, scenario.id);
+  await page.route('**/api/scenarios', route => route.fulfill({
+    status: 200,
+    contentType: 'application/json',
+    body: JSON.stringify({
+      scenarios: [scenario],
+      series: {
+        id: 'default',
+        name: 'Tutorial',
+        description: 'One drill introducing Blocking and Parallel Universes.',
+        scenarioIds: [scenario.id],
+      },
+    }),
+  }));
+
+  await page.goto('/');
+  await page.getByRole('button', { name: /play as guest/i }).click();
+  await page.locator('.identity-gate__input').fill('Tutorial Replay Tester');
+  await page.getByRole('button', { name: /^continue$/i }).click();
+  await page.getByRole('button', { name: /start series/i }).click();
+
+  await expect(page.getByRole('dialog', { name: 'Blocking and Parallel Universes' })).toHaveCount(0);
+  await page.getByRole('button', { name: 'Game tools' }).click();
+  await page.getByRole('menuitem', { name: 'Tutorial briefing' }).click();
+  await expect(page.getByRole('dialog', { name: 'Blocking and Parallel Universes' })).toBeVisible();
+});

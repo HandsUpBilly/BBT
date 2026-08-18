@@ -114,6 +114,8 @@ public avatars).
   trigger, while the Key and action log retain their own triggers. Compact
   dropdowns use viewport-fixed geometry so no parent can clip them. The empty
   100% success readout leaves the row until a roll puts probability at risk.
+  During a Tutorial run, Game Tools also reopens the current rules briefing,
+  even when that lesson was already seen or automatic briefings are disabled.
   The `?` control is the pitch/skill Key, not Settings.
 - **`UserMenu`'s avatar falls back to initials on load failure**, not just on
   absence — a corrupted or future-format data URL degrades the same way a
