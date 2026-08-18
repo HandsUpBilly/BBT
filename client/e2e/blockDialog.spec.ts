@@ -11,6 +11,9 @@ test.beforeEach(async ({ page }) => {
   await page.locator('.challenge-tile', { hasText: 'Loose Ball on the Goal Line' })
     .getByRole('button', { name: /^play$/i }).click();
 
+  const beginPuzzle = page.getByRole('button', { name: 'Begin Puzzle' });
+  if (await beginPuzzle.isVisible()) await beginPuzzle.click();
+
   // The playbook continuously animates on mobile, so WebKit never considers
   // these otherwise-actionable controls geometrically stable.
   await page.locator('.square[data-square="7F"] .piece').click({ force: true });
@@ -34,7 +37,21 @@ test('explains the dice and fits every supported viewport', async ({ page }) => 
   expect(diceCount).toBeGreaterThan(0);
   await expect(dialog.locator('.block-die-icon__face')).toHaveCount(diceCount * 5);
   expect(await dice.first().evaluate(el => getComputedStyle(el).animationName))
-    .toContain('block-die-tumble');
+    .toContain('block-die-roll-down');
+
+  const rollStyles = await dice.evaluateAll(elements => elements.map((element) => {
+    const style = getComputedStyle(element);
+    return {
+      duration: style.getPropertyValue('--die-roll-duration'),
+      xStart: style.getPropertyValue('--die-x-start'),
+      impactSpin: style.getPropertyValue('--die-spin-impact'),
+    };
+  }));
+  for (const style of rollStyles) {
+    expect(style.duration).toMatch(/^\d+\.\d{2}s$/);
+    expect(style.xStart).toMatch(/^-?\d+\.\dpx$/);
+    expect(style.impactSpin).toMatch(/^-?\d+\.\ddeg$/);
+  }
 
   for (let index = 0; index < diceCount; index += 1) {
     const die = await boxOf(dice.nth(index));

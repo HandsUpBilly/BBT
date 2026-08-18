@@ -170,6 +170,31 @@ describe('lockstep authoring', () => {
     expect(branchStrip(run).every(e => e.status !== 'needs-attention')).toBe(true);
   });
 
+  it('stops before replaying a move that adds a roll in a sibling branch', () => {
+    const markedRunner = runner();
+    markedRunner.position = { col: 6, row: 9 };
+
+    let run = choosePush(blockRun([markedRunner]), { col: 7, row: 8 }, false);
+    run = clickSquare(run, { col: 6, row: 9 });
+
+    const standingBefore = Object.values(run.lines).find(line => line.label === 'Pushed')!;
+    run = clickSquare(run, { col: 5, row: 9 });
+
+    const standingAfter = Object.values(run.lines).find(line => line.label === 'Pushed')!;
+    const downInPlace = Object.values(run.lines).find(line => line.label === 'Down in place')!;
+    const viewed = viewedLine(run);
+
+    // The viewed Pushed + Down board has no tackle zone here, so its safe move
+    // is recorded. The standing defender makes the same step a dodge in the
+    // Pushed board: that board must stop before the move and wait for its own
+    // path instead of silently accepting an extra roll.
+    expect(viewed.state.committedPath).toEqual([{ col: 5, row: 9 }]);
+    expect(downInPlace.state.committedPath).toEqual([{ col: 5, row: 9 }]);
+    expect(standingAfter.state).toBe(standingBefore.state);
+    expect(entry(run, 'Down in place')?.status).toBe('authoring');
+    expect(entry(run, 'Pushed')?.status).toBe('needs-attention');
+  });
+
   it('flags only the branch where the move is no longer legal', () => {
     let run = choosePush(blockRun([runner()]), { col: 7, row: 8 }, false);
     run = clickSquare(run, { col: 6, row: 10 });

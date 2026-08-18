@@ -16,7 +16,7 @@ const staticData: ScenarioData = { scenarios: staticScenarios, series: staticSer
  * bundle (client/src/scenarios/*.json + series/default.json) if the request
  * fails, so the app still works if the API is briefly unavailable.
  *
- * This is what lets Admin Mode publishes reach players without a redeploy —
+ * This is what lets Puzzle Creator publishes reach players without a redeploy —
  * see README "Puzzle Editor on Netlify" for the full publish workflow.
  */
 export async function loadScenarioData(): Promise<ScenarioData> {

@@ -11,7 +11,14 @@ describe('BlockDiceGraphic', () => {
     expect(graphic?.querySelectorAll('.block-die-icon__face')).toHaveLength(10);
     expect(graphic?.querySelectorAll('img')).toHaveLength(10);
     expect(graphic?.getAttribute('data-favor')).toBe('defender');
+    expect(graphic?.getAttribute('data-rolling')).toBe('true');
     expect(graphic?.getAttribute('title')).toContain('possible outcomes');
+
+    graphic?.querySelectorAll<HTMLElement>('.block-die-icon').forEach(die => {
+      expect(die.style.getPropertyValue('--die-roll-duration')).toMatch(/^\d+\.\d{2}s$/);
+      expect(die.style.getPropertyValue('--die-x-start')).toMatch(/^-?\d+\.\dpx$/);
+      expect(die.style.getPropertyValue('--die-spin-impact')).toMatch(/^-?\d+\.\ddeg$/);
+    });
   });
 
   it('does not describe either side as picking in its player-facing label', () => {

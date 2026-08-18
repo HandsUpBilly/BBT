@@ -126,9 +126,7 @@ export function ScenarioSelect({
         <div className="scenario-select__brand">
           <span className="scenario-select__eyebrow">The final turn: Do or die</span>
           <h1 className="scenario-select__title">Turn 16</h1>
-          <p className="scenario-select__subtitle">
-            One turn left. Control the risk. Put the Reavers in the end zone.
-          </p>
+          <p className="scenario-select__subtitle">Pray to Nuffle</p>
         </div>
         <div className="scenario-select__user">
           <div className="scenario-select__controls">
@@ -170,7 +168,7 @@ export function ScenarioSelect({
             aria-selected="false"
             onClick={onAdmin}
           >
-            Admin Mode
+            Puzzle Creator
           </button>
         )}
       </div>

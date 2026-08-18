@@ -115,7 +115,26 @@ test.describe('interaction follows hover capability', () => {
     await expect(page.locator('.square--path')).toHaveCount(0);
   });
 
-  test('a non-hovering pointer gets the two-stage tap instead', async ({ page }) => {
+  test('clicking a hovered route requires an explicit move decision', async ({ page }) => {
+    test.skip(!(await capabilities(page)).hover, 'requires a hovering pointer');
+
+    const carrier = page.locator('.square:has(.piece--carrier)').first();
+    await carrier.click();
+    await page.locator('.piece-menu').waitFor({ state: 'visible' });
+    await page.getByText('Move', { exact: true }).click();
+    await page.getByRole('button', { name: /confirm/i }).click();
+
+    const target = page.locator('.square--reachable').last();
+    await target.hover();
+    await target.click();
+
+    const bar = page.locator('.commit-bar');
+    await expect(bar.getByRole('button', { name: 'Confirm Move' })).toBeVisible();
+    await expect(bar.getByRole('button', { name: 'Plot Again' })).toBeVisible();
+    await expect(page.locator('.square--path')).toHaveCount(0);
+  });
+
+  test('a non-hovering pointer plots the route with its first tap', async ({ page }) => {
     test.skip((await capabilities(page)).hover, 'requires a non-hovering pointer');
 
     const carrier = page.locator('.square:has(.piece--carrier)').first();

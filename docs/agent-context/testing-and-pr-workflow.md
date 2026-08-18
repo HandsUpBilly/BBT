@@ -47,7 +47,7 @@ npm --prefix client run test:e2e:mobile   # the four phone profiles
 ```
 
 `client/e2e/` asserts on measured geometry: square size, tap targets, HUD
-budget, no clipping, no horizontal overflow, the two-stage tap contract, and
+budget, no clipping, no horizontal overflow, the plot-confirm contract, and
 that the toolbar panels (`legend.spec.ts`, `actionLog.spec.ts`) fit their
 viewport and do not resize the board when opened.
 

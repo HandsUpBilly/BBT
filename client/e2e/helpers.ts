@@ -7,8 +7,8 @@ export const MIN_TAP_TARGET = 44;
  * Minimum pitch square size, in CSS px, by viewport shape.
  *
  * Both are below the 44px tap-target minimum on purpose. A pitch square is a
- * forgiving target — a mis-tap previews rather than commits, and the
- * two-stage flow gives the player a chance to correct — and 44px is not
+ * forgiving target — a mis-tap only plots a route, and the explicit
+ * confirmation gives the player a chance to correct it — and 44px is not
  * reachable anyway: 15 columns at 44px needs a 660px-wide phone.
  *
  * The two numbers differ because a different axis binds in each case.

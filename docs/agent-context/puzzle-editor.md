@@ -12,7 +12,7 @@ Primary files:
 
 ## What Works Now
 
-Admin Mode renders `PuzzleEditor` with two sections: **Puzzle Editor** and
+Puzzle Creator renders `PuzzleEditor` with two sections: **Puzzle Editor** and
 **Statistics**. Switching away from an unsaved puzzle is covered by the same
 discard confirmation as other editor navigation.
 
@@ -53,7 +53,9 @@ names, ids, or move histories to the dashboard.
 - **Unsaved-changes guard.** Opening another puzzle, starting a new one,
   reloading, or leaving the editor asks before discarding edits, and a
   `beforeunload` handler covers tab close. Previously all of these discarded
-  silently.
+  silently. The Save panel also exposes **Discard Unsaved Changes**, which
+  confirms before restoring the open puzzle to its last saved draft without a
+  network request. A never-saved puzzle resets to a fresh blank draft.
 - **Publish confirmation.** Publish is the one irreversible, player-facing
   action, so it asks first.
 - **Publish is blocked while the open draft has unsaved edits.** `Publish

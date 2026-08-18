@@ -10,6 +10,7 @@ interface Props {
   step: number;
   total: number;
   onDismiss: (disableFutureLessons: boolean) => void;
+  onReturnToMenu: () => void;
 }
 
 const ARTWORK = {
@@ -19,7 +20,7 @@ const ARTWORK = {
   },
 } as const;
 
-export function TutorialLessonDialog({ lesson, step, total, onDismiss }: Props) {
+export function TutorialLessonDialog({ lesson, step, total, onDismiss, onReturnToMenu }: Props) {
   const titleId = useId();
   const [disableFutureLessons, setDisableFutureLessons] = useState(false);
   const ref = useModalFocus<HTMLDivElement>(() => onDismiss(false));
@@ -56,6 +57,13 @@ export function TutorialLessonDialog({ lesson, step, total, onDismiss }: Props) 
           <span>Do not show these rules briefings again</span>
         </label>
         <div className="submit-modal__actions">
+          <button
+            type="button"
+            className="modal__continue-btn"
+            onClick={onReturnToMenu}
+          >
+            Return to Menu
+          </button>
           <button
             type="button"
             className="modal__roll-btn"

@@ -8,7 +8,15 @@ afterEach(cleanup);
 describe('TutorialLessonDialog', () => {
   it('shows progress and dismisses the lesson', () => {
     const onDismiss = vi.fn();
-    render(<TutorialLessonDialog lesson={TUTORIAL_LESSONS[0]} step={1} total={6} onDismiss={onDismiss} />);
+    render(
+      <TutorialLessonDialog
+        lesson={TUTORIAL_LESSONS[0]}
+        step={1}
+        total={6}
+        onDismiss={onDismiss}
+        onReturnToMenu={vi.fn()}
+      />,
+    );
 
     expect(screen.getByText('Tutorial Drill 1 / 6')).toBeTruthy();
     expect(screen.getByRole('heading', { name: 'Movement' })).toBeTruthy();
@@ -19,7 +27,15 @@ describe('TutorialLessonDialog', () => {
 
   it('can disable all future lessons', () => {
     const onDismiss = vi.fn();
-    render(<TutorialLessonDialog lesson={TUTORIAL_LESSONS[5]} step={6} total={6} onDismiss={onDismiss} />);
+    render(
+      <TutorialLessonDialog
+        lesson={TUTORIAL_LESSONS[5]}
+        step={6}
+        total={6}
+        onDismiss={onDismiss}
+        onReturnToMenu={vi.fn()}
+      />,
+    );
 
     expect(screen.getByRole('img', { name: /decision tree splitting one block/i })).toBeTruthy();
     fireEvent.click(screen.getByRole('checkbox', { name: /Do not show these rules briefings again/ }));
@@ -29,8 +45,32 @@ describe('TutorialLessonDialog', () => {
 
   it('treats Escape as a normal one-lesson dismissal', () => {
     const onDismiss = vi.fn();
-    render(<TutorialLessonDialog lesson={TUTORIAL_LESSONS[0]} step={1} total={6} onDismiss={onDismiss} />);
+    render(
+      <TutorialLessonDialog
+        lesson={TUTORIAL_LESSONS[0]}
+        step={1}
+        total={6}
+        onDismiss={onDismiss}
+        onReturnToMenu={vi.fn()}
+      />,
+    );
     fireEvent.keyDown(screen.getByRole('dialog'), { key: 'Escape' });
     expect(onDismiss).toHaveBeenCalledWith(false);
+  });
+
+  it('offers a return to the main menu', () => {
+    const onReturnToMenu = vi.fn();
+    render(
+      <TutorialLessonDialog
+        lesson={TUTORIAL_LESSONS[0]}
+        step={1}
+        total={6}
+        onDismiss={vi.fn()}
+        onReturnToMenu={onReturnToMenu}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Return to Menu' }));
+    expect(onReturnToMenu).toHaveBeenCalledOnce();
   });
 });

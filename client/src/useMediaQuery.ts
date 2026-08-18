@@ -66,9 +66,9 @@ export function useCompactLayout(): boolean {
  * A touchscreen laptop often reports touch as its primary input even while a
  * trackpad or mouse is connected. `(hover: hover)` would turn off cursor
  * previews in that case. This, not "is it a phone", is what decides whether
- * the path preview can follow a cursor. Only devices with no hovering input
- * need the two-stage tap, because for them preview and commit would otherwise
- * land in the same gesture.
+ * the path preview can follow a cursor. Devices without one plot from their
+ * first tap; both interaction styles still require the same explicit move
+ * confirmation.
  */
 export function useHoverCapable(): boolean {
   return useMediaQuery('(any-hover: hover)');

@@ -4218,9 +4218,11 @@ evaluation and replay primitives (`blockBranchTree.ts`, `branchReplay.ts`), run
 model (`branchRun.ts`, `useBranchRun.ts`), UI, and server-side score validation
 are the standard block model. Player-facing board states are called **Parallel
 Universes**; the old checklist, experimental preference, and feature flag have
-been removed. Supersedes the outcome-checklist design in *Block and Blitz
-Actions* (see "Design: modeling block dice inside the probability-tracking
-model", marked superseded there).
+been removed. Lockstep replay stops before an action that would add a roll in a
+sibling universe, leaving that board untouched and marked **Needs a plan**.
+Supersedes the outcome-checklist design in *Block and Blitz Actions* (see
+"Design: modeling block dice inside the probability-tracking model", marked
+superseded there).
 
 ## Problem Statement
 
@@ -4402,10 +4404,13 @@ pre-roll figure never reads as a promise.
 every branch still in lockstep with it (same authored action sequence since
 divergence):
 
-- **Legal there** → applied, with roll targets recomputed against *that*
-  branch's board. A still-standing defender correctly adds a dodge that the
-  pushed-and-down branch does not need.
-- **Illegal there** → that branch leaves the group and is flagged
+- **Legal with no additional rolls** → applied, with roll targets recomputed
+  against *that* branch's board. Equal roll counts can have different targets
+  and odds without forcing separate authoring.
+- **Adds a roll there** → none of that action is recorded on the sibling. It
+  leaves the group at its pre-action state and is flagged `needs-attention`, so
+  the player chooses its path separately.
+- **Illegal there** → likewise leaves the group untouched and flagged
   `needs-attention`.
 
 So a typical block costs zero extra authoring, and pulls you in precisely when
@@ -4492,9 +4497,10 @@ per player from Settings → Experimental.
 3. Both Down against a defender *with* Block and an attacker *with* Block yields
    a single "board unchanged" state; against an attacker without Block it is not
    materialised at all.
-4. A move authored in one branch is applied to lockstep siblings with roll
-   targets recomputed per branch — a dodge required in one and not in another is
-   covered by a test.
+4. A move authored in one branch is applied to lockstep siblings only when it
+   adds no extra roll. A sibling where a standing defender introduces a dodge
+   keeps its pre-move board and becomes `needs-attention`; equal roll counts may
+   still recompute to different targets and odds per branch.
 5. Two branches reaching an identical board hash merge, and the merged weight
    equals the sum of the two.
 6. Improving a conceded branch's continuation visibly changes the *weights* of
@@ -4525,7 +4531,8 @@ Sequenced so each phase is independently testable and nothing lands half-wired.
      plus lockstep replay. `handleSquareClick` is split into `classifyClick`
      (what a click *means* on a board) and pure appliers, so a click can be
      replayed into a sibling and checked for still meaning the same thing.
-     Behaviour-preserving: the existing suite passes untouched.
+     `addedRollCount` then prevents a legal candidate from advancing when it
+     adds more roll tests than the viewed action.
    - **2b — the run itself. Done.** `client/src/branchRun.ts` holds a tree of
      board states instead of one `GameState`: `splitOnBlock` replaces the
      checklist with one branch per live board state, `clickSquare` /
