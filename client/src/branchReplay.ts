@@ -9,15 +9,15 @@
  * in the other — and it is what keeps a multi-block puzzle from being a pile of
  * independent authoring jobs.
  *
- * `replayClick` is lockstep replay: apply the click the player just made in the
- * branch they are looking at to a sibling branch, and say plainly whether it
- * still means the same thing there. It has to be explicit about that, because
- * the reducer is total — an unreachable square does not error, it quietly falls
- * through to "deselect the piece". Silently doing something else in a sibling
- * is the one failure mode that would make the whole model untrustworthy.
+ * `replayClick` produces a candidate lockstep replay: apply the click the
+ * player just made to a sibling branch and say plainly whether it still means
+ * the same thing there. The group author then also compares `addedRollCount`
+ * against the viewed action before accepting that candidate. Both checks are
+ * explicit because silently changing either the action or its roll count in a
+ * sibling would make the whole model untrustworthy.
  */
 
-import type { GameState, PlayerPiece, Position } from './types';
+import type { ActionLogEntry, GameState, PlayerPiece, Position } from './types';
 import { applyClick, classifyClick, type ClickIntent } from './useGameState';
 import { key } from './bfs';
 
@@ -107,11 +107,42 @@ export type ReplayFailure =
   /** The click means something different on this board (usually unreachable). */
   | { ok: false; reason: 'intent-mismatch'; expected: ClickIntent; actual: ClickIntent }
   /** The click was classified the same but the reducer declined it. */
-  | { ok: false; reason: 'no-op'; expected: ClickIntent; actual: ClickIntent };
+  | { ok: false; reason: 'no-op'; expected: ClickIntent; actual: ClickIntent }
+  /** The click is legal but adds rolls beyond those accepted on the viewed board. */
+  | {
+      ok: false;
+      reason: 'extra-rolls';
+      expected: ClickIntent;
+      actual: ClickIntent;
+      added: number;
+      allowed: number;
+    };
 
 export type ReplayResult =
   | { ok: true; state: GameState; intent: ClickIntent }
   | ReplayFailure;
+
+/** Number of individual rolls represented by one newly appended log entry. */
+function entryRollCount(entry: ActionLogEntry): number {
+  if (entry.kind !== 'move') return 1;
+  return Number(entry.dodgeTarget !== null)
+    + Number(entry.isGfi)
+    + Number(entry.pickupTarget !== null && entry.pickupTarget !== undefined);
+}
+
+/**
+ * Count only rolls introduced by one state transition.
+ *
+ * Movement can stack a dodge, Rush and pickup on one square, so counting
+ * roll-bearing log entries would miss exactly the extra risk lockstep replay
+ * must detect. Log truncation during cancellation introduces no new rolls.
+ */
+export function addedRollCount(before: GameState, after: GameState): number {
+  if (after.actionLog.length <= before.actionLog.length) return 0;
+  return after.actionLog
+    .slice(before.actionLog.length)
+    .reduce((total, entry) => total + entryRollCount(entry), 0);
+}
 
 /**
  * Replay a click into a sibling branch, refusing it unless it means the same
@@ -150,21 +181,43 @@ export interface LockstepResult {
 
 /**
  * Apply one click across a lockstep group. Branches that accept it stay in the
- * group; branches that do not are handed back flagged, with their board
- * untouched so the player can author from where it actually diverged.
+ * group; branches where it changes meaning or exceeds the viewed action's roll
+ * budget are handed back flagged, with their board untouched so the player can
+ * author from where it actually diverged.
  */
 export function replayAcrossBranches(
   branches: readonly LockstepBranch[],
   pos: Position,
   expected: ClickIntent,
+  allowedAddedRolls: number,
 ): LockstepResult {
   const advanced: LockstepBranch[] = [];
   const flagged: (LockstepBranch & { failure: ReplayFailure })[] = [];
 
   for (const branch of branches) {
     const result = replayClick(branch.state, pos, expected);
-    if (result.ok) advanced.push({ id: branch.id, state: result.state });
-    else flagged.push({ ...branch, failure: result });
+    if (!result.ok) {
+      flagged.push({ ...branch, failure: result });
+      continue;
+    }
+
+    const added = addedRollCount(branch.state, result.state);
+    if (added > allowedAddedRolls) {
+      flagged.push({
+        ...branch,
+        failure: {
+          ok: false,
+          reason: 'extra-rolls',
+          expected,
+          actual: result.intent,
+          added,
+          allowed: allowedAddedRolls,
+        },
+      });
+      continue;
+    }
+
+    advanced.push({ id: branch.id, state: result.state });
   }
 
   return { advanced, flagged };

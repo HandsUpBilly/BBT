@@ -1,6 +1,7 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import { version } from '../package.json'
+import { deploymentVersion } from './src/deploymentVersion'
 
 const deployedAt = process.env.VITE_DEPLOYED_AT ?? new Date().toISOString()
 
@@ -8,12 +9,11 @@ const deployedAt = process.env.VITE_DEPLOYED_AT ?? new Date().toISOString()
 export default defineConfig({
   plugins: [react()],
   define: {
-    // Netlify exposes the deploy's git SHA as COMMIT_REF; falling back to the
-    // root package version keeps local builds readable. Surfaced in About and
-    // attached to issue reports, so it needs to change per deploy.
+    // Netlify exposes the deploy's hexadecimal git SHA as COMMIT_REF. Convert
+    // its short form to decimal for display, while keeping the package version
+    // as the readable local-build fallback.
     __BBT_VERSION__: JSON.stringify(
-      process.env.VITE_APP_VERSION
-        ?? (process.env.COMMIT_REF ? `${version}+${process.env.COMMIT_REF.slice(0, 7)}` : version),
+      deploymentVersion(version, process.env.VITE_APP_VERSION, process.env.COMMIT_REF),
     ),
     // Netlify does not expose the deployment time as a build variable. Capture
     // the instant this bundle is produced; allow controlled/reproducible builds

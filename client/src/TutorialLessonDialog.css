@@ -48,6 +48,10 @@
   flex: 0 0 auto;
 }
 
+.tutorial-lesson .submit-modal__actions {
+  flex-wrap: wrap;
+}
+
 @media (max-width: 360px) {
   .tutorial-lesson {
     width: calc(100vw - 1rem);

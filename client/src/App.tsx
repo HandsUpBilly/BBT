@@ -49,7 +49,7 @@ import { defaultSeries as staticSeries } from './series';
 import { PuzzleEditor } from './editor/PuzzleEditor';
 import { useAuth } from './auth';
 import type {
-  AppMode, GameState, PlayerPiece, Scenario, LeaderboardEntry,
+  AppMode, GameState, PlayerPiece, Position, Scenario, LeaderboardEntry,
   SeriesLeaderboardEntry, SeriesPuzzleResult,
 } from './types';
 import { key, computeZoomBounds } from './bfs';
@@ -62,7 +62,7 @@ const LOCAL_SCORE_KEY = 'bbt.localScores.v1';
 const GUEST_NAME_KEY = 'bbt.guestName.v1';
 const GOOGLE_ALIASES_KEY = 'bbt.googleAliases.v1';
 
-// Client-side allowlist controlling whether the "Admin Mode" tab is shown at
+// Client-side allowlist controlling whether the "Puzzle Creator" tab is shown at
 // all — this is a UX nicety only, NOT the security boundary. The actual write
 // endpoints (netlify/functions/editor-*.js, server/editor.js) independently
 // verify the signed-in user's Google identity token against the server-side
@@ -433,7 +433,7 @@ export default function App() {
   const isAdmin = ADMIN_EMAILS.size === 0
     || Boolean(currentUser?.email && ADMIN_EMAILS.has(currentUser.email.toLowerCase()));
   // Defense in depth: appMode is client-only state with no URL routing, so this
-  // shouldn't be reachable since the Admin Mode tab is hidden for non-admins.
+  // shouldn't be reachable since the Puzzle Creator tab is hidden for non-admins.
   // The real gate is server-side (ADMIN_EMAILS check on the write endpoints).
   // Render 'home' instead of setState-in-effect to avoid an extra render pass.
   const effectiveAppMode = appMode === 'admin' && !isAdmin ? 'home' : appMode;
@@ -554,54 +554,41 @@ export default function App() {
   // otherwise resolve immediately with followUp: false.
   const [pendingPushSquare, setPendingPushSquare] = useState<{ col: number; row: number } | null>(null);
 
-  // ── Two-stage tap ────────────────────────────────────────────────────────
-  // With a mouse the path preview follows hover, so the dodge rolls, the Go
-  // For It squares and the running success chance are all on screen before
-  // the player clicks. Touch has no hover: preview and commit arrived in the
-  // same tap, so the player accepted risk they were never shown. In a puzzle
-  // whose whole subject is evaluating risk, that is a broken game rather than
-  // an awkward one.
-  //
-  // So on touch the first tap on a reachable square previews it and the
-  // second commits. Tracked as an explicit "armed" square rather than
-  // inferred from pathPreview, because focus and synthetic mouse events can
-  // both move the preview without the player having tapped anything.
-  const [armedSquareKey, setArmedSquareKey] = useState<string | null>(null);
+  // ── Plot, then confirm ────────────────────────────────────────────────────
+  // Clicking or tapping a reachable square plots the route without committing
+  // it. The route remains frozen until the player explicitly confirms it or
+  // chooses to plot again. The context guards against a stale plot surviving
+  // a changed selection or an already-committed movement segment.
+  const [armedMove, setArmedMove] = useState<{
+    context: string;
+    destination: Position;
+  } | null>(null);
+  const movementContext = state.selectedPieceId
+    ? `${state.selectedPieceId}:${state.walkedSquares.length}`
+    : null;
+  const activeArmedMove = armedMove?.context === movementContext ? armedMove : null;
   // Which player's card the side panel / bottom sheet is showing. Follows the
   // cursor on a mouse and the last tapped square on touch.
   const [hoveredPiece, setHoveredPiece] = useState<PlayerPiece | null>(null);
   const [mobileInfoOpen, setMobileInfoOpen] = useState(false);
 
-  // The armed key carries the piece and how far it has already walked, so
-  // selecting a different piece or committing a step invalidates it without
-  // anything having to remember to clear it. A stale arm that survived into a
-  // new selection would commit on the player's first tap — the exact failure
-  // this whole mechanism exists to prevent.
-  const disarm = useCallback(() => setArmedSquareKey(null), []);
+  const disarm = useCallback(() => setArmedMove(null), []);
 
   /**
-   * Handles the preview half of a two-stage tap.
-   * Returns true when the tap was consumed as a preview and must not commit.
+   * Plots a reachable move and consumes the click so only the confirmation
+   * control can commit it.
    */
   const previewBeforeCommit = useCallback((col: number, row: number): boolean => {
-    // Only where the cursor cannot preview on its own. Anything that hovers
-    // keeps the one-click flow — a second confirming click on a machine that
-    // already showed you the route is friction with nothing bought for it.
-    if (hoverCapable) return false;
-    if (!state.selectedPieceId) return false;
+    if (!movementContext) return false;
     const k = key({ col, row });
     if (!state.reachableKeys.has(k)) return false;
-    const arm = `${state.selectedPieceId}:${state.walkedSquares.length}:${k}`;
-    // Second tap on the same square — let it through to commit.
-    if (armedSquareKey === arm) return false;
 
-    setArmedSquareKey(arm);
+    setArmedMove({ context: movementContext, destination: { col, row } });
     hookSquareHover(col, row);
     const piece = state.pieces.find(p => key(p.position) === k);
     setHoveredPiece(piece ?? null);
     return true;
-  }, [hoverCapable, state.selectedPieceId, state.reachableKeys, state.pieces,
-      state.walkedSquares.length, armedSquareKey, hookSquareHover]);
+  }, [movementContext, state.reachableKeys, state.pieces, hookSquareHover]);
 
   // Route square clicks: targeting modes take priority over normal movement
   const handleSquareClick = useCallback((col: number, row: number) => {
@@ -632,11 +619,12 @@ export default function App() {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key !== 'Escape') return;
+      disarm();
       handleCancelSelection();
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [handleCancelSelection]);
+  }, [disarm, handleCancelSelection]);
 
   // Context menu state
   const [pieceMenu, setPieceMenu] = useState<{ piece: PlayerPiece; x: number; y: number } | null>(null);
@@ -751,23 +739,23 @@ export default function App() {
   }, [compact]);
 
   const handleSquareHover = useCallback((col: number, row: number) => {
-    // Suppressed only where hover does not really exist. A tap on such a
-    // device still emits a synthetic mouseenter immediately before the click,
-    // so leaving this wired up would preview and commit in one gesture —
-    // exactly what the two-stage tap exists to prevent. Anywhere a cursor can
-    // genuinely hover, this is the primary way the route is previewed.
+    // A tap can emit a synthetic mouseenter, so only genuine hover-capable
+    // inputs drive this preview. Once clicked, keep the chosen plot frozen
+    // while the pointer travels to the confirmation controls.
     if (!hoverCapable) return;
+    if (activeArmedMove) return;
     // Update movement preview in game state
     hookSquareHover(col, row);
     const k = key({ col, row });
     const piece = state.pieces.find(p => key(p.position) === k);
     setHoveredPiece(piece ?? null);
-  }, [hoverCapable, hookSquareHover, state.pieces]);
+  }, [hoverCapable, activeArmedMove, hookSquareHover, state.pieces]);
   const handleSquareLeave = useCallback(() => {
     if (!hoverCapable) return;
+    if (activeArmedMove) return;
     hookSquareLeave();
     setHoveredPiece(null);
-  }, [hoverCapable, hookSquareLeave]);
+  }, [hoverCapable, activeArmedMove, hookSquareLeave]);
 
   // Record every completed run in the local attempt history.
   //
@@ -983,6 +971,11 @@ export default function App() {
     }
   }, [appMode, editorPreviewScenario, requestLeaveSeries]);
 
+  const returnToMenuFromTutorial = useCallback(() => {
+    setTutorialLesson(null);
+    handleBackClick();
+  }, [handleBackClick]);
+
   // ── Render: non-game screens ─────────────────────────────────────────────
   if (!identityReady) {
     return (
@@ -1149,13 +1142,9 @@ export default function App() {
   const { primary: inspectedPiece, secondary: comparisonPiece } =
     playerComparison(state, selectedPiece, hoveredPiece);
 
-  // A move is armed and previewed, waiting for the confirming tap. The bar
-  // below the board makes the second tap discoverable and gives the player a
-  // way out that isn't "tap somewhere harmless and hope".
-  const armedPreview = !hoverCapable && armedSquareKey !== null
-    && state.pathPreview.length > 0
-    ? state.pathPreview[state.pathPreview.length - 1].pos
-    : null;
+  // The plotted destination remains stable while hover is frozen; the path
+  // itself still supplies the dice markers and live probability.
+  const armedPreview = activeArmedMove?.destination ?? null;
 
   // Every piece on the active team has had its go. (This used to inspect only
   // the *first* piece on the team, so the status line was wrong the moment a
@@ -1343,11 +1332,10 @@ export default function App() {
 
       {compact && <div className="status-strip">{statusLine}</div>}
 
-      {/* Keep the confirm slot mounted so arming a preview never takes height
-          away from the pitch. Gated on the same condition as armedPreview: a
-          touchscreen that can hover uses the one-click flow, and would
-          otherwise reserve a bar that can never fill. */}
-      {!hoverCapable && (
+      {/* Non-hovering layouts keep an invisible placeholder mounted so plotting
+          never resizes the pitch. Hovering layouts mount the bar only after a
+          destination is clicked; CSS presents it as an overlay. */}
+      {(!hoverCapable || armedPreview) && (
         <CommitBar
           destination={armedPreview}
           probability={liveProbPct}
@@ -1528,6 +1516,7 @@ export default function App() {
           step={tutorialLesson.step}
           total={TUTORIAL_LESSON_IDS.length}
           onDismiss={dismissTutorialLesson}
+          onReturnToMenu={returnToMenuFromTutorial}
         />
       )}
       {notice}

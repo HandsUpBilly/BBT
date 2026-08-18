@@ -16,7 +16,7 @@ Current modes:
 - `home`: identity-ready main screen with `UserMenu` and `ScenarioSelect`.
 - `puzzle`: standalone puzzle play.
 - `leaderboard`: individual puzzle leaderboard and score replay summary.
-- `admin`: puzzle editor, replacing old Sandbox-first Admin Mode.
+- `admin`: Puzzle Creator, replacing the old Sandbox-first admin screen.
 - `series-puzzle`: active series run.
 - `series-leaderboard`: aggregate series leaderboard and summary.
 - `settings`: display name, avatar, and player token style — see "Settings
@@ -27,7 +27,7 @@ and the multi-turn machinery it needed (End Turn, turn counters, halves, score)
 was unreachable dead code. A puzzle is always exactly one turn — see
 `game-rules-engine.md`.
 
-Render branches key off `effectiveAppMode`, not `appMode`: Admin Mode falls back
+Render branches key off `effectiveAppMode`, not `appMode`: Puzzle Creator falls back
 to `home` for non-admins as defence in depth.
 
 ## Identity Gate
@@ -52,13 +52,13 @@ focus-trapped dialog is the single player-facing location for the build version
 the viewer's local timezone. Vite stamps the deployment time when it builds the
 bundle; `VITE_DEPLOYED_AT` can override it with an ISO timestamp. The home
 masthead carries neither label. Because `UserMenu` is shared, About remains
-available from home, archives, Admin Mode, Settings, and the game HUD.
+available from home, archives, Puzzle Creator, Settings, and the game HUD.
 
 ## Settings Screen and Player Prefs
 
 `SettingsScreen.tsx`, opened from `UserMenu`'s previously-disabled Settings
-item, on every screen that renders `UserMenu` (home, archive screens, Admin
-Mode, and the game HUD). Phase 1 covers display name, avatar, and player token
+item, on every screen that renders `UserMenu` (home, archive screens, Puzzle
+Creator, and the game HUD). Phase 1 covers display name, avatar, and player token
 style; see spec.md "Player Config Screen" for the Phase 2 plan (server-side,
 public avatars).
 
@@ -107,7 +107,9 @@ public avatars).
   checking its opt-out or turning briefings off in Settings disables automatic
   briefings; Settings can turn them back on. The Blocking and
   Parallel Universes briefing alone includes the pointed decision-tree artwork;
-  the modal scrolls internally so its rules and controls remain reachable.
+  the modal scrolls internally so its rules and controls remain reachable. Each
+  briefing can return to the main menu; an active series uses the standard
+  leave-series confirmation before discarding progress.
 - **The compact game HUD keeps every control inside the viewport.** Account
   remains near the front. Zoom, restart, and reporting share the `GameToolsMenu`
   trigger, while the Key and action log retain their own triggers. Compact
@@ -128,7 +130,7 @@ plain punctuation. Arrows, crosses, dice, and other board symbols remain valid
 when they carry rules information rather than joining sentences.
 
 `ScenarioSelect.tsx` owns the main Series/Single Plays switch and exposes
-Admin Mode as a third tab for allowlisted admins.
+Puzzle Creator as a third tab for allowlisted admins.
 
 - Series tab shows **Tutorial**, the default series row from
   `client/src/series/default.json`.
@@ -139,7 +141,7 @@ Admin Mode as a third tab for allowlisted admins.
 The identity gate and `home` mode use the tabletop-playbook visual shell:
 
 - `App.tsx` adds `app--landing` only to those two entry surfaces. Do not put it
-  on leaderboards, summaries, Admin Mode, or gameplay; it owns the felt/chalk
+  on leaderboards, summaries, Puzzle Creator, or gameplay; it owns the felt/chalk
   background and home theme tokens.
 - The home `UserMenu` is passed into `ScenarioSelect` and rendered inside its
   masthead. Non-home screens still render `UserMenu` as their existing sibling
@@ -205,7 +207,7 @@ for the battered Blood Bowl rulebook aesthetic. It changes presentation only;
 game, navigation, editor, auth, report, and leaderboard behavior remain in
 their owning components.
 
-- Every app root uses `app--playbook`, including Admin Mode. Gameplay also uses
+- Every app root uses `app--playbook`, including Puzzle Creator. Gameplay also uses
   `app--game`, leaderboard and score-summary screens use `app--archive`, the
   identity/home shell uses `app--landing`, and the editor uses `app--admin`.
 - `PlaybookTheme.css` is imported after `App.css` so its scoped theme rules win
@@ -298,7 +300,7 @@ directions — so keep them apart.
 | Question | Query | Hook | Governs |
 |---|---|---|---|
 | Is there room? | `(max-width: 1024px)` | `useCompactLayout()` | Side columns, board rotation, HUD labels, coordinate gutters, default zoom |
-| Can any connected input hover? | `(any-hover: hover)` | `useHoverCapable()` | Hover preview vs two-stage tap and the commit bar |
+| Can any connected input hover? | `(any-hover: hover)` | `useHoverCapable()` | Hover previews and commit-bar placement |
 | Is the pointer coarse? | `(pointer: coarse)` | *(CSS only)* | Hit-target sizes, nothing else |
 
 The two failures worth remembering:
@@ -347,17 +349,19 @@ instead of 26 — squares go from 11.2px to 23.4px on a 375px phone.
 - Zoom defaults on for coarse pointers, derived from the media query rather
   than stored, so the player's own choice still wins once they make one.
 
-### Two-stage tap
+### Plot, then confirm
 
 There is no hover on touch, and a tap emits a synthetic `mouseenter` before
 its click — so preview and commit used to land in one gesture and the player
-accepted risk they were never shown. On coarse pointers:
+accepted risk they were never shown. Every input now uses the same explicit
+decision:
 
-- hover-driven preview is disabled entirely;
-- the first tap on a reachable square arms and previews it;
-- the second tap, or the `.commit-bar` Confirm button, commits;
-- the armed key carries the piece id and squares already walked, so changing
-  selection or committing a step invalidates it without explicit clearing.
+- hover-capable pointers preview freely until a destination is clicked;
+- clicking or tapping a reachable square freezes the plotted route;
+- `.commit-bar` offers **Confirm Move** or **Plot Again**; clicking the pitch
+  again never bypasses that explicit choice;
+- the armed move carries the piece id and squares already walked, so changing
+  selection or committing a step invalidates a stale plot.
 
 `pathPreviewProb` (in `useGameState.ts`) gives the commit bar its odds. It
 mirrors the per-step maths in `handleSquareClick`, including GFI, dodge and
@@ -433,8 +437,10 @@ it expands to a 44px hit target on coarse pointers without gaining visual
 weight. On the home screen it sits beside a deliberately larger account
 trigger in a group anchored 10–12px from the masthead's top-right corner.
 Archive screens use the same control group in the fixed top-right position.
-`__BBT_VERSION__` comes from the root package version at build time (or
-`VITE_APP_VERSION` when supplied) and is displayed in About.
+`__BBT_VERSION__` comes from the root package version at build time and appends
+the first seven characters of Netlify's hexadecimal `COMMIT_REF` converted to
+decimal (or uses `VITE_APP_VERSION` unchanged when supplied). It is displayed
+in About.
 
 ### Published roster portraits
 
@@ -531,10 +537,12 @@ Blocking failures on the touchdown submit go to `SubmitModal`'s `error` prop
 instead, which keeps the dialog open with a retry button so the player doesn't
 silently lose a run.
 
-On touch devices, the move-confirm bar below the pitch remains mounted as an
-invisible placeholder while no square is armed. Its probability label also
-keeps its space for safe routes. This holds the bar to the same height in idle,
-safe-preview, and risky-preview states so the pitch never resizes between taps.
+On non-hovering devices, the move-confirm bar below the pitch remains mounted
+as an invisible placeholder while no square is armed. Its probability label
+also keeps its space for safe routes. This holds the bar to the same height in
+idle, safe-preview, and risky-preview states so the pitch never resizes between
+taps. Hover-capable layouts show the armed bar as a fixed overlay instead, so
+the pitch also remains stable there.
 
 The game HUD keeps the success-chance readout mounted as an invisible 100%
 placeholder until a roll is involved. Reserving the readout's final dimensions

@@ -10,7 +10,7 @@ task.
 | Movement, dodges, pass, handoff, blocks, dice logging | `game-rules-engine.md` |
 | Scenario JSON, published puzzles, series order | `scenarios-and-series.md` |
 | Google login, guest identity, leaderboards, score integrity | `leaderboard-and-auth.md` |
-| Admin Mode, puzzle editor, local save API | `puzzle-editor.md` |
+| Puzzle Creator, puzzle editor, local save API | `puzzle-editor.md` |
 | Netlify build, redirects, production functions, headers, analytics | `netlify-deploy.md` |
 | Verification commands, tests, PR conflicts | `testing-and-pr-workflow.md` |
 
@@ -26,4 +26,3 @@ Keep these docs factual and current. Put plans in `spec.md`, where every section
 carries a **Status** line — check it before treating a section as outstanding
 work. Once a feature ships, move the durable facts into the matching context doc
 and update its Status.
-

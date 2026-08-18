@@ -46,7 +46,7 @@ Guest flow:
 
 ## Admin Access
 
-- Empty or unset `ADMIN_EMAILS` means Admin Mode is unrestricted; the matching
+- Empty or unset `ADMIN_EMAILS` means Puzzle Creator is unrestricted; the matching
   empty `VITE_ADMIN_EMAILS` makes the tab visible to everyone.
 - A non-empty `ADMIN_EMAILS` requires a verified Google account whose email is
   listed. Guests cannot satisfy a configured allowlist.

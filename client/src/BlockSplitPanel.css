@@ -12,6 +12,8 @@
 .block-split__dice-graphic {
   margin: 2px 0 0;
   gap: 14px;
+  min-height: 104px;
+  overflow: hidden;
 }
 
 .block-split__possible {

@@ -2,18 +2,16 @@ import { test, expect } from '@playwright/test';
 import { startGame, canHover } from './helpers';
 
 /**
- * The two-stage tap contract.
+ * The plot-then-confirm contract.
  *
  * On a mouse the path preview follows hover, so the player sees the dodge
  * rolls and the running success chance before clicking. On touch there is no
- * hover: the synthetic mouseenter fires immediately before click, so preview
- * and commit used to land in the same tap and the player accepted risk they
- * were never shown. That is a game-design break in a puzzle about evaluating
- * risk, which is why it gets its own spec rather than living in layout.
+ * hover, so tapping plots the route and the same explicit controls used by
+ * mouse play decide whether to commit it or plot again.
  */
-test.describe('touch: preview before commit', () => {
+test.describe('touch: plot before commit', () => {
   test.beforeEach(async ({ page }) => {
-    test.skip(await canHover(page), 'the two-stage tap is for pointers that cannot hover');
+    test.skip(await canHover(page), 'this suite covers pointers that cannot hover');
     await startGame(page);
   });
 
@@ -38,7 +36,7 @@ test.describe('touch: preview before commit', () => {
    */
   async function remainingMa(page: import('@playwright/test').Page): Promise<number | null> {
     const status = await page.locator('.hud__status').textContent();
-    const match = status?.match(/(\d+) MA left/);
+    const match = status?.match(/(\d+) MA (?:left|remaining)/);
     return match ? Number(match[1]) : null;
   }
 
@@ -57,7 +55,7 @@ test.describe('touch: preview before commit', () => {
     expect(await remainingMa(page), 'the first tap spent movement').toBe(maBefore);
   });
 
-  test('the second tap on the same square commits the move', async ({ page }) => {
+  test('a second tap cannot bypass Confirm Move', async ({ page }) => {
     await selectAndMove(page);
     const maBefore = await remainingMa(page);
 
@@ -72,12 +70,18 @@ test.describe('touch: preview before commit', () => {
 
     await page.locator(`.square[data-square="${targetSquare}"]`).tap();
 
+    await expect(page.locator('.commit-bar')).toBeVisible();
+    await expect(page.locator('.square--path')).toHaveCount(0);
+    expect(await remainingMa(page), 'the second tap spent movement').toBe(maBefore);
+
+    await page.locator('.commit-bar').getByRole('button', { name: 'Confirm Move' }).tap();
+
     await expect(page.locator('.commit-bar')).toBeHidden();
     // The destination is now a walked square on the committed path.
     await expect(page.locator(`.square[data-square="${targetSquare}"]`))
       .toHaveClass(/square--path/);
     const maAfter = await remainingMa(page);
-    expect(maAfter, 'the second tap committed no movement').not.toBe(maBefore);
+    expect(maAfter, 'Confirm Move committed no movement').not.toBe(maBefore);
   });
 
   test('arming a move shows a confirm bar naming the destination', async ({ page }) => {
@@ -88,8 +92,8 @@ test.describe('touch: preview before commit', () => {
     await expect(bar).toBeVisible();
     // "Move to 12H" — the same square name the board and aria-labels use.
     await expect(bar.locator('.commit-bar__square')).toHaveText(/^Move to \d+[A-O]$/);
-    await expect(bar.getByRole('button', { name: /confirm/i })).toBeVisible();
-    await expect(bar.getByRole('button', { name: /cancel/i })).toBeVisible();
+    await expect(bar.getByRole('button', { name: 'Confirm Move' })).toBeVisible();
+    await expect(bar.getByRole('button', { name: 'Plot Again' })).toBeVisible();
   });
 
   test('arming the confirm bar does not resize the pitch', async ({ page }) => {
@@ -107,12 +111,12 @@ test.describe('touch: preview before commit', () => {
     expect(after, 'the pitch moved or resized when the confirm bar appeared').toEqual(before);
   });
 
-  test('cancelling an armed move commits nothing', async ({ page }) => {
+  test('Plot Again clears an armed move and commits nothing', async ({ page }) => {
     await selectAndMove(page);
     const maBefore = await remainingMa(page);
 
     await page.locator('.square--reachable').last().tap();
-    await page.locator('.commit-bar').getByRole('button', { name: /cancel/i }).tap();
+    await page.locator('.commit-bar').getByRole('button', { name: 'Plot Again' }).tap();
 
     await expect(page.locator('.commit-bar')).toBeHidden();
     await expect(page.locator('.square--path')).toHaveCount(0);

@@ -82,11 +82,15 @@ Block dice use **Parallel Universes** as the only player-facing resolution
 model. The retired outcome checklist and `blockBranching` preference no longer
 select a second rules path. Internally the implementation retains its branch
 types/files: a block creates one playable universe per distinct live resulting
-board, turnover mass is dead, legal actions replay across lockstep siblings,
-and every universe must score or be conceded before the run completes. The
-score is the summed weight of scoring universes. Series submissions carry the
-same tree as individual submissions so `shared/scoreValidation.js` recomputes
-the expected-value score and fractional dice tie-break.
+board, turnover mass is dead, and every universe must score or be conceded
+before the run completes. Legal actions replay across lockstep siblings only
+while they add no more rolls than the action authored on the viewed board. If a
+sibling would introduce another dodge, Rush, pickup, or other roll, none of
+that action is recorded there: it leaves lockstep as **Needs a plan** at the
+pre-action state. The score is the summed weight of scoring universes. Series
+submissions carry the same tree as individual submissions so
+`shared/scoreValidation.js` recomputes the expected-value score and fractional
+dice tie-break.
 
 - A plain Block targets an adjacent standing opponent without movement.
 - A Blitz chooses a reachable standing opponent first, moves into contact,
@@ -203,8 +207,10 @@ once in a turn (defender not pushed off it) shows only the most recent
 block's outcome, matching the movement-dice overwrite-on-repeat convention.
 `BlockDiceGraphic.tsx`'s `BlockFaceGraphic` renders the resolved-face marker;
 its sibling `BlockDiceGraphic` is a pre-roll preview that animates each die
-through all five block-face types, with a static Push face under
-`prefers-reduced-motion`. Both use the generated worn-iron WebP faces in
+as an independently randomized downward throw: drift, timing, spin, bounce,
+and shuffled settling face vary per die while all five face types remain in
+the preview. It falls back to a static Push face under `prefers-reduced-motion`.
+Both use the generated worn-iron WebP faces in
 `assets/block-dice/`; picker advantage remains a CSS outline rather than a
 second image set. No single face is "the" result yet.
 

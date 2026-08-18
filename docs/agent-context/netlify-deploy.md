@@ -149,7 +149,7 @@ JavaScript origins.
 ### Editor access defaults open without an allowlist
 
 `netlify/functions/auth.js` and `server/auth.js` both treat an empty or unset
-`ADMIN_EMAILS` as unrestricted Admin Mode. Once the allowlist contains an
+`ADMIN_EMAILS` as unrestricted Puzzle Creator access. Once the allowlist contains an
 address, every `/api/editor/*` route requires a verified matching Google user.
 Set `EDITOR_ALLOW_UNAUTHENTICATED=false` to opt a deployment into returning 503
 when its allowlist is empty.

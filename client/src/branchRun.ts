@@ -10,10 +10,10 @@
  * Two ideas carry the design:
  *
  * - **Lockstep.** Branches created by the same block share a `lockstepId` and
- *   move together: one authored click is replayed into all of them, with roll
- *   targets recomputed against each branch's own board. A branch that can no
- *   longer follow leaves the group and is flagged for the player's attention.
- *   That is what makes a typical block cost zero extra authoring.
+ *   move together while the same authored click stays legal without adding
+ *   rolls beyond the viewed branch. Roll targets are recomputed against each
+ *   board, but a branch that becomes illegal or riskier leaves the group before
+ *   recording the click and is flagged for the player's attention.
  * - **Derived weight.** Nothing here stores a probability per branch. The tree
  *   in blockBranchTree.ts computes values bottom-up and weights top-down, so
  *   `runSummary` is always the honest current picture — including weights
@@ -38,7 +38,7 @@ import {
 } from './useGameState';
 import { blockBoardStates, type BlockBoardState, type BlockResolution } from './blockBranching';
 import { branchSummary, type BranchSummary, type LineNode } from './blockBranchTree';
-import { replayClick } from './branchReplay';
+import { addedRollCount, replayClick } from './branchReplay';
 import { summarizeActionLog } from './riskyMoves';
 
 /** One authored segment: a board plus how it relates to the rest of the run. */
@@ -169,8 +169,10 @@ export function selectBranch(run: BranchRun, id: string): BranchRun {
  * branch's lockstep group.
  *
  * `apply` runs on the viewed board; `replay` decides whether a sibling can
- * follow. Siblings that cannot are flagged and given their own lockstep id, so
- * later actions no longer touch them.
+ * follow. A legal replay is still refused if it introduces more rolls than the
+ * viewed action: the sibling stays at the exact decision point where its safer
+ * route needs separate authoring. Refused siblings get their own lockstep id,
+ * so later actions no longer touch them.
  */
 function authorAcrossGroup(
   run: BranchRun,
@@ -182,13 +184,16 @@ function authorAcrossGroup(
 
   const nextViewedState = apply(viewed.state);
   if (nextViewedState === viewed.state) return run;
+  const allowedAddedRolls = addedRollCount(viewed.state, nextViewedState);
 
   const updates: RunLine[] = [{ ...viewed, state: nextViewedState, needsAttention: false }];
   let seq = run.seq;
 
   for (const sibling of lockstepGroup(run, viewed)) {
     const replayed = replay(sibling.state);
-    if (replayed) {
+    const addsNoExtraRolls = replayed
+      && addedRollCount(sibling.state, replayed) <= allowedAddedRolls;
+    if (replayed && addsNoExtraRolls) {
       updates.push({ ...sibling, state: replayed });
     } else {
       // Out of lockstep from here on: its own group, and flagged so the branch

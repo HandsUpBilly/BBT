@@ -17,8 +17,8 @@ describe('CommitBar', () => {
 
     expect(bar?.classList.contains('commit-bar--placeholder')).toBe(true);
     expect(bar?.getAttribute('aria-hidden')).toBe('true');
-    expect((screen.getByRole('button', { name: 'Cancel', hidden: true }) as HTMLButtonElement).disabled).toBe(true);
-    expect((screen.getByRole('button', { name: 'Confirm', hidden: true }) as HTMLButtonElement).disabled).toBe(true);
+    expect((screen.getByRole('button', { name: 'Plot Again', hidden: true }) as HTMLButtonElement).disabled).toBe(true);
+    expect((screen.getByRole('button', { name: 'Confirm Move', hidden: true }) as HTMLButtonElement).disabled).toBe(true);
   });
 
   it('uses the same structure for an armed move and exposes its actions', () => {
@@ -37,8 +37,8 @@ describe('CommitBar', () => {
     expect(container.firstElementChild?.classList.contains('commit-bar--placeholder')).toBe(false);
     expect(screen.getByText('Move to 12H')).toBeTruthy();
     expect(screen.getByText('42% success').classList.contains('commit-bar__prob--risky')).toBe(true);
-    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Confirm' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Plot Again' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Confirm Move' }));
     expect(onCancel).toHaveBeenCalledOnce();
     expect(onConfirm).toHaveBeenCalledOnce();
   });

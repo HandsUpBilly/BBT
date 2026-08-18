@@ -28,9 +28,8 @@ test.describe('action log', () => {
       const reachable = page.locator('.square--reachable');
       if (await reachable.count() === 0) break;
       const target = reachable.last();
-      const square = await target.getAttribute('data-square');
       await target.tap();
-      await page.locator(`.square[data-square="${square}"]`).tap();
+      await page.locator('.commit-bar').getByRole('button', { name: 'Confirm Move' }).tap();
     }
   }
 
@@ -56,7 +55,7 @@ test.describe('action log', () => {
     await page.locator('.action-log-menu__trigger').tap();
     await expect(page.locator('.action-log-menu__dropdown')).toBeVisible();
 
-    await page.locator('.hud__prob').tap();
+    await page.locator('.status-strip').tap();
     await expect(page.locator('.action-log-menu__dropdown')).toBeHidden();
   });
 

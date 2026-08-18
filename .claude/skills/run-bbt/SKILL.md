@@ -107,8 +107,8 @@ ss 02-home
 ```
 
 `02-home` should show the "TURN 16" masthead, the guest name in the header
-menu, and the featured playbook card ("Humans vs Orcs: Touchdown or Bust")
-with Series / Single Plays / Admin Mode tabs.
+menu, and the featured playbook card ("Humans vs Orcs: The Nuffle Shuffle")
+with Series / Single Plays / Puzzle Creator tabs.
 
 ## Run (human path)
 

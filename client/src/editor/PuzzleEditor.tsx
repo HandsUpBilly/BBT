@@ -14,7 +14,7 @@ const COLS = PITCH.maxCol + 1;
 const ROWS = PITCH.maxRow + 1;
 const EMPTY_SERIES: SeriesDefinition = {
   id: 'default',
-  name: 'Humans vs Orcs: Touchdown or Bust',
+  name: 'Humans vs Orcs: The Nuffle Shuffle',
   description: '',
   scenarioIds: [],
 };
@@ -198,6 +198,28 @@ export function PuzzleEditor({ onBack, onPlay, previewScenario, idToken }: Props
     setOriginalId(undefined);
     setSelectedPieceId(null);
     setStatus(`Duplicated as ${nextId}. Save As New to keep it.`);
+  }
+
+  function requestDiscardUnsavedChanges() {
+    if (!hasUnsavedChanges) return;
+    setConfirm({
+      title: 'Discard unsaved changes?',
+      message: savedDraft
+        ? `Restore "${savedDraft.name}" to its last saved draft?`
+        : `Clear the unsaved puzzle "${draft.name}" and start with a blank draft?`,
+      confirmLabel: 'Discard Changes',
+      destructive: true,
+      run: () => {
+        const restored = savedDraft ? cloneScenario(savedDraft) : emptyScenario(existingIds);
+        setDraft(restored);
+        setOriginalId(savedDraft?.id);
+        setSelectedPieceId(null);
+        setBallTool(false);
+        setStatus(savedDraft
+          ? `Discarded unsaved changes to ${savedDraft.id}.`
+          : 'Discarded the unsaved puzzle draft.');
+      },
+    });
   }
 
   function setMetadata<K extends keyof Scenario>(keyName: K, value: Scenario[K]) {
@@ -430,7 +452,7 @@ export function PuzzleEditor({ onBack, onPlay, previewScenario, idToken }: Props
 
   return (
     <div className="editor">
-      <nav className="editor__sections" role="tablist" aria-label="Admin sections">
+      <nav className="editor__sections" role="tablist" aria-label="Puzzle Creator sections">
         <button
           className={`editor__section-tab${adminSection === 'editor' ? ' editor__section-tab--active' : ''}`}
           type="button"
@@ -753,6 +775,13 @@ export function PuzzleEditor({ onBack, onPlay, previewScenario, idToken }: Props
             </button>
             <button className="btn btn--secondary" disabled={saving || validationErrors.length > 0} onClick={() => { void saveScenario(false); }}>
               Save As New
+            </button>
+            <button
+              className="btn btn--secondary"
+              disabled={saving || !hasUnsavedChanges}
+              onClick={requestDiscardUnsavedChanges}
+            >
+              Discard Unsaved Changes
             </button>
             <button className="btn btn--ghost" disabled={saving || !originalId} onClick={requestDelete}>
               Delete Puzzle

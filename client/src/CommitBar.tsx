@@ -40,7 +40,7 @@ export function CommitBar({
           disabled={isPlaceholder}
           onClick={onCancel}
         >
-          Cancel
+          Plot Again
         </button>
         <button
           type="button"
@@ -48,7 +48,7 @@ export function CommitBar({
           disabled={isPlaceholder}
           onClick={onConfirm}
         >
-          Confirm
+          Confirm Move
         </button>
       </div>
     </div>

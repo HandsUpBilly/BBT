@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { GameState } from './types';
 import { applyClick, classifyClick } from './useGameState';
-import { boardHash, groupByBoard, replayAcrossBranches, replayClick } from './branchReplay';
+import { addedRollCount, boardHash, groupByBoard, replayAcrossBranches, replayClick } from './branchReplay';
 import { makeState, humanBlocker, orcBlocker, humanThrower } from './test/gameState';
 
 /** Board with a human carrier at (7,10) and one orc marking it at (7,9). */
@@ -154,6 +154,20 @@ describe('replayClick', () => {
   });
 });
 
+describe('addedRollCount', () => {
+  it('counts the rolls a replay adds, including multiple tests on movement', () => {
+    const proneBranch = select(markedCarrier({ down: true }), 7, 10);
+    const standingBranch = select(markedCarrier(), 7, 10);
+    const target = { col: 7, row: 8 };
+
+    const safe = applyClick(proneBranch, target);
+    const risky = applyClick(standingBranch, target);
+
+    expect(addedRollCount(proneBranch, safe)).toBe(0);
+    expect(addedRollCount(standingBranch, risky)).toBe(2);
+  });
+});
+
 describe('replayAcrossBranches', () => {
   it('splits a lockstep group into advanced and flagged', () => {
     const branches = [
@@ -162,7 +176,7 @@ describe('replayAcrossBranches', () => {
     ];
     const target = { col: 0, row: 0 };
 
-    const { advanced, flagged } = replayAcrossBranches(branches, target, 'commit-move');
+    const { advanced, flagged } = replayAcrossBranches(branches, target, 'commit-move', 0);
 
     // Nobody can reach the far corner, so both fall out together.
     expect(advanced).toHaveLength(0);
@@ -171,7 +185,7 @@ describe('replayAcrossBranches', () => {
 
   it('leaves a flagged branch on its own board so it can be authored from there', () => {
     const branch = { id: 'pushed', state: select(markedCarrier(), 7, 10) };
-    const { flagged } = replayAcrossBranches([branch], { col: 0, row: 0 }, 'commit-move');
+    const { flagged } = replayAcrossBranches([branch], { col: 0, row: 0 }, 'commit-move', 0);
 
     expect(flagged[0].state).toBe(branch.state);
   });
@@ -182,10 +196,25 @@ describe('replayAcrossBranches', () => {
       { id: 'b', state: select(markedCarrier(), 7, 10) },
     ];
 
-    const { advanced, flagged } = replayAcrossBranches(branches, { col: 7, row: 11 }, 'commit-move');
+    // Both identical boards add the same one dodge roll, so they stay together.
+    const { advanced, flagged } = replayAcrossBranches(branches, { col: 7, row: 11 }, 'commit-move', 1);
 
     expect(flagged).toHaveLength(0);
     expect(advanced.map(b => b.id)).toEqual(['a', 'b']);
     expect(advanced.every(b => b.state.committedPath.length === 1)).toBe(true);
+  });
+
+  it('leaves a legal branch untouched when replay would add another roll', () => {
+    const branch = { id: 'standing', state: select(markedCarrier(), 7, 10) };
+    const target = { col: 7, row: 8 };
+
+    const { advanced, flagged } = replayAcrossBranches(
+      [branch], target, classifyClick(branch.state, target), 0,
+    );
+
+    expect(advanced).toHaveLength(0);
+    expect(flagged).toHaveLength(1);
+    expect(flagged[0].state).toBe(branch.state);
+    expect(flagged[0].failure).toMatchObject({ reason: 'extra-rolls', added: 2, allowed: 0 });
   });
 });
