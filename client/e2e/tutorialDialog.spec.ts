@@ -49,7 +49,7 @@ test('the Parallel Universes briefing shows its decision tree without breaking t
   await expect(beginButton).toBeVisible();
 });
 
-test('a phone can reopen a previously seen Tutorial briefing from Game Tools', async ({ page }) => {
+test('seen history never suppresses a phone briefing and Game Tools can reopen it', async ({ page }) => {
   test.skip((page.viewportSize()?.width ?? 0) > 1024, 'Game Tools is the compact-screen route');
 
   await page.addInitScript((scenarioId) => {
@@ -80,8 +80,11 @@ test('a phone can reopen a previously seen Tutorial briefing from Game Tools', a
   await page.getByRole('button', { name: /^continue$/i }).click();
   await page.getByRole('button', { name: /start series/i }).click();
 
-  await expect(page.getByRole('dialog', { name: 'Blocking and Parallel Universes' })).toHaveCount(0);
+  const dialog = page.getByRole('dialog', { name: 'Blocking and Parallel Universes' });
+  await expect(dialog).toBeVisible();
+  await dialog.getByRole('button', { name: 'Begin Puzzle' }).click();
+  await expect(dialog).toHaveCount(0);
   await page.getByRole('button', { name: 'Game tools' }).click();
   await page.getByRole('menuitem', { name: 'Tutorial briefing' }).click();
-  await expect(page.getByRole('dialog', { name: 'Blocking and Parallel Universes' })).toBeVisible();
+  await expect(dialog).toBeVisible();
 });

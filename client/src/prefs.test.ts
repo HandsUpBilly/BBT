@@ -49,15 +49,9 @@ describe('writing and reading back', () => {
     expect(readPrefs('user-1')).toEqual({ pitchSurface: 'slate', showCoordinates: false });
   });
 
-  it('persists tutorial guidance and seen lessons', () => {
-    writePrefs('user-1', {
-      showTutorialGuidance: false,
-      seenTutorialLessons: ['scenario-001', 'scenario-004'],
-    });
-    expect(readPrefs('user-1')).toEqual({
-      showTutorialGuidance: false,
-      seenTutorialLessons: ['scenario-001', 'scenario-004'],
-    });
+  it('persists the tutorial guidance choice', () => {
+    writePrefs('user-1', { showTutorialGuidance: false });
+    expect(readPrefs('user-1')).toEqual({ showTutorialGuidance: false });
   });
 
   it('persists an avatar data URL', () => {
@@ -101,14 +95,14 @@ describe('tolerating junk', () => {
     expect(readPrefs('user-1')).toEqual({});
   });
 
-  it('sanitizes tutorial preferences and deduplicates current lesson ids', () => {
+  it('drops obsolete seen-lesson history and invalid tutorial preferences', () => {
     storage.setItem(KEY, JSON.stringify({
       'user-1': {
         showTutorialGuidance: 'yes',
         seenTutorialLessons: ['scenario-001', 'obsolete', 'scenario-001', 4],
       },
     }));
-    expect(readPrefs('user-1')).toEqual({ seenTutorialLessons: ['scenario-001'] });
+    expect(readPrefs('user-1')).toEqual({});
   });
 
   it('ignores an avatar value that is not a data:image URL', () => {

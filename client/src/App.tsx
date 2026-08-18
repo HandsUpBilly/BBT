@@ -338,19 +338,14 @@ export default function App() {
   const queueTutorialLesson = useCallback((scenario: Scenario, step: number) => {
     const lesson = tutorialLessonFor(scenario.id);
     const guidanceEnabled = prefs.showTutorialGuidance ?? true;
-    const alreadySeen = prefs.seenTutorialLessons?.includes(scenario.id) ?? false;
-    setTutorialLesson(lesson && guidanceEnabled && !alreadySeen ? { lesson, step } : null);
-  }, [prefs.showTutorialGuidance, prefs.seenTutorialLessons]);
+    setTutorialLesson(lesson && guidanceEnabled ? { lesson, step } : null);
+  }, [prefs.showTutorialGuidance]);
 
   const dismissTutorialLesson = useCallback((disableFutureLessons: boolean) => {
     if (!tutorialLesson) return;
-    const seen = [...new Set([...(prefs.seenTutorialLessons ?? []), tutorialLesson.lesson.scenarioId])];
-    setPrefs({
-      seenTutorialLessons: seen,
-      ...(disableFutureLessons ? { showTutorialGuidance: false } : {}),
-    });
+    if (disableFutureLessons) setPrefs({ showTutorialGuidance: false });
     setTutorialLesson(null);
-  }, [prefs.seenTutorialLessons, setPrefs, tutorialLesson]);
+  }, [setPrefs, tutorialLesson]);
 
   const showCurrentTutorialLesson = useCallback(() => {
     if (appMode !== 'series-puzzle' || !activeScenario || !seriesRun) return;
@@ -1090,10 +1085,7 @@ export default function App() {
           showCoordinates={prefs.showCoordinates ?? true}
           onShowCoordinatesChange={showCoordinates => setPrefs({ showCoordinates })}
           showTutorialGuidance={prefs.showTutorialGuidance ?? true}
-          onShowTutorialGuidanceChange={showTutorialGuidance => setPrefs({
-            showTutorialGuidance,
-            ...(showTutorialGuidance ? { seenTutorialLessons: [] } : {}),
-          })}
+          onShowTutorialGuidanceChange={showTutorialGuidance => setPrefs({ showTutorialGuidance })}
           onBack={() => setAppMode(settingsReturnMode)}
         />
         {notice}

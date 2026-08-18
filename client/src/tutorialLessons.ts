@@ -73,13 +73,7 @@ export const TUTORIAL_LESSONS: readonly TutorialLesson[] = [
 export const TUTORIAL_LESSON_IDS = TUTORIAL_LESSONS.map(lesson => lesson.scenarioId);
 
 const LESSON_BY_SCENARIO = new Map(TUTORIAL_LESSONS.map(lesson => [lesson.scenarioId, lesson]));
-const LESSON_ID_SET = new Set(TUTORIAL_LESSON_IDS);
 
 export function tutorialLessonFor(scenarioId: string): TutorialLesson | undefined {
   return LESSON_BY_SCENARIO.get(scenarioId);
-}
-
-export function sanitizeTutorialLessonIds(value: unknown): string[] {
-  if (!Array.isArray(value)) return [];
-  return [...new Set(value.filter((id): id is string => typeof id === 'string' && LESSON_ID_SET.has(id)))];
 }
