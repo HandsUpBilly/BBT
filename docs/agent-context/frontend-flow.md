@@ -101,12 +101,11 @@ public avatars).
   labels default on and can be hidden without changing square names in DOM,
   action logs, accessibility labels, or written solutions.
 - **Tutorial rules briefings are local and identity-keyed.** The Tutorial
-  series opens one focus-trapped briefing before each unseen puzzle. Single
-  Plays and editor previews never open briefings. `showTutorialGuidance` defaults on and
-  `seenTutorialLessons` records current scenario ids in `bbt.prefs.v1`.
-  Dismissing a briefing marks only that briefing seen. Its opt-out disables all
-  later briefings. Settings can turn briefings off. Turning them back on clears
-  the seen list so the Tutorial restarts from drill one. The Blocking and
+  series opens one focus-trapped briefing before every puzzle. Single Plays
+  and editor previews never open briefings. `showTutorialGuidance` defaults on.
+  Reading or dismissing a briefing never suppresses it on a later run. Only
+  checking its opt-out or turning briefings off in Settings disables automatic
+  briefings; Settings can turn them back on. The Blocking and
   Parallel Universes briefing alone includes the pointed decision-tree artwork;
   the modal scrolls internally so its rules and controls remain reachable.
 - **The compact game HUD keeps every control inside the viewport.** Account

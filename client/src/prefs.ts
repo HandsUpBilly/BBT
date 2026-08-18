@@ -19,7 +19,6 @@
  */
 
 import { AVATAR_MAX_DATA_URL_LENGTH } from './avatarImage';
-import { sanitizeTutorialLessonIds } from './tutorialLessons';
 
 export const GUEST_PREFS_KEY = 'guest';
 
@@ -35,7 +34,6 @@ export interface PlayerPrefs {
   /** A `data:image/webp;base64,...` URL produced by avatarImage.ts. */
   avatar?: string;
   showTutorialGuidance?: boolean;
-  seenTutorialLessons?: string[];
 }
 
 type PrefsMap = Record<string, PlayerPrefs>;
@@ -64,9 +62,6 @@ function sanitizePrefs(value: unknown): PlayerPrefs | null {
   if (typeof candidate.showCoordinates === 'boolean') prefs.showCoordinates = candidate.showCoordinates;
   if (typeof candidate.showTutorialGuidance === 'boolean') {
     prefs.showTutorialGuidance = candidate.showTutorialGuidance;
-  }
-  if (Array.isArray(candidate.seenTutorialLessons)) {
-    prefs.seenTutorialLessons = sanitizeTutorialLessonIds(candidate.seenTutorialLessons);
   }
   if (isAvatarDataUrl(candidate.avatar)) prefs.avatar = candidate.avatar;
   return prefs;

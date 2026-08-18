@@ -4818,7 +4818,7 @@ preserve every fact below and add no unsupported Blood Bowl rules.
 | `client/src/series/default.json` | Rename the series to Tutorial, use the decided order, and list the six drills. |
 | New `client/src/tutorialLessons.ts` | Own the closed lesson/scenario id mapping, ordered typed content, current-id sanitization helpers, and lookup. No React and no alternate scenario titles. |
 | New `client/src/TutorialLessonDialog.tsx` plus scoped CSS | Render the accessible, responsive lesson modal and global opt-out checkbox. |
-| `client/src/prefs.ts` | Persist `showTutorialGuidance` and bounded `seenTutorialLessons`; ignore obsolete `blockBranching` on sanitized reads. |
+| `client/src/prefs.ts` | Persist only the explicit `showTutorialGuidance` choice; ignore obsolete `seenTutorialLessons` and `blockBranching` on sanitized reads. |
 | `client/src/SettingsScreen.tsx` | Add the Rules briefings switch and remove Experimental block settings. Re-enabling resets seen lessons. |
 | `client/src/App.tsx` | Open lessons only at Tutorial puzzle entry/advance, record dismissal/opt-out, use one `useBranchRun` model, and route flat versus Parallel Universes completion correctly for standalone and series play. |
 | `client/src/BranchStrip.tsx`, `BranchRunSummary.tsx`, `Pitch.tsx`, `BlockSplitPanel.tsx` | Adopt player-facing universe terminology while preserving the proven internal branch model and calculations. |
