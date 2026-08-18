@@ -63,10 +63,13 @@ test('uses a compact action sheet and reveals complete player stats', async ({ p
 });
 
 test('keeps Parallel Universe selectors below the HUD and within the screen', async ({ page }) => {
-  await page.locator('.square[data-square="7F"] .piece').click({ force: true });
+  // Cedric has Block, so Both Down leaves a live "Down in place" universe.
+  // Following up in the pushed universe then places Cedric on the square
+  // where the alternate defender ghost remains — the overlap regression.
+  await page.locator('.square[data-square="7G"] .piece').click({ force: true });
   await page.locator('.piece-menu__item', { hasText: 'Block' }).locator('input').check({ force: true });
   await page.locator('.piece-menu__confirm').click({ force: true });
-  await page.locator('.square[data-square="6F"]').click({ force: true });
+  await page.locator('.square[data-square="6G"]').click({ force: true });
 
   const blockDice = page.getByRole('dialog').locator('.block-die-icon__face');
   await expect(blockDice.first()).toBeVisible();
@@ -86,4 +89,20 @@ test('keeps Parallel Universe selectors below the HUD and within the screen', as
   }));
   expect(list.clientWidth).toBeGreaterThan(0);
   expect(list.scrollWidth).toBeGreaterThanOrEqual(list.clientWidth);
+
+  await page.locator('.square--push-target').first().click({ force: true });
+  await page.getByRole('button', { name: 'Follow Up' }).click({ force: true });
+
+  const ghost = page.locator('.piece--branch-ghost').first();
+  await expect(ghost).toBeVisible();
+  expect(await ghost.evaluate(element => getComputedStyle(element).position),
+    'branch ghosts must overlay other square contents instead of joining the flex row').toBe('absolute');
+
+  const squareBox = await boxOf(ghost.locator('..'));
+  const ghostBox = await boxOf(ghost);
+  expect(ghostBox.width, 'the ghost token should keep its full width').toBeCloseTo(squareBox.width * 0.88, 0);
+  expect(ghostBox.left, 'the ghost should remain centred in its square')
+    .toBeCloseTo(squareBox.left + squareBox.width * 0.06, 0);
+  expect(ghostBox.top, 'the ghost should remain centred in its square')
+    .toBeCloseTo(squareBox.top + squareBox.height * 0.06, 0);
 });

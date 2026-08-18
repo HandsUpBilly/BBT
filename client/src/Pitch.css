@@ -856,6 +856,14 @@
  * are not currently looking at.
  */
 .piece--branch-ghost {
+  /* Branch ghosts describe another universe at the same board coordinate, so
+     they are an overlay rather than another occupant in the square's flex
+     row. Letting both 88%-wide tokens participate in that row made a real
+     piece and its ghost consume 176% of the square; overflow clipping then
+     left only half of each token visible. */
+  position: absolute;
+  top: 6%;
+  left: 6%;
   opacity: 0.22;
   pointer-events: none;
 }
