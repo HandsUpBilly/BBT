@@ -237,11 +237,9 @@
 .series-row__logo {
   position: relative;
   align-self: stretch;
-  display: grid;
-  grid-template-columns: 38px 84px;
+  display: flex;
   align-items: center;
-  justify-content: start;
-  gap: 10px;
+  justify-content: center;
   min-width: 0;
   border-right: 1px solid var(--color-border-subtle);
 }
@@ -253,8 +251,8 @@
   box-sizing: border-box;
   display: grid;
   place-items: center;
-  width: 84px;
-  height: 84px;
+  width: 112px;
+  height: 112px;
   padding: 4px;
   overflow: hidden;
   background: linear-gradient(145deg, #e5c777 0%, #8f5d24 34%, #d4ad58 62%, #5c371b 100%);
@@ -284,22 +282,6 @@
 .series-row:hover {
   background: var(--color-surface-3);
   border-color: #3a403a;
-}
-
-.series-row__number {
-  width: 38px;
-  min-height: 42px;
-  display: grid;
-  place-items: center;
-  color: #f4d888;
-  background: #442519;
-  border: 1px solid #c79844;
-  border-radius: 7px;
-  box-shadow: inset 0 0 0 2px rgba(242, 208, 125, 0.16), 0 3px 6px rgba(0, 0, 0, 0.25);
-  font-family: var(--font-display);
-  font-weight: 600;
-  font-variant-numeric: tabular-nums;
-  font-size: 1.2rem;
 }
 
 .series-row__body {
@@ -514,19 +496,9 @@
     padding: 26px 22px 24px;
   }
 
-  .series-row__logo {
-    grid-template-columns: 28px 64px;
-  }
-
   .series-row__crest {
-    width: 64px;
-    height: 64px;
-  }
-
-  .series-row__number {
-    width: 28px;
-    min-height: 40px;
-    font-size: 1.8rem;
+    width: 78px;
+    height: 78px;
   }
 
   .series-row__actions {
@@ -587,13 +559,6 @@
 
   .series-row {
     grid-template-columns: 1fr;
-  }
-
-  .series-row__number {
-    display: block;
-    padding-bottom: 8px;
-    border-right: 0;
-    border-bottom: 1px solid var(--color-border-subtle);
   }
 
   .series-row__actions,

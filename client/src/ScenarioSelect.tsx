@@ -182,7 +182,6 @@ export function ScenarioSelect({
         <section className="play-section">
           <div className="series-row">
             <div className="series-row__logo">
-              <span className="series-row__number" aria-hidden="true">01</span>
               {series.logo && SERIES_LOGOS[series.logo] ? (
                 <span className="series-row__crest">
                   <img src={SERIES_LOGOS[series.logo]} alt={`${series.name} logo`} />
@@ -190,7 +189,7 @@ export function ScenarioSelect({
               ) : null}
             </div>
             <div className="series-row__body">
-              <span className="series-row__eyebrow">Tutorial</span>
+              <span className="series-row__eyebrow">01 Tutorial</span>
               <h2 className="series-row__title">{series.name}</h2>
               <p className="series-row__desc">{series.description}</p>
               <div className="series-row__meta">{formatProgress(seriesProgress)}</div>
