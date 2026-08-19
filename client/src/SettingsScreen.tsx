@@ -272,8 +272,8 @@ export function SettingsScreen({
           <span>
             <strong>Rules briefings</strong>
             <small>
-              Show the briefing before each Tutorial puzzle. Switching this on
-              resets all briefings for the next Tutorial run.
+              Show the briefing before each Tutorial puzzle. Turn this off to
+              skip automatic briefings; turn it back on to show them again.
             </small>
           </span>
           <input

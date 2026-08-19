@@ -1,6 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import type { PlayerPiece } from './types';
-import { clampMenuPosition } from './menuPosition';
+import { placeMenuBesideAnchor } from './menuPosition';
+import type { MenuAnchor } from './menuPosition';
 import './PieceMenu.css';
 
 export interface PieceMenuAction {
@@ -11,8 +12,7 @@ export interface PieceMenuAction {
 
 interface Props {
   piece: PlayerPiece;
-  x: number; // px from left of viewport
-  y: number; // px from top of viewport
+  anchor: MenuAnchor;
   actions: PieceMenuAction[];
   // `moveFirst` reflects whether the "Move" checkbox was also checked.
   // Pass/Hand Off use it to choose movement-first vs immediate targeting;
@@ -36,18 +36,17 @@ export { ACTIONS as DEFAULT_ACTIONS };
 // Blitz always permits movement after its target is chosen.
 const EXCLUSIVE_KEYS = ['pass', 'handoff', 'block', 'blitz'];
 
-export function PieceMenu({ piece, x, y, actions, onAction, onDismiss }: Props) {
+export function PieceMenu({ piece, anchor, actions, onAction, onDismiss }: Props) {
   const ref = useRef<HTMLDivElement>(null);
   const [selected, setSelected] = useState<Set<string>>(new Set());
-  const [position, setPosition] = useState({ left: x + 4, top: y + 4 });
+  const [position, setPosition] = useState({ left: anchor.right + 8, top: anchor.top });
 
   useLayoutEffect(() => {
     const placeMenu = () => {
       if (!ref.current) return;
       const rect = ref.current.getBoundingClientRect();
-      setPosition(clampMenuPosition(
-        x,
-        y,
+      setPosition(placeMenuBesideAnchor(
+        anchor,
         rect.width,
         rect.height,
         window.innerWidth,
@@ -57,7 +56,7 @@ export function PieceMenu({ piece, x, y, actions, onAction, onDismiss }: Props) 
     placeMenu();
     window.addEventListener('resize', placeMenu);
     return () => window.removeEventListener('resize', placeMenu);
-  }, [x, y]);
+  }, [anchor]);
 
   // Dismiss on outside press. pointerdown rather than mousedown so touch is
   // handled first-hand rather than via the synthesised mouse event, matching

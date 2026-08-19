@@ -4653,11 +4653,16 @@ Universes**.
 
 The following decisions are fixed for this implementation:
 
-- Rename the default series to **Tutorial**.
+- Keep the featured series title **Humans X Orcs: The Nuffle Shuffle** and
+  label it **Tutorial** in the challenge screen.
 - Order its puzzles `scenario-001`, `scenario-004`, `scenario-002`,
   `scenario-003`, `scenario-005`, `scenario-006`.
 - Show lesson dialogs in `series-puzzle` mode and when the same scenario is
   opened through Single Plays. Editor previews remain excluded.
+- Disable action-menu choices until their tutorial drill introduces them:
+  Movement/Dodging expose Move, Hand-off adds Hand-off, Pass adds Pass, The
+  Drive keeps those three, and Blocking/Parallel Universes adds Block and
+  Blitz.
 - Parallel Universes is standard for every puzzle mode and every player. Remove
   the old block-outcome checklist and the experimental preference; this is not
   a gameplay option once this plan ships.
@@ -4822,7 +4827,7 @@ preserve every fact below and add no unsupported Blood Bowl rules.
 
 | Area | Responsibility |
 | --- | --- |
-| `client/src/series/default.json` | Rename the series to Tutorial, use the decided order, and list the six drills. |
+| `client/src/series/default.json` | Keep the featured title, use the Tutorial label in the challenge screen, and list the six drills in the decided order. |
 | New `client/src/tutorialLessons.ts` | Own the closed lesson/scenario id mapping, ordered typed content, current-id sanitization helpers, and lookup. No React and no alternate scenario titles. |
 | New `client/src/TutorialLessonDialog.tsx` plus scoped CSS | Render the accessible, responsive lesson modal and global opt-out checkbox. |
 | `client/src/prefs.ts` | Persist only the explicit `showTutorialGuidance` choice; ignore obsolete `seenTutorialLessons` and `blockBranching` on sanitized reads. |
@@ -4863,8 +4868,9 @@ preserve every fact below and add no unsupported Blood Bowl rules.
 
 ## Success Criteria
 
-- The home screen calls the default series **Tutorial**, and starting it plays
-  scenarios `001`, `004`, `002`, `003`, `005`, `006` with correct counters.
+- The home screen labels the featured series **Tutorial**, shows the title
+  **Humans X Orcs: The Nuffle Shuffle**, and starting it plays scenarios
+  `001`, `004`, `002`, `003`, `005`, `006` with correct counters.
 - Each unseen lesson appears before its Tutorial puzzle is interactive, once
   per identity/device; it never appears from Single Plays or editor preview.
 - Dismissing records only the current lesson, the dialog checkbox disables all

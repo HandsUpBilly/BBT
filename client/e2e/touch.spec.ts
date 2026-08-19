@@ -6,8 +6,8 @@ import { startGame, canHover } from './helpers';
  *
  * On a mouse the path preview follows hover, so the player sees the dodge
  * rolls and the running success chance before clicking. On touch there is no
- * hover, so the first tap previews and the second adds a waypoint. Confirmation
- * appears only after the completed route endpoint is double-tapped.
+ * hover, so the first tap previews and the second adds a waypoint. The player
+ * then taps that already-plotted endpoint once to expose the final decision.
  */
 test.describe('touch: plot before commit', () => {
   test.beforeEach(async ({ page }) => {
@@ -77,13 +77,12 @@ test.describe('touch: plot before commit', () => {
     expect(maAfter, 'the second tap added no waypoint').not.toBe(maBefore);
   });
 
-  test('double-tapping the completed endpoint shows the final decision', async ({ page }) => {
+  test('tapping the completed endpoint shows the final decision', async ({ page }) => {
     await selectAndMove(page);
     const target = page.locator('.square--reachable').last();
     const targetSquare = await target.getAttribute('data-square');
     await target.tap();
     const endpoint = page.locator(`.square[data-square="${targetSquare}"]`);
-    await endpoint.tap();
     await endpoint.tap();
     await endpoint.tap();
 
@@ -107,7 +106,6 @@ test.describe('touch: plot before commit', () => {
     const endpoint = page.locator(`.square[data-square="${targetSquare}"]`);
     await endpoint.tap();
     await endpoint.tap();
-    await endpoint.tap();
 
     await expect(decision).toBeVisible();
     const after = await pitch.boundingBox();
@@ -122,7 +120,6 @@ test.describe('touch: plot before commit', () => {
     const targetSquare = await target.getAttribute('data-square');
     await target.tap();
     const endpoint = page.locator(`.square[data-square="${targetSquare}"]`);
-    await endpoint.tap();
     await endpoint.tap();
     await endpoint.tap();
     await page.locator('.move-decision').getByRole('button', { name: 'Plot Again' }).tap();
@@ -147,7 +144,6 @@ test.describe('touch: plot before commit', () => {
     // Before this change the odds were only accumulated on commit, so the
     // player accepted risk the interface had never quantified.
     const endpoint = page.locator(`.square[data-square="${targetSquare}"]`);
-    await endpoint.tap();
     await endpoint.tap();
     await endpoint.tap();
     await expect(page.locator('.move-decision__prob')).toBeVisible();

@@ -8,6 +8,7 @@ import { Pitch } from './Pitch';
 import type { PitchOrientation } from './Pitch';
 import { PieceMenu } from './PieceMenu';
 import type { PieceMenuAction } from './PieceMenu';
+import type { MenuAnchor } from './menuPosition';
 import { PlayerPanel } from './PlayerPanel';
 import { ScenarioSelect } from './ScenarioSelect';
 import { SubmitModal } from './SubmitModal';
@@ -60,7 +61,6 @@ import './PlaybookTheme.css';
 const LOCAL_SCORE_KEY = 'bbt.localScores.v1';
 const GUEST_NAME_KEY = 'bbt.guestName.v1';
 const GOOGLE_ALIASES_KEY = 'bbt.googleAliases.v1';
-const DOUBLE_CLICK_WINDOW_MS = 500;
 
 // Client-side allowlist controlling whether the "Puzzle Creator" tab is shown at
 // all — this is a UX nicety only, NOT the security boundary. The actual write
@@ -556,7 +556,7 @@ export default function App() {
 
   // ── Plot the route, then confirm once ─────────────────────────────────────
   // Intermediate waypoints commit provisionally so the player can keep shaping
-  // the route. Double-clicking the route tip marks the whole move as finished;
+  // the route. Clicking the already-plotted route tip marks the move finished;
   // only then does the final Confirm Move / Plot Again choice appear.
   const [armedMove, setArmedMove] = useState<{
     context: string;
@@ -566,7 +566,6 @@ export default function App() {
     context: string;
     destination: Position;
   } | null>(null);
-  const lastFinishClickRef = useRef<{ token: string; at: number } | null>(null);
   const movementContext = state.selectedPieceId
     ? `${state.selectedPieceId}:${state.walkedSquares.length}`
     : null;
@@ -580,32 +579,20 @@ export default function App() {
   const disarm = useCallback(() => {
     setArmedMove(null);
     setFinishedMove(null);
-    lastFinishClickRef.current = null;
   }, []);
 
-  const finishOnDoubleClick = useCallback((
+  const finishMove = useCallback((
     context: string,
     destination: Position,
-    complete = true,
-  ): boolean => {
-    const now = Date.now();
-    const token = `${context}:${key(destination)}`;
-    const previous = lastFinishClickRef.current;
-    lastFinishClickRef.current = { token, at: now };
-    if (!previous || previous.token !== token || now - previous.at > DOUBLE_CLICK_WINDOW_MS) {
-      return false;
-    }
-    if (complete) {
-      setArmedMove(null);
-      setFinishedMove({ context, destination });
-    }
-    return true;
+  ) => {
+    setArmedMove(null);
+    setFinishedMove({ context, destination });
   }, []);
 
   /**
    * Touch still needs its preview-first tap. Hover-capable pointers commit
    * ordinary waypoints immediately; a scoring destination remains previewed
-   * until its double-click opens the final confirmation.
+   * until clicking that already-previewed endpoint opens final confirmation.
    */
   const previewBeforeCommit = useCallback((col: number, row: number): boolean => {
     if (!movementContext) return false;
@@ -623,10 +610,10 @@ export default function App() {
 
     if (samePreview) {
       // A touchdown must never slip through as an ordinary waypoint. Even a
-      // slow repeat tap leaves it staged; only the endpoint double-click may
-      // expose the final decision.
+      // repeat tap leaves it staged as the route endpoint and exposes the
+      // final decision without committing the touchdown first.
       if (scores) {
-        finishOnDoubleClick(movementContext, destination);
+        finishMove(movementContext, destination);
         return true;
       }
       if (!hoverCapable) {
@@ -638,14 +625,13 @@ export default function App() {
     if (hoverCapable && !scores) return false;
 
     setArmedMove({ context: movementContext, destination });
-    finishOnDoubleClick(movementContext, destination, scores);
     hookSquareHover(col, row);
     const piece = state.pieces.find(p => key(p.position) === k);
     setHoveredPiece(piece ?? null);
     return true;
   }, [movementContext, state.reachableKeys, state.pieces, state.selectedPieceId,
       state.ballPosition, state.pathPreview, activeArmedMove, hoverCapable,
-      finishOnDoubleClick, hookSquareHover]);
+      finishMove, hookSquareHover]);
 
   // Route square clicks: targeting modes take priority over normal movement
   const handleSquareClick = useCallback((col: number, row: number) => {
@@ -665,7 +651,7 @@ export default function App() {
     } else {
       const routeTip = state.committedPath[state.committedPath.length - 1];
       if (movementContext && routeTip && key(routeTip) === key({ col, row }) && !state.pendingBlock) {
-        finishOnDoubleClick(movementContext, routeTip);
+        finishMove(movementContext, routeTip);
         return;
       }
       if (previewBeforeCommit(col, row)) return;
@@ -675,7 +661,7 @@ export default function App() {
   }, [state.isHandoffTargeting, state.isPassTargeting, state.isBlockTargeting, state.pendingBlockResolution,
       state.pushTargetKeys, state.committedPath, state.pendingBlock, movementContext,
       handleHandoffTarget, handlePassTarget, handleBlockTarget, handlePushChoice,
-      hookSquareClick, previewBeforeCommit, finishOnDoubleClick]);
+      hookSquareClick, previewBeforeCommit, finishMove]);
 
   // Escape cancels the current activation. Dialogs handle their own Escape via
   // useModalFocus and stop propagation, so this only fires on the board.
@@ -690,9 +676,9 @@ export default function App() {
   }, [disarm, handleCancelSelection]);
 
   // Context menu state
-  const [pieceMenu, setPieceMenu] = useState<{ piece: PlayerPiece; x: number; y: number } | null>(null);
+  const [pieceMenu, setPieceMenu] = useState<{ piece: PlayerPiece; anchor: MenuAnchor } | null>(null);
 
-  const handlePieceClick = useCallback((col: number, row: number, x: number, y: number) => {
+  const handlePieceClick = useCallback((col: number, row: number, anchor: MenuAnchor) => {
     const k = key({ col, row });
     const piece = state.pieces.find(p => key(p.position) === k);
     if (!piece) return;
@@ -749,13 +735,13 @@ export default function App() {
       return;
     }
 
-    // With movement plotted, double-clicking either the route-tip ghost or the
+    // With movement plotted, clicking either the route-tip ghost or the
     // original token opens the one final confirmation. A zero-square action
     // still ends normally with one click.
     if (piece.id === state.selectedPieceId) {
       const routeTip = state.committedPath[state.committedPath.length - 1];
       if (movementContext && routeTip) {
-        finishOnDoubleClick(movementContext, routeTip);
+        finishMove(movementContext, routeTip);
         return;
       }
       hookSquareClick(col, row);
@@ -765,7 +751,7 @@ export default function App() {
     // Own unactivated piece — show context menu
     if (piece.team === state.activeTeam && !piece.activated) {
       if (compact) setMobileInfoOpen(false);
-      setPieceMenu({ piece, x, y });
+      setPieceMenu({ piece, anchor });
       return;
     }
 
@@ -776,7 +762,7 @@ export default function App() {
       state.isBlockTargeting, state.blockTargets, state.pendingBlockIsBlitz, state.blitzTargetId,
       state.committedPath, movementContext,
       hookSquareClick, handleHandoffTarget, handlePassTarget, handleBlockTarget, handleCancelSelection,
-      previewBeforeCommit, finishOnDoubleClick, hoverCapable, compact]);
+      previewBeforeCommit, finishMove, hoverCapable, compact]);
 
   const handleMenuAction = useCallback((actionKey: string, moveFirst: boolean) => {
     if (!pieceMenu) return;
@@ -938,7 +924,8 @@ export default function App() {
     const s = makeScenarioState(firstScenario);
     resetBoards(s);
     setZoomBounds(computeStartOfPlayZoom(s.pieces, s.activeTeam));
-    queueTutorialLesson(firstScenario, 1);
+    const firstLessonIndex = TUTORIAL_LESSON_IDS.indexOf(firstScenario.id);
+    queueTutorialLesson(firstScenario, firstLessonIndex + 1);
     setAppMode('series-puzzle');
   }, [identityName, seriesScenarios, resetBoards, computeStartOfPlayZoom, queueTutorialLesson]);
 
@@ -1245,9 +1232,9 @@ export default function App() {
     : activeFinishedMove
     ? 'MOVE READY: Confirm the whole route or plot it again.'
     : activeArmedMove
-    ? 'ROUTE READY: Double-click the preview endpoint when finished.'
+    ? 'ROUTE READY: Click the preview endpoint when finished.'
     : state.selectedPieceId && state.committedPath.length > 0
-    ? `ACTIVATION: ${state.remainingMa} MA remaining. Double-click the route endpoint when finished.`
+    ? `ACTIVATION: ${state.remainingMa} MA remaining. Click the route endpoint when finished.`
     : allActivated && !state.selectedPieceId
     ? 'TURN COMPLETE: Every player has been activated. Restart to test another play.'
     : state.selectedPieceId
@@ -1515,6 +1502,10 @@ export default function App() {
       {/* Piece context menu */}
       {pieceMenu && (() => {
         const menuPiece = pieceMenu.piece;
+        const tutorialLesson = !editorPreviewScenario && activeScenario
+          ? tutorialLessonFor(activeScenario.id)
+          : undefined;
+        const tutorialActions = tutorialLesson?.enabledActions;
         // A piece can Hand Off / Pass if it already carries the ball, or if the
         // ball is currently loose on the pitch — in the latter case the player
         // is expected to move this piece onto the ball's square first (a pickup
@@ -1524,16 +1515,15 @@ export default function App() {
         const { canBlock, canBlitz } = blockActionAvailability(menuPiece, state);
         const menuActions: PieceMenuAction[] = [
           { label: 'Move',     key: 'move' },
-          { label: 'Hand-off', key: 'handoff', disabled: !canHandoff },
-          { label: 'Pass',     key: 'pass',    disabled: !canPass },
-          { label: 'Block',    key: 'block',   disabled: !canBlock },
-          { label: 'Blitz',    key: 'blitz',   disabled: !canBlitz },
+          { label: 'Hand-off', key: 'handoff', disabled: !canHandoff || (tutorialActions !== undefined && !tutorialActions.includes('handoff')) },
+          { label: 'Pass',     key: 'pass',    disabled: !canPass || (tutorialActions !== undefined && !tutorialActions.includes('pass')) },
+          { label: 'Block',    key: 'block',   disabled: !canBlock || (tutorialActions !== undefined && !tutorialActions.includes('block')) },
+          { label: 'Blitz',    key: 'blitz',   disabled: !canBlitz || (tutorialActions !== undefined && !tutorialActions.includes('blitz')) },
         ];
         return (
           <PieceMenu
             piece={menuPiece}
-            x={pieceMenu.x}
-            y={pieceMenu.y}
+            anchor={pieceMenu.anchor}
             actions={menuActions}
             onAction={handleMenuAction}
             onDismiss={dismissMenu}

@@ -109,7 +109,11 @@ public avatars).
   Parallel Universes briefing alone includes the pointed decision-tree artwork;
   the modal scrolls internally so its rules and controls remain reachable. Each
   briefing can return to the main menu; an active series uses the standard
-  leave-series confirmation before discarding progress.
+  leave-series confirmation before discarding progress. Tutorial action menus
+  also unlock progressively: Movement and Dodging expose Move, Hand-off adds
+  Hand-off, Pass adds Pass, The Drive keeps those three, and Blocking and
+  Parallel Universes enables Block and Blitz as well. Actions from later
+  drills stay disabled in earlier drills.
 - **The compact game HUD keeps every control inside the viewport.** Account
   remains near the front. Zoom, restart, and reporting share the `GameToolsMenu`
   trigger, while the Key and action log retain their own triggers. Compact
@@ -359,7 +363,7 @@ from the one final decision:
 - hover-capable pointers preview freely and click to add each waypoint;
 - non-hovering pointers tap once to preview and again to add a waypoint;
 - intermediate waypoints never open the final decision controls;
-- double-clicking or double-tapping the route endpoint marks the whole move
+- clicking or tapping the already-plotted route endpoint marks the whole move
   finished, then a green tick and red × appear beside that square for
   **Confirm Move** or **Plot Again**;
 - **Plot Again** rewinds the activation to its original board state.
@@ -385,6 +389,10 @@ pickup stacking on one square; keep the two together and keep
   a player who has no action menu, and opens after an action is chosen. The
   action menu itself carries the same five-stat summary, so stats never depend
   on finding a separate gesture.
+- `PieceMenu` is a floating box anchored to the clicked player's square on
+  every pointer type. `placeMenuBesideAnchor()` prefers right, left, below,
+  then above while keeping the whole box in the viewport; coarse pointers use
+  the same placement with narrower, 44px-target controls, never a bottom sheet.
 - `BranchStrip` is a sibling below the HUD, never a child of it. Compact
   universe cards scroll horizontally inside the strip; neither the selector
   nor its scroll width may enlarge the page viewport.

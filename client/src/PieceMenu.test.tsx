@@ -11,8 +11,7 @@ describe('PieceMenu', () => {
     render(
       <PieceMenu
         piece={piece}
-        x={10}
-        y={10}
+        anchor={{ top: 10, left: 10, right: 110, bottom: 60 }}
         actions={DEFAULT_ACTIONS}
         onAction={vi.fn()}
         onDismiss={vi.fn()}
@@ -26,5 +25,26 @@ describe('PieceMenu', () => {
     expect(within(stats).getByText('PA').parentElement?.textContent).toContain('4+');
     expect(within(stats).getByText('AV').parentElement?.textContent).toContain('9+');
     expect(screen.getAllByRole('checkbox')).toHaveLength(5);
+  });
+
+  it('keeps actions from later Tutorial drills disabled', () => {
+    const piece = humanBlocker();
+    render(
+      <PieceMenu
+        piece={piece}
+        anchor={{ top: 10, left: 10, right: 110, bottom: 60 }}
+        actions={DEFAULT_ACTIONS.map(action => ({
+          ...action,
+          disabled: ['handoff', 'pass', 'block', 'blitz'].includes(action.key),
+        }))}
+        onAction={vi.fn()}
+        onDismiss={vi.fn()}
+      />,
+    );
+
+    expect((screen.getByRole('checkbox', { name: 'Move' }) as HTMLInputElement).disabled).toBe(false);
+    for (const action of ['Hand-off', 'Pass', 'Block', 'Blitz']) {
+      expect((screen.getByRole('checkbox', { name: action }) as HTMLInputElement).disabled).toBe(true);
+    }
   });
 });

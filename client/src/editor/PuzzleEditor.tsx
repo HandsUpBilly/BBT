@@ -7,6 +7,7 @@ import { createScenario, deleteScenario, fetchEditorData, publishEditorData, upd
 import { missingSeriesScenarioIds, nextScenarioId, validateScenarioDraft } from './editorValidation';
 import { PLAYER_TEMPLATES, generatedPlayerName, templateToPiece } from './playerTemplates';
 import { PLAYER_ROLES, playerPortraitFor } from '../playerPortraits';
+import { FEATURED_SERIES_NAME } from '../series';
 import { STAT_KEYS, STAT_RANGE, PITCH } from '../../../shared/scenarioValidation.js';
 import './PuzzleEditor.css';
 
@@ -14,7 +15,7 @@ const COLS = PITCH.maxCol + 1;
 const ROWS = PITCH.maxRow + 1;
 const EMPTY_SERIES: SeriesDefinition = {
   id: 'default',
-  name: 'Humans vs Orcs: The Nuffle Shuffle',
+  name: FEATURED_SERIES_NAME,
   description: '',
   scenarioIds: [],
 };

@@ -67,12 +67,18 @@ Descriptions use an OBJECTIVE clause followed by the rules needed to read the
 board. Keep this copy factual. Do not prescribe a single solved route unless
 the puzzle itself requires that action.
 
-The default series is player-facing **Tutorial** and uses this rules order:
+The default series is player-facing **Humans X Orcs: The Nuffle Shuffle**, is
+labelled as a Tutorial in the challenge screen, and uses this rules order:
 `scenario-001`, `scenario-004`, `scenario-002`, `scenario-003`,
 `scenario-005`, `scenario-006` (movement, dodging, handoff, pass, combined
 play, then blocks/loose-ball pickup/Parallel Universes). Tutorial briefing copy
 lives separately in `client/src/tutorialLessons.ts`; it does not override
-scenario names or descriptions and is shown only in series play.
+scenario names or descriptions and is shown for Tutorial series puzzles and
+their matching Single Play entries, but never for editor previews.
+
+Published series metadata can outlive a deployment in Netlify Blobs.
+`normalizeSeriesDefinition()` maps the two known legacy featured-series names
+to the current title while preserving any genuinely custom Puzzle Creator name.
 
 `resolveSeriesScenarios()` in `client/src/series/index.ts` resolves series
 `scenarioIds` to scenario objects. Series Play should use the resolved series

@@ -21,11 +21,10 @@ import './BlockDiceGraphic.css';
  * Which side of the block the dice favour, from the player's point of view.
  * The attacker in block terms is always the piece the player just declared a
  * block with, so 'attacker' always means "you pick" and 'defender' always
- * means "the opponent picks" — never the reverse. Outlined red when the
- * opponent is the one choosing which die counts, white/neutral when the
- * player is, so the declare-time dialog and the resolved pitch marker both
- * read the same risk at a glance without the player doing the ST-comparison
- * arithmetic themselves.
+ * means "the opponent picks" — never the reverse. The die body is red when
+ * the opponent chooses which die counts (uphill) and white when the player
+ * picks (downhill, or the even one-die case), so the declare-time dialog and
+ * resolved pitch marker expose the risk without a separate outline box.
  */
 export type BlockDiceFavor = 'attacker' | 'defender';
 

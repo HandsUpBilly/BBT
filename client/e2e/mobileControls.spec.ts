@@ -12,6 +12,7 @@ async function expectInsideViewport(page: import('@playwright/test').Page, selec
   expect(box.left, `${selector} starts outside the viewport`).toBeGreaterThanOrEqual(-1);
   expect(box.right, `${selector} ends outside the viewport`).toBeLessThanOrEqual(viewport.width + 1);
   expect(box.top, `${selector} starts above the viewport`).toBeGreaterThanOrEqual(-1);
+  expect(box.bottom, `${selector} ends below the viewport`).toBeLessThanOrEqual(viewport.height + 1);
 }
 
 test('resets home-page scroll and keeps every HUD control on screen', async ({ page }) => {
@@ -46,12 +47,27 @@ test('anchors every toolbar panel to the phone viewport', async ({ page }) => {
   await expectInsideViewport(page, '.action-log-menu__dropdown');
 });
 
-test('uses a compact action sheet and reveals complete player stats', async ({ page }) => {
-  await page.locator('.square[data-square="7F"] .piece').click({ force: true });
+test('opens a compact action box beside the player and reveals complete stats', async ({ page }) => {
+  const playerSquare = page.locator('.square[data-square="7F"]');
+  const playerBox = await boxOf(playerSquare);
+  await playerSquare.locator('.piece').click({ force: true });
   const menu = page.locator('.piece-menu');
   await expect(menu).toBeVisible();
   const menuBox = await boxOf(menu);
-  expect(menuBox.height, 'action selector should not consume most of the screen').toBeLessThanOrEqual(210);
+  expect(menuBox.height, 'action selector should not consume most of the screen').toBeLessThanOrEqual(270);
+  const isBesidePlayer = menuBox.right <= playerBox.left
+    || menuBox.left >= playerBox.right
+    || menuBox.bottom <= playerBox.top
+    || menuBox.top >= playerBox.bottom;
+  expect(isBesidePlayer, 'action selector overlaps the clicked player').toBe(true);
+  const gap = Math.min(
+    Math.abs(menuBox.right - playerBox.left),
+    Math.abs(menuBox.left - playerBox.right),
+    Math.abs(menuBox.bottom - playerBox.top),
+    Math.abs(menuBox.top - playerBox.bottom),
+  );
+  expect(gap, 'action selector is not anchored beside the clicked player').toBeLessThanOrEqual(10);
+  await expectInsideViewport(page, '.piece-menu');
   await expect(menu.getByLabel(/stats/)).toContainText('PA');
   await expect(menu.getByLabel(/stats/)).toContainText('AV');
 

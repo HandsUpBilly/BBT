@@ -1,6 +1,6 @@
 import type { Scenario, SeriesDefinition } from '../types';
 import { scenarios as staticScenarios } from './index';
-import { defaultSeries as staticSeries } from '../series';
+import { defaultSeries as staticSeries, normalizeSeriesDefinition } from '../series';
 
 export interface ScenarioData {
   scenarios: Scenario[];
@@ -25,7 +25,7 @@ export async function loadScenarioData(): Promise<ScenarioData> {
     if (!response.ok) return staticData;
     const data = (await response.json()) as Partial<ScenarioData>;
     if (!Array.isArray(data.scenarios) || !data.series) return staticData;
-    return { scenarios: data.scenarios, series: data.series };
+    return { scenarios: data.scenarios, series: normalizeSeriesDefinition(data.series) };
   } catch {
     return staticData;
   }
