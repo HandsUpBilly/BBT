@@ -573,8 +573,9 @@ body,
 }
 
 /* ── Commit bar ──────────────────────────────────────────────────────────
-   Every plotted route waits here for an explicit decision. It sits at the
-   bottom on touch because that is where the thumb already is. */
+   The completed route waits here for one final decision. Intermediate
+   waypoints do not summon it. It sits at the bottom on touch because that is
+   where the thumb already is. */
 .commit-bar {
   display: flex;
   align-items: center;
@@ -643,8 +644,8 @@ body,
 }
 
 /* A mouse already previews on hover, so reserving a permanent bar would take
-   height from the pitch for no benefit. Once a destination is clicked, float
-   the decision over the bottom of the board instead. */
+   height from the pitch for no benefit. Once the route endpoint is
+   double-clicked, float the final decision over the bottom of the board. */
 @media (any-hover: hover) {
   .commit-bar {
     position: fixed;

@@ -28,8 +28,9 @@ test.describe('action log', () => {
       const reachable = page.locator('.square--reachable');
       if (await reachable.count() === 0) break;
       const target = reachable.last();
+      const square = await target.getAttribute('data-square');
       await target.tap();
-      await page.locator('.commit-bar').getByRole('button', { name: 'Confirm Move' }).tap();
+      await page.locator(`.square[data-square="${square}"]`).tap();
     }
   }
 

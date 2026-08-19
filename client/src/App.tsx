@@ -61,6 +61,7 @@ import './PlaybookTheme.css';
 const LOCAL_SCORE_KEY = 'bbt.localScores.v1';
 const GUEST_NAME_KEY = 'bbt.guestName.v1';
 const GOOGLE_ALIASES_KEY = 'bbt.googleAliases.v1';
+const DOUBLE_CLICK_WINDOW_MS = 500;
 
 // Client-side allowlist controlling whether the "Puzzle Creator" tab is shown at
 // all — this is a UX nicety only, NOT the security boundary. The actual write
@@ -554,41 +555,98 @@ export default function App() {
   // otherwise resolve immediately with followUp: false.
   const [pendingPushSquare, setPendingPushSquare] = useState<{ col: number; row: number } | null>(null);
 
-  // ── Plot, then confirm ────────────────────────────────────────────────────
-  // Clicking or tapping a reachable square plots the route without committing
-  // it. The route remains frozen until the player explicitly confirms it or
-  // chooses to plot again. The context guards against a stale plot surviving
-  // a changed selection or an already-committed movement segment.
+  // ── Plot the route, then confirm once ─────────────────────────────────────
+  // Intermediate waypoints commit provisionally so the player can keep shaping
+  // the route. Double-clicking the route tip marks the whole move as finished;
+  // only then does the final Confirm Move / Plot Again choice appear.
   const [armedMove, setArmedMove] = useState<{
     context: string;
     destination: Position;
   } | null>(null);
+  const [finishedMove, setFinishedMove] = useState<{
+    context: string;
+    destination: Position;
+  } | null>(null);
+  const lastFinishClickRef = useRef<{ token: string; at: number } | null>(null);
   const movementContext = state.selectedPieceId
     ? `${state.selectedPieceId}:${state.walkedSquares.length}`
     : null;
   const activeArmedMove = armedMove?.context === movementContext ? armedMove : null;
+  const activeFinishedMove = finishedMove?.context === movementContext ? finishedMove : null;
   // Which player's card the side panel / bottom sheet is showing. Follows the
   // cursor on a mouse and the last tapped square on touch.
   const [hoveredPiece, setHoveredPiece] = useState<PlayerPiece | null>(null);
   const [mobileInfoOpen, setMobileInfoOpen] = useState(false);
 
-  const disarm = useCallback(() => setArmedMove(null), []);
+  const disarm = useCallback(() => {
+    setArmedMove(null);
+    setFinishedMove(null);
+    lastFinishClickRef.current = null;
+  }, []);
+
+  const finishOnDoubleClick = useCallback((
+    context: string,
+    destination: Position,
+    complete = true,
+  ): boolean => {
+    const now = Date.now();
+    const token = `${context}:${key(destination)}`;
+    const previous = lastFinishClickRef.current;
+    lastFinishClickRef.current = { token, at: now };
+    if (!previous || previous.token !== token || now - previous.at > DOUBLE_CLICK_WINDOW_MS) {
+      return false;
+    }
+    if (complete) {
+      setArmedMove(null);
+      setFinishedMove({ context, destination });
+    }
+    return true;
+  }, []);
 
   /**
-   * Plots a reachable move and consumes the click so only the confirmation
-   * control can commit it.
+   * Touch still needs its preview-first tap. Hover-capable pointers commit
+   * ordinary waypoints immediately; a scoring destination remains previewed
+   * until its double-click opens the final confirmation.
    */
   const previewBeforeCommit = useCallback((col: number, row: number): boolean => {
     if (!movementContext) return false;
-    const k = key({ col, row });
+    const destination = { col, row };
+    const k = key(destination);
     if (!state.reachableKeys.has(k)) return false;
 
-    setArmedMove({ context: movementContext, destination: { col, row } });
+    const selected = state.pieces.find(piece => piece.id === state.selectedPieceId);
+    const picksUpBall = state.ballPosition !== null
+      && state.pathPreview.some(step => key(step.pos) === key(state.ballPosition!));
+    const carriesBall = Boolean(selected?.hasBall || picksUpBall);
+    const scores = carriesBall
+      && (selected?.team === 'human' ? row === 0 : row === 25);
+    const samePreview = activeArmedMove && key(activeArmedMove.destination) === k;
+
+    if (samePreview) {
+      // A touchdown must never slip through as an ordinary waypoint. Even a
+      // slow repeat tap leaves it staged; only the endpoint double-click may
+      // expose the final decision.
+      if (scores) {
+        finishOnDoubleClick(movementContext, destination);
+        return true;
+      }
+      if (!hoverCapable) {
+        setArmedMove(null);
+        return false;
+      }
+    }
+
+    if (hoverCapable && !scores) return false;
+
+    setArmedMove({ context: movementContext, destination });
+    finishOnDoubleClick(movementContext, destination, scores);
     hookSquareHover(col, row);
     const piece = state.pieces.find(p => key(p.position) === k);
     setHoveredPiece(piece ?? null);
     return true;
-  }, [movementContext, state.reachableKeys, state.pieces, hookSquareHover]);
+  }, [movementContext, state.reachableKeys, state.pieces, state.selectedPieceId,
+      state.ballPosition, state.pathPreview, activeArmedMove, hoverCapable,
+      finishOnDoubleClick, hookSquareHover]);
 
   // Route square clicks: targeting modes take priority over normal movement
   const handleSquareClick = useCallback((col: number, row: number) => {
@@ -606,13 +664,19 @@ export default function App() {
         handlePushChoice(col, row, false);
       }
     } else {
+      const routeTip = state.committedPath[state.committedPath.length - 1];
+      if (movementContext && routeTip && key(routeTip) === key({ col, row }) && !state.pendingBlock) {
+        finishOnDoubleClick(movementContext, routeTip);
+        return;
+      }
       if (previewBeforeCommit(col, row)) return;
-      disarm();
+      setArmedMove(null);
       hookSquareClick(col, row);
     }
   }, [state.isHandoffTargeting, state.isPassTargeting, state.isBlockTargeting, state.pendingBlockResolution,
-      state.pushTargetKeys, handleHandoffTarget, handlePassTarget, handleBlockTarget, handlePushChoice,
-      hookSquareClick, previewBeforeCommit, disarm]);
+      state.pushTargetKeys, state.committedPath, state.pendingBlock, movementContext,
+      handleHandoffTarget, handlePassTarget, handleBlockTarget, handlePushChoice,
+      hookSquareClick, previewBeforeCommit, finishOnDoubleClick]);
 
   // Escape cancels the current activation. Dialogs handle their own Escape via
   // useModalFocus and stop propagation, so this only fires on the board.
@@ -686,9 +750,15 @@ export default function App() {
       return;
     }
 
-    // Clicking the already-selected piece ends activation
+    // With movement plotted, double-clicking either the route-tip ghost or the
+    // original token opens the one final confirmation. A zero-square action
+    // still ends normally with one click.
     if (piece.id === state.selectedPieceId) {
-      disarm();
+      const routeTip = state.committedPath[state.committedPath.length - 1];
+      if (movementContext && routeTip) {
+        finishOnDoubleClick(movementContext, routeTip);
+        return;
+      }
       hookSquareClick(col, row);
       return;
     }
@@ -705,8 +775,9 @@ export default function App() {
   }, [state.pieces, state.selectedPieceId, state.reachableKeys, state.activeTeam,
       state.isHandoffTargeting, state.handoffTargets, state.isPassTargeting, state.passReceiverKeys,
       state.isBlockTargeting, state.blockTargets, state.pendingBlockIsBlitz, state.blitzTargetId,
+      state.committedPath, movementContext,
       hookSquareClick, handleHandoffTarget, handlePassTarget, handleBlockTarget, handleCancelSelection,
-      previewBeforeCommit, disarm, hoverCapable, compact]);
+      previewBeforeCommit, finishOnDoubleClick, hoverCapable, compact]);
 
   const handleMenuAction = useCallback((actionKey: string, moveFirst: boolean) => {
     if (!pieceMenu) return;
@@ -740,22 +811,22 @@ export default function App() {
 
   const handleSquareHover = useCallback((col: number, row: number) => {
     // A tap can emit a synthetic mouseenter, so only genuine hover-capable
-    // inputs drive this preview. Once clicked, keep the chosen plot frozen
-    // while the pointer travels to the confirmation controls.
+    // inputs drive this preview. Freeze only the scoring preview or the final
+    // route while the pointer travels to the confirmation controls.
     if (!hoverCapable) return;
-    if (activeArmedMove) return;
+    if (activeArmedMove || activeFinishedMove) return;
     // Update movement preview in game state
     hookSquareHover(col, row);
     const k = key({ col, row });
     const piece = state.pieces.find(p => key(p.position) === k);
     setHoveredPiece(piece ?? null);
-  }, [hoverCapable, activeArmedMove, hookSquareHover, state.pieces]);
+  }, [hoverCapable, activeArmedMove, activeFinishedMove, hookSquareHover, state.pieces]);
   const handleSquareLeave = useCallback(() => {
     if (!hoverCapable) return;
-    if (activeArmedMove) return;
+    if (activeArmedMove || activeFinishedMove) return;
     hookSquareLeave();
     setHoveredPiece(null);
-  }, [hoverCapable, activeArmedMove, hookSquareLeave]);
+  }, [hoverCapable, activeArmedMove, activeFinishedMove, hookSquareLeave]);
 
   // Record every completed run in the local attempt history.
   //
@@ -1142,9 +1213,9 @@ export default function App() {
   const { primary: inspectedPiece, secondary: comparisonPiece } =
     playerComparison(state, selectedPiece, hoveredPiece);
 
-  // The plotted destination remains stable while hover is frozen; the path
-  // itself still supplies the dice markers and live probability.
-  const armedPreview = activeArmedMove?.destination ?? null;
+  // Only the completed route gets the final decision bar. A touch preview or
+  // scoring preview remains on the pitch without presenting confirmation yet.
+  const finishedPreview = activeFinishedMove?.destination ?? null;
 
   // Every piece on the active team has had its go. (This used to inspect only
   // the *first* piece on the team, so the status line was wrong the moment a
@@ -1172,6 +1243,12 @@ export default function App() {
     ? `PASS DECLARED: Move up to ${state.remainingMa} MA, then select the receiver. Press Esc to cancel.`
     : state.pendingBlock
     ? `BLITZ: Move into contact with ${blitzTarget?.name ?? 'the target'}, then select the target. ${state.remainingMa} MA remaining.`
+    : activeFinishedMove
+    ? 'MOVE READY: Confirm the whole route or plot it again.'
+    : activeArmedMove
+    ? 'ROUTE READY: Double-click the preview endpoint when finished.'
+    : state.selectedPieceId && state.committedPath.length > 0
+    ? `ACTIVATION: ${state.remainingMa} MA remaining. Double-click the route endpoint when finished.`
     : allActivated && !state.selectedPieceId
     ? 'TURN COMPLETE: Every player has been activated. Restart to test another play.'
     : state.selectedPieceId
@@ -1332,19 +1409,23 @@ export default function App() {
 
       {compact && <div className="status-strip">{statusLine}</div>}
 
-      {/* Non-hovering layouts keep an invisible placeholder mounted so plotting
-          never resizes the pitch. Hovering layouts mount the bar only after a
-          destination is clicked; CSS presents it as an overlay. */}
-      {(!hoverCapable || armedPreview) && (
+      {/* Non-hovering layouts keep an invisible placeholder mounted so the
+          final decision never resizes the pitch. Hovering layouts mount it
+          only after the route endpoint is double-clicked. */}
+      {(!hoverCapable || finishedPreview) && (
         <CommitBar
-          destination={armedPreview}
+          destination={finishedPreview}
           probability={liveProbPct}
           showProbability={showSuccessChance}
-          onCancel={() => { disarm(); hookSquareLeave(); }}
-          onConfirm={() => {
-            if (!armedPreview) return;
+          onCancel={() => {
             disarm();
-            hookSquareClick(armedPreview.col, armedPreview.row);
+            hookSquareLeave();
+            handleCancelSelection();
+          }}
+          onConfirm={() => {
+            if (!finishedPreview) return;
+            disarm();
+            hookSquareClick(finishedPreview.col, finishedPreview.row);
           }}
         />
       )}
