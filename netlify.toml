@@ -44,12 +44,24 @@
   to     = "/.netlify/functions/reports"
   status = 200
 
+# Anonymous first-party engagement batches. The admin read remains separately
+# authenticated below.
+[[redirects]]
+  from   = "/api/analytics"
+  to     = "/.netlify/functions/analytics"
+  status = 200
+
 # Route puzzle editor calls to the editor functions (Netlify Blobs drafts —
 # see README "Puzzle Editor on Netlify" for the publish workflow). Every
 # /api/editor/* route, including GET, requires an allowlisted admin.
 [[redirects]]
   from   = "/api/editor/statistics"
   to     = "/.netlify/functions/editor-statistics"
+  status = 200
+
+[[redirects]]
+  from   = "/api/editor/analytics"
+  to     = "/.netlify/functions/editor-analytics"
   status = 200
 
 [[redirects]]

@@ -12,13 +12,13 @@ describe('TutorialLessonDialog', () => {
       <TutorialLessonDialog
         lesson={TUTORIAL_LESSONS[0]}
         step={1}
-        total={6}
+        total={TUTORIAL_LESSONS.length}
         onDismiss={onDismiss}
         onReturnToMenu={vi.fn()}
       />,
     );
 
-    expect(screen.getByText('Tutorial Drill 1 / 6')).toBeTruthy();
+    expect(screen.getByText(`Tutorial Drill 1 / ${TUTORIAL_LESSONS.length}`)).toBeTruthy();
     expect(screen.getByRole('heading', { name: 'Movement' })).toBeTruthy();
     expect(screen.queryByRole('img')).toBeNull();
     fireEvent.click(screen.getByRole('button', { name: 'Begin Puzzle' }));
@@ -27,17 +27,18 @@ describe('TutorialLessonDialog', () => {
 
   it('can disable all future lessons', () => {
     const onDismiss = vi.fn();
+    const finalLesson = TUTORIAL_LESSONS.at(-1)!;
     render(
       <TutorialLessonDialog
-        lesson={TUTORIAL_LESSONS[5]}
-        step={6}
-        total={6}
+        lesson={finalLesson}
+        step={TUTORIAL_LESSONS.length}
+        total={TUTORIAL_LESSONS.length}
         onDismiss={onDismiss}
         onReturnToMenu={vi.fn()}
       />,
     );
 
-    expect(screen.getByRole('img', { name: /decision tree splitting one block/i })).toBeTruthy();
+    expect(screen.getByRole('heading', { name: finalLesson.title })).toBeTruthy();
     fireEvent.click(screen.getByRole('checkbox', { name: /Do not show these rules briefings again/ }));
     fireEvent.click(screen.getByRole('button', { name: 'Begin Puzzle' }));
     expect(onDismiss).toHaveBeenCalledWith(true);
@@ -49,7 +50,7 @@ describe('TutorialLessonDialog', () => {
       <TutorialLessonDialog
         lesson={TUTORIAL_LESSONS[0]}
         step={1}
-        total={6}
+        total={TUTORIAL_LESSONS.length}
         onDismiss={onDismiss}
         onReturnToMenu={vi.fn()}
       />,
@@ -64,7 +65,7 @@ describe('TutorialLessonDialog', () => {
       <TutorialLessonDialog
         lesson={TUTORIAL_LESSONS[0]}
         step={1}
-        total={6}
+        total={TUTORIAL_LESSONS.length}
         onDismiss={vi.fn()}
         onReturnToMenu={onReturnToMenu}
       />,

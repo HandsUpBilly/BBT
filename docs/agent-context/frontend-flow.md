@@ -164,6 +164,23 @@ The identity gate and `home` mode use the tabletop-playbook visual shell:
   screens while growing normally on long pages instead of leaving the footer
   floating inside a stale viewport-sized box.
 
+## Game Analytics Transitions
+
+`client/src/analytics.ts` is a production-only, non-blocking collector for
+game-specific events. It creates a random session id in session storage and
+random attempt/run ids, but no persistent browser id. The queue is bounded,
+expires after seven days, batches requests, and uses lifecycle beacon delivery.
+Network/storage failure never blocks play or score submission.
+
+`App.tsx` emits starts when a published standalone/Tutorial puzzle is
+initialized, meaningful play on the first selection/committed action, normalized
+action counters from the action log, completion only when the full flat or
+Parallel Universes run is complete, and distinct restart/leave/inactivity paths.
+Editor previews never start an analytics attempt. Active time ticks only while a
+real attempt is active and the document is visible. Google Analytics remains the
+owner of generic traffic and audience reporting; do not add those dimensions to
+the first-party payload.
+
 ## Touchdown Play Diagram
 
 The touchdown summary includes a chalkboard-style SVG generated from the

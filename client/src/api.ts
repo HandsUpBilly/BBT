@@ -150,6 +150,21 @@ export async function fetchProgress(): Promise<ProgressData> {
   }
 }
 
+/** Best-effort analytics transport. Product telemetry must never interrupt play. */
+export async function submitAnalyticsBatch(payload: unknown, keepalive = false): Promise<boolean> {
+  try {
+    const response = await fetch(`${BASE}/analytics`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+      keepalive,
+    });
+    return response.ok;
+  } catch {
+    return false;
+  }
+}
+
 /** Used only if the request never reaches the server, so the player can still
  * save a report that matches the server-created issue layout. */
 export function createReportDownload(input: ReportInput): ReportDownload {

@@ -31,6 +31,7 @@ carries a **Status** line — read it before treating a section as work to do.
 | Player Config Screen | Phase 1 Shipped, Phase 2 **Planned** |
 | Block Outcomes as Board-State Branches | Shipped as the standard Parallel Universes block model |
 | Tutorial Series and Parallel Universes Onboarding | Shipped |
+| Engagement Analytics and Admin Graphs | Shipped |
 | Full-game Rulebook Copy Audit | Shipped |
 
 Durable behavior that has already shipped belongs in `docs/agent-context/`, not
@@ -4894,6 +4895,380 @@ preserve every fact below and add no unsupported Blood Bowl rules.
   continue to work.
 - `npm run verify` and the mobile Playwright suite pass, with no unused symbols,
   shared-package imports, generated-seed hand edits, or 320 px overflow.
+
+---
+
+# Engagement Analytics and Admin Graphs
+
+**Status:** Shipped. The first-party dashboard is limited to game-specific activity and deliberately excludes traffic/audience data already available from Google Analytics.
+
+## Goal and Product Decisions
+
+Expand Admin Mode Statistics from retained leaderboard personal bests into a
+privacy-limited product analytics dashboard that answers:
+
+- how many game sessions start, meaningfully play, and complete a puzzle;
+- how many puzzles and how much active play time occur per game session;
+- which puzzles and Tutorial stages players complete, restart, leave, or stop
+  partway through;
+- which game actions, controls, briefings, settings, and submission paths are
+  used.
+
+The decided product policy is:
+
+- Show the new reports and graphs in the existing admin-only Statistics screen.
+- Collect the first-party analytics on production visits without a consent
+  prompt, opt-out setting, or Do Not Track exception. The About/privacy copy
+  must accurately disclose this behavior before release.
+- Retain session-level records for 13 calendar months. Keep only anonymous
+  aggregate daily totals after the corresponding session records expire.
+- Keep the existing GA4 page tracking as-is, but do not duplicate anything it
+  can already provide. The first-party dashboard contains game-specific puzzle,
+  action, completion, drop-off, Tutorial, and interaction measures only. It does
+  not collect or show visits, unique/returning visitors, referrers, campaigns,
+  device/browser/OS, geography, or generic screen views, and it adds no GA4
+  custom events or GA Data API dependency.
+
+This work begins collecting data only when deployed. It does not infer or
+backfill historical visits, attempts, or abandonment from personal-best
+leaderboards or local attempt history.
+
+## Measurement Definitions
+
+All dashboard labels, API fields, tests, and CSV headings must use these
+definitions consistently.
+
+| Measure | Definition |
+| --- | --- |
+| Game session | One random session UUID created when game-specific activity is first recorded and retained across reloads in session storage. Rotate it after 30 minutes without a game analytics or user-activity event. Multiple tabs are separate game sessions; there is no persistent browser id. |
+| Puzzle start | A published standalone or Tutorial puzzle has been initialized for play. Editor previews do not count. Each restart closes the old attempt and creates a new start. |
+| Meaningful play | The first legal player-piece selection/activation or committed game action after initialization. Hover, scrolling, opening help, zoom, and dismissing a Tutorial briefing do not qualify. |
+| Puzzle completion | The whole run reaches its real completion condition before any score-submission choice: a flat run reaches touchdown, or every live Parallel Universe is scored or given up. One universe scoring is not completion. |
+| Incomplete attempt | A started attempt with no completion. Report terminal reasons separately as `restarted`, `left-puzzle`, `left-series`, `replaced`, or `inactive/closed`; do not present all of them as failures. |
+| Inactive/closed | No explicit terminal event arrived and the attempt/session has been inactive for at least 30 minutes. This is an inference and must be labelled as such. `pagehide` delivery improves the signal but is not guaranteed. |
+| Active time | Visible, foreground time reported in increments of at most 60 seconds while a puzzle attempt is active. Never treat a long wall-clock gap, a hidden tab, or time outside play as active play. |
+| Engaged game session | A game session containing at least one meaningfully played puzzle. |
+| Completion rate | Completed attempts divided by puzzle starts in the same cohort. Also show starts-to-engaged and engaged-to-completed rates so pre-play exits are not hidden. |
+| Series completion | Every published puzzle in that particular Tutorial run completed and the series result reached its completion flow. Individual puzzle completions remain visible at each series position. |
+
+The session ids are pseudonymous operational identifiers even though they
+contain no direct identity. They may be used only for the aggregate
+analytics in this section and must never appear in an admin API response,
+dashboard table, log message, report download, leaderboard record, or GitHub
+report.
+
+## Event and Session Requirements
+
+The client collector must expose typed, allowlisted events and reduce them into
+bounded session summaries. It must not upload arbitrary component props or a
+copy of game state.
+
+### Required lifecycle events
+
+- `puzzle-started`, `puzzle-engaged`, `puzzle-ended`, and `puzzle-restarted`,
+  joined by a random attempt id and carrying only scenario id, current published
+  scenario name for display fallback, standalone/Tutorial mode, Tutorial
+  position, timestamps, and the normalized counters below.
+- `series-started`, `series-advanced`, and `series-ended`, with a random run id,
+  the published series id, stage number, and `completed`, `left`, `replaced`, or
+  inferred `inactive/closed` outcome.
+- Visible active-time ticks no more frequently than once per minute. The client
+  must cap each increment at 60 seconds, batch transport, and stop ticks while
+  the document is hidden or Admin Mode is active.
+- Best-effort finalization and queue flushing on `visibilitychange` and
+  `pagehide`, using `sendBeacon` where possible and `fetch(..., { keepalive:
+  true })` as the fallback. Correct reporting must not depend on an unload
+  request arriving.
+
+### Required gameplay detail
+
+For each attempt, retain bounded numeric counts rather than full action logs:
+
+- player pieces selected and distinct pieces activated;
+- committed move steps and normalized roll/action types: dodge, rush, pickup,
+  hand-off, pass, catch, block, and blitz;
+- blocks declared, Parallel Universe splits created, universes completed, and
+  universes given up;
+- activation cancellations, route/action cancellations, and restarts;
+- latest normalized action type, committed-action depth, and activated-own-piece
+  count at the terminal event;
+- on completion only, final probability and expected/actual dice count, bounded
+  by the same finite numeric limits used for scores but not treated as a trusted
+  leaderboard submission.
+
+The game models risk rather than simulating dice failures, so the dashboard must
+not invent a "failed roll" measure. Its failure/exit breakdown consists of
+incomplete-attempt reasons, score-submission failures, cancellations, restarts,
+and conceded Parallel Universes.
+
+### Required interaction detail
+
+Record only allowlisted interaction names and coarse outcomes:
+
+- Tutorial briefing shown, begin, dismiss/return, and guidance preference
+  changed;
+- Settings opened/closed and each supported setting key changed, with a boolean
+  or closed enum value where useful;
+- leaderboard opened; score dialog shown, submit attempted, submit succeeded,
+  submit failed, retry, or submit skipped;
+- report dialog opened/closed and report submission succeeded/failed, including
+  only `issue` or `feature`, never its title, description, reporter, or download;
+- About, game-tools, legend, action-log, and mobile-info panels opened/closed.
+
+Do not collect pointer movement, hover targets, pitch coordinates, piece ids or
+names, route geometry, move/action logs, report text, leaderboard names, error
+stacks, or free-form error messages. Error outcomes use a short server-defined
+enum such as `network`, `auth`, `validation`, `rate-limit`, or `server`.
+
+### Explicitly excluded Google Analytics overlap
+
+Do not collect a persistent browser id, generic visit/session start, identity
+gate completion, screen views, referrer or UTM fields, device class, viewport,
+browser, operating system, IP-derived location, country, or guest/signed-in
+status. Those are traffic/audience concerns and are deliberately left to the
+existing Google Analytics property.
+
+## Collection, Validation, and Delivery
+
+- First-party collection is enabled only in deployed production by default so
+  localhost, editor previews, unit tests, and Playwright runs cannot pollute the
+  store. Tests may inject an explicit collector/clock/transport.
+- Analytics is non-critical. Initialization, storage, serialization, queueing,
+  or network failures must never block identity, play, completion, navigation,
+  or score submission and must not show a player-facing error.
+- Keep a bounded retry queue at `bbt.analytics.queue.v1`: at most 200 events,
+  drop oldest first, discard entries older than seven days, retry with bounded
+  backoff, and send batches of at most 50 events and 64 KiB. Once formed, a
+  failed batch retains the same random batch id across every retry.
+- Ingestion must deduplicate processed batch ids so a beacon retry cannot
+  double-count it. Events from two tabs remain separate because their session
+  and attempt ids differ.
+- `POST /api/analytics` is same-origin, public, accepts only the versioned
+  allowlisted schema, and returns `202` after durable acceptance. Enforce method,
+  content type, request size, enum, string-length, array-length, finite-number,
+  UUID, and timestamp bounds before storage. Use server receipt time as the
+  authority and reject timestamps implausibly in the future or older than the
+  seven-day queue allowance.
+- Add a dedicated analytics rate limit keyed through the existing trusted
+  address adapter. The address can be used transiently for throttling but must
+  never be written to an analytics record.
+- Treat every count, session id, scenario id, and timestamp as untrusted.
+  Analytics may inform product decisions but must never authorize a request,
+  change game state, validate a score, or become a leaderboard source.
+
+## Retention and Storage
+
+Netlify Blobs is the production store. Express uses an in-memory equivalent for
+local development and tests; local analytics need not survive a server restart.
+
+- Persist one bounded session-summary document per session. The summary contains
+  only normalized dimensions, counters, attempts/series outcomes, active-time
+  totals, and processed batch ids needed for idempotency. It does not contain
+  raw events or forbidden fields.
+- Partition session keys by UTC start month so the admin query and retention job
+  can list only relevant prefixes. Merge concurrent batches with conditional
+  writes and bounded retry, following the existing leaderboard conflict pattern.
+- A daily scheduled maintenance function recomputes closed UTC daily rollups
+  idempotently from retained session summaries, reprocessing the previous seven
+  days for late queued batches. Rollups contain aggregate counts and histograms
+  only, with no session, attempt, batch, or event ids.
+- The same maintenance job deletes session documents whose `lastSeenAt` is more
+  than 13 calendar months old, after confirming the applicable daily rollups
+  exist. A failed/missing rollup must defer deletion rather than silently lose
+  long-term totals.
+- The admin endpoint combines live session summaries for windows up to 365 days
+  and daily rollups for a separate all-time game-activity trend. For the open UTC day,
+  compute a provisional bucket from session summaries; use rollups only for
+  closed days. It must not add both sources for the same day. Exact medians and
+  funnels are available only from retained session data and must not be claimed
+  for dates beyond that boundary.
+- Analytics storage is independent of leaderboard, editor draft/published,
+  managed-admin, and report stores. Session records age out under the 13-month
+  policy.
+
+## Admin Dashboard Requirements
+
+Keep **Leaderboard Performance** visibly labelled as personal-best data and
+render it even when engagement analytics fails. Add separate **Engagement** and
+**Gameplay** sections backed by the new admin endpoint. Use
+7-, 30-, 90-, and 365-day UTC windows for session-level reports and a separate
+all-time aggregate game-activity view. Show the exact start/end dates and collection
+start/retention caveat; do not label pre-launch zeroes as inactivity.
+
+### Engagement
+
+- Summary cards: game sessions, engaged sessions, puzzle starts, puzzle
+  completions, completion rate, median active play time, and average puzzles
+  started per game session.
+- A time-series graph for game sessions, engaged sessions, starts, and
+  completions; use daily buckets for 7/30 days, weekly buckets for 90/365 days,
+  and monthly buckets for the all-time aggregate game-activity graph.
+- An attempt funnel: Puzzle Started -> Meaningful Play -> Puzzle Completed. Show
+  absolute counts plus conversion from the preceding and first stages.
+- Active-time and puzzles-per-session distributions, so a mean cannot conceal a
+  large one-and-done population.
+
+### Puzzle and Tutorial drop-off
+
+- A searchable/sortable per-puzzle table and horizontal funnel bars for starts,
+  meaningful starts, completions, restarts, explicit leaves, inferred
+  inactive/closed attempts, completion rate, and median active play time.
+- A stop-depth graph for incomplete attempts using committed-action-depth bands
+  `0`, `1`, `2-4`, `5-9`, and `10+`, with a companion breakdown by last
+  normalized action and activated-own-piece count. These are interaction-depth
+  signals, not claims about percentage of a puzzle solved.
+- A Tutorial/series funnel from series start through each published series
+  position to series completion, keyed by stable scenario id while displaying
+  the current published name. Missing/deleted historical ids remain labelled by
+  id instead of being discarded.
+- Separate terminal reasons. A restart must not be merged with leaving the game,
+  and a completed puzzle followed by skipping leaderboard submission remains a
+  completion.
+
+### Gameplay and interactions
+
+- Horizontal bar charts for normalized action counts and per-engaged-attempt
+  rates, including movement roll types, passes/hand-offs, blocks/blitzes, and
+  Parallel Universe behavior.
+- Restart, cancellation, universe-give-up, and submission-outcome charts.
+- An interaction table for the allowlisted Tutorial, Settings, leaderboard,
+  report, About, and help-panel events. Avoid ranking tiny counts as meaningful;
+  show sample size beside each rate.
+
+### Graph behavior and accessibility
+
+- Prefer small inline SVG/CSS charts and shared chart primitives over a charting
+  dependency. Use a dependency only if implementation proves the accessible
+  behavior or required scale cannot be met without it.
+- Every chart has a visible title, period, sample size, legend, axis/tick labels,
+  and an adjacent exact-value table or disclosure. Its graphic has a concise
+  accessible summary; no fact is available only through hover or color.
+- Use the existing semantic palette with sufficient contrast, distinct marks or
+  line styles, tabular numbers, keyboard-operable disclosures, and responsive
+  layouts down to 320 px without page-level horizontal overflow. Wide exact-data
+  tables may scroll inside their own labelled region.
+- Loading, partial-error, empty, suppressed-small-sample, collection-not-started,
+  and retention-limited states must be explicit. Refresh and window changes
+  must not erase already rendered sections while a request is pending.
+- Preserve the existing anonymous personal-best CSV. If analytics exports are
+  added, export only the already aggregated rows returned to the dashboard;
+  never export session-level records.
+
+## Architecture
+
+| Area | Responsibility |
+| --- | --- |
+| New `client/src/analytics.ts` and focused tests | Own production gating, random session/attempt ids, session timeout, bounded queue/batching, active-time clock, typed event helpers, lifecycle flush, storage fallbacks, and injected test seams. No persistent browser id, React, or game rules. |
+| `client/src/App.tsx` plus narrow component callbacks | Emit lifecycle, attempt, series, completion, restart/leave, submission, Tutorial, settings, and panel events at existing authoritative transitions. Do not infer completion from rendering or instrument editor previews. |
+| `client/src/api.ts` | Provide the non-throwing analytics batch transport, isolated from score/report requests. |
+| New dependency-free `shared/analyticsValidation.js` / `.d.ts` | Define schema/version, enums, limits, sanitization, session reduction, abandonment rules, and forbidden-field behavior shared by Express and Netlify. Import no package. |
+| New dependency-free `shared/analyticsStatistics.js` / `.d.ts` | Aggregate retained session summaries into game-activity time buckets, funnels, distributions, puzzle/series reports, and interaction rates. Keep it separate from leaderboard `statistics.js`. |
+| `POST /api/analytics` in Express and a new Netlify function | Validate, normalize, rate-limit, idempotently merge batches, and return `202`. Express stores only in memory. |
+| New Netlify analytics storage helper | Read/write month-partitioned session summaries with conditional retries, list required months, and expose deletion/rollup operations without changing leaderboard storage semantics. |
+| New daily Netlify maintenance function | Rebuild recent UTC daily rollups, verify them, and remove session summaries older than 13 calendar months. It is not a public API route. |
+| New admin-only `GET /api/editor/analytics` in both targets | Parse `window=7|30|90|365`, read only needed partitions, infer stale open outcomes, aggregate server-side, and return no record-level ids. Keep failure independent of `/api/editor/statistics`. |
+| `netlify.toml` | Route public ingestion and admin analytics reads; keep the scheduled function internal. No new third-party CSP origin is required. |
+| `client/src/editor/AdminStatistics.tsx` and scoped chart components/CSS | Preserve personal-best reporting and add game Engagement and Gameplay sections, graphs, accessible data views, responsive states, and independent loading/errors. |
+| `docs/agent-context/netlify-deploy.md`, `puzzle-editor.md`, `frontend-flow.md`, and `testing-and-pr-workflow.md` | After shipping, record endpoints/storage/retention, dashboard semantics, instrumentation transitions, and test coverage. |
+
+## Constraints and Non-goals
+
+- A puzzle remains exactly one turn. Analytics must not add End Turn, turn
+  counters, halves, score banking, running match scores, or Free Play.
+- Do not change game probability/block math, completion rules, scenario data,
+  leaderboard validation, personal-best retention, or local attempt history.
+- Never copy this logic into divergent client/Express/Netlify variants. Shared
+  validation and aggregation stay dependency-free and package imports remain in
+  their resolving targets.
+- Do not collect direct identity, persistent browser ids, traffic/acquisition/
+  audience fields, raw network/device identifiers, location, navigation URLs,
+  free-form text, pitch/move logs, or replayable game state. Do not build session
+  replay, heatmaps, or an admin list of individual sessions.
+- Do not promise perfect tab/session merging, guaranteed unload delivery, or
+  exact abandonment at the moment a tab closes.
+- Do not connect the new data to GA4, advertising, personalization, player-facing
+  progress, auth/admin decisions, or leaderboard eligibility in this release.
+- The always-on choice does not remove the need for accurate disclosure or the
+  13-month deletion job. Any later consent/opt-out change must stop future
+  collection without silently redefining historical dashboard metrics.
+
+## Implementation Steps
+
+1. Define the versioned analytics schema, measurement fixtures, privacy
+   allowlist/forbidden fields, window semantics, reducer, aggregation functions,
+   and handwritten TypeScript declarations in `shared/`.
+   Add tests before wiring the client.
+2. Build the production-gated client collector with random session/attempt ids,
+   30-minute rotation, visible-time ticks, bounded durable queue,
+   idempotent batches, lifecycle delivery, storage-unavailable fallback, and a
+   no-op-safe transport.
+3. Instrument authoritative transitions in `App.tsx` and the minimum child
+   callbacks: published puzzle/Tutorial starts, first
+   meaningful play, normalized actions, restarts, all completion paths,
+   confirmed leaves, series stages, score/report outcomes, settings, and help
+   panels. Verify editor previews and a single universe touchdown cannot emit a
+   completion.
+4. Add public ingestion to Express and Netlify with identical validation,
+   normalization, rate limits, idempotency, server timestamps, and
+   forbidden-field rejection. Add month-partitioned
+   Netlify session storage with conditional retry.
+5. Add daily rollup/13-month cleanup maintenance and tests for late batches,
+   idempotent reruns, month boundaries, leap dates, rollup failure, and safe
+   deletion. Seed local test fixtures; do not manufacture production history.
+6. Add the independent admin analytics endpoint and aggregation contract for
+   7/30/90/365-day reports plus all-time daily game activity. Cover stale-session
+   inference, multi-tab sessions, restart versus leave, series stage order,
+   renamed/deleted scenarios, and no-id response assertions.
+7. Extend Admin Statistics with overview cards, trends, funnels, distributions,
+   per-puzzle/Tutorial drop-off and gameplay/interaction views.
+   Preserve the existing personal-best notice/table/CSV and make the two data
+   sources fail independently.
+8. Add accurate About/privacy disclosure and update the four durable context
+   docs. Document collection start, definitions, always-on policy, production
+   gating, 13-month detail retention, permanent aggregate rollups, and GA4's
+   separate role.
+9. Run `npm run verify` including function bundle checks. Run the full
+   `npm --prefix client run test:e2e` matrix because the admin screen gains
+   responsive graphs/tables, and manually exercise production-like batching,
+   reload, tab close, inactivity, restart, flat completion, Parallel Universes
+   completion, Tutorial abandonment, and retention maintenance.
+
+## Success Criteria
+
+- A production game session creates a random session id without a persistent
+  browser id and without storing or returning a name, email, Google id, guest
+  alias, IP, raw User-Agent, location, referrer/campaign, device/browser details,
+  free text, move log, or board state.
+- Reloading a tab continues its active game session, 30 minutes of inactivity
+  rotates it, and another tab is a separate game session.
+- The dashboard can answer game sessions, engagement, starts, completions,
+  active time, puzzles per session, per-puzzle and Tutorial drop-off,
+  restart/leave/inactivity reasons, actions, interactions, and submission
+  outcomes for every supported window without duplicating GA traffic/audience
+  data.
+- Puzzle completion is recorded at real game completion, independent of
+  leaderboard submission. Restarts create distinct attempts; editor previews,
+  one scored universe, skipped submissions, hidden-tab time, and fabricated
+  failed-roll metrics do not corrupt the funnel.
+- Abandonment is explicitly split into observed exits and 30-minute inferred
+  inactivity. Lost unload beacons do not leave open attempts permanently or
+  count them as completions.
+- Retried/out-of-order batches are idempotent, concurrent writes do not silently
+  lose counts, invalid/oversized payloads are rejected, analytics failure never
+  affects play.
+- Session-level records older than 13 calendar months are deleted only after
+  anonymous daily rollups exist. Aggregate all-time game activity remains
+  available without stable ids.
+- Admin API responses contain only aggregate results, remain admin-gated, and
+  cannot expose an individual session. Existing personal-best statistics still render and stay accurately
+  labelled if analytics is empty or unavailable.
+- Every graph exposes its period, sample, definitions, exact values, and an
+  equivalent accessible reading; it remains usable by keyboard and screen
+  reader and at 320 px without page-level overflow or color-only meaning.
+- Local development/tests do not pollute production analytics, no new third-party
+  CSP origin or shared-module dependency is introduced, generated scenario seed
+  files are untouched, `npm run verify` passes, and the full Playwright device
+  matrix passes.
 
 ---
 
