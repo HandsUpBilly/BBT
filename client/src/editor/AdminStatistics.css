@@ -31,6 +31,19 @@
   gap: 14px;
 }
 
+.admin-statistics__window {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  color: var(--color-text-muted);
+}
+
+.admin-statistics__window--active {
+  color: var(--color-text-strong);
+  border-color: var(--color-accent);
+}
+
 .admin-statistics__card,
 .admin-statistics__panel {
   color: var(--color-text);
@@ -109,6 +122,63 @@
 
 .admin-statistics__table-wrap {
   overflow-x: auto;
+}
+
+.admin-statistics__tools {
+  display: flex;
+  align-items: end;
+  gap: 12px;
+  padding: 14px 20px;
+  color: var(--color-text-muted);
+  border-bottom: 1px solid var(--color-border-subtle);
+  font-family: var(--font-display);
+  font-size: 0.7rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.admin-statistics__tools label {
+  display: grid;
+  gap: 5px;
+  min-width: min(280px, 100%);
+}
+
+.admin-statistics__tools input {
+  min-height: 34px;
+  padding: 6px 9px;
+  color: var(--color-text);
+  background: var(--color-surface-sunken);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: 2px;
+  font: inherit;
+  letter-spacing: normal;
+  text-transform: none;
+}
+
+.admin-statistics__tools > span {
+  margin-right: auto;
+  padding-bottom: 9px;
+}
+
+.admin-statistics__sort {
+  padding: 0;
+  color: inherit;
+  background: none;
+  border: 0;
+  font: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+  cursor: pointer;
+}
+
+.admin-statistics__sort:hover {
+  color: var(--color-text-strong);
+}
+
+.admin-statistics__empty {
+  padding: 22px !important;
+  color: var(--color-text-muted);
+  text-align: center !important;
 }
 
 .admin-statistics__table {
@@ -205,9 +275,15 @@
   }
 
   .admin-statistics__error,
-  .admin-statistics__panel-heading {
+  .admin-statistics__panel-heading,
+  .admin-statistics__tools {
     align-items: flex-start;
     flex-direction: column;
+  }
+
+  .admin-statistics__tools > span {
+    margin-right: 0;
+    padding-bottom: 0;
   }
 
   .admin-statistics__panel-heading span {

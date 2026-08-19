@@ -1,6 +1,8 @@
 import { readdir, readFile, writeFile, mkdir, unlink } from 'fs/promises';
 import { join, basename } from 'path';
-import { AdminAuthError, requireAdminGoogleUser } from './auth.js';
+import { AdminAuthError, configuredAdminCount, requireAdminGoogleUser, requireVerifiedGoogleUser } from './auth.js';
+import { addManagedAdmin, normalizeAdminEmail, removeManagedAdmin } from '../shared/adminManagement.js';
+import { readAdminAudit, readManagedAdmins, saveManagedAdminsWithAudit } from './adminStore.js';
 import {
   SCENARIO_ID_RE,
   normalizeScenario,
@@ -38,6 +40,17 @@ async function withAdmin(req, res, handler) {
   return handler();
 }
 
+/** Management always needs a verified actor, including legacy open local dev. */
+async function withAdminManager(req, res, handler) {
+  try {
+    const user = await requireAdminGoogleUser(req);
+    return handler(user ?? await requireVerifiedGoogleUser(req));
+  } catch (error) {
+    if (error instanceof AdminAuthError) return jsonResponse(res, error.status, { errors: [error.message] });
+    throw error;
+  }
+}
+
 async function readScenarios() {
   const files = await readdir(SCENARIO_DIR);
   const jsonFiles = files.filter(file => file.endsWith('.json')).sort();
@@ -73,6 +86,38 @@ export async function readPublicScenarios() {
 }
 
 export function registerEditorRoutes(app) {
+  app.get('/api/editor/admins', async (req, res) => withAdminManager(req, res, async () => {
+    const managedAdmins = await readManagedAdmins();
+    jsonResponse(res, 200, { managedAdmins, configuredAdminCount, audit: await readAdminAudit() });
+  }));
+
+  app.post('/api/editor/admins', async (req, res) => withAdminManager(req, res, async user => {
+    try {
+      const target = normalizeAdminEmail(req.body?.email);
+      const saved = await saveManagedAdminsWithAudit(addManagedAdmin(await readManagedAdmins(), target), { action: 'added', actor: user.email, target });
+      jsonResponse(res, 200, { ...saved, configuredAdminCount });
+    } catch (error) {
+      jsonResponse(res, 400, { errors: [error instanceof Error ? error.message : 'Could not add administrator'] });
+    }
+  }));
+
+  app.delete('/api/editor/admins/:email', async (req, res) => withAdminManager(req, res, async user => {
+    try {
+      const current = await readManagedAdmins();
+      const managedAdmins = removeManagedAdmin(current, req.params.email);
+      if (configuredAdminCount === 0 && managedAdmins.length === 0 && current.length > 0) {
+        return jsonResponse(res, 400, { errors: ['Keep at least one managed administrator, or configure ADMIN_EMAILS.'] });
+      }
+      if (managedAdmins.length === current.length) {
+        return jsonResponse(res, 404, { errors: ['That administrator is managed by deployment configuration or does not exist.'] });
+      }
+      const saved = await saveManagedAdminsWithAudit(managedAdmins, { action: 'removed', actor: user.email, target: normalizeAdminEmail(req.params.email) });
+      jsonResponse(res, 200, { ...saved, configuredAdminCount });
+    } catch (error) {
+      jsonResponse(res, 400, { errors: [error instanceof Error ? error.message : 'Could not remove administrator'] });
+    }
+  }));
+
   // Drafts include unpublished puzzles, so this needs the same admin gate as
   // the write routes — an open read here would leak work in progress.
   app.get('/api/editor/scenarios', async (req, res) => withAdmin(req, res, async () => {

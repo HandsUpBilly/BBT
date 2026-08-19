@@ -70,7 +70,7 @@ export function makeGoogleTokenVerifier(OAuth2Client, clientId) {
  *   ADMIN_EMAILS means no restriction; deployments can explicitly pass false
  *   to fail closed instead.
  */
-export function createGoogleAuth({ verifyIdToken, adminEmails, allowUnauthenticated = true }) {
+export function createGoogleAuth({ verifyIdToken, adminEmails, allowUnauthenticated = true, getManagedAdminEmails }) {
   const allowlist = parseAdminEmails(adminEmails);
 
   // Visible at cold start so an accidentally-cleared/typo'd ADMIN_EMAILS in
@@ -111,6 +111,23 @@ export function createGoogleAuth({ verifyIdToken, adminEmails, allowUnauthentica
     return Boolean(user?.email && allowlist.has(user.email.toLowerCase()));
   }
 
+  async function effectiveAllowlist() {
+    if (!getManagedAdminEmails) return allowlist;
+    try {
+      const managed = parseAdminEmails((await getManagedAdminEmails()).join(','));
+      return new Set([...allowlist, ...managed]);
+    } catch {
+      throw new AdminAuthError('Administrator access could not be checked', 503);
+    }
+  }
+
+  async function requireVerifiedGoogleUser(getHeader) {
+    const user = await verifyOptionalGoogleUser(getHeader);
+    if (!user) throw new AdminAuthError('Sign-in required', 401);
+    if (!user.email) throw new AdminAuthError('A verified email address is required', 403);
+    return user;
+  }
+
   /**
    * Requires a verified Google identity on the admin allowlist.
    *
@@ -119,13 +136,13 @@ export function createGoogleAuth({ verifyIdToken, adminEmails, allowUnauthentica
    * AdminAuthError (401 not signed in, 403 not allowlisted) as appropriate.
    */
   async function requireAdminGoogleUser(getHeader) {
-    if (allowlist.size === 0) {
+    const activeAllowlist = await effectiveAllowlist();
+    if (activeAllowlist.size === 0) {
       if (allowUnauthenticated) return null;
       throw new AdminAuthError('Editor access is not configured on this deployment', 503);
     }
-    const user = await verifyOptionalGoogleUser(getHeader);
-    if (!user) throw new AdminAuthError('Sign-in required', 401);
-    if (!isAdminUser(user)) throw new AdminAuthError('Admin access required', 403);
+    const user = await requireVerifiedGoogleUser(getHeader);
+    if (!activeAllowlist.has(user.email.toLowerCase())) throw new AdminAuthError('Admin access required', 403);
     return user;
   }
 
@@ -133,6 +150,7 @@ export function createGoogleAuth({ verifyIdToken, adminEmails, allowUnauthentica
     verifyOptionalGoogleUser,
     isAdminUser,
     requireAdminGoogleUser,
+    requireVerifiedGoogleUser,
     adminEmailCount: allowlist.size,
   };
 }

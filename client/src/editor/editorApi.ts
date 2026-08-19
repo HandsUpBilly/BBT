@@ -11,6 +11,12 @@ interface PublishResponse {
   series: SeriesDefinition;
 }
 
+export interface AdminAccess {
+  managedAdmins: string[];
+  configuredAdminCount: number;
+  audit: Array<{ action: 'added' | 'removed'; actor: string; target: string; at: string }>;
+}
+
 async function parseJsonResponse<T>(response: Response): Promise<T> {
   let body: { errors?: unknown; error?: unknown };
   try {
@@ -43,9 +49,27 @@ export async function fetchEditorData(idToken: string | null): Promise<EditorLoa
   return parseJsonResponse<EditorLoadResponse>(response);
 }
 
-export async function fetchPlayerStatistics(idToken: string | null): Promise<PlayerStatistics> {
-  const response = await fetch('/api/editor/statistics', { headers: authHeaders(idToken) });
+export async function fetchPlayerStatistics(idToken: string | null, windowDays?: 7 | 30): Promise<PlayerStatistics> {
+  const suffix = windowDays ? `?window=${windowDays}` : '';
+  const response = await fetch(`/api/editor/statistics${suffix}`, { headers: authHeaders(idToken) });
   return parseJsonResponse<PlayerStatistics>(response);
+}
+
+export async function fetchAdminAccess(idToken: string | null): Promise<AdminAccess> {
+  const response = await fetch('/api/editor/admins', { headers: authHeaders(idToken) });
+  return parseJsonResponse<AdminAccess>(response);
+}
+
+export async function addAdmin(email: string, idToken: string | null): Promise<AdminAccess> {
+  const response = await fetch('/api/editor/admins', {
+    method: 'POST', headers: { 'Content-Type': 'application/json', ...authHeaders(idToken) }, body: JSON.stringify({ email }),
+  });
+  return parseJsonResponse<AdminAccess>(response);
+}
+
+export async function removeAdmin(email: string, idToken: string | null): Promise<AdminAccess> {
+  const response = await fetch(`/api/editor/admins?email=${encodeURIComponent(email)}`, { method: 'DELETE', headers: authHeaders(idToken) });
+  return parseJsonResponse<AdminAccess>(response);
 }
 
 export async function createScenario(scenario: Scenario, idToken: string | null): Promise<Scenario> {

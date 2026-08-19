@@ -430,8 +430,10 @@ export default function App() {
   // Empty ADMIN_EMAILS (unset in this environment) means "show to everyone" —
   // matches the server-side fallback in requireAdminGoogleUser, keeping local
   // dev usable without any Google OAuth/admin config.
-  const isAdmin = ADMIN_EMAILS.size === 0
-    || Boolean(currentUser?.email && ADMIN_EMAILS.has(currentUser.email.toLowerCase()));
+  // Runtime-managed administrators cannot be known at build time. Allow any
+  // signed-in account to reach the console; the server remains the authority
+  // and rejects non-admin calls before revealing editor data.
+  const isAdmin = ADMIN_EMAILS.size === 0 || Boolean(currentUser);
   // Defense in depth: appMode is client-only state with no URL routing, so this
   // shouldn't be reachable since the Puzzle Creator tab is hidden for non-admins.
   // The real gate is server-side (ADMIN_EMAILS check on the write endpoints).

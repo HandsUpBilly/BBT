@@ -52,6 +52,10 @@ Guest flow:
   listed. Guests cannot satisfy a configured allowlist.
 - `EDITOR_ALLOW_UNAUTHENTICATED=false` opts a deployment into returning 503
   when the allowlist is empty.
+- The Admin Console can add/remove a persistent managed allowlist. It is merged
+  with immutable `ADMIN_EMAILS` deployment administrators and checked on every
+  editor request. Runtime management requires a verified Google email even in
+  legacy unrestricted local mode.
 
 ## Issue and Feature Report Identity
 

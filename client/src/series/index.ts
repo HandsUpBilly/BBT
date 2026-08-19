@@ -2,6 +2,7 @@ import type { Scenario, SeriesDefinition } from '../types';
 import defaultSeriesData from './default.json';
 
 export const FEATURED_SERIES_NAME = 'Humans vs Orcs: The Nuffle Shuffle';
+export const FEATURED_SERIES_LOGO = 'nuffle-shuffle';
 
 const LEGACY_FEATURED_SERIES_NAMES = new Set([
   'Humans vs Orcs: Touchdown or Bust',
@@ -14,9 +15,10 @@ const LEGACY_FEATURED_SERIES_NAMES = new Set([
  * any genuinely custom Puzzle Creator name remains the source of truth.
  */
 export function normalizeSeriesDefinition(series: SeriesDefinition): SeriesDefinition {
-  return LEGACY_FEATURED_SERIES_NAMES.has(series.name)
-    ? { ...series, name: FEATURED_SERIES_NAME }
-    : series;
+  if (!LEGACY_FEATURED_SERIES_NAMES.has(series.name)) return series;
+  // Published metadata can predate `logo`: the static chooser crest would
+  // otherwise flash, then disappear when the runtime response replaces it.
+  return { ...series, name: FEATURED_SERIES_NAME, logo: series.logo || FEATURED_SERIES_LOGO };
 }
 
 // Static fallback only — the app's actual source of truth at runtime is the

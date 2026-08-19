@@ -12,8 +12,8 @@ Primary files:
 
 ## What Works Now
 
-Puzzle Creator renders `PuzzleEditor` with two sections: **Puzzle Editor** and
-**Statistics**. Switching away from an unsaved puzzle is covered by the same
+Puzzle Creator renders `PuzzleEditor` with **Puzzle Editor**, **Statistics**,
+and **Admin Console** sections. Switching away from an unsaved puzzle is covered by the same
 discard confirmation as other editor navigation.
 
 Editor features:
@@ -42,11 +42,42 @@ full retained leaderboard data:
 - average, median, and best success probability,
 - average dice count and latest score date,
 - a per-puzzle breakdown plus a full-series summary.
+- anonymous engagement patterns: guest/signed-in mix, returning players,
+  puzzles per player, and retained-best action counts (dodges, passes, blocks,
+  and related actions).
+
+The two admin surfaces also include their own client-side workbench tools:
+
+- Puzzle Creator can search by puzzle id, name, or description and filter the
+  list to enabled, disabled, or in-series puzzles without changing drafts.
+- Series name, description, and chooser-logo key are separately saved draft
+  details; a pending edit blocks publishing and other series changes until it
+  is saved or discarded.
+- Statistics can search its per-puzzle table, sort every displayed metric, and
+  download the anonymous per-puzzle summary as CSV. The export contains the
+  same aggregate data already visible on-screen—never names, ids, or move logs.
+- Statistics supports all-time, 30-day, and 7-day windows. Windowing happens
+  server-side before every puzzle, series, and habit aggregate is calculated;
+  undated legacy records stay visible only in all-time views.
 
 Leaderboard storage keeps one personal best per player, not every attempt, so
 these figures are explicitly labeled as personal-best statistics. They cannot
 represent total attempts or completion rates. The API never returns player
 names, ids, or move histories to the dashboard.
+
+### Managed administrators
+
+The Admin Console stores an additional runtime allowlist. Administrators in
+`ADMIN_EMAILS` remain deployment configuration and cannot be removed from the
+browser; they can add/remove the managed Google email addresses. With no
+deployment list, adding the first managed address closes the legacy open-admin
+mode, and the console refuses to remove the final managed address. Local dev
+persists this runtime list at `.bbt-managed-admins.json`; Netlify stores it in
+the `admin-access` Blobs store. Every editor endpoint checks the combined list.
+The last 100 managed additions/removals are retained with actor, target, and
+timestamp and shown in the console; removal has an explicit confirmation.
+An unreadable managed-admin store is an access-check failure (503), not an
+empty allowlist, so storage trouble cannot broaden administrator access.
 
 ### Guards
 
@@ -80,6 +111,7 @@ names, ids, or move histories to the dashboard.
 - `PUT /api/editor/series/default`
 - `POST /api/editor/publish`
 - `GET /api/editor/statistics`
+- `GET` / `POST` / `DELETE /api/editor/admins`
 
 These write local JSON files under:
 
@@ -97,6 +129,8 @@ Netlify production persists editor drafts in Netlify Blobs:
 - `netlify/functions/editor-publish.js` copies draft scenarios/series to the published keys.
 - `netlify/functions/editor-statistics.js` reads the full leaderboard Blobs and
   returns anonymous aggregates built by `shared/statistics.js`.
+- `netlify/functions/editor-admins.js` stores runtime-managed administrator
+  emails in a separate protected Blobs store.
 - `netlify/functions/scenarios.js` serves published scenarios/series to players.
 
 Draft saves are not player-visible until an admin clicks Publish Drafts.

@@ -3,6 +3,7 @@ import type { DragEvent } from 'react';
 import type { Scenario, ScenarioPieceDef, SeriesDefinition, Team } from '../types';
 import { ConfirmDialog } from '../ConfirmDialog';
 import { AdminStatistics } from './AdminStatistics';
+import { AdminConsole } from './AdminConsole';
 import { createScenario, deleteScenario, fetchEditorData, publishEditorData, updateDefaultSeries, updateScenario } from './editorApi';
 import { missingSeriesScenarioIds, nextScenarioId, validateScenarioDraft } from './editorValidation';
 import { PLAYER_TEMPLATES, generatedPlayerName, templateToPiece } from './playerTemplates';
@@ -19,6 +20,18 @@ const EMPTY_SERIES: SeriesDefinition = {
   description: '',
   scenarioIds: [],
 };
+
+type SeriesDetails = Pick<SeriesDefinition, 'name' | 'description' | 'logo'>;
+
+function seriesDetailsFor(series: SeriesDefinition): SeriesDetails {
+  return { name: series.name, description: series.description, logo: series.logo };
+}
+
+function sameSeriesDetails(left: SeriesDetails, right: SeriesDetails): boolean {
+  return left.name === right.name
+    && left.description === right.description
+    && left.logo === right.logo;
+}
 
 const STAT_LABELS: Record<string, string> = {
   ma: 'MA', st: 'ST', ag: 'AG', pa: 'PA', av: 'AV',
@@ -75,6 +88,7 @@ interface Props {
 export function PuzzleEditor({ onBack, onPlay, previewScenario, idToken }: Props) {
   const [scenarios, setScenarios] = useState<Scenario[]>([]);
   const [series, setSeries] = useState<SeriesDefinition>(EMPTY_SERIES);
+  const [seriesDetails, setSeriesDetails] = useState<SeriesDetails>(() => seriesDetailsFor(EMPTY_SERIES));
   const [draft, setDraft] = useState<Scenario>(() => emptyScenario([]));
   // The last-saved shape of the current draft, so we can tell whether the
   // editor holds unsaved work before discarding it.
@@ -85,17 +99,20 @@ export function PuzzleEditor({ onBack, onPlay, previewScenario, idToken }: Props
   const [status, setStatus] = useState('Loading editor data...');
   const [saving, setSaving] = useState(false);
   const [publishing, setPublishing] = useState(false);
+  const [puzzleQuery, setPuzzleQuery] = useState('');
+  const [puzzleFilter, setPuzzleFilter] = useState<'all' | 'enabled' | 'disabled' | 'series'>('all');
   // Pending confirmation, if any: the action to run once the player confirms.
   const [confirm, setConfirm] = useState<{
     title: string; message: string; confirmLabel: string; destructive?: boolean; run: () => void;
   } | null>(null);
-  const [adminSection, setAdminSection] = useState<'editor' | 'statistics'>('editor');
+  const [adminSection, setAdminSection] = useState<'editor' | 'statistics' | 'console'>('editor');
 
   const load = useCallback(async () => {
     try {
       const data = await fetchEditorData(idToken);
       setScenarios(data.scenarios);
       setSeries(data.series);
+      setSeriesDetails(seriesDetailsFor(data.series));
       const first = previewScenario ?? data.scenarios[0] ?? emptyScenario([]);
       const clone = cloneScenario(first);
       setDraft(clone);
@@ -129,15 +146,28 @@ export function PuzzleEditor({ onBack, onPlay, previewScenario, idToken }: Props
   const hasUnsavedChanges = savedDraft === null
     ? draft.pieces.length > 0 || draft.name !== 'New Puzzle'
     : !sameScenario(draft, savedDraft);
+  const hasUnsavedSeriesDetails = !sameSeriesDetails(seriesDetails, seriesDetailsFor(series));
+  const hasUnsavedEditorChanges = hasUnsavedChanges || hasUnsavedSeriesDetails;
+  const filteredScenarios = useMemo(() => {
+    const query = puzzleQuery.trim().toLocaleLowerCase();
+    return scenarios.filter(scenario => {
+      const matchesQuery = !query || `${scenario.id} ${scenario.name} ${scenario.description}`.toLocaleLowerCase().includes(query);
+      const matchesFilter = puzzleFilter === 'all'
+        || (puzzleFilter === 'enabled' && scenario.published !== false)
+        || (puzzleFilter === 'disabled' && scenario.published === false)
+        || (puzzleFilter === 'series' && series.scenarioIds.includes(scenario.id));
+      return matchesQuery && matchesFilter;
+    });
+  }, [puzzleFilter, puzzleQuery, scenarios, series.scenarioIds]);
 
   // Warn on tab close/reload while edits are pending. Re-registering the
   // listener when the flag flips keeps it out of a ref written during render.
   useEffect(() => {
-    if (!hasUnsavedChanges) return;
+    if (!hasUnsavedEditorChanges) return;
     const onBeforeUnload = (event: BeforeUnloadEvent) => event.preventDefault();
     window.addEventListener('beforeunload', onBeforeUnload);
     return () => window.removeEventListener('beforeunload', onBeforeUnload);
-  }, [hasUnsavedChanges]);
+  }, [hasUnsavedEditorChanges]);
 
   const selectedPiece = selectedPieceId
     ? draft.pieces.find(piece => piece.id === selectedPieceId)
@@ -145,18 +175,29 @@ export function PuzzleEditor({ onBack, onPlay, previewScenario, idToken }: Props
   const seriesIndex = series.scenarioIds.indexOf(draft.id);
   const inSeries = seriesIndex >= 0;
 
-  /** Runs `action`, first asking to confirm if the draft has unsaved edits. */
+  function discardUnsavedWork() {
+    if (hasUnsavedChanges) {
+      const restored = savedDraft ? cloneScenario(savedDraft) : emptyScenario(existingIds);
+      setDraft(restored);
+      setOriginalId(savedDraft?.id);
+      setSelectedPieceId(null);
+      setBallTool(false);
+    }
+    if (hasUnsavedSeriesDetails) setSeriesDetails(seriesDetailsFor(series));
+  }
+
+  /** Runs `action`, first asking to confirm if the editor has unsaved edits. */
   function guardUnsaved(action: () => void, what: string) {
-    if (!hasUnsavedChanges) {
+    if (!hasUnsavedEditorChanges) {
       action();
       return;
     }
     setConfirm({
       title: 'Discard unsaved changes?',
-      message: `${what} will lose the edits you've made to "${draft.name}".`,
+      message: `${what} will lose your unsaved puzzle or series details.`,
       confirmLabel: 'Discard',
       destructive: true,
-      run: action,
+      run: () => { discardUnsavedWork(); action(); },
     });
   }
 
@@ -202,23 +243,20 @@ export function PuzzleEditor({ onBack, onPlay, previewScenario, idToken }: Props
   }
 
   function requestDiscardUnsavedChanges() {
-    if (!hasUnsavedChanges) return;
+    if (!hasUnsavedEditorChanges) return;
+    const discardingNewPuzzle = hasUnsavedChanges && savedDraft === null;
     setConfirm({
       title: 'Discard unsaved changes?',
-      message: savedDraft
-        ? `Restore "${savedDraft.name}" to its last saved draft?`
-        : `Clear the unsaved puzzle "${draft.name}" and start with a blank draft?`,
+      message: hasUnsavedSeriesDetails
+        ? 'Restore the puzzle and series details to their last saved drafts?'
+        : savedDraft
+          ? `Restore "${savedDraft.name}" to its last saved draft?`
+          : `Clear the unsaved puzzle "${draft.name}" and start with a blank draft?`,
       confirmLabel: 'Discard Changes',
       destructive: true,
       run: () => {
-        const restored = savedDraft ? cloneScenario(savedDraft) : emptyScenario(existingIds);
-        setDraft(restored);
-        setOriginalId(savedDraft?.id);
-        setSelectedPieceId(null);
-        setBallTool(false);
-        setStatus(savedDraft
-          ? `Discarded unsaved changes to ${savedDraft.id}.`
-          : 'Discarded the unsaved puzzle draft.');
+        discardUnsavedWork();
+        setStatus(discardingNewPuzzle ? 'Discarded the unsaved puzzle draft.' : 'Discarded unsaved editor changes.');
       },
     });
   }
@@ -345,17 +383,22 @@ export function PuzzleEditor({ onBack, onPlay, previewScenario, idToken }: Props
     }
   }
 
-  async function saveSeries(nextSeries: SeriesDefinition) {
+  async function saveSeries(nextSeries: SeriesDefinition, savedMessage = 'Saved series assignment.') {
     setSaving(true);
     try {
       const saved = await updateDefaultSeries(nextSeries, idToken);
       setSeries(saved);
-      setStatus('Saved series assignment.');
+      setSeriesDetails(seriesDetailsFor(saved));
+      setStatus(savedMessage);
     } catch (error) {
       setStatus(error instanceof Error ? error.message : 'Failed to save series.');
     } finally {
       setSaving(false);
     }
+  }
+
+  function saveSeriesDetails() {
+    void saveSeries({ ...series, ...seriesDetails }, 'Saved series details.');
   }
 
   function requestPublish() {
@@ -440,13 +483,6 @@ export function PuzzleEditor({ onBack, onPlay, previewScenario, idToken }: Props
 
   function openStatistics() {
     guardUnsaved(() => {
-      if (hasUnsavedChanges) {
-        const restored = savedDraft ? cloneScenario(savedDraft) : emptyScenario(existingIds);
-        setDraft(restored);
-        setOriginalId(savedDraft?.id);
-        setSelectedPieceId(null);
-        setBallTool(false);
-      }
       setAdminSection('statistics');
     }, 'Opening statistics');
   }
@@ -472,9 +508,20 @@ export function PuzzleEditor({ onBack, onPlay, previewScenario, idToken }: Props
         >
           Statistics
         </button>
+        <button
+          className={`editor__section-tab${adminSection === 'console' ? ' editor__section-tab--active' : ''}`}
+          type="button"
+          role="tab"
+          aria-selected={adminSection === 'console'}
+          onClick={() => guardUnsaved(() => setAdminSection('console'), 'Opening the admin console')}
+        >
+          Admin Console
+        </button>
       </nav>
 
-      {adminSection === 'statistics' ? (
+      {adminSection === 'console' ? (
+        <AdminConsole idToken={idToken} onBack={onBack} />
+      ) : adminSection === 'statistics' ? (
         <AdminStatistics idToken={idToken} onBack={onBack} />
       ) : (
         <>
@@ -486,7 +533,7 @@ export function PuzzleEditor({ onBack, onPlay, previewScenario, idToken }: Props
           </p>
         </div>
         <div className="editor__header-actions">
-          {hasUnsavedChanges && (
+          {hasUnsavedEditorChanges && (
             <span className="editor__unsaved">Unsaved changes. Save before publishing.</span>
           )}
           <button className="btn btn--secondary" onClick={() => guardUnsaved(onBack, 'Leaving the editor')}>Back</button>
@@ -495,8 +542,8 @@ export function PuzzleEditor({ onBack, onPlay, previewScenario, idToken }: Props
           </button>
           <button
             className="btn btn--primary"
-            disabled={publishing || hasUnsavedChanges}
-            title={hasUnsavedChanges ? 'Save changes before publishing. Only saved drafts can be published.' : undefined}
+            disabled={publishing || hasUnsavedEditorChanges}
+            title={hasUnsavedEditorChanges ? 'Save changes before publishing. Only saved drafts can be published.' : undefined}
             onClick={requestPublish}
           >
             {publishing ? 'Publishing...' : 'Publish Drafts'}
@@ -510,8 +557,24 @@ export function PuzzleEditor({ onBack, onPlay, previewScenario, idToken }: Props
             <h2>Puzzles</h2>
             <button className="btn btn--secondary" onClick={createNew}>New</button>
           </div>
+          <div className="editor__puzzle-tools">
+            <input
+              type="search"
+              value={puzzleQuery}
+              onChange={event => setPuzzleQuery(event.target.value)}
+              placeholder="Find by name or ID"
+              aria-label="Find puzzle"
+            />
+            <select value={puzzleFilter} onChange={event => setPuzzleFilter(event.target.value as typeof puzzleFilter)} aria-label="Filter puzzles">
+              <option value="all">All puzzles</option>
+              <option value="enabled">Enabled</option>
+              <option value="disabled">Disabled</option>
+              <option value="series">In series</option>
+            </select>
+            <span>{filteredScenarios.length} of {scenarios.length}</span>
+          </div>
           <div className="editor__puzzle-list">
-            {scenarios.map(scenario => {
+            {filteredScenarios.map(scenario => {
               const position = series.scenarioIds.indexOf(scenario.id);
               return (
                 <button
@@ -533,6 +596,7 @@ export function PuzzleEditor({ onBack, onPlay, previewScenario, idToken }: Props
                 </button>
               );
             })}
+            {filteredScenarios.length === 0 && <p className="editor__empty-list">No puzzles match that filter.</p>}
           </div>
           <button className="btn btn--secondary" onClick={duplicateCurrent}>Duplicate Current</button>
         </aside>
@@ -740,22 +804,35 @@ export function PuzzleEditor({ onBack, onPlay, previewScenario, idToken }: Props
 
           <section className="editor-tool">
             <h2>Series</h2>
-            <p className="editor__hint">{series.name}</p>
+            <label>
+              Series name
+              <input value={seriesDetails.name} onChange={event => setSeriesDetails(details => ({ ...details, name: event.target.value }))} />
+            </label>
+            <label>
+              Series description
+              <textarea value={seriesDetails.description} onChange={event => setSeriesDetails(details => ({ ...details, description: event.target.value }))} />
+            </label>
+            <label>
+              Chooser logo key
+              <input value={seriesDetails.logo ?? ''} placeholder="nuffle-shuffle" onChange={event => setSeriesDetails(details => ({ ...details, logo: event.target.value || undefined }))} />
+            </label>
+            <p className="editor__hint">Logo keys map to bundled chooser artwork. Unknown keys use the text-only fallback.</p>
+            <button className="btn btn--primary" disabled={saving || !hasUnsavedSeriesDetails} onClick={saveSeriesDetails}>Save Series Details</button>
             {missingSeriesIds.length > 0 && (
               <div className="editor__errors" role="alert">
                 <p>Series references missing puzzles: {missingSeriesIds.join(', ')}</p>
-                <button className="btn btn--secondary" onClick={removeMissingSeriesIds}>
+                <button className="btn btn--secondary" onClick={removeMissingSeriesIds} disabled={hasUnsavedSeriesDetails}>
                   Remove Missing Entries
                 </button>
               </div>
             )}
-            <button className="btn btn--secondary" onClick={toggleSeriesAssignment} disabled={!originalId}>
+            <button className="btn btn--secondary" onClick={toggleSeriesAssignment} disabled={!originalId || hasUnsavedSeriesDetails}>
               {inSeries ? 'Remove From Series' : 'Add To Series'}
             </button>
             {!originalId && <p className="editor__hint">Save the puzzle before adding it to the series.</p>}
             <div className="editor__series-actions">
-              <button className="btn btn--secondary" disabled={!inSeries || seriesIndex === 0} onClick={() => moveSeries(-1)}>Move Up</button>
-              <button className="btn btn--secondary" disabled={!inSeries || seriesIndex === series.scenarioIds.length - 1} onClick={() => moveSeries(1)}>Move Down</button>
+              <button className="btn btn--secondary" disabled={hasUnsavedSeriesDetails || !inSeries || seriesIndex === 0} onClick={() => moveSeries(-1)}>Move Up</button>
+              <button className="btn btn--secondary" disabled={hasUnsavedSeriesDetails || !inSeries || seriesIndex === series.scenarioIds.length - 1} onClick={() => moveSeries(1)}>Move Down</button>
             </div>
             <ol className="editor__series-list">
               {series.scenarioIds.map(id => (
@@ -779,7 +856,7 @@ export function PuzzleEditor({ onBack, onPlay, previewScenario, idToken }: Props
             </button>
             <button
               className="btn btn--secondary"
-              disabled={saving || !hasUnsavedChanges}
+              disabled={saving || !hasUnsavedEditorChanges}
               onClick={requestDiscardUnsavedChanges}
             >
               Discard Unsaved Changes
