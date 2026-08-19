@@ -8,6 +8,7 @@ import { Pitch } from './Pitch';
 import type { PitchOrientation } from './Pitch';
 import { PieceMenu } from './PieceMenu';
 import type { PieceMenuAction } from './PieceMenu';
+import type { MenuAnchor } from './menuPosition';
 import { PlayerPanel } from './PlayerPanel';
 import { ScenarioSelect } from './ScenarioSelect';
 import { SubmitModal } from './SubmitModal';
@@ -675,9 +676,9 @@ export default function App() {
   }, [disarm, handleCancelSelection]);
 
   // Context menu state
-  const [pieceMenu, setPieceMenu] = useState<{ piece: PlayerPiece; x: number; y: number } | null>(null);
+  const [pieceMenu, setPieceMenu] = useState<{ piece: PlayerPiece; anchor: MenuAnchor } | null>(null);
 
-  const handlePieceClick = useCallback((col: number, row: number, x: number, y: number) => {
+  const handlePieceClick = useCallback((col: number, row: number, anchor: MenuAnchor) => {
     const k = key({ col, row });
     const piece = state.pieces.find(p => key(p.position) === k);
     if (!piece) return;
@@ -750,7 +751,7 @@ export default function App() {
     // Own unactivated piece — show context menu
     if (piece.team === state.activeTeam && !piece.activated) {
       if (compact) setMobileInfoOpen(false);
-      setPieceMenu({ piece, x, y });
+      setPieceMenu({ piece, anchor });
       return;
     }
 
@@ -1517,8 +1518,7 @@ export default function App() {
         return (
           <PieceMenu
             piece={menuPiece}
-            x={pieceMenu.x}
-            y={pieceMenu.y}
+            anchor={pieceMenu.anchor}
             actions={menuActions}
             onAction={handleMenuAction}
             onDismiss={dismissMenu}

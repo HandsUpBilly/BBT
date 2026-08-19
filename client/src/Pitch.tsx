@@ -9,6 +9,7 @@ import { passTrajectoryPath } from './passTrajectory';
 import { skillGroupsFor, skillMarkersFor } from './skillPresentation';
 import type { PitchSurface, TokenStyle } from './prefs';
 import type { GhostPiece } from './branchRun';
+import type { MenuAnchor } from './menuPosition';
 import { RoleGlyph } from './RoleGlyph';
 import { roleCodeFor } from './rolePresentation';
 import { DEFAULT_PLAYER_ROLE, playerPortraitFor } from './playerPortraits';
@@ -265,7 +266,7 @@ interface SquareProps {
   branchGhosts: readonly BranchGhostView[];
   focusable: boolean;
   onSquareClick: (col: number, row: number) => void;
-  onPieceClick: (col: number, row: number, x: number, y: number) => void;
+  onPieceClick: (col: number, row: number, anchor: MenuAnchor) => void;
   onSquareHover: (col: number, row: number) => void;
   onSquareLeave: () => void;
 }
@@ -283,10 +284,15 @@ const Square = memo(function Square({
   branchGhosts, focusable,
   onSquareClick, onPieceClick, onSquareHover, onSquareLeave,
 }: SquareProps) {
-  const activate = useCallback((clientX: number, clientY: number) => {
-    if (pieceTeam) onPieceClick(pCol, pRow, clientX, clientY);
+  const activate = useCallback((anchor: MenuAnchor) => {
+    if (pieceTeam) onPieceClick(pCol, pRow, anchor);
     else onSquareClick(pCol, pRow);
   }, [pieceTeam, pCol, pRow, onPieceClick, onSquareClick]);
+
+  const activateFromSquare = useCallback((element: HTMLElement) => {
+    const rect = element.getBoundingClientRect();
+    activate({ left: rect.left, top: rect.top, right: rect.right, bottom: rect.bottom });
+  }, [activate]);
 
   return (
     <div
@@ -299,14 +305,13 @@ const Square = memo(function Square({
       // Roving focus: only squares that can be acted on enter the tab order, so
       // keyboard users aren't forced through 390 inert cells to reach the HUD.
       tabIndex={focusable ? 0 : -1}
-      onClick={e => activate(e.clientX, e.clientY)}
+      onClick={e => activateFromSquare(e.currentTarget)}
       onKeyDown={e => {
         if (e.key !== 'Enter' && e.key !== ' ') return;
         e.preventDefault();
         // Position the context menu over the square itself, since there is no
         // pointer position to anchor to.
-        const rect = e.currentTarget.getBoundingClientRect();
-        activate(rect.left + rect.width / 2, rect.top + rect.height / 2);
+        activateFromSquare(e.currentTarget);
       }}
       onFocus={() => onSquareHover(pCol, pRow)}
       onBlur={onSquareLeave}
@@ -401,7 +406,7 @@ const Square = memo(function Square({
 interface Props {
   state: GameState;
   onSquareClick: (col: number, row: number) => void;
-  onPieceClick: (col: number, row: number, x: number, y: number) => void;
+  onPieceClick: (col: number, row: number, anchor: MenuAnchor) => void;
   onSquareHover: (col: number, row: number) => void;
   onSquareLeave: () => void;
   /** When set, only this state-coordinate sub-region of the pitch is rendered. */

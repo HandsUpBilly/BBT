@@ -385,6 +385,10 @@ pickup stacking on one square; keep the two together and keep
   a player who has no action menu, and opens after an action is chosen. The
   action menu itself carries the same five-stat summary, so stats never depend
   on finding a separate gesture.
+- `PieceMenu` is a floating box anchored to the clicked player's square on
+  every pointer type. `placeMenuBesideAnchor()` prefers right, left, below,
+  then above while keeping the whole box in the viewport; coarse pointers use
+  the same placement with narrower, 44px-target controls, never a bottom sheet.
 - `BranchStrip` is a sibling below the HUD, never a child of it. Compact
   universe cards scroll horizontally inside the strip; neither the selector
   nor its scroll width may enlarge the page viewport.
