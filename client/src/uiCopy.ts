@@ -8,18 +8,18 @@
 export const UI_COPY = {
   brand: {
     name: 'Turn 16',
-    tagline: 'Just the final turn',
+    tagline: 'The final turn',
     landingSubtitle: 'Playbook simulator',
   },
   landing: {
     playModeLabel: 'Play mode',
     seriesTab: 'Series',
     singlePlaysTab: 'Single Plays',
-    puzzleCreatorTab: 'Puzzle Creator',
+    puzzleCreatorTab: 'Admin',
     seriesEyebrow: '01 Tutorial',
     startSeries: 'Start Series',
     rankings: 'Rankings',
-    singlePlaysHeading: 'Single Plays',
+    singlePlaysHeading: 'Free Play',
     singlePlaysPrompt: 'Choose a ranked board.',
     playPrefix: 'Play',
     play: 'Play',
