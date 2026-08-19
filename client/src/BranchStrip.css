@@ -129,13 +129,14 @@
   }
 
   .branch-strip__list > li {
-    flex: 0 0 min(88vw, 320px);
+    /* Cards now contain only outcome dice, a chance, and status. Keep them
+       content-sized so parallel universes can be compared at a glance. */
+    flex: 0 0 auto;
     min-width: 0;
   }
 
   .branch-chip {
     min-width: 0;
-    flex: 1;
     grid-template-columns: minmax(0, 1fr) auto;
   }
 

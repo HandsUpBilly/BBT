@@ -195,6 +195,10 @@ next-puzzle transition while reviewing.
 
 - The app name is **Turn 16**, referring to the final turn of a Blood Bowl
   game and the do-or-die touchdown plays the puzzles represent.
+- Brand and landing UI copy lives in `client/src/uiCopy.ts`, so headings,
+  controls, and progress wording can be edited or translated together.
+  Scenario names and descriptions remain in their scenario JSON because the
+  editor and leaderboards consume those same fields.
 - Keep the login gate, home masthead, browser title, and README aligned with
   this name and final-turn framing.
 - Existing `bbt.*` localStorage keys are compatibility identifiers, not

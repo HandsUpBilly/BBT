@@ -49,11 +49,6 @@ interface GoogleCredentialResponse {
   credential?: string;
 }
 
-interface GooglePromptNotification {
-  isNotDisplayed?: () => boolean;
-  isSkippedMoment?: () => boolean;
-}
-
 interface GoogleAccountsId {
   initialize(config: {
     client_id: string;
@@ -61,7 +56,14 @@ interface GoogleAccountsId {
     auto_select?: boolean;
     cancel_on_tap_outside?: boolean;
   }): void;
-  prompt(listener?: (notification: GooglePromptNotification) => void): void;
+  renderButton(parent: HTMLElement, options: {
+    theme: 'outline' | 'filled_blue' | 'filled_black';
+    size: 'large' | 'medium' | 'small';
+    text: 'signin_with';
+    shape: 'rectangular';
+    width?: number;
+  }): void;
+  prompt(): void;
   disableAutoSelect(): void;
 }
 
@@ -135,34 +137,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     saveStoredAuth(user, credential);
   }, []);
 
-  const signIn = useCallback(async () => {
+  const mountSignInButton = useCallback(async (container: HTMLElement) => {
     if (!GOOGLE_CLIENT_ID) return;
     await loadGoogleScript();
     const googleId = window.google?.accounts?.id;
     if (!googleId) return;
 
-    // Resolve when the credential actually arrives (or the prompt is
-    // dismissed), so callers can keep a "signing in…" state up for the real
-    // duration instead of clearing it the instant prompt() returns.
-    await new Promise<void>(resolve => {
-      let settled = false;
-      const finish = () => {
-        if (settled) return;
-        settled = true;
-        resolve();
-      };
-      googleId.initialize({
-        client_id: GOOGLE_CLIENT_ID,
-        callback: response => {
-          applyCredential(response.credential);
-          finish();
-        },
-      });
-      googleId.prompt(notification => {
-        // One Tap can be suppressed (cooldown, blocked third-party cookies).
-        // Stop waiting rather than leaving the button spinning forever.
-        if (notification?.isNotDisplayed?.() || notification?.isSkippedMoment?.()) finish();
-      });
+    googleId.initialize({
+      client_id: GOOGLE_CLIENT_ID,
+      callback: response => applyCredential(response.credential),
+    });
+    container.replaceChildren();
+    googleId.renderButton(container, {
+      theme: 'outline',
+      size: 'large',
+      text: 'signin_with',
+      shape: 'rectangular',
+      width: Math.max(220, Math.floor(container.getBoundingClientRect().width)),
     });
   }, [applyCredential]);
 
@@ -211,9 +202,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     idToken: tokenExpired ? null : idToken,
     sessionExpired: tokenExpired,
     isConfigured: Boolean(GOOGLE_CLIENT_ID),
-    signIn,
+    mountSignInButton,
     signOut,
-  }), [currentUser, idToken, tokenExpired, signIn, signOut]);
+  }), [currentUser, idToken, tokenExpired, mountSignInButton, signOut]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

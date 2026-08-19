@@ -34,6 +34,7 @@ import { SettingsScreen } from './SettingsScreen';
 import { TutorialLessonDialog } from './TutorialLessonDialog';
 import { TUTORIAL_LESSON_IDS, tutorialLessonFor } from './tutorialLessons';
 import type { TutorialLesson } from './tutorialLessons';
+import { UI_COPY } from './uiCopy';
 import { submitScore, fetchLeaderboard, submitSeriesScore, fetchSeriesLeaderboard, fetchProgress, ApiError } from './api';
 import type { ProgressData } from './api';
 import { recordAttempt } from './attemptStore';
@@ -171,23 +172,28 @@ interface SeriesRunState {
 interface IdentityGateProps {
   authConfigured: boolean;
   googleSignedIn: boolean;
-  onGoogleSignIn: () => Promise<void>;
+  mountGoogleSignInButton: (container: HTMLElement) => Promise<void>;
   onAlias: (alias: string) => void;
 }
 
-function IdentityGate({ authConfigured, googleSignedIn, onGoogleSignIn, onAlias }: IdentityGateProps) {
+function IdentityGate({ authConfigured, googleSignedIn, mountGoogleSignInButton, onAlias }: IdentityGateProps) {
   const [guestMode, setGuestMode] = useState(false);
   const [alias, setAlias] = useState('');
-  const [signingIn, setSigningIn] = useState(false);
+  const [googleSignInFailed, setGoogleSignInFailed] = useState(false);
+  const googleButtonRef = useRef<HTMLDivElement>(null);
 
-  async function handleGoogleSignIn() {
-    setSigningIn(true);
-    try {
-      await onGoogleSignIn();
-    } finally {
-      setSigningIn(false);
-    }
-  }
+  useEffect(() => {
+    const container = googleButtonRef.current;
+    if (!authConfigured || !container || googleSignedIn) return;
+    let cancelled = false;
+    void mountGoogleSignInButton(container).catch(() => {
+      if (!cancelled) setGoogleSignInFailed(true);
+    });
+    return () => {
+      cancelled = true;
+      container.replaceChildren();
+    };
+  }, [authConfigured, googleSignedIn, mountGoogleSignInButton]);
 
   function submitAlias() {
     const trimmed = alias.trim();
@@ -201,22 +207,16 @@ function IdentityGate({ authConfigured, googleSignedIn, onGoogleSignIn, onAlias 
     <div className="identity-gate">
       <div className="identity-gate__panel">
         <div className="identity-gate__header">
-          <span className="identity-gate__eyebrow">The final turn: Do or die</span>
-          <h1 className="identity-gate__title">Turn 16</h1>
-          <p className="identity-gate__subtitle">
-            One turn remains. Sign the team sheet and find the route to the end zone.
-          </p>
+          <span className="identity-gate__eyebrow">{UI_COPY.brand.tagline}</span>
+          <h1 className="identity-gate__title">{UI_COPY.brand.name}</h1>
+          <p className="identity-gate__subtitle">{UI_COPY.brand.landingSubtitle}</p>
         </div>
 
         {!googleSignedIn && (
           <div className="identity-gate__actions">
-            <button
-              className="btn btn--primary"
-              disabled={!authConfigured || signingIn}
-              onClick={() => { void handleGoogleSignIn(); }}
-            >
-              {authConfigured ? 'Log In With Google' : 'Google Login Unavailable'}
-            </button>
+            {authConfigured && !googleSignInFailed
+              ? <div ref={googleButtonRef} className="identity-gate__google-button" />
+              : <button className="btn btn--primary" disabled>Google Login Unavailable</button>}
             <button className="btn btn--secondary" onClick={() => setGuestMode(true)}>
               Play As Guest
             </button>
@@ -251,7 +251,7 @@ function IdentityGate({ authConfigured, googleSignedIn, onGoogleSignIn, onAlias 
 }
 
 export default function App() {
-  const { currentUser, idToken, sessionExpired, isConfigured: authConfigured, signIn, signOut } = useAuth();
+  const { currentUser, idToken, sessionExpired, isConfigured: authConfigured, mountSignInButton, signOut } = useAuth();
   // Scenario/series data starts as the build-time static bundle (immediate,
   // no loading flash) and is replaced by the currently published set fetched
   // from /api/scenarios once that resolves — see scenarios/runtime.ts.
@@ -460,7 +460,7 @@ export default function App() {
   const expiredBanner = sessionExpired && (
     <div className="app__notice app__notice--warning" role="status">
       <span>SIGN-IN EXPIRED: Scores cannot be saved until you sign in again.</span>
-      <button type="button" className="app__notice-action" onClick={() => { void signIn(); }}>
+      <button type="button" className="app__notice-action" onClick={signOut}>
         Sign in again
       </button>
     </div>
@@ -1042,7 +1042,7 @@ export default function App() {
         <IdentityGate
           authConfigured={authConfigured}
           googleSignedIn={Boolean(currentUser)}
-          onGoogleSignIn={signIn}
+          mountGoogleSignInButton={mountSignInButton}
           onAlias={currentUser ? setGoogleAlias : setGuestAlias}
         />
         <AppFooter />

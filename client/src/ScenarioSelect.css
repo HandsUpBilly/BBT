@@ -218,7 +218,7 @@
 .series-row {
   position: relative;
   display: grid;
-  grid-template-columns: 160px minmax(0, 1fr) auto;
+  grid-template-columns: 144px minmax(0, 1fr) auto;
   align-items: center;
   gap: 24px;
   min-height: 232px;
@@ -237,37 +237,35 @@
 .series-row__logo {
   position: relative;
   align-self: stretch;
-  display: grid;
-  grid-template-columns: auto 88px;
+  display: flex;
   align-items: center;
-  justify-content: start;
-  gap: 10px;
+  justify-content: center;
   min-width: 0;
   border-right: 1px solid var(--color-border-subtle);
 }
 
-/* The bundled artwork has a dark square canvas. Crop it into a small brass
-   plaque, keeping it visually separate from the series number. */
+/* The artwork is already a trophy crest. Give it a restrained picture frame,
+   not another large heraldic silhouette, and keep the series plate alongside. */
 .series-row__crest {
   position: relative;
   box-sizing: border-box;
   display: grid;
   place-items: center;
-  width: 88px;
-  height: 106px;
-  padding: 5px;
+  width: 112px;
+  height: 112px;
+  padding: 4px;
   overflow: hidden;
-  background: linear-gradient(145deg, #e0bd70 0%, #8f5d24 30%, #e5c777 53%, #6d3c18 78%, #c99a45 100%);
-  box-shadow: 0 7px 10px rgba(0, 0, 0, 0.36);
-  clip-path: polygon(50% 0, 66% 9%, 84% 5%, 100% 19%, 93% 39%, 96% 69%, 76% 94%, 50% 100%, 24% 94%, 4% 69%, 7% 39%, 0 19%, 16% 5%, 34% 9%);
+  background: linear-gradient(145deg, #e5c777 0%, #8f5d24 34%, #d4ad58 62%, #5c371b 100%);
+  border-radius: 12px;
+  box-shadow: 0 5px 9px rgba(0, 0, 0, 0.34);
 }
 
 .series-row__crest::before {
   position: absolute;
-  inset: 5px;
+  inset: 4px;
   content: '';
   background: #1a211b;
-  clip-path: polygon(50% 0, 66% 9%, 84% 5%, 100% 19%, 93% 39%, 96% 69%, 76% 94%, 50% 100%, 24% 94%, 4% 69%, 7% 39%, 0 19%, 16% 5%, 34% 9%);
+  border-radius: 8px;
 }
 
 .series-row__crest img {
@@ -277,29 +275,13 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
-  clip-path: polygon(50% 0, 66% 9%, 84% 5%, 100% 19%, 93% 39%, 96% 69%, 76% 94%, 50% 100%, 24% 94%, 4% 69%, 7% 39%, 0 19%, 16% 5%, 34% 9%);
+  border-radius: 8px;
   filter: saturate(1.05) contrast(1.06);
 }
 
 .series-row:hover {
   background: var(--color-surface-3);
   border-color: #3a403a;
-}
-
-.series-row__number {
-  width: 36px;
-  min-height: 52px;
-  display: grid;
-  place-items: center;
-  color: #31190f;
-  background: linear-gradient(145deg, #f0d488, #a86b26 55%, #e1b65c);
-  border: 1px solid #f3d991;
-  border-radius: 14px 14px 10px 10px;
-  box-shadow: 0 3px 0 #603417, 0 6px 10px rgba(0, 0, 0, 0.3);
-  font-family: var(--font-display);
-  font-weight: 600;
-  font-variant-numeric: tabular-nums;
-  font-size: 2rem;
 }
 
 .series-row__body {
@@ -514,19 +496,9 @@
     padding: 26px 22px 24px;
   }
 
-  .series-row__logo {
-    grid-template-columns: auto 64px;
-  }
-
   .series-row__crest {
-    width: 64px;
+    width: 78px;
     height: 78px;
-  }
-
-  .series-row__number {
-    width: 28px;
-    min-height: 40px;
-    font-size: 1.8rem;
   }
 
   .series-row__actions {
@@ -587,13 +559,6 @@
 
   .series-row {
     grid-template-columns: 1fr;
-  }
-
-  .series-row__number {
-    display: block;
-    padding-bottom: 8px;
-    border-right: 0;
-    border-bottom: 1px solid var(--color-border-subtle);
   }
 
   .series-row__actions,

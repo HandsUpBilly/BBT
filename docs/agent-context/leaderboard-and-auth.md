@@ -16,6 +16,10 @@ The app uses Google Identity Services plus guest names.
 Google flow:
 
 - `AuthProvider.tsx` loads `https://accounts.google.com/gsi/client`.
+- The identity gate mounts Google Identity Services' rendered click-to-sign-in
+  button. Do not replace it with a One Tap-only custom button: One Tap may be
+  silently suppressed by browser privacy settings or Google's cooldown, which
+  leaves a deliberate click looking like a no-op.
 - The client keeps only the Google subject ID and verified e-mail (the latter
   only for the server-side admin allowlist). It does not cache/display Google
   profile names or avatars.

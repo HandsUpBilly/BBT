@@ -9,6 +9,9 @@ export interface TutorialLesson {
 
 export type TutorialAction = 'move' | 'handoff' | 'pass' | 'block' | 'blitz';
 
+/** The final series board is also the one unrestricted Free Play board. */
+export const FREE_PLAY_SCENARIO_ID = 'scenario-006';
+
 export const TUTORIAL_LESSONS: readonly TutorialLesson[] = [
   {
     scenarioId: 'scenario-001',
@@ -61,21 +64,6 @@ export const TUTORIAL_LESSONS: readonly TutorialLesson[] = [
       'ORDER OF PLAY: Each player may be activated once. Plan the carrier\'s escape, the Hand-off, and the receiver\'s route before committing the first action.',
       'RISK: Every committed Dodge, Catch, Rush, Pickup, Pass, Hand-off, and Block roll is multiplied into the score.',
       'THE TURN: There is no End Turn action and the probability chain cannot be reset. Complete the drive with the strongest route available.',
-    ],
-  },
-  {
-    scenarioId: 'scenario-006',
-    title: 'Blocking and Parallel Universes',
-    enabledActions: ['move', 'handoff', 'pass', 'block', 'blitz'],
-    artwork: 'parallel-universes',
-    paragraphs: [
-      'BLOCK ACTION: A standing player may Block an adjacent standing opponent. The attacker does not move before the Block.',
-      'BLITZ ACTION: Declare a target, move into contact, then Block. The hit costs one square of MA. The team may make one Blitz during the turn.',
-      'BLOCK DICE: Compare each player\'s ST after adding eligible assists. This decides how many dice are rolled and which coach chooses the result.',
-      'PARALLEL UNIVERSES: Each live board left by the Block becomes a universe. A Turnover result is lost probability and cannot be played.',
-      'UNIVERSE PLAY: Select a universe from the strip. Legal actions are applied to every matching universe. When the boards differ, resolve each universe separately.',
-      'COMPLETION: Every live universe must score or be given up. The final score is the total probability of the universes that score.',
-      'LOOSE BALL: Entering the ball\'s square attempts a Pickup. After a successful Pickup, the player may continue moving and may Pass or Hand-off if that action remains available.',
     ],
   },
 ] as const;
