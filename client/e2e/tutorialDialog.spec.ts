@@ -15,7 +15,8 @@ test('the Parallel Universes briefing shows its decision tree without breaking t
       scenarios: [scenario],
       series: {
         id: 'default',
-        name: 'Tutorial',
+        name: 'Humans vs Orcs: The Nuffle Shuffle',
+        logo: 'nuffle-shuffle',
         description: 'One drill introducing Blocking and Parallel Universes.',
         scenarioIds: [scenario.id],
       },
@@ -27,6 +28,8 @@ test('the Parallel Universes briefing shows its decision tree without breaking t
   await page.locator('.identity-gate__input').fill('Tutorial Art Tester');
   await page.getByRole('button', { name: /^continue$/i }).click();
   await expect(page.getByText('One drill introducing Blocking and Parallel Universes.')).toBeVisible();
+  const seriesLogo = page.getByRole('img', { name: 'Humans vs Orcs: The Nuffle Shuffle logo' });
+  await expect(seriesLogo).toBeVisible();
   await page.getByRole('button', { name: /start series/i }).click();
 
   const dialog = page.getByRole('dialog', { name: 'Blocking and Parallel Universes' });

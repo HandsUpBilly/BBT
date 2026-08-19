@@ -4653,8 +4653,10 @@ Universes**.
 
 The following decisions are fixed for this implementation:
 
-- Keep the featured series title **Humans X Orcs: The Nuffle Shuffle** and
+- Keep the featured series title **Humans vs Orcs: The Nuffle Shuffle** and
   label it **Tutorial** in the challenge screen.
+- Give the featured series a dedicated chooser logo; series definitions carry
+  an optional stable logo key so future series can provide their own artwork.
 - Order its puzzles `scenario-001`, `scenario-004`, `scenario-002`,
   `scenario-003`, `scenario-005`, `scenario-006`.
 - Show lesson dialogs in `series-puzzle` mode and when the same scenario is
@@ -4869,7 +4871,7 @@ preserve every fact below and add no unsupported Blood Bowl rules.
 ## Success Criteria
 
 - The home screen labels the featured series **Tutorial**, shows the title
-  **Humans X Orcs: The Nuffle Shuffle**, and starting it plays scenarios
+  **Humans vs Orcs: The Nuffle Shuffle**, and starting it plays scenarios
   `001`, `004`, `002`, `003`, `005`, `006` with correct counters.
 - Each unseen lesson appears before its Tutorial puzzle is interactive, once
   per identity/device; it never appears from Single Plays or editor preview.

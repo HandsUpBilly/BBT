@@ -126,6 +126,15 @@ test('normalizeSeries always produces the default id and an array of ids', () =>
   );
 });
 
+test('normalizeSeries preserves a bounded series logo key', () => {
+  assert.deepEqual(normalizeSeries({ logo: '  nuffle-shuffle  ', scenarioIds: [] }), {
+    id: 'default', name: 'Default Series', description: '', scenarioIds: [], logo: 'nuffle-shuffle',
+  });
+  assert.deepEqual(normalizeSeries({ logo: 42, scenarioIds: [] }), {
+    id: 'default', name: 'Default Series', description: '', scenarioIds: [],
+  });
+});
+
 test('missingSeriesScenarioIds reports dangling references', () => {
   const series = { scenarioIds: ['a', 'b', 'c'] };
   const scenarios = [{ id: 'a' }, { id: 'c' }];

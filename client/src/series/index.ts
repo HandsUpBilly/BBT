@@ -1,7 +1,7 @@
 import type { Scenario, SeriesDefinition } from '../types';
 import defaultSeriesData from './default.json';
 
-export const FEATURED_SERIES_NAME = 'Humans X Orcs: The Nuffle Shuffle';
+export const FEATURED_SERIES_NAME = 'Humans vs Orcs: The Nuffle Shuffle';
 
 const LEGACY_FEATURED_SERIES_NAMES = new Set([
   'Humans vs Orcs: Touchdown or Bust',

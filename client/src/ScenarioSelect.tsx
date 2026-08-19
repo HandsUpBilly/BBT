@@ -1,6 +1,7 @@
 import { useMemo, useState, type ReactNode } from 'react';
 import type { ProgressData } from './api';
 import type { LeaderboardEntry, Scenario, SeriesDefinition, SeriesLeaderboardEntry } from './types';
+import nuffleShuffleLogo from './assets/series/nuffle-shuffle.webp';
 import './ScenarioSelect.css';
 
 const LOCAL_SCORE_KEY = 'bbt.localScores.v1';
@@ -8,6 +9,10 @@ const SERIES_SCORE_KEY = 'series';
 
 type LocalScoreMap = Record<string, string[]>;
 type PlayView = 'series' | 'individual';
+
+const SERIES_LOGOS: Record<string, string> = {
+  'nuffle-shuffle': nuffleShuffleLogo,
+};
 
 interface ScenarioProgress {
   played: boolean;
@@ -176,7 +181,13 @@ export function ScenarioSelect({
       {playView === 'series' ? (
         <section className="play-section">
           <div className="series-row">
-            <div className="series-row__number" aria-hidden="true">01</div>
+            <div className="series-row__logo">
+              {series.logo && SERIES_LOGOS[series.logo] ? (
+                <img src={SERIES_LOGOS[series.logo]} alt={`${series.name} logo`} />
+              ) : (
+                <span className="series-row__number" aria-hidden="true">01</span>
+              )}
+            </div>
             <div className="series-row__body">
               <span className="series-row__eyebrow">Tutorial</span>
               <h2 className="series-row__title">{series.name}</h2>
