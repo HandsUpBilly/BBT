@@ -326,6 +326,17 @@ Pointer precision is settled entirely in CSS: no component branches on it. The
 `desktop-touch` Playwright project (1280×800, `hasTouch`) is the regression
 guard, and its absence is why nothing caught the second failure.
 
+**iPhone desktop-website mode is the narrow exception.** Safari can report an
+iPhone's layout viewport as roughly 980px when the user requests desktop
+websites, despite the physical phone still needing the compact game shell.
+`useCompactLayout()` recognises only iPhone/iPod user agents as an additional
+compact signal and `App.tsx` applies `app--compact` so the game shell and pitch
+rails use the same compact rules. It also measures the visual/physical viewport
+against the desktop layout viewport and corrects Safari's page scale on the
+game root. Do not apply this to iPad or generic coarse
+pointer devices: those remain size-driven. The `iphone-xr-desktop-viewport`
+Playwright project guards this exact report (#209).
+
 ### The board rotates
 
 `<Pitch>` takes an `orientation` prop. Game state is always portrait

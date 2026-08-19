@@ -434,6 +434,37 @@
   }
 }
 
+/* Match the iPhone desktop-website fallback in App.css. These are visual
+   compact rules; interaction branching is handled by useCompactLayout. */
+.app--compact.app--game {
+  padding: 5px;
+}
+
+.app--compact.app--game .hud__btn-text {
+  display: none;
+}
+
+.app--compact.app--game .hud__prob {
+  flex-direction: row;
+  align-items: baseline;
+  gap: 4px;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.app--compact.app--game .hud__prob-label:not(.hud__prob-label--series) {
+  display: none;
+}
+
+.app--compact.app--game .hud .user-menu__name,
+.app--compact.app--game .hud .user-menu__caret {
+  display: none;
+}
+
+.app--compact.app--game .pitch-wrapper {
+  padding: 4px;
+}
+
 .app--game .piece__action-label {
   color: var(--color-text-strong);
   background: rgba(13, 15, 15, 0.9);
