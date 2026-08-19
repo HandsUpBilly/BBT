@@ -2,6 +2,7 @@ import { useMemo, useState, type ReactNode } from 'react';
 import type { ProgressData } from './api';
 import type { LeaderboardEntry, Scenario, SeriesDefinition, SeriesLeaderboardEntry } from './types';
 import nuffleShuffleLogo from './assets/series/nuffle-shuffle.webp';
+import { FREE_PLAY_SCENARIO_ID } from './tutorialLessons';
 import { UI_COPY } from './uiCopy';
 import './ScenarioSelect.css';
 
@@ -128,6 +129,11 @@ export function ScenarioSelect({
     return progressFromEntries(seriesLeaderboard, localScores[SERIES_SCORE_KEY], userId);
   }, [progress, localScores, userId]);
 
+  const freePlayScenarios = useMemo(
+    () => scenarios.filter(scenario => scenario.id === FREE_PLAY_SCENARIO_ID),
+    [scenarios],
+  );
+
   return (
     <div className="scenario-select">
       <div className="scenario-select__header">
@@ -217,7 +223,7 @@ export function ScenarioSelect({
           </div>
 
           <div className="challenge-tile-grid">
-            {scenarios.map((s, index) => {
+            {freePlayScenarios.map((s, index) => {
               return (
                 <div key={s.id} className="challenge-tile">
                   <div className="challenge-tile__index" aria-hidden="true">
