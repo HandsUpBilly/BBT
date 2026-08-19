@@ -53,6 +53,16 @@ export default defineConfig({
       name: 'iphone-14-pro-max', // 430×932
       use: { ...devices['iPhone 14 Pro Max'] },
     },
+    {
+      // Regression guard for iOS Safari's desktop-website viewport mode. The
+      // physical phone remains compact even if WebKit reports a wide layout
+      // viewport to the page.
+      name: 'iphone-xr-desktop-viewport',
+      use: {
+        ...devices['iPhone XR'],
+        viewport: { width: 980, height: 707 },
+      },
+    },
 
     // ── Landscape phones ─────────────────────────────────────────────────
     // These are the regression guard for the clipping bug: at 812×375 the

@@ -56,8 +56,53 @@ export function useMediaQuery(query: string): boolean {
  */
 export const COMPACT_MAX_WIDTH = 1024;
 
+/**
+ * Safari can expose an iPhone as a 980px CSS viewport when the user has
+ * "Request Desktop Website" enabled. That is not physical space for the game
+ * rails, so retain the compact layout for iPhone/iPod handsets in that mode.
+ * iPads and touch desktops deliberately remain size-driven.
+ */
+export function isIOSHandsetUserAgent(userAgent: string): boolean {
+  return /\b(iPhone|iPod)\b/i.test(userAgent);
+}
+
 export function useCompactLayout(): boolean {
-  return useMediaQuery(`(max-width: ${COMPACT_MAX_WIDTH}px)`);
+  const compactBySize = useMediaQuery(`(max-width: ${COMPACT_MAX_WIDTH}px)`);
+  const compactByHandset = typeof navigator !== 'undefined'
+    && isIOSHandsetUserAgent(navigator.userAgent);
+  return compactBySize || compactByHandset;
+}
+
+/**
+ * Safari's desktop-website setting may keep an iPhone's layout viewport at
+ * 980px while visualViewport reports the physical phone width. Return the
+ * correction factor needed to render the game at the physical scale.
+ */
+export function iOSDesktopViewportScale(layoutWidth: number, visualWidth: number): number {
+  if (!Number.isFinite(layoutWidth) || !Number.isFinite(visualWidth) || visualWidth <= 0) return 1;
+  return Math.min(3, Math.max(1, layoutWidth / visualWidth));
+}
+
+export function useIOSHandsetViewportScale(): number {
+  const subscribe = useCallback((onChange: () => void) => {
+    if (typeof window === 'undefined') return () => {};
+    const viewport = window.visualViewport;
+    viewport?.addEventListener('resize', onChange);
+    window.addEventListener('resize', onChange);
+    return () => {
+      viewport?.removeEventListener('resize', onChange);
+      window.removeEventListener('resize', onChange);
+    };
+  }, []);
+  const getSnapshot = useCallback(() => {
+    if (typeof window === 'undefined' || !isIOSHandsetUserAgent(navigator.userAgent)) return 1;
+    const visualWidth = Math.min(
+      window.visualViewport?.width ?? window.innerWidth,
+      window.screen?.width ?? window.innerWidth,
+    );
+    return iOSDesktopViewportScale(window.innerWidth, visualWidth);
+  }, []);
+  return useSyncExternalStore(subscribe, getSnapshot, () => 1);
 }
 
 /**

@@ -689,6 +689,45 @@ body,
   }
 }
 
+/* iPhone Safari can be set to request desktop websites, which makes its CSS
+   viewport wide enough to bypass the media query above. `app--compact` is
+   applied only to those real iPhone/iPod handsets by useCompactLayout. */
+.app--compact {
+  padding: 6px;
+}
+
+.app--compact.app--game {
+  padding-left: max(6px, env(safe-area-inset-left));
+  padding-right: max(6px, env(safe-area-inset-right));
+  padding-bottom: max(6px, env(safe-area-inset-bottom));
+}
+
+.app--compact .game-area {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 6px;
+}
+
+.app--compact .side-col {
+  display: none;
+}
+
+.app--compact .hud {
+  gap: 4px;
+  padding: 4px 6px;
+  flex-wrap: nowrap;
+  overflow: visible;
+}
+
+.app--compact .hud__prob {
+  min-width: 0;
+  flex-shrink: 1;
+}
+
+.app--compact .hud__prob--empty {
+  display: none;
+}
+
 /* ── Touch ergonomics ────────────────────────────────────────────────────
    Deliberately separate from the size query above, and deliberately not
    gated by it: a fingertip does not get more precise because the screen got

@@ -243,14 +243,41 @@
   gap: 12px;
   min-width: 0;
   border-right: 1px solid var(--color-border-subtle);
+  isolation: isolate;
+}
+
+/* The bundled artwork has a dark square canvas. Nest it inside a heraldic
+   plaque so it reads as a trophy rather than a black tile on the card. */
+.series-row__logo::before,
+.series-row__logo::after {
+  position: absolute;
+  content: '';
+  clip-path: polygon(50% 0, 66% 9%, 84% 5%, 100% 19%, 93% 39%, 96% 69%, 76% 94%, 50% 100%, 24% 94%, 4% 69%, 7% 39%, 0 19%, 16% 5%, 34% 9%);
+}
+
+.series-row__logo::before {
+  z-index: 0;
+  width: 132px;
+  height: 150px;
+  background: linear-gradient(145deg, #e0bd70 0%, #8f5d24 28%, #e5c777 52%, #6d3c18 76%, #c99a45 100%);
+  filter: drop-shadow(0 9px 10px rgba(0, 0, 0, 0.42));
+}
+
+.series-row__logo::after {
+  z-index: 0;
+  width: 120px;
+  height: 137px;
+  background: linear-gradient(145deg, #401a18, #151e17 46%, #54231d 100%);
 }
 
 .series-row__logo img {
   display: block;
-  width: 84px;
-  height: 84px;
-  object-fit: contain;
-  filter: drop-shadow(0 6px 8px rgba(0, 0, 0, 0.35));
+  z-index: 1;
+  width: 90px;
+  height: 102px;
+  object-fit: cover;
+  clip-path: polygon(50% 0, 66% 9%, 84% 5%, 100% 19%, 93% 39%, 96% 69%, 76% 94%, 50% 100%, 24% 94%, 4% 69%, 7% 39%, 0 19%, 16% 5%, 34% 9%);
+  filter: saturate(1.05) contrast(1.06) drop-shadow(0 4px 5px rgba(0, 0, 0, 0.34));
 }
 
 .series-row:hover {
@@ -259,10 +286,16 @@
 }
 
 .series-row__number {
-  align-self: stretch;
+  z-index: 2;
+  width: 34px;
+  min-height: 48px;
   display: grid;
   place-items: center;
-  color: var(--color-accent);
+  color: #31190f;
+  background: linear-gradient(145deg, #f0d488, #a86b26 55%, #e1b65c);
+  border: 1px solid #f3d991;
+  border-radius: 14px 14px 10px 10px;
+  box-shadow: 0 3px 0 #603417, 0 6px 10px rgba(0, 0, 0, 0.3);
   font-family: var(--font-display);
   font-weight: 600;
   font-variant-numeric: tabular-nums;
@@ -482,11 +515,23 @@
   }
 
   .series-row__logo img {
-    width: 58px;
-    height: 58px;
+    width: 62px;
+    height: 70px;
+  }
+
+  .series-row__logo::before {
+    width: 88px;
+    height: 104px;
+  }
+
+  .series-row__logo::after {
+    width: 78px;
+    height: 94px;
   }
 
   .series-row__number {
+    width: 28px;
+    min-height: 40px;
     font-size: 1.8rem;
   }
 

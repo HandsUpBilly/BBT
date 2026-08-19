@@ -355,6 +355,25 @@
   }
 }
 
+/* iPhone Safari may report a desktop layout viewport when the user requests
+   desktop websites. The game root adds app--compact for that handset-only
+   case, so the pitch retains its narrow, legible coordinate rails. */
+.app--compact .pitch {
+  --pitch-gutter-w: 0.75rem;
+  --pitch-gutter-h: 1.1rem;
+}
+
+.app--compact .pitch__row-labels {
+  width: 0.375rem;
+}
+
+.app--compact .pitch__col-label,
+.app--compact .pitch__row-label {
+  color: rgba(255, 255, 255, 0.82);
+  font-size: 0.5rem;
+  line-height: 1.1em;
+}
+
 /* ── Base square ────────────────────────────────────────────────────── */
 .square {
   position: relative;

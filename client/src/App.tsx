@@ -54,7 +54,7 @@ import type {
 } from './types';
 import { key, computeZoomBounds } from './bfs';
 import type { ZoomBounds } from './bfs';
-import { useCompactLayout, useHoverCapable, usePortraitViewport } from './useMediaQuery';
+import { useCompactLayout, useHoverCapable, useIOSHandsetViewportScale, usePortraitViewport } from './useMediaQuery';
 import './App.css';
 import './PlaybookTheme.css';
 
@@ -367,6 +367,7 @@ export default function App() {
   // The third, pointer precision, decides hit-target sizes and is answered
   // entirely in CSS — no component needs to branch on it.
   const compact = useCompactLayout();
+  const iosViewportScale = useIOSHandsetViewportScale();
   const hoverCapable = useHoverCapable();
   const portraitViewport = usePortraitViewport();
   // Rotating the board is worth it whenever the viewport is tall and narrow,
@@ -1278,7 +1279,10 @@ export default function App() {
   );
 
   return (
-    <div className="app app--game app--playbook">
+    <div
+      className={`app app--game app--playbook${compact ? ' app--compact' : ''}`}
+      style={iosViewportScale > 1 ? { zoom: iosViewportScale, width: `${100 / iosViewportScale}%` } : undefined}
+    >
       <header className="hud">
         <button className="hud__back" onClick={handleBackClick} aria-label={`Back to ${backLabel}`}>
           <span className="hud__btn-icon" aria-hidden="true">←</span>
