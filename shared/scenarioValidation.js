@@ -64,6 +64,7 @@ function normalizePiece(piece) {
 
 export function normalizeSeries(input) {
   const source = input && typeof input === 'object' ? input : {};
+  const logo = typeof source.logo === 'string' ? source.logo.trim().slice(0, 80) : '';
   return {
     id: 'default',
     name: String(source.name ?? 'Default Series').trim() || 'Default Series',
@@ -71,6 +72,7 @@ export function normalizeSeries(input) {
     scenarioIds: Array.isArray(source.scenarioIds)
       ? source.scenarioIds.map(String).filter(Boolean)
       : [],
+    ...(logo ? { logo } : {}),
   };
 }
 

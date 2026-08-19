@@ -75,6 +75,9 @@ play, then blocks/loose-ball pickup/Parallel Universes). Tutorial briefing copy
 lives separately in `client/src/tutorialLessons.ts`; it does not override
 scenario names or descriptions and is shown for Tutorial series puzzles and
 their matching Single Play entries, but never for editor previews.
+Series definitions may include a stable `logo` key. The chooser resolves that
+key through its local series-art registry, so each series can have dedicated
+artwork while unknown or omitted keys retain the text-only fallback.
 
 Published series metadata can outlive a deployment in Netlify Blobs.
 `normalizeSeriesDefinition()` maps the two known legacy featured-series names

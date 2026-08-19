@@ -63,6 +63,8 @@ export interface SeriesDefinition {
   name: string;
   description: string;
   scenarioIds: string[];
+  /** Stable key for the chooser artwork; omitted for series without artwork. */
+  logo?: string;
 }
 
 // ── Game ────────────────────────────────────────────────────────────────────

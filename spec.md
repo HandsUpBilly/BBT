@@ -4655,6 +4655,8 @@ The following decisions are fixed for this implementation:
 
 - Keep the featured series title **Humans vs Orcs: The Nuffle Shuffle** and
   label it **Tutorial** in the challenge screen.
+- Give the featured series a dedicated chooser logo; series definitions carry
+  an optional stable logo key so future series can provide their own artwork.
 - Order its puzzles `scenario-001`, `scenario-004`, `scenario-002`,
   `scenario-003`, `scenario-005`, `scenario-006`.
 - Show lesson dialogs in `series-puzzle` mode and when the same scenario is

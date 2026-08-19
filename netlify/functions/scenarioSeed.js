@@ -995,6 +995,7 @@ export const STATIC_SCENARIOS = [
 export const STATIC_SERIES = {
   "id": "default",
   "name": "Humans vs Orcs: The Nuffle Shuffle",
+  "logo": "nuffle-shuffle",
   "description": "Six drills cover Movement, Dodging, Hand-offs, Passing, Blocking, Pickups, and Parallel Universes. Score a touchdown in each drill.",
   "scenarioIds": [
     "scenario-001",
