@@ -73,7 +73,8 @@ labelled as a Tutorial in the challenge screen, and uses this rules order:
 `scenario-005`, `scenario-006` (movement, dodging, handoff, pass, combined
 play, then blocks/loose-ball pickup/Parallel Universes). Tutorial briefing copy
 lives separately in `client/src/tutorialLessons.ts`; it does not override
-scenario names or descriptions and is shown only in series play.
+scenario names or descriptions and is shown for Tutorial series puzzles and
+their matching Single Play entries, but never for editor previews.
 
 Published series metadata can outlive a deployment in Netlify Blobs.
 `normalizeSeriesDefinition()` maps the two known legacy featured-series names

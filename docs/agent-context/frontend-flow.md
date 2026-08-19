@@ -109,7 +109,11 @@ public avatars).
   Parallel Universes briefing alone includes the pointed decision-tree artwork;
   the modal scrolls internally so its rules and controls remain reachable. Each
   briefing can return to the main menu; an active series uses the standard
-  leave-series confirmation before discarding progress.
+  leave-series confirmation before discarding progress. Tutorial action menus
+  also unlock progressively: Movement and Dodging expose Move, Hand-off adds
+  Hand-off, Pass adds Pass, The Drive keeps those three, and Blocking and
+  Parallel Universes enables Block and Blitz as well. Actions from later
+  drills stay disabled in earlier drills.
 - **The compact game HUD keeps every control inside the viewport.** Account
   remains near the front. Zoom, restart, and reporting share the `GameToolsMenu`
   trigger, while the Key and action log retain their own triggers. Compact

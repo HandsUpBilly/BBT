@@ -32,6 +32,7 @@ test('the Parallel Universes briefing shows its decision tree without breaking t
   const dialog = page.getByRole('dialog', { name: 'Blocking and Parallel Universes' });
   const artwork = dialog.getByRole('img', { name: /decision tree splitting one block/i });
   await expect(dialog).toBeVisible();
+  await expect(dialog.getByText('Tutorial Drill 6 / 6')).toBeVisible();
   await expect(artwork).toBeVisible();
   expect(await artwork.evaluate(image => (image as HTMLImageElement).naturalWidth)).toBeGreaterThan(0);
 

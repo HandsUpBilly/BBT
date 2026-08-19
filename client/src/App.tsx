@@ -924,7 +924,8 @@ export default function App() {
     const s = makeScenarioState(firstScenario);
     resetBoards(s);
     setZoomBounds(computeStartOfPlayZoom(s.pieces, s.activeTeam));
-    queueTutorialLesson(firstScenario, 1);
+    const firstLessonIndex = TUTORIAL_LESSON_IDS.indexOf(firstScenario.id);
+    queueTutorialLesson(firstScenario, firstLessonIndex + 1);
     setAppMode('series-puzzle');
   }, [identityName, seriesScenarios, resetBoards, computeStartOfPlayZoom, queueTutorialLesson]);
 
@@ -1501,6 +1502,10 @@ export default function App() {
       {/* Piece context menu */}
       {pieceMenu && (() => {
         const menuPiece = pieceMenu.piece;
+        const tutorialLesson = !editorPreviewScenario && activeScenario
+          ? tutorialLessonFor(activeScenario.id)
+          : undefined;
+        const tutorialActions = tutorialLesson?.enabledActions;
         // A piece can Hand Off / Pass if it already carries the ball, or if the
         // ball is currently loose on the pitch — in the latter case the player
         // is expected to move this piece onto the ball's square first (a pickup
@@ -1510,10 +1515,10 @@ export default function App() {
         const { canBlock, canBlitz } = blockActionAvailability(menuPiece, state);
         const menuActions: PieceMenuAction[] = [
           { label: 'Move',     key: 'move' },
-          { label: 'Hand-off', key: 'handoff', disabled: !canHandoff },
-          { label: 'Pass',     key: 'pass',    disabled: !canPass },
-          { label: 'Block',    key: 'block',   disabled: !canBlock },
-          { label: 'Blitz',    key: 'blitz',   disabled: !canBlitz },
+          { label: 'Hand-off', key: 'handoff', disabled: !canHandoff || (tutorialActions !== undefined && !tutorialActions.includes('handoff')) },
+          { label: 'Pass',     key: 'pass',    disabled: !canPass || (tutorialActions !== undefined && !tutorialActions.includes('pass')) },
+          { label: 'Block',    key: 'block',   disabled: !canBlock || (tutorialActions !== undefined && !tutorialActions.includes('block')) },
+          { label: 'Blitz',    key: 'blitz',   disabled: !canBlitz || (tutorialActions !== undefined && !tutorialActions.includes('blitz')) },
         ];
         return (
           <PieceMenu
