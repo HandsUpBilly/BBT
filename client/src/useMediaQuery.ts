@@ -74,38 +74,6 @@ export function useCompactLayout(): boolean {
 }
 
 /**
- * Safari's desktop-website setting may keep an iPhone's layout viewport at
- * 980px while visualViewport reports the physical phone width. Return the
- * correction factor needed to render the game at the physical scale.
- */
-export function iOSDesktopViewportScale(layoutWidth: number, visualWidth: number): number {
-  if (!Number.isFinite(layoutWidth) || !Number.isFinite(visualWidth) || visualWidth <= 0) return 1;
-  return Math.min(3, Math.max(1, layoutWidth / visualWidth));
-}
-
-export function useIOSHandsetViewportScale(): number {
-  const subscribe = useCallback((onChange: () => void) => {
-    if (typeof window === 'undefined') return () => {};
-    const viewport = window.visualViewport;
-    viewport?.addEventListener('resize', onChange);
-    window.addEventListener('resize', onChange);
-    return () => {
-      viewport?.removeEventListener('resize', onChange);
-      window.removeEventListener('resize', onChange);
-    };
-  }, []);
-  const getSnapshot = useCallback(() => {
-    if (typeof window === 'undefined' || !isIOSHandsetUserAgent(navigator.userAgent)) return 1;
-    const visualWidth = Math.min(
-      window.visualViewport?.width ?? window.innerWidth,
-      window.screen?.width ?? window.innerWidth,
-    );
-    return iOSDesktopViewportScale(window.innerWidth, visualWidth);
-  }, []);
-  return useSyncExternalStore(subscribe, getSnapshot, () => 1);
-}
-
-/**
  * Can any available input hover?
  *
  * A touchscreen laptop often reports touch as its primary input even while a

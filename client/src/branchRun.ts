@@ -21,7 +21,7 @@
  *   glitch.
  */
 
-import type { GameState, Position, RiskyMove } from './types';
+import type { BlockOutcomeFace, GameState, Position, RiskyMove } from './types';
 import {
   applyBlockAction,
   applyBlockBoardState,
@@ -511,6 +511,12 @@ export interface BranchStripEntry {
   label: string;
   /** Full lineage back to the block(s) that produced this branch — see `branchPath`. */
   path: string;
+  /** The actual block faces that produce this branch, one group per fork. */
+  outcomes: Array<{
+    faces: BlockOutcomeFace[];
+    favor: 'attacker' | 'defender';
+    label: string;
+  }>;
   /** P(reaching this branch) — derived, and it moves as branches are authored. */
   weight: number;
   /** Conditional chance of scoring from here. */
@@ -596,6 +602,23 @@ export function branchPath(run: BranchRun, lineId: string): string {
   return segments.length > 0 ? segments.join(' → ') : current.label;
 }
 
+function branchOutcomes(run: BranchRun, lineId: string): BranchStripEntry['outcomes'] {
+  const outcomes: BranchStripEntry['outcomes'] = [];
+  let current = run.lines[lineId];
+
+  while (current.parentId) {
+    const parent = run.lines[current.parentId];
+    const split = parent.split;
+    if (!split) break;
+    const stateIndex = split.childIds.indexOf(current.id);
+    const state = split.resolution.states[stateIndex];
+    if (state) outcomes.unshift({ faces: state.faces, favor: split.picker, label: current.label });
+    current = parent;
+  }
+
+  return outcomes;
+}
+
 /** Everything the branch strip needs, for branches that are still leaves. */
 export function branchStrip(run: BranchRun): BranchStripEntry[] {
   const { lines } = runSummary(run);
@@ -614,6 +637,7 @@ export function branchStrip(run: BranchRun): BranchStripEntry[] {
         id: line.id,
         label: line.label,
         path: branchPath(run, line.id),
+        outcomes: branchOutcomes(run, line.id),
         weight: summary?.weight ?? 0,
         value: summary?.value ?? 0,
         status,

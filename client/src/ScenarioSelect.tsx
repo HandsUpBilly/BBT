@@ -184,7 +184,9 @@ export function ScenarioSelect({
             <div className="series-row__logo">
               <span className="series-row__number" aria-hidden="true">01</span>
               {series.logo && SERIES_LOGOS[series.logo] ? (
-                <img src={SERIES_LOGOS[series.logo]} alt={`${series.name} logo`} />
+                <span className="series-row__crest">
+                  <img src={SERIES_LOGOS[series.logo]} alt={`${series.name} logo`} />
+                </span>
               ) : null}
             </div>
             <div className="series-row__body">

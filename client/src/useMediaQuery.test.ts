@@ -1,6 +1,6 @@
 import { renderHook } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { iOSDesktopViewportScale, isIOSHandsetUserAgent, useCompactLayout, useHoverCapable } from './useMediaQuery';
+import { isIOSHandsetUserAgent, useCompactLayout, useHoverCapable } from './useMediaQuery';
 
 const originalMatchMedia = Object.getOwnPropertyDescriptor(window, 'matchMedia');
 const originalUserAgent = Object.getOwnPropertyDescriptor(window.navigator, 'userAgent');
@@ -36,14 +36,6 @@ describe('useCompactLayout', () => {
 
     const { result } = renderHook(() => useCompactLayout());
     expect(result.current).toBe(true);
-  });
-});
-
-describe('iOSDesktopViewportScale', () => {
-  it('corrects a 980px desktop layout viewport back to the phone visual viewport', () => {
-    expect(iOSDesktopViewportScale(980, 414)).toBeCloseTo(980 / 414);
-    expect(iOSDesktopViewportScale(414, 414)).toBe(1);
-    expect(iOSDesktopViewportScale(980, 0)).toBe(1);
   });
 });
 
