@@ -423,6 +423,13 @@ interface Props {
    * see `ghostPieces` in branchRun.ts.
    */
   branchGhosts?: readonly GhostPiece[];
+  /** Final route decision, anchored beside its endpoint without resizing the pitch. */
+  moveDecision?: {
+    position: Position;
+    probability: number | null;
+    onCancel: () => void;
+    onConfirm: () => void;
+  };
 }
 
 /** A branch ghost resolved against the viewed board, ready to draw. */
@@ -447,7 +454,7 @@ const NO_BRANCH_GHOSTS: readonly BranchGhostView[] = [];
 export function Pitch({
   state, onSquareClick, onPieceClick, onSquareHover, onSquareLeave, zoomBounds,
   orientation = 'landscape', tokenStyle = 'portrait', pitchSurface = 'grass', showCoordinates = true,
-  branchGhosts,
+  branchGhosts, moveDecision,
 }: Props) {
   const portrait = orientation === 'portrait';
 
@@ -904,6 +911,30 @@ export function Pitch({
 
   const colLabelsStyle = { gridTemplateColumns: `1.4em repeat(${visibleCols}, 1fr) 1.4em` };
 
+  // Position the final decision against the endpoint in screen coordinates.
+  // Put it toward the pitch centre when the route ends near an edge so both
+  // touch targets remain visible without changing the grid's track sizes.
+  const decisionAcross = moveDecision
+    ? (portrait ? moveDecision.position.col : moveDecision.position.row)
+    : null;
+  const decisionDown = moveDecision
+    ? (portrait ? moveDecision.position.row : moveDecision.position.col)
+    : null;
+  const decisionAcrossIndex = decisionAcross === null ? -1 : acrossValues.indexOf(decisionAcross);
+  const decisionDownIndex = decisionDown === null ? -1 : downValues.indexOf(decisionDown);
+  const decisionSide = decisionAcrossIndex >= visibleCols / 2 ? 'left' : 'right';
+  const decisionVertical = decisionDownIndex === 0
+    ? 'down'
+    : decisionDownIndex === visibleRows - 1
+      ? 'up'
+      : 'center';
+  const decisionStyle = decisionAcrossIndex >= 0 && decisionDownIndex >= 0
+    ? {
+        left: `${((decisionAcrossIndex + (decisionSide === 'right' ? 1 : 0)) / visibleCols) * 100}%`,
+        top: `${((decisionDownIndex + (decisionVertical === 'down' ? 1 : decisionVertical === 'center' ? 0.5 : 0)) / visibleRows) * 100}%`,
+      }
+    : null;
+
   const classes = [
     'pitch',
     `pitch--${orientation}`,
@@ -969,6 +1000,40 @@ export function Pitch({
                 <path key={indicator.key} className="pitch__push-indicator" d={indicator.path} />
               ))}
             </svg>
+          )}
+          {moveDecision && decisionStyle && (
+            <div
+              className={`move-decision move-decision--${decisionSide} move-decision--${decisionVertical}`}
+              style={decisionStyle}
+              role="group"
+              aria-label="Confirm move"
+            >
+              {moveDecision.probability !== null && (
+                <span className={`move-decision__prob${moveDecision.probability < 50 ? ' move-decision__prob--risky' : ''}`}>
+                  {moveDecision.probability}%
+                </span>
+              )}
+              <div className="move-decision__actions">
+                <button
+                  type="button"
+                  className="move-decision__button move-decision__button--cancel"
+                  aria-label="Plot Again"
+                  title="Plot Again"
+                  onClick={moveDecision.onCancel}
+                >
+                  <span aria-hidden="true">×</span>
+                </button>
+                <button
+                  type="button"
+                  className="move-decision__button move-decision__button--confirm"
+                  aria-label="Confirm Move"
+                  title="Confirm Move"
+                  onClick={moveDecision.onConfirm}
+                >
+                  <span aria-hidden="true">✓</span>
+                </button>
+              </div>
+            </div>
           )}
         </div>
 

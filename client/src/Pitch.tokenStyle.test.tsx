@@ -1,5 +1,5 @@
-import { cleanup, render } from '@testing-library/react';
-import { afterEach, describe, expect, it } from 'vitest';
+import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { Pitch } from './Pitch';
 import { humanBlocker, makeState, orcBlocker } from './test/gameState';
 import type { BlockLogEntry, HandoffLogEntry, MoveLogEntry, PassCatchLogEntry, PassLogEntry } from './types';
@@ -418,5 +418,38 @@ describe('Pitch completed pass trajectory', () => {
     const path = container.querySelector('.pitch__pass-trajectory');
     expect(path?.getAttribute('d')).toContain(' Q ');
     expect(container.querySelector('.pitch__pass-trajectories marker')).toBeTruthy();
+  });
+});
+
+describe('Pitch move decision', () => {
+  it('anchors accessible icon actions beside the endpoint', () => {
+    const onCancel = vi.fn();
+    const onConfirm = vi.fn();
+    const { container } = render(
+      <Pitch
+        state={state}
+        onSquareClick={noop}
+        onPieceClick={noop}
+        onSquareHover={noop}
+        onSquareLeave={noop}
+        moveDecision={{
+          position: { col: 0, row: 0 },
+          probability: 42,
+          onCancel,
+          onConfirm,
+        }}
+      />,
+    );
+
+    expect(container.querySelector('.move-decision--right.move-decision--down')).toBeTruthy();
+    expect(container.querySelector('.move-decision__prob')?.textContent).toBe('42%');
+    const cancel = screen.getByRole('button', { name: 'Plot Again' });
+    const confirm = screen.getByRole('button', { name: 'Confirm Move' });
+    expect(cancel.textContent).toBe('×');
+    expect(confirm.textContent).toBe('✓');
+    fireEvent.click(cancel);
+    fireEvent.click(confirm);
+    expect(onCancel).toHaveBeenCalledOnce();
+    expect(onConfirm).toHaveBeenCalledOnce();
   });
 });

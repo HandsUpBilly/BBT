@@ -48,7 +48,7 @@ test.describe('touch: plot before commit', () => {
 
     await expect(page.locator('.square--preview-free, .square--preview-gfi, '
       + '.square--preview-dodge, .square--preview-gfi-dodge').first()).toBeVisible();
-    await expect(page.locator('.commit-bar')).toBeHidden();
+    await expect(page.locator('.move-decision')).toHaveCount(0);
 
     // Nothing committed: no walked squares, and no movement spent.
     await expect(page.locator('.square--path')).toHaveCount(0);
@@ -66,11 +66,11 @@ test.describe('touch: plot before commit', () => {
     const targetSquare = await target.getAttribute('data-square');
 
     await target.tap();
-    await expect(page.locator('.commit-bar')).toBeHidden();
+    await expect(page.locator('.move-decision')).toHaveCount(0);
 
     await page.locator(`.square[data-square="${targetSquare}"]`).tap();
 
-    await expect(page.locator('.commit-bar')).toBeHidden();
+    await expect(page.locator('.move-decision')).toHaveCount(0);
     await expect(page.locator(`.square[data-square="${targetSquare}"]`))
       .toHaveClass(/square--path/);
     const maAfter = await remainingMa(page);
@@ -87,20 +87,18 @@ test.describe('touch: plot before commit', () => {
     await endpoint.tap();
     await endpoint.tap();
 
-    const bar = page.locator('.commit-bar');
-    await expect(bar).toBeVisible();
-    // "Move to 12H" — the same square name the board and aria-labels use.
-    await expect(bar.locator('.commit-bar__square')).toHaveText(/^Move to \d+[A-O]$/);
-    await expect(bar.getByRole('button', { name: 'Confirm Move' })).toBeVisible();
-    await expect(bar.getByRole('button', { name: 'Plot Again' })).toBeVisible();
+    const decision = page.locator('.move-decision');
+    await expect(decision).toBeVisible();
+    await expect(decision.getByRole('button', { name: 'Confirm Move' })).toHaveText('✓');
+    await expect(decision.getByRole('button', { name: 'Plot Again' })).toHaveText('×');
   });
 
-  test('arming the confirm bar does not resize the pitch', async ({ page }) => {
+  test('showing the endpoint decision does not resize the pitch', async ({ page }) => {
     await selectAndMove(page);
-    const bar = page.locator('.commit-bar');
+    const decision = page.locator('.move-decision');
     const pitch = page.locator('.pitch-wrapper');
 
-    await expect(bar).toBeHidden();
+    await expect(decision).toHaveCount(0);
     const before = await pitch.boundingBox();
 
     const target = page.locator('.square--reachable').last();
@@ -111,9 +109,9 @@ test.describe('touch: plot before commit', () => {
     await endpoint.tap();
     await endpoint.tap();
 
-    await expect(bar).toBeVisible();
+    await expect(decision).toBeVisible();
     const after = await pitch.boundingBox();
-    expect(after, 'the pitch moved or resized when the confirm bar appeared').toEqual(before);
+    expect(after, 'the pitch moved or resized when the endpoint decision appeared').toEqual(before);
   });
 
   test('Plot Again rewinds every provisional waypoint', async ({ page }) => {
@@ -127,9 +125,9 @@ test.describe('touch: plot before commit', () => {
     await endpoint.tap();
     await endpoint.tap();
     await endpoint.tap();
-    await page.locator('.commit-bar').getByRole('button', { name: 'Plot Again' }).tap();
+    await page.locator('.move-decision').getByRole('button', { name: 'Plot Again' }).tap();
 
-    await expect(page.locator('.commit-bar')).toBeHidden();
+    await expect(page.locator('.move-decision')).toHaveCount(0);
     await expect(page.locator('.square--path')).toHaveCount(0);
     expect(await remainingMa(page)).toBe(maBefore);
   });
@@ -152,7 +150,7 @@ test.describe('touch: plot before commit', () => {
     await endpoint.tap();
     await endpoint.tap();
     await endpoint.tap();
-    await expect(page.locator('.commit-bar__prob')).toBeVisible();
-    await expect(page.locator('.commit-bar__prob')).toHaveText(/^\d{1,3}% success$/);
+    await expect(page.locator('.move-decision__prob')).toBeVisible();
+    await expect(page.locator('.move-decision__prob')).toHaveText(/^\d{1,3}%$/);
   });
 });

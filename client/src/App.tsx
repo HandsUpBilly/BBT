@@ -25,7 +25,6 @@ import { MobileInfoSheet } from './MobileInfoSheet';
 import { ActionLogMenu } from './ActionLogMenu';
 import { GameToolsMenu } from './GameToolsMenu';
 import { AppFooter } from './AppFooter';
-import { CommitBar } from './CommitBar';
 import { SuccessChanceReadout } from './SuccessChanceReadout';
 import { ReportProblemButton } from './ReportProblemButton';
 import { ReportProblemModal } from './ReportProblemModal';
@@ -1374,6 +1373,19 @@ export default function App() {
             pitchSurface={prefs.pitchSurface ?? 'grass'}
             showCoordinates={prefs.showCoordinates ?? true}
             branchGhosts={branchedBoards.ghosts}
+            moveDecision={finishedPreview ? {
+              position: finishedPreview,
+              probability: showSuccessChance ? liveProbPct : null,
+              onCancel: () => {
+                disarm();
+                hookSquareLeave();
+                handleCancelSelection();
+              },
+              onConfirm: () => {
+                disarm();
+                hookSquareClick(finishedPreview.col, finishedPreview.row);
+              },
+            } : undefined}
           />
         </main>
 
@@ -1408,27 +1420,6 @@ export default function App() {
       )}
 
       {compact && <div className="status-strip">{statusLine}</div>}
-
-      {/* Non-hovering layouts keep an invisible placeholder mounted so the
-          final decision never resizes the pitch. Hovering layouts mount it
-          only after the route endpoint is double-clicked. */}
-      {(!hoverCapable || finishedPreview) && (
-        <CommitBar
-          destination={finishedPreview}
-          probability={liveProbPct}
-          showProbability={showSuccessChance}
-          onCancel={() => {
-            disarm();
-            hookSquareLeave();
-            handleCancelSelection();
-          }}
-          onConfirm={() => {
-            if (!finishedPreview) return;
-            disarm();
-            hookSquareClick(finishedPreview.col, finishedPreview.row);
-          }}
-        />
-      )}
 
       {/* Touchdown — show summary and submit score */}
       {!branchedBoards.hasSplit && branchedBoards.complete && effectiveAppMode === 'series-puzzle' && seriesRun && activeScenario && !reviewingCompletedBoard && (
