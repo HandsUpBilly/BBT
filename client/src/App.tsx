@@ -34,6 +34,7 @@ import { SettingsScreen } from './SettingsScreen';
 import { TutorialLessonDialog } from './TutorialLessonDialog';
 import { TUTORIAL_LESSON_IDS, tutorialLessonFor } from './tutorialLessons';
 import type { TutorialLesson } from './tutorialLessons';
+import { UI_COPY } from './uiCopy';
 import { submitScore, fetchLeaderboard, submitSeriesScore, fetchSeriesLeaderboard, fetchProgress, ApiError } from './api';
 import type { ProgressData } from './api';
 import { recordAttempt } from './attemptStore';
@@ -201,8 +202,8 @@ function IdentityGate({ authConfigured, googleSignedIn, onGoogleSignIn, onAlias 
     <div className="identity-gate">
       <div className="identity-gate__panel">
         <div className="identity-gate__header">
-          <span className="identity-gate__eyebrow">The final turn: Do or die</span>
-          <h1 className="identity-gate__title">Turn 16</h1>
+          <span className="identity-gate__eyebrow">{UI_COPY.brand.tagline}</span>
+          <h1 className="identity-gate__title">{UI_COPY.brand.name}</h1>
           <p className="identity-gate__subtitle">
             One turn remains. Sign the team sheet and find the route to the end zone.
           </p>

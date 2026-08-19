@@ -2,6 +2,7 @@ import { useMemo, useState, type ReactNode } from 'react';
 import type { ProgressData } from './api';
 import type { LeaderboardEntry, Scenario, SeriesDefinition, SeriesLeaderboardEntry } from './types';
 import nuffleShuffleLogo from './assets/series/nuffle-shuffle.webp';
+import { UI_COPY } from './uiCopy';
 import './ScenarioSelect.css';
 
 const LOCAL_SCORE_KEY = 'bbt.localScores.v1';
@@ -78,16 +79,18 @@ function progressFromEntries(
 }
 
 function formatProgress(progress?: ScenarioProgress): string {
-  if (!progress) return 'Checking history...';
+  if (!progress) return UI_COPY.landing.checkingHistory;
   if (!progress.played) {
-    return progress.entries > 0 ? `Not played, ${progress.entries} ranked` : 'Not played';
+    return progress.entries > 0
+      ? UI_COPY.landing.notPlayedRanked(progress.entries)
+      : UI_COPY.landing.notPlayed;
   }
   // Rank is only meaningful while the entry is inside the returned top slice.
   // Outside it we still know the player's own best, so show that alone rather
   // than an invented position.
   return progress.rank === null
-    ? `Best ${pct(progress.bestPercent ?? 0)}`
-    : `Best ${pct(progress.bestPercent ?? 0)}, Rank #${progress.rank}`;
+    ? UI_COPY.landing.best(pct(progress.bestPercent ?? 0))
+    : UI_COPY.landing.bestRank(pct(progress.bestPercent ?? 0), progress.rank);
 }
 
 export function ScenarioSelect({
@@ -129,9 +132,9 @@ export function ScenarioSelect({
     <div className="scenario-select">
       <div className="scenario-select__header">
         <div className="scenario-select__brand">
-          <span className="scenario-select__eyebrow">The final turn: Do or die</span>
-          <h1 className="scenario-select__title">Turn 16</h1>
-          <p className="scenario-select__subtitle">Pray to Nuffle</p>
+          <span className="scenario-select__eyebrow">{UI_COPY.brand.tagline}</span>
+          <h1 className="scenario-select__title">{UI_COPY.brand.name}</h1>
+          <p className="scenario-select__subtitle">{UI_COPY.brand.landingSubtitle}</p>
         </div>
         <div className="scenario-select__user">
           <div className="scenario-select__controls">
@@ -146,7 +149,7 @@ export function ScenarioSelect({
         </div>
       </div>
 
-      <div className="play-switch" role="tablist" aria-label="Play mode">
+      <div className="play-switch" role="tablist" aria-label={UI_COPY.landing.playModeLabel}>
         <button
           className={`play-switch__tab${playView === 'series' ? ' play-switch__tab--active' : ''}`}
           type="button"
@@ -154,7 +157,7 @@ export function ScenarioSelect({
           aria-selected={playView === 'series'}
           onClick={() => setPlayView('series')}
         >
-          Series
+          {UI_COPY.landing.seriesTab}
         </button>
         <button
           className={`play-switch__tab${playView === 'individual' ? ' play-switch__tab--active' : ''}`}
@@ -163,7 +166,7 @@ export function ScenarioSelect({
           aria-selected={playView === 'individual'}
           onClick={() => setPlayView('individual')}
         >
-          Single Plays
+          {UI_COPY.landing.singlePlaysTab}
         </button>
         {isAdmin && (
           <button
@@ -173,7 +176,7 @@ export function ScenarioSelect({
             aria-selected="false"
             onClick={onAdmin}
           >
-            Puzzle Creator
+            {UI_COPY.landing.puzzleCreatorTab}
           </button>
         )}
       </div>
@@ -189,17 +192,17 @@ export function ScenarioSelect({
               ) : null}
             </div>
             <div className="series-row__body">
-              <span className="series-row__eyebrow">01 Tutorial</span>
+              <span className="series-row__eyebrow">{UI_COPY.landing.seriesEyebrow}</span>
               <h2 className="series-row__title">{series.name}</h2>
               <p className="series-row__desc">{series.description}</p>
               <div className="series-row__meta">{formatProgress(seriesProgress)}</div>
             </div>
             <div className="series-row__actions">
               <button className="btn btn--primary" onClick={onStartSeries}>
-                Start Series
+                {UI_COPY.landing.startSeries}
               </button>
               <button className="btn btn--secondary" onClick={onSeriesLeaderboard}>
-                Rankings
+                {UI_COPY.landing.rankings}
               </button>
             </div>
           </div>
@@ -208,8 +211,8 @@ export function ScenarioSelect({
         <section className="play-section">
           <div className="challenge-section__header">
             <div>
-              <h2 className="challenge-section__title">Single Plays</h2>
-              <p className="challenge-section__subtitle">Choose a ranked board.</p>
+              <h2 className="challenge-section__title">{UI_COPY.landing.singlePlaysHeading}</h2>
+              <p className="challenge-section__subtitle">{UI_COPY.landing.singlePlaysPrompt}</p>
             </div>
           </div>
 
@@ -218,7 +221,7 @@ export function ScenarioSelect({
               return (
                 <div key={s.id} className="challenge-tile">
                   <div className="challenge-tile__index" aria-hidden="true">
-                    Play {String(index + 1).padStart(2, '0')}
+                    {UI_COPY.landing.playPrefix} {String(index + 1).padStart(2, '0')}
                   </div>
                   <div className="challenge-tile__body">
                     <div className="challenge-tile__name">{s.name}</div>
@@ -227,10 +230,10 @@ export function ScenarioSelect({
                   </div>
                   <div className="challenge-tile__actions">
                     <button className="btn btn--primary" onClick={() => onPlay(s)}>
-                      Play
+                      {UI_COPY.landing.play}
                     </button>
                     <button className="btn btn--secondary" onClick={() => onLeaderboard(s)}>
-                      Rankings
+                      {UI_COPY.landing.rankings}
                     </button>
                   </div>
                 </div>
