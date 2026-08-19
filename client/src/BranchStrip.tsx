@@ -1,4 +1,5 @@
 import type { BranchStripEntry } from './branchRun';
+import { BlockFaceGraphic } from './BlockDiceGraphic';
 import './BranchStrip.css';
 
 interface Props {
@@ -66,9 +67,25 @@ export function BranchStrip({ branches, deadWeight, score, onSelect, onConcede }
                 branch.isViewed ? 'branch-chip--viewed' : '',
               ].filter(Boolean).join(' ')}
               aria-current={branch.isViewed ? 'true' : undefined}
+              aria-label={`${branch.path}; ${pct(branch.weight)}; ${STATUS_LABEL[branch.status]}`}
               onClick={() => onSelect(branch.id)}
             >
-              <span className="branch-chip__label">{branch.path}</span>
+              <span className="branch-chip__dice" aria-hidden="true">
+                {branch.outcomes.map((outcome, outcomeIndex) => (
+                  <span className="branch-chip__dice-group" key={`${outcomeIndex}-${outcome.label}`}>
+                    {outcome.faces.map(face => (
+                      <BlockFaceGraphic
+                        key={face}
+                        face={face}
+                        favor={outcome.favor}
+                        size={28}
+                        className="branch-chip__die"
+                      />
+                    ))}
+                    {outcomeIndex < branch.outcomes.length - 1 && <span className="branch-chip__arrow">→</span>}
+                  </span>
+                ))}
+              </span>
               <span className="branch-chip__weight">{pct(branch.weight)}</span>
               <span className="branch-chip__status">{STATUS_LABEL[branch.status]}</span>
             </button>

@@ -52,7 +52,7 @@
   display: grid;
   grid-template-columns: auto auto;
   grid-template-areas:
-    'label weight'
+    'dice weight'
     'status status';
   gap: 0 8px;
   padding: 6px 10px;
@@ -68,10 +68,32 @@
   background: var(--color-surface-hover);
 }
 
-.branch-chip__label {
-  grid-area: label;
-  font-weight: 700;
-  font-size: 0.85rem;
+.branch-chip__dice {
+  grid-area: dice;
+  min-width: 34px;
+  min-height: 28px;
+  display: flex;
+  align-items: center;
+}
+
+.branch-chip__dice-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.branch-chip__die.block-dice-graphic {
+  flex: 0 0 28px;
+  gap: 0;
+}
+
+.branch-chip__die .block-die-icon {
+  width: 100% !important;
+}
+
+.branch-chip__arrow {
+  margin: 0 2px;
+  color: var(--color-text-muted);
 }
 
 @media (max-width: 1024px) {
@@ -115,12 +137,6 @@
     min-width: 0;
     flex: 1;
     grid-template-columns: minmax(0, 1fr) auto;
-  }
-
-  .branch-chip__label {
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
   }
 
   .branch-chip__concede {
