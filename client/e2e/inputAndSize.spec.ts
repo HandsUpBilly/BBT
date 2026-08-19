@@ -108,14 +108,14 @@ test.describe('interaction follows hover capability', () => {
 
     await page.locator('.square--reachable').last().hover();
 
-    // The preview appears from the hover alone — no click, no confirm bar.
+    // The preview appears from the hover alone — no click, no final decision.
     await expect(page.locator('.square--preview-free, .square--preview-gfi, '
       + '.square--preview-dodge, .square--preview-gfi-dodge').first()).toBeVisible();
-    await expect(page.locator('.commit-bar')).toHaveCount(0);
+    await expect(page.locator('.move-decision')).toHaveCount(0);
     await expect(page.locator('.square--path')).toHaveCount(0);
   });
 
-  test('clicking a hovered route requires an explicit move decision', async ({ page }) => {
+  test('waypoints stay open until the route endpoint is double-clicked', async ({ page }) => {
     test.skip(!(await capabilities(page)).hover, 'requires a hovering pointer');
 
     const carrier = page.locator('.square:has(.piece--carrier)').first();
@@ -125,13 +125,17 @@ test.describe('interaction follows hover capability', () => {
     await page.getByRole('button', { name: /confirm/i }).click();
 
     const target = page.locator('.square--reachable').last();
+    const targetSquare = await target.getAttribute('data-square');
     await target.hover();
     await target.click();
 
-    const bar = page.locator('.commit-bar');
-    await expect(bar.getByRole('button', { name: 'Confirm Move' })).toBeVisible();
-    await expect(bar.getByRole('button', { name: 'Plot Again' })).toBeVisible();
-    await expect(page.locator('.square--path')).toHaveCount(0);
+    await expect(page.locator('.move-decision')).toHaveCount(0);
+    await expect(page.locator(`.square[data-square="${targetSquare}"]`)).toHaveClass(/square--path/);
+
+    await page.locator(`.square[data-square="${targetSquare}"]`).dblclick();
+    const decision = page.locator('.move-decision');
+    await expect(decision.getByRole('button', { name: 'Confirm Move' })).toBeVisible();
+    await expect(decision.getByRole('button', { name: 'Plot Again' })).toBeVisible();
   });
 
   test('a non-hovering pointer plots the route with its first tap', async ({ page }) => {
@@ -145,7 +149,7 @@ test.describe('interaction follows hover capability', () => {
     await page.locator('.square--reachable').first().waitFor();
 
     await page.locator('.square--reachable').last().tap();
-    await expect(page.locator('.commit-bar')).toBeVisible();
+    await expect(page.locator('.move-decision')).toHaveCount(0);
   });
 });
 

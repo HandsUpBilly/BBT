@@ -6,8 +6,8 @@ import { startGame, canHover } from './helpers';
  *
  * On a mouse the path preview follows hover, so the player sees the dodge
  * rolls and the running success chance before clicking. On touch there is no
- * hover, so tapping plots the route and the same explicit controls used by
- * mouse play decide whether to commit it or plot again.
+ * hover, so the first tap previews and the second adds a waypoint. Confirmation
+ * appears only after the completed route endpoint is double-tapped.
  */
 test.describe('touch: plot before commit', () => {
   test.beforeEach(async ({ page }) => {
@@ -48,14 +48,14 @@ test.describe('touch: plot before commit', () => {
 
     await expect(page.locator('.square--preview-free, .square--preview-gfi, '
       + '.square--preview-dodge, .square--preview-gfi-dodge').first()).toBeVisible();
-    await expect(page.locator('.commit-bar')).toBeVisible();
+    await expect(page.locator('.move-decision')).toHaveCount(0);
 
     // Nothing committed: no walked squares, and no movement spent.
     await expect(page.locator('.square--path')).toHaveCount(0);
     expect(await remainingMa(page), 'the first tap spent movement').toBe(maBefore);
   });
 
-  test('a second tap cannot bypass Confirm Move', async ({ page }) => {
+  test('a second tap adds a waypoint without finishing the whole route', async ({ page }) => {
     await selectAndMove(page);
     const maBefore = await remainingMa(page);
 
@@ -66,59 +66,68 @@ test.describe('touch: plot before commit', () => {
     const targetSquare = await target.getAttribute('data-square');
 
     await target.tap();
-    await expect(page.locator('.commit-bar')).toBeVisible();
+    await expect(page.locator('.move-decision')).toHaveCount(0);
 
     await page.locator(`.square[data-square="${targetSquare}"]`).tap();
 
-    await expect(page.locator('.commit-bar')).toBeVisible();
-    await expect(page.locator('.square--path')).toHaveCount(0);
-    expect(await remainingMa(page), 'the second tap spent movement').toBe(maBefore);
-
-    await page.locator('.commit-bar').getByRole('button', { name: 'Confirm Move' }).tap();
-
-    await expect(page.locator('.commit-bar')).toBeHidden();
-    // The destination is now a walked square on the committed path.
+    await expect(page.locator('.move-decision')).toHaveCount(0);
     await expect(page.locator(`.square[data-square="${targetSquare}"]`))
       .toHaveClass(/square--path/);
     const maAfter = await remainingMa(page);
-    expect(maAfter, 'Confirm Move committed no movement').not.toBe(maBefore);
+    expect(maAfter, 'the second tap added no waypoint').not.toBe(maBefore);
   });
 
-  test('arming a move shows a confirm bar naming the destination', async ({ page }) => {
+  test('double-tapping the completed endpoint shows the final decision', async ({ page }) => {
     await selectAndMove(page);
-    await page.locator('.square--reachable').last().tap();
+    const target = page.locator('.square--reachable').last();
+    const targetSquare = await target.getAttribute('data-square');
+    await target.tap();
+    const endpoint = page.locator(`.square[data-square="${targetSquare}"]`);
+    await endpoint.tap();
+    await endpoint.tap();
+    await endpoint.tap();
 
-    const bar = page.locator('.commit-bar');
-    await expect(bar).toBeVisible();
-    // "Move to 12H" — the same square name the board and aria-labels use.
-    await expect(bar.locator('.commit-bar__square')).toHaveText(/^Move to \d+[A-O]$/);
-    await expect(bar.getByRole('button', { name: 'Confirm Move' })).toBeVisible();
-    await expect(bar.getByRole('button', { name: 'Plot Again' })).toBeVisible();
+    const decision = page.locator('.move-decision');
+    await expect(decision).toBeVisible();
+    await expect(decision.getByRole('button', { name: 'Confirm Move' })).toHaveText('✓');
+    await expect(decision.getByRole('button', { name: 'Plot Again' })).toHaveText('×');
   });
 
-  test('arming the confirm bar does not resize the pitch', async ({ page }) => {
+  test('showing the endpoint decision does not resize the pitch', async ({ page }) => {
     await selectAndMove(page);
-    const bar = page.locator('.commit-bar');
+    const decision = page.locator('.move-decision');
     const pitch = page.locator('.pitch-wrapper');
 
-    await expect(bar).toBeHidden();
+    await expect(decision).toHaveCount(0);
     const before = await pitch.boundingBox();
 
-    await page.locator('.square--reachable').last().tap();
+    const target = page.locator('.square--reachable').last();
+    const targetSquare = await target.getAttribute('data-square');
+    await target.tap();
+    const endpoint = page.locator(`.square[data-square="${targetSquare}"]`);
+    await endpoint.tap();
+    await endpoint.tap();
+    await endpoint.tap();
 
-    await expect(bar).toBeVisible();
+    await expect(decision).toBeVisible();
     const after = await pitch.boundingBox();
-    expect(after, 'the pitch moved or resized when the confirm bar appeared').toEqual(before);
+    expect(after, 'the pitch moved or resized when the endpoint decision appeared').toEqual(before);
   });
 
-  test('Plot Again clears an armed move and commits nothing', async ({ page }) => {
+  test('Plot Again rewinds every provisional waypoint', async ({ page }) => {
     await selectAndMove(page);
     const maBefore = await remainingMa(page);
 
-    await page.locator('.square--reachable').last().tap();
-    await page.locator('.commit-bar').getByRole('button', { name: 'Plot Again' }).tap();
+    const target = page.locator('.square--reachable').last();
+    const targetSquare = await target.getAttribute('data-square');
+    await target.tap();
+    const endpoint = page.locator(`.square[data-square="${targetSquare}"]`);
+    await endpoint.tap();
+    await endpoint.tap();
+    await endpoint.tap();
+    await page.locator('.move-decision').getByRole('button', { name: 'Plot Again' }).tap();
 
-    await expect(page.locator('.commit-bar')).toBeHidden();
+    await expect(page.locator('.move-decision')).toHaveCount(0);
     await expect(page.locator('.square--path')).toHaveCount(0);
     expect(await remainingMa(page)).toBe(maBefore);
   });
@@ -128,15 +137,20 @@ test.describe('touch: plot before commit', () => {
 
     // The farthest reachable square is the one most likely to need a Go For
     // It or a dodge, which are the routes where the odds actually matter.
-    await page.locator('.square--reachable').last().tap();
-    await expect(page.locator('.commit-bar')).toBeVisible();
+    const target = page.locator('.square--reachable').last();
+    const targetSquare = await target.getAttribute('data-square');
+    await target.tap();
 
     const rolls = await page.locator('.square__dice').count();
     test.skip(rolls === 0, 'the farthest reachable square needs no roll here');
 
     // Before this change the odds were only accumulated on commit, so the
     // player accepted risk the interface had never quantified.
-    await expect(page.locator('.commit-bar__prob')).toBeVisible();
-    await expect(page.locator('.commit-bar__prob')).toHaveText(/^\d{1,3}% success$/);
+    const endpoint = page.locator(`.square[data-square="${targetSquare}"]`);
+    await endpoint.tap();
+    await endpoint.tap();
+    await endpoint.tap();
+    await expect(page.locator('.move-decision__prob')).toBeVisible();
+    await expect(page.locator('.move-decision__prob')).toHaveText(/^\d{1,3}%$/);
   });
 });

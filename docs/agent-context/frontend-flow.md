@@ -300,7 +300,7 @@ directions — so keep them apart.
 | Question | Query | Hook | Governs |
 |---|---|---|---|
 | Is there room? | `(max-width: 1024px)` | `useCompactLayout()` | Side columns, board rotation, HUD labels, coordinate gutters, default zoom |
-| Can any connected input hover? | `(any-hover: hover)` | `useHoverCapable()` | Hover previews and commit-bar placement |
+| Can any connected input hover? | `(any-hover: hover)` | `useHoverCapable()` | Hover previews and waypoint interaction |
 | Is the pointer coarse? | `(pointer: coarse)` | *(CSS only)* | Hit-target sizes, nothing else |
 
 The two failures worth remembering:
@@ -353,17 +353,18 @@ instead of 26 — squares go from 11.2px to 23.4px on a 375px phone.
 
 There is no hover on touch, and a tap emits a synthetic `mouseenter` before
 its click — so preview and commit used to land in one gesture and the player
-accepted risk they were never shown. Every input now uses the same explicit
-decision:
+accepted risk they were never shown. Route planning now separates waypoints
+from the one final decision:
 
-- hover-capable pointers preview freely until a destination is clicked;
-- clicking or tapping a reachable square freezes the plotted route;
-- `.commit-bar` offers **Confirm Move** or **Plot Again**; clicking the pitch
-  again never bypasses that explicit choice;
-- the armed move carries the piece id and squares already walked, so changing
-  selection or committing a step invalidates a stale plot.
+- hover-capable pointers preview freely and click to add each waypoint;
+- non-hovering pointers tap once to preview and again to add a waypoint;
+- intermediate waypoints never open the final decision controls;
+- double-clicking or double-tapping the route endpoint marks the whole move
+  finished, then a green tick and red × appear beside that square for
+  **Confirm Move** or **Plot Again**;
+- **Plot Again** rewinds the activation to its original board state.
 
-`pathPreviewProb` (in `useGameState.ts`) gives the commit bar its odds. It
+`pathPreviewProb` (in `useGameState.ts`) gives the endpoint decision its odds. It
 mirrors the per-step maths in `handleSquareClick`, including GFI, dodge and
 pickup stacking on one square; keep the two together and keep
 `pathPreviewProb.test.ts` passing.

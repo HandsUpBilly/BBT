@@ -572,90 +572,6 @@ body,
   overflow: hidden;
 }
 
-/* ── Commit bar ──────────────────────────────────────────────────────────
-   Every plotted route waits here for an explicit decision. It sits at the
-   bottom on touch because that is where the thumb already is. */
-.commit-bar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  flex-shrink: 0;
-  flex-wrap: wrap;
-  padding: 8px 12px;
-  padding-bottom: max(8px, env(safe-area-inset-bottom));
-  background: var(--color-surface-2);
-  border: 1px solid var(--color-border-selected);
-  border-radius: var(--radius-panel);
-  box-shadow: var(--shadow-overlay);
-}
-
-/* The idle bar occupies exactly the same layout slot as the armed bar. It is
-   hidden visually and from assistive technology by CommitBar, but retaining
-   its box stops the pitch from shrinking when a touch preview is armed. */
-.commit-bar--placeholder {
-  visibility: hidden;
-}
-
-.commit-bar__detail {
-  display: flex;
-  align-items: baseline;
-  gap: 10px;
-  min-width: 0;
-}
-
-.commit-bar__square {
-  color: var(--color-text-strong);
-  font-family: var(--font-display);
-  font-size: 0.92rem;
-  font-weight: 600;
-  letter-spacing: 0.02em;
-  white-space: nowrap;
-}
-
-.commit-bar__prob {
-  color: var(--color-text-muted);
-  font-size: 0.88rem;
-  font-variant-numeric: tabular-nums;
-  white-space: nowrap;
-}
-
-.commit-bar__prob--risky {
-  color: var(--color-warning);
-}
-
-/* Safe routes still reserve the wider probability label. This keeps the bar
-   on the same number of flex lines when switching between safe and risky
-   destinations on narrow screens. */
-.commit-bar__prob--placeholder {
-  visibility: hidden;
-}
-
-.commit-bar__actions {
-  display: flex;
-  gap: 8px;
-  flex-shrink: 0;
-}
-
-.commit-bar .btn {
-  min-height: 44px;
-  padding-inline: 18px;
-}
-
-/* A mouse already previews on hover, so reserving a permanent bar would take
-   height from the pitch for no benefit. Once a destination is clicked, float
-   the decision over the bottom of the board instead. */
-@media (any-hover: hover) {
-  .commit-bar {
-    position: fixed;
-    z-index: 80;
-    left: 50%;
-    bottom: max(16px, env(safe-area-inset-bottom));
-    transform: translateX(-50%);
-    width: min(36rem, calc(100vw - 2rem));
-  }
-}
-
 /* ── Status strip ────────────────────────────────────────────────────────
    The activation guidance, mounted below the board on touch instead of
    inside the HUD. Same element, one of two mount points — see App.tsx. */
@@ -779,7 +695,6 @@ body,
    bigger, so a 1280px touchscreen still needs 44px targets even though it
    keeps the full three-column layout. */
 @media (pointer: coarse) {
-  .commit-bar .btn,
   .info-sheet__tab {
     min-height: 44px;
   }
@@ -799,20 +714,18 @@ body,
   .app--game {
     display: grid;
     grid-template-columns: minmax(0, 1fr) minmax(150px, 26%);
-    grid-template-rows: auto auto auto minmax(0, 1fr) auto;
+    grid-template-rows: auto auto auto minmax(0, 1fr);
     grid-template-areas:
       "hud     hud"
       "branches branches"
       "board   status"
-      "board   sheet"
-      "commit  commit";
+      "board   sheet";
     column-gap: 6px;
   }
 
   .app--game .hud { grid-area: hud; }
   .app--game > .branch-strip { grid-area: branches; }
   .app--game .game-area { grid-area: board; }
-  .app--game .commit-bar { grid-area: commit; }
   .app--game .status-strip { grid-area: status; }
 
   .app--game .info-sheet {
