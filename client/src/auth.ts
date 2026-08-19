@@ -56,7 +56,8 @@ export interface AuthContextValue {
   /** True when a Google user is still cached but their token has lapsed. */
   sessionExpired: boolean;
   isConfigured: boolean;
-  signIn: () => Promise<void>;
+  /** Mounts Google's click-to-sign-in control into the supplied element. */
+  mountSignInButton: (container: HTMLElement) => Promise<void>;
   signOut: () => void;
 }
 
