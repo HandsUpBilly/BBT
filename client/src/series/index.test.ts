@@ -1,10 +1,15 @@
 import { describe, expect, it } from 'vitest';
 import { scenarios } from '../scenarios';
-import { defaultSeries, resolveSeriesScenarios } from '.';
+import {
+  FEATURED_SERIES_NAME,
+  defaultSeries,
+  normalizeSeriesDefinition,
+  resolveSeriesScenarios,
+} from '.';
 
 describe('Tutorial series', () => {
   it('uses the six Tutorial drills in rules order', () => {
-    expect(defaultSeries.name).toBe('Tutorial');
+    expect(defaultSeries.name).toBe(FEATURED_SERIES_NAME);
     expect(resolveSeriesScenarios(defaultSeries, scenarios).map(scenario => scenario.id)).toEqual([
       'scenario-001',
       'scenario-004',
@@ -13,5 +18,14 @@ describe('Tutorial series', () => {
       'scenario-005',
       'scenario-006',
     ]);
+  });
+
+  it('migrates known published names without overriding custom series copy', () => {
+    expect(normalizeSeriesDefinition({
+      ...defaultSeries,
+      name: 'Humans vs Orcs: Touchdown or Bust',
+    }).name).toBe(FEATURED_SERIES_NAME);
+    expect(normalizeSeriesDefinition({ ...defaultSeries, name: 'My League Final' }).name)
+      .toBe('My League Final');
   });
 });
