@@ -60,7 +60,9 @@ All configured in `netlify.toml`, in this order:
 | `/api/series-leaderboard` | `series-leaderboard` | Optional Google (guest allowed) |
 | `/api/progress` | `progress` | Public |
 | `/api/reports` | `reports` | Optional Google, rate-limited |
+| `/api/analytics` | `analytics` | Public, game-event batches only, rate-limited |
 | `/api/editor/statistics` | `editor-statistics` | **Admin only** |
+| `/api/editor/analytics` | `editor-analytics` | **Admin only** |
 | `/api/editor/scenarios` | `editor-scenarios` | **Admin only, including GET** |
 | `/api/editor/scenarios/*` | `editor-scenarios` | **Admin only** |
 | `/api/editor/series/default` | `editor-series` | **Admin only** |
@@ -119,6 +121,22 @@ first — keep it above `gtag('config', …)`.
 
 There is no environment variable: the measurement ID is a literal in both files,
 and it is public by nature (it ships in the page source either way).
+
+## First-party game analytics
+
+First-party analytics deliberately does not duplicate GA4. It records only
+game-specific puzzle starts, meaningful play, active play time, actions,
+completion/drop-off, Tutorial progression, and allowlisted game interactions.
+There is no persistent browser id and no visit, referrer, campaign, device,
+browser, operating-system, geography, identity, or generic screen-view field.
+
+The production client batches events to `POST /api/analytics`. The function
+validates the dependency-free shared schema and reduces each random game session
+into a bounded summary in the `analytics-sessions` Blobs store. Retried batch ids
+are idempotent. `analytics-maintenance.js` runs daily, refreshes anonymous daily
+game rollups, and deletes session summaries after 13 calendar months only after
+their rollup exists. `GET /api/editor/analytics` is admin-gated and returns
+aggregates only; it never returns session or attempt ids.
 
 ## Environment Variables
 
@@ -212,5 +230,7 @@ indefinitely.
 - Player issue and feature reporting via `/api/reports`, rate-limited
 - Admin-only anonymous player-performance statistics from the full retained
   personal-best leaderboards
+- Admin-only game engagement, completion/drop-off, Tutorial, action, and active
+  play-time graphs from first-party game-session summaries
 - **Persistent puzzle-editor saves** via Netlify Blobs, with an explicit
   draft → published publish step

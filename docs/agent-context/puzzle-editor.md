@@ -62,8 +62,12 @@ The two admin surfaces also include their own client-side workbench tools:
 
 Leaderboard storage keeps one personal best per player, not every attempt, so
 these figures are explicitly labeled as personal-best statistics. They cannot
-represent total attempts or completion rates. The API never returns player
-names, ids, or move histories to the dashboard.
+represent total attempts or completion rates. The separate game-engagement
+section uses privacy-limited first-party game-session summaries for starts,
+completion/drop-off, actions, Tutorial progression, and active time. Neither API
+returns player names, record-level ids, or move histories to the dashboard, and
+the game analytics intentionally excludes traffic/audience data already supplied
+by GA4.
 
 ### Managed administrators
 
@@ -111,6 +115,7 @@ empty allowlist, so storage trouble cannot broaden administrator access.
 - `PUT /api/editor/series/default`
 - `POST /api/editor/publish`
 - `GET /api/editor/statistics`
+- `GET /api/editor/analytics`
 - `GET` / `POST` / `DELETE /api/editor/admins`
 
 These write local JSON files under:
@@ -129,6 +134,9 @@ Netlify production persists editor drafts in Netlify Blobs:
 - `netlify/functions/editor-publish.js` copies draft scenarios/series to the published keys.
 - `netlify/functions/editor-statistics.js` reads the full leaderboard Blobs and
   returns anonymous aggregates built by `shared/statistics.js`.
+- `netlify/functions/editor-analytics.js` reads retained game-session summaries
+  and returns aggregate engagement/drop-off data built by
+  `shared/analyticsStatistics.js`; it is independent of leaderboard statistics.
 - `netlify/functions/editor-admins.js` stores runtime-managed administrator
   emails in a separate protected Blobs store.
 - `netlify/functions/scenarios.js` serves published scenarios/series to players.

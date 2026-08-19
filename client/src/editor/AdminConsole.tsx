@@ -16,7 +16,10 @@ export function AdminConsole({ idToken, onBack }: Props) {
     try { setAccess(await fetchAdminAccess(idToken)); }
     catch (reason) { setError(reason instanceof Error ? reason.message : 'Could not load administrator access.'); }
   }, [idToken]);
-  useEffect(() => { void load(); }, [load]);
+  useEffect(() => {
+    const timer = window.setTimeout(() => { void load(); }, 0);
+    return () => window.clearTimeout(timer);
+  }, [load]);
   async function add() {
     setBusy(true); setError(null);
     try { setAccess(await addAdmin(email, idToken)); setEmail(''); }

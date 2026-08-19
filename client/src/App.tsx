@@ -56,6 +56,12 @@ import type {
 import { key, computeZoomBounds } from './bfs';
 import type { ZoomBounds } from './bfs';
 import { useCompactLayout, useHoverCapable, usePortraitViewport } from './useMediaQuery';
+import {
+  initializeAnalytics,
+  newAnalyticsId,
+  setActiveAnalyticsAttempt,
+  trackAnalytics,
+} from './analytics';
 import './App.css';
 import './PlaybookTheme.css';
 
@@ -251,6 +257,7 @@ function IdentityGate({ authConfigured, googleSignedIn, mountGoogleSignInButton,
 }
 
 export default function App() {
+  useEffect(() => initializeAnalytics(), []);
   const { currentUser, idToken, sessionExpired, isConfigured: authConfigured, mountSignInButton, signOut } = useAuth();
   // Scenario/series data starts as the build-time static bundle (immediate,
   // no loading flash) and is replaced by the currently published set fetched
@@ -339,11 +346,16 @@ export default function App() {
     const lesson = tutorialLessonFor(scenario.id);
     const guidanceEnabled = prefs.showTutorialGuidance ?? true;
     setTutorialLesson(lesson && guidanceEnabled ? { lesson, step } : null);
+    if (lesson && guidanceEnabled) trackAnalytics('interaction', { name: 'tutorial-briefing', outcome: 'shown' });
   }, [prefs.showTutorialGuidance]);
 
   const dismissTutorialLesson = useCallback((disableFutureLessons: boolean) => {
     if (!tutorialLesson) return;
     if (disableFutureLessons) setPrefs({ showTutorialGuidance: false });
+    trackAnalytics('interaction', {
+      name: 'tutorial-briefing', outcome: 'dismissed',
+      value: disableFutureLessons ? 'disable-future' : 'continue',
+    });
     setTutorialLesson(null);
   }, [setPrefs, tutorialLesson]);
 
@@ -420,10 +432,85 @@ export default function App() {
   // the branching summary needs its own dismissal flag rather than borrowing
   // the single-board trick of rewinding the phase.
   const [branchSummaryDismissed, setBranchSummaryDismissed] = useState(false);
+  const analyticsSplitRecordedRef = useRef(false);
   const resetBoards = useCallback((next: GameState) => {
     setBranchedState(next);
     setBranchSummaryDismissed(false);
   }, [setBranchedState]);
+
+  const analyticsAttemptIdRef = useRef<string | null>(null);
+  const analyticsAttemptEngagedRef = useRef(false);
+  const analyticsActionLogLengthRef = useRef(0);
+  const analyticsSeriesRunIdRef = useRef<string | null>(null);
+
+  const beginAnalyticsAttempt = useCallback((scenario: Scenario, mode: 'standalone' | 'series', seriesPosition?: number) => {
+    const attemptId = newAnalyticsId();
+    analyticsAttemptIdRef.current = attemptId;
+    analyticsAttemptEngagedRef.current = false;
+    analyticsActionLogLengthRef.current = 0;
+    setActiveAnalyticsAttempt(attemptId);
+    trackAnalytics('puzzle-started', {
+      attemptId, scenarioId: scenario.id, scenarioName: scenario.name, mode,
+      ...(seriesPosition ? { seriesPosition } : {}),
+    });
+  }, []);
+
+  const engageAnalyticsAttempt = useCallback(() => {
+    const attemptId = analyticsAttemptIdRef.current;
+    if (!attemptId || analyticsAttemptEngagedRef.current) return;
+    analyticsAttemptEngagedRef.current = true;
+    trackAnalytics('puzzle-engaged', { attemptId });
+  }, []);
+
+  const endAnalyticsAttempt = useCallback((outcome: 'completed' | 'restarted' | 'left-puzzle' | 'left-series' | 'replaced', detail: Record<string, unknown> = {}) => {
+    const attemptId = analyticsAttemptIdRef.current;
+    if (!attemptId) return;
+    trackAnalytics('puzzle-ended', { attemptId, outcome, ...detail });
+    analyticsAttemptIdRef.current = null;
+    analyticsAttemptEngagedRef.current = false;
+    setActiveAnalyticsAttempt(null);
+  }, []);
+
+  useEffect(() => {
+    if (state.actionLog.length < analyticsActionLogLengthRef.current) {
+      analyticsActionLogLengthRef.current = 0;
+    }
+    const fresh = state.actionLog.slice(analyticsActionLogLengthRef.current);
+    if (fresh.length === 0 || !analyticsAttemptIdRef.current) return;
+    engageAnalyticsAttempt();
+    for (const entry of fresh) {
+      const attemptId = analyticsAttemptIdRef.current;
+      if (!attemptId) break;
+      if (entry.kind === 'move') {
+        trackAnalytics('puzzle-action', { attemptId, action: 'move' });
+        if (entry.dodgeTarget) trackAnalytics('puzzle-action', { attemptId, action: 'dodge' });
+        if (entry.isGfi) trackAnalytics('puzzle-action', { attemptId, action: 'rush' });
+        if (entry.pickupTarget) trackAnalytics('puzzle-action', { attemptId, action: 'pickup' });
+      } else if (entry.kind === 'handoff') {
+        trackAnalytics('puzzle-action', { attemptId, action: 'handoff' });
+      } else if (entry.kind === 'pass') {
+        trackAnalytics('puzzle-action', { attemptId, action: 'pass' });
+      } else if (entry.kind === 'pass-catch') {
+        trackAnalytics('puzzle-action', { attemptId, action: 'catch' });
+      } else if (entry.kind === 'block') {
+        trackAnalytics('puzzle-action', { attemptId, action: 'block' });
+        if (entry.isBlitz) trackAnalytics('puzzle-action', { attemptId, action: 'blitz' });
+      }
+    }
+    analyticsActionLogLengthRef.current = state.actionLog.length;
+  }, [state.actionLog, engageAnalyticsAttempt]);
+
+  useEffect(() => {
+    if (!branchedBoards.hasSplit) {
+      analyticsSplitRecordedRef.current = false;
+      return;
+    }
+    if (analyticsSplitRecordedRef.current || !analyticsAttemptIdRef.current) return;
+    analyticsSplitRecordedRef.current = true;
+    trackAnalytics('puzzle-action', {
+      attemptId: analyticsAttemptIdRef.current, action: 'universe-split',
+    });
+  }, [branchedBoards.hasSplit]);
 
   const identityName = currentUser ? googleAliases[currentUser.id] ?? '' : guestAlias;
   const identityReady = Boolean(identityName.trim());
@@ -453,7 +540,10 @@ export default function App() {
     userAgent: navigator.userAgent,
   };
   const reportButton = (variant: 'header' | 'hud') => (
-    <ReportProblemButton variant={variant} onClick={() => setReportOpen(true)} />
+    <ReportProblemButton variant={variant} onClick={() => {
+      trackAnalytics('interaction', { name: 'report-dialog', outcome: 'opened' });
+      setReportOpen(true);
+    }} />
   );
   // A lapsed Google session still shows the player as signed in, but writes
   // would 401. Offer the fix before they lose a run to it.
@@ -481,14 +571,23 @@ export default function App() {
       defaultReporterName={identityName}
       context={reportContext}
       idToken={idToken}
-      onClose={() => setReportOpen(false)}
+      onClose={() => {
+        trackAnalytics('interaction', { name: 'report-dialog', outcome: 'closed' });
+        setReportOpen(false);
+      }}
+      onResult={(outcome, type) => {
+        trackAnalytics('interaction', { name: 'report-submit', outcome, value: type });
+      }}
     />
   );
   const aboutModal = aboutOpen && (
     <AboutDialog
       version={__BBT_VERSION__}
       deployedAt={__BBT_DEPLOYED_AT__}
-      onClose={() => setAboutOpen(false)}
+      onClose={() => {
+        trackAnalytics('interaction', { name: 'about', outcome: 'closed' });
+        setAboutOpen(false);
+      }}
     />
   );
   const handleSignOut = useCallback(() => {
@@ -503,6 +602,7 @@ export default function App() {
   // Opened from the account menu on every screen it appears on, so it must
   // remember which one to return to rather than always landing on home.
   const openSettings = useCallback(() => {
+    trackAnalytics('interaction', { name: 'settings', outcome: 'opened' });
     setSettingsReturnMode(current => (appMode === 'settings' ? current : appMode));
     setAppMode('settings');
   }, [appMode]);
@@ -512,7 +612,10 @@ export default function App() {
       name={identityName}
       avatar={prefs.avatar}
       onSettings={openSettings}
-      onAbout={() => setAboutOpen(true)}
+      onAbout={() => {
+        trackAnalytics('interaction', { name: 'about', outcome: 'opened' });
+        setAboutOpen(true);
+      }}
       onSignOut={handleSignOut}
     />
   );
@@ -532,8 +635,9 @@ export default function App() {
     setZoomBounds(computeStartOfPlayZoom(s.pieces, s.activeTeam));
     const lessonIndex = TUTORIAL_LESSON_IDS.indexOf(scenario.id);
     queueTutorialLesson(scenario, lessonIndex + 1);
+    beginAnalyticsAttempt(scenario, 'standalone');
     setAppMode('puzzle');
-  }, [resetBoards, computeStartOfPlayZoom, queueTutorialLesson]);
+  }, [resetBoards, computeStartOfPlayZoom, queueTutorialLesson, beginAnalyticsAttempt]);
 
   const previewPuzzle = useCallback((scenario: Scenario) => {
     setTutorialLesson(null);
@@ -670,12 +774,17 @@ export default function App() {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key !== 'Escape') return;
+      if (analyticsAttemptIdRef.current && state.selectedPieceId) {
+        trackAnalytics('puzzle-action', {
+          attemptId: analyticsAttemptIdRef.current, action: 'action-cancel',
+        });
+      }
       disarm();
       handleCancelSelection();
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [disarm, handleCancelSelection]);
+  }, [disarm, handleCancelSelection, state.selectedPieceId]);
 
   // Context menu state
   const [pieceMenu, setPieceMenu] = useState<{ piece: PlayerPiece; anchor: MenuAnchor } | null>(null);
@@ -764,10 +873,14 @@ export default function App() {
       state.isBlockTargeting, state.blockTargets, state.pendingBlockIsBlitz, state.blitzTargetId,
       state.committedPath, movementContext,
       hookSquareClick, handleHandoffTarget, handlePassTarget, handleBlockTarget, handleCancelSelection,
-      previewBeforeCommit, finishMove, hoverCapable, compact]);
+      previewBeforeCommit, finishMove, disarm, hoverCapable, compact]);
 
   const handleMenuAction = useCallback((actionKey: string, moveFirst: boolean) => {
     if (!pieceMenu) return;
+    engageAnalyticsAttempt();
+    if (analyticsAttemptIdRef.current) {
+      trackAnalytics('puzzle-action', { attemptId: analyticsAttemptIdRef.current, action: 'select' });
+    }
     const { col, row } = pieceMenu.piece.position;
     setPieceMenu(null);
     if (compact) setMobileInfoOpen(true);
@@ -789,7 +902,8 @@ export default function App() {
     } else if (actionKey === 'blitz') {
       handleBlockAction(pieceMenu.piece.id, true);
     }
-  }, [pieceMenu, hookSquareClick, handleHandoffAction, handlePassAction, handleBlockAction, compact]);
+  }, [pieceMenu, hookSquareClick, handleHandoffAction, handlePassAction, handleBlockAction, compact,
+      engageAnalyticsAttempt]);
 
   const dismissMenu = useCallback(() => {
     setPieceMenu(null);
@@ -846,13 +960,22 @@ export default function App() {
       probability,
       diceCount,
     });
-  }, [runFinished, branchedBoards.hasSplit, branchedSummary, state.actionLog, activeScenario]);
+    endAnalyticsAttempt('completed', {
+      probability,
+      diceCount,
+      activatedPieces: state.pieces.filter(piece => piece.team === state.activeTeam && piece.activated).length,
+      committedActions: state.actionLog.length,
+      lastAction: state.actionLog.at(-1)?.kind === 'pass-catch' ? 'catch' : state.actionLog.at(-1)?.kind,
+    });
+  }, [runFinished, branchedBoards.hasSplit, branchedSummary, state.actionLog, state.pieces,
+      state.activeTeam, activeScenario, endAnalyticsAttempt]);
 
   // Submission handler (standalone puzzle mode)
   const handleSubmit = useCallback(async (name: string) => {
     if (!activeScenario) return;
     const { cumulativeProb, diceCount, moves } = summarizeActionLog(state.actionLog);
     setSubmitError(undefined);
+    trackAnalytics('interaction', { name: 'score-submit', outcome: 'attempted' });
     try {
       const entry = await submitScore(activeScenario.id, name, cumulativeProb, diceCount, moves, state.actionLog, idToken);
       rememberLocalScore(activeScenario.id, entry.id);
@@ -866,11 +989,13 @@ export default function App() {
       const entries = await fetchLeaderboard(activeScenario.id);
       setLeaderboardInitialEntries(entries);
       setLeaderboardRefreshKey(k => k + 1);
+      trackAnalytics('interaction', { name: 'score-submit', outcome: 'succeeded' });
     } catch (error) {
       // A silently swallowed failure here used to look exactly like success:
       // the player landed on the leaderboard with their score missing and no
       // explanation. Say what happened and let them retry.
       setSubmitError(describeSubmitError(error));
+      trackAnalytics('interaction', { name: 'score-submit', outcome: 'failed' });
     }
   }, [activeScenario, state.actionLog, setState, idToken]);
 
@@ -883,6 +1008,7 @@ export default function App() {
     const { summary, run } = branchedBoards;
     const { moves } = summarizeActionLog(branchedBoards.state.actionLog);
     setSubmitError(undefined);
+    trackAnalytics('interaction', { name: 'score-submit', outcome: 'attempted' });
     try {
       const entry = await submitScore(
         activeScenario.id, name, summary.score, summary.expectedDice,
@@ -897,23 +1023,33 @@ export default function App() {
       const entries = await fetchLeaderboard(activeScenario.id);
       setLeaderboardInitialEntries(entries);
       setLeaderboardRefreshKey(k => k + 1);
+      trackAnalytics('interaction', { name: 'score-submit', outcome: 'succeeded' });
     } catch (error) {
       setSubmitError(describeSubmitError(error));
+      trackAnalytics('interaction', { name: 'score-submit', outcome: 'failed' });
     }
   }, [activeScenario, branchedBoards, idToken]);
 
   const handleSkipSubmit = useCallback(() => {
+    trackAnalytics('interaction', { name: 'score-submit', outcome: 'skipped' });
     setState(s => ({ ...s, phase: 'playing' }));
     setAppMode('home');
   }, [setState]);
 
   const handleRestartTurn = useCallback(() => {
     if (!activeScenario) return;
+    endAnalyticsAttempt('restarted', {
+      activatedPieces: state.pieces.filter(piece => piece.team === state.activeTeam && piece.activated).length,
+      committedActions: state.actionLog.length,
+    });
     setReviewingCompletedBoard(false);
     const s = makeScenarioState(activeScenario);
     resetBoards(s);
     setZoomBounds(computeStartOfPlayZoom(s.pieces, s.activeTeam));
-  }, [activeScenario, resetBoards, computeStartOfPlayZoom]);
+    beginAnalyticsAttempt(activeScenario, appMode === 'series-puzzle' ? 'series' : 'standalone',
+      appMode === 'series-puzzle' ? (seriesRun?.puzzleIndex ?? 0) + 1 : undefined);
+  }, [activeScenario, state.pieces, state.activeTeam, state.actionLog.length, resetBoards,
+      computeStartOfPlayZoom, beginAnalyticsAttempt, endAnalyticsAttempt, appMode, seriesRun]);
 
   // ── Series mode handlers ──────────────────────────────────────────────────
   const startSeries = useCallback(() => {
@@ -921,6 +1057,9 @@ export default function App() {
     const firstScenario = seriesScenarios[0];
     if (!firstScenario) return;
     setSeriesRun({ playerName: identityName, puzzleIndex: 0, results: [] });
+    const analyticsRunId = newAnalyticsId();
+    analyticsSeriesRunIdRef.current = analyticsRunId;
+    trackAnalytics('series-started', { runId: analyticsRunId, seriesId: scenarioData.series.id });
     setReviewingCompletedBoard(false);
     setActiveScenario(firstScenario);
     const s = makeScenarioState(firstScenario);
@@ -928,8 +1067,10 @@ export default function App() {
     setZoomBounds(computeStartOfPlayZoom(s.pieces, s.activeTeam));
     const firstLessonIndex = TUTORIAL_LESSON_IDS.indexOf(firstScenario.id);
     queueTutorialLesson(firstScenario, firstLessonIndex + 1);
+    beginAnalyticsAttempt(firstScenario, 'series', 1);
     setAppMode('series-puzzle');
-  }, [identityName, seriesScenarios, resetBoards, computeStartOfPlayZoom, queueTutorialLesson]);
+  }, [identityName, seriesScenarios, scenarioData.series.id, resetBoards, computeStartOfPlayZoom,
+      queueTutorialLesson, beginAnalyticsAttempt]);
 
   // Called when the player continues past a touchdown while in a series run.
   // Submits the puzzle's score to its individual leaderboard, records the
@@ -942,6 +1083,7 @@ export default function App() {
     const diceCount = tree ? branchedBoards.summary.expectedDice : flat.diceCount;
     const moves = flat.moves;
     setSubmitError(undefined);
+    trackAnalytics('interaction', { name: 'series-score-submit', outcome: 'attempted' });
 
     // Submit to the puzzle's own leaderboard too (best-effort — the series run
     // is the thing being scored, so a failure here must not cost the player
@@ -951,8 +1093,10 @@ export default function App() {
         activeScenario.id, seriesRun.playerName, probability, diceCount,
         moves, state.actionLog, idToken, tree,
       );
+      trackAnalytics('interaction', { name: 'series-score-submit', outcome: 'succeeded' });
     } catch (error) {
       setSubmitNotice(`This puzzle's individual score wasn't saved (${describeSubmitError(error)}). Your series run continues.`);
+      trackAnalytics('interaction', { name: 'series-score-submit', outcome: 'failed' });
     }
 
     const result: SeriesPuzzleResult = {
@@ -965,6 +1109,13 @@ export default function App() {
     };
     const results = [...seriesRun.results, result];
     const nextIndex = seriesRun.puzzleIndex + 1;
+    if (analyticsSeriesRunIdRef.current) {
+      trackAnalytics('series-advanced', {
+        runId: analyticsSeriesRunIdRef.current,
+        scenarioId: activeScenario.id,
+        position: seriesRun.puzzleIndex + 1,
+      });
+    }
 
     if (nextIndex < seriesScenarios.length) {
       const nextScenario = seriesScenarios[nextIndex];
@@ -975,7 +1126,13 @@ export default function App() {
       resetBoards(s);
       setZoomBounds(computeStartOfPlayZoom(s.pieces, s.activeTeam));
       queueTutorialLesson(nextScenario, nextIndex + 1);
+      beginAnalyticsAttempt(nextScenario, 'series', nextIndex + 1);
       return;
+    }
+
+    if (analyticsSeriesRunIdRef.current) {
+      trackAnalytics('series-ended', { runId: analyticsSeriesRunIdRef.current, outcome: 'completed' });
+      analyticsSeriesRunIdRef.current = null;
     }
 
     // Series complete — compute average and submit to the series leaderboard.
@@ -1003,18 +1160,26 @@ export default function App() {
     }
   }, [activeScenario, seriesRun, seriesScenarios, state.actionLog, branchedBoards.hasSplit,
       branchedBoards.run, branchedBoards.summary, resetBoards, setState, idToken,
-      computeStartOfPlayZoom, queueTutorialLesson]);
+      computeStartOfPlayZoom, queueTutorialLesson, beginAnalyticsAttempt]);
 
   const requestLeaveSeries = useCallback(() => {
     setConfirmLeaveSeries(true);
   }, []);
 
   const confirmLeaveSeriesYes = useCallback(() => {
+    endAnalyticsAttempt('left-series', {
+      activatedPieces: state.pieces.filter(piece => piece.team === state.activeTeam && piece.activated).length,
+      committedActions: state.actionLog.length,
+    });
+    if (analyticsSeriesRunIdRef.current) {
+      trackAnalytics('series-ended', { runId: analyticsSeriesRunIdRef.current, outcome: 'left' });
+      analyticsSeriesRunIdRef.current = null;
+    }
     setConfirmLeaveSeries(false);
     setReviewingCompletedBoard(false);
     setSeriesRun(null);
     setAppMode('home');
-  }, []);
+  }, [endAnalyticsAttempt, state.pieces, state.activeTeam, state.actionLog.length]);
 
   const confirmLeaveSeriesNo = useCallback(() => {
     setConfirmLeaveSeries(false);
@@ -1026,11 +1191,17 @@ export default function App() {
     } else if (editorPreviewScenario) {
       setAppMode('admin');
     } else {
+      endAnalyticsAttempt('left-puzzle', {
+        activatedPieces: state.pieces.filter(piece => piece.team === state.activeTeam && piece.activated).length,
+        committedActions: state.actionLog.length,
+      });
       setAppMode('home');
     }
-  }, [appMode, editorPreviewScenario, requestLeaveSeries]);
+  }, [appMode, editorPreviewScenario, requestLeaveSeries, endAnalyticsAttempt,
+      state.pieces, state.activeTeam, state.actionLog.length]);
 
   const returnToMenuFromTutorial = useCallback(() => {
+    trackAnalytics('interaction', { name: 'tutorial-briefing', outcome: 'returned-to-menu' });
     setTutorialLesson(null);
     handleBackClick();
   }, [handleBackClick]);
@@ -1135,16 +1306,34 @@ export default function App() {
           isGuest={!currentUser}
           onRename={currentUser ? setGoogleAlias : setGuestAlias}
           avatar={prefs.avatar}
-          onAvatarChange={avatar => setPrefs({ avatar })}
+          onAvatarChange={avatar => {
+            trackAnalytics('interaction', { name: 'setting-avatar', outcome: 'changed', value: Boolean(avatar) });
+            setPrefs({ avatar });
+          }}
           tokenStyle={prefs.tokenStyle ?? 'portrait'}
-          onTokenStyleChange={tokenStyle => setPrefs({ tokenStyle })}
+          onTokenStyleChange={tokenStyle => {
+            trackAnalytics('interaction', { name: 'setting-token-style', outcome: 'changed', value: tokenStyle });
+            setPrefs({ tokenStyle });
+          }}
           pitchSurface={prefs.pitchSurface ?? 'grass'}
-          onPitchSurfaceChange={pitchSurface => setPrefs({ pitchSurface })}
+          onPitchSurfaceChange={pitchSurface => {
+            trackAnalytics('interaction', { name: 'setting-pitch-surface', outcome: 'changed', value: pitchSurface });
+            setPrefs({ pitchSurface });
+          }}
           showCoordinates={prefs.showCoordinates ?? true}
-          onShowCoordinatesChange={showCoordinates => setPrefs({ showCoordinates })}
+          onShowCoordinatesChange={showCoordinates => {
+            trackAnalytics('interaction', { name: 'setting-coordinates', outcome: 'changed', value: showCoordinates });
+            setPrefs({ showCoordinates });
+          }}
           showTutorialGuidance={prefs.showTutorialGuidance ?? true}
-          onShowTutorialGuidanceChange={showTutorialGuidance => setPrefs({ showTutorialGuidance })}
-          onBack={() => setAppMode(settingsReturnMode)}
+          onShowTutorialGuidanceChange={showTutorialGuidance => {
+            trackAnalytics('interaction', { name: 'setting-tutorial-guidance', outcome: 'changed', value: showTutorialGuidance });
+            setPrefs({ showTutorialGuidance });
+          }}
+          onBack={() => {
+            trackAnalytics('interaction', { name: 'settings', outcome: 'closed' });
+            setAppMode(settingsReturnMode);
+          }}
         />
         {notice}
         {reportModal}
@@ -1305,7 +1494,10 @@ export default function App() {
             }
             onToggleZoom={() => setZoomOverride(!zoomEnabled)}
             onRestart={handleRestartTurn}
-            onReport={() => setReportOpen(true)}
+            onReport={() => {
+              trackAnalytics('interaction', { name: 'report-dialog', outcome: 'opened' });
+              setReportOpen(true);
+            }}
           />
         ) : (
           <>
@@ -1345,7 +1537,14 @@ export default function App() {
         deadWeight={branchedBoards.summary.deadWeight}
         score={branchedBoards.summary.score}
         onSelect={branchedBoards.handleSelectBranch}
-        onConcede={branchedBoards.handleConcedeBranch}
+        onConcede={id => {
+          if (analyticsAttemptIdRef.current) {
+            trackAnalytics('puzzle-action', {
+              attemptId: analyticsAttemptIdRef.current, action: 'universe-give-up',
+            });
+          }
+          branchedBoards.handleConcedeBranch(id);
+        }}
       />
 
       <div className="game-area">

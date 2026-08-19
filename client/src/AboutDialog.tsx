@@ -54,6 +54,13 @@ export function AboutDialog({ version, deployedAt, onClose }: Props) {
             </time>
           </p>
         </div>
+        <p className="modal__desc">
+          Turn 16 collects anonymous game statistics about puzzle starts, actions,
+          active play time, completion and drop-off. It does not attach analytics to
+          your name or Google account, and does not duplicate traffic or audience data
+          already provided by Google Analytics. Session-level records are retained for
+          13 months, then only aggregate daily game totals remain.
+        </p>
         <button className="modal__continue-btn" type="button" onClick={onClose}>
           Close
         </button>

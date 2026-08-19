@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useState } from 'react';
 import type { PerformanceSummary, PlayerStatistics } from '../../../shared/statistics.js';
 import { fetchPlayerStatistics } from './editorApi';
+import { AdminAnalytics } from './AdminAnalytics';
 import './AdminStatistics.css';
+import './AdminAnalytics.css';
 
 type PuzzleSortKey = 'name' | 'players' | 'average' | 'median' | 'best' | 'dice' | 'latest';
 type SortDirection = 'ascending' | 'descending';
@@ -147,6 +149,8 @@ export function AdminStatistics({ idToken, onBack }: Props) {
         Leaderboards retain one personal best per player. These figures are not attempt counts or completion rates,
         and no player names or move histories are included.
       </div>
+
+      <AdminAnalytics idToken={idToken} />
 
       {error && (
         <div className="admin-statistics__error" role="alert">

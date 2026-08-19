@@ -37,6 +37,7 @@ import {
   rateLimitKey,
 } from '../shared/rateLimit.js';
 import { buildPlayerStatistics } from '../shared/statistics.js';
+import { registerAnalyticsRoutes } from './analytics.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const app = express();
@@ -55,6 +56,7 @@ function statisticsWindow(value) {
 }
 
 app.use(express.json({ limit: '256kb' }));
+registerAnalyticsRoutes(app);
 registerEditorRoutes(app);
 
 // Serve built client in production only

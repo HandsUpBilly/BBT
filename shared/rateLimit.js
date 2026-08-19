@@ -93,3 +93,6 @@ export const REPORT_RATE_LIMIT = { limit: 5, windowMs: 60 * 60 * 1000 };
  * a session, tight enough to blunt a scripted flood.
  */
 export const LEADERBOARD_RATE_LIMIT = { limit: 20, windowMs: 60 * 1000 };
+
+/** Batched heartbeats plus gameplay events; loose enough for a long active tab. */
+export const ANALYTICS_RATE_LIMIT = { limit: 120, windowMs: 60 * 60 * 1000 };

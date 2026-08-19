@@ -14,6 +14,7 @@ interface Props {
   context: ReportContext;
   idToken?: string | null;
   onClose: () => void;
+  onResult?: (outcome: 'succeeded' | 'failed', type: ReportType) => void;
 }
 
 // Limits come from the same module the server validates against, so the
@@ -36,7 +37,7 @@ function downloadReport(download: ReportDownload) {
   setTimeout(() => URL.revokeObjectURL(url), 0);
 }
 
-export function ReportProblemModal({ defaultReporterName, context, idToken, onClose }: Props) {
+export function ReportProblemModal({ defaultReporterName, context, idToken, onClose, onResult }: Props) {
   const dialogRef = useModalFocus<HTMLElement>(onClose);
   const [type, setType] = useState<ReportType>('issue');
   const [reporterName, setReporterName] = useState(defaultReporterName);
@@ -79,12 +80,14 @@ export function ReportProblemModal({ defaultReporterName, context, idToken, onCl
     try {
       const issue = await submitReport(input, idToken);
       setSubmittedIssue(issue);
+      onResult?.('succeeded', type);
     } catch (submitError) {
       const fallback = submitError instanceof ReportSubmissionError
         ? submitError.download ?? createReportDownload(input)
         : createReportDownload(input);
       setDownload(fallback);
       setError(submitError instanceof Error ? submitError.message : 'Could not submit the report');
+      onResult?.('failed', type);
     } finally {
       setSubmitting(false);
     }

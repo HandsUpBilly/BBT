@@ -82,6 +82,8 @@ check `git diff --stat` and file paths.
 |---|---|---|
 | `shared/*.test.js` | `node --test` | scenario validation, score validation, Google auth gating (including the fail-open cold-start warning), rate limiting and its bucket key, report formatting |
 | `shared/statistics.test.js` | `node --test` | anonymous personal-best aggregation, identity deduplication, empty boards |
+| `shared/analyticsValidation.test.js`, `shared/analyticsStatistics.test.js` | `node --test` | privacy allowlist, batch idempotency, session reduction, completion/drop-off funnels, stale-attempt inference |
+| `netlify/tests/analyticsStore.test.js` | `node --test` | conflict-safe, idempotent game-session summary persistence |
 | `netlify/tests/blobEntries.test.js` | `node --test` | `updateEntries` etag retry loop, unconditional final-attempt write, `readEntries` corrupt/non-array handling |
 | `netlify/tests/editorStore.test.js` | `node --test` | `toPublicView` published-only narrowing and dangling series id removal |
 | `netlify/tests/leaderboardRateLimit.test.js` | `node --test` | the 429 path on both leaderboard functions: per-caller bucketing, `Retry-After`, invalid payloads not spending budget |
@@ -92,6 +94,7 @@ check `git diff --stat` and file paths.
 | `client/src/auth.test.ts` | vitest | JWT decoding (UTF-8) and expiry |
 | `client/src/editor/editorValidation.test.ts` | vitest | client/server validation parity, series resolution |
 | `client/src/editor/AdminStatistics.test.tsx` | vitest | admin statistics loading and personal-best labeling |
+| `client/src/analytics.test.ts`, `client/src/editor/AdminAnalytics.test.tsx` | vitest | disabled collection, stable retry batches, game-only dashboard cards/funnels/graphs, no GA audience duplication |
 | `client/src/blockControls.test.tsx` | vitest | menu placement, outcome selectability |
 | `client/src/LegendMenu.test.tsx` | vitest | key panel open/close/Escape-containment, contextual entries and the trigger count |
 | `client/src/playerComparison.test.ts` | vitest | when the rail shows two cards, which is the acting one, and the single-card fallbacks |
