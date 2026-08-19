@@ -237,47 +237,48 @@
 .series-row__logo {
   position: relative;
   align-self: stretch;
-  display: flex;
+  display: grid;
+  grid-template-columns: auto 88px;
   align-items: center;
-  justify-content: center;
-  gap: 12px;
+  justify-content: start;
+  gap: 10px;
   min-width: 0;
   border-right: 1px solid var(--color-border-subtle);
-  isolation: isolate;
 }
 
-/* The bundled artwork has a dark square canvas. Nest it inside a heraldic
-   plaque so it reads as a trophy rather than a black tile on the card. */
-.series-row__logo::before,
-.series-row__logo::after {
-  position: absolute;
-  content: '';
+/* The bundled artwork has a dark square canvas. Crop it into a small brass
+   plaque, keeping it visually separate from the series number. */
+.series-row__crest {
+  position: relative;
+  box-sizing: border-box;
+  display: grid;
+  place-items: center;
+  width: 88px;
+  height: 106px;
+  padding: 5px;
+  overflow: hidden;
+  background: linear-gradient(145deg, #e0bd70 0%, #8f5d24 30%, #e5c777 53%, #6d3c18 78%, #c99a45 100%);
+  box-shadow: 0 7px 10px rgba(0, 0, 0, 0.36);
   clip-path: polygon(50% 0, 66% 9%, 84% 5%, 100% 19%, 93% 39%, 96% 69%, 76% 94%, 50% 100%, 24% 94%, 4% 69%, 7% 39%, 0 19%, 16% 5%, 34% 9%);
 }
 
-.series-row__logo::before {
-  z-index: 0;
-  width: 132px;
-  height: 150px;
-  background: linear-gradient(145deg, #e0bd70 0%, #8f5d24 28%, #e5c777 52%, #6d3c18 76%, #c99a45 100%);
-  filter: drop-shadow(0 9px 10px rgba(0, 0, 0, 0.42));
+.series-row__crest::before {
+  position: absolute;
+  inset: 5px;
+  content: '';
+  background: #1a211b;
+  clip-path: polygon(50% 0, 66% 9%, 84% 5%, 100% 19%, 93% 39%, 96% 69%, 76% 94%, 50% 100%, 24% 94%, 4% 69%, 7% 39%, 0 19%, 16% 5%, 34% 9%);
 }
 
-.series-row__logo::after {
-  z-index: 0;
-  width: 120px;
-  height: 137px;
-  background: linear-gradient(145deg, #401a18, #151e17 46%, #54231d 100%);
-}
-
-.series-row__logo img {
+.series-row__crest img {
   display: block;
+  position: relative;
   z-index: 1;
-  width: 90px;
-  height: 102px;
+  width: 100%;
+  height: 100%;
   object-fit: cover;
   clip-path: polygon(50% 0, 66% 9%, 84% 5%, 100% 19%, 93% 39%, 96% 69%, 76% 94%, 50% 100%, 24% 94%, 4% 69%, 7% 39%, 0 19%, 16% 5%, 34% 9%);
-  filter: saturate(1.05) contrast(1.06) drop-shadow(0 4px 5px rgba(0, 0, 0, 0.34));
+  filter: saturate(1.05) contrast(1.06);
 }
 
 .series-row:hover {
@@ -286,9 +287,8 @@
 }
 
 .series-row__number {
-  z-index: 2;
-  width: 34px;
-  min-height: 48px;
+  width: 36px;
+  min-height: 52px;
   display: grid;
   place-items: center;
   color: #31190f;
@@ -514,19 +514,13 @@
     padding: 26px 22px 24px;
   }
 
-  .series-row__logo img {
-    width: 62px;
-    height: 70px;
+  .series-row__logo {
+    grid-template-columns: auto 64px;
   }
 
-  .series-row__logo::before {
-    width: 88px;
-    height: 104px;
-  }
-
-  .series-row__logo::after {
-    width: 78px;
-    height: 94px;
+  .series-row__crest {
+    width: 64px;
+    height: 78px;
   }
 
   .series-row__number {

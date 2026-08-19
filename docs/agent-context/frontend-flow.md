@@ -331,9 +331,7 @@ iPhone's layout viewport as roughly 980px when the user requests desktop
 websites, despite the physical phone still needing the compact game shell.
 `useCompactLayout()` recognises only iPhone/iPod user agents as an additional
 compact signal and `App.tsx` applies `app--compact` so the game shell and pitch
-rails use the same compact rules. It also measures the visual/physical viewport
-against the desktop layout viewport and corrects Safari's page scale on the
-game root. Do not apply this to iPad or generic coarse
+rails use the same compact rules. Do not apply this to iPad or generic coarse
 pointer devices: those remain size-driven. The `iphone-xr-desktop-viewport`
 Playwright project guards this exact report (#209).
 
