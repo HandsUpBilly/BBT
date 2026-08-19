@@ -115,7 +115,7 @@ test.describe('interaction follows hover capability', () => {
     await expect(page.locator('.square--path')).toHaveCount(0);
   });
 
-  test('waypoints stay open until the route endpoint is double-clicked', async ({ page }) => {
+  test('waypoints stay open until the plotted endpoint is clicked again', async ({ page }) => {
     test.skip(!(await capabilities(page)).hover, 'requires a hovering pointer');
 
     const carrier = page.locator('.square:has(.piece--carrier)').first();
@@ -132,7 +132,7 @@ test.describe('interaction follows hover capability', () => {
     await expect(page.locator('.move-decision')).toHaveCount(0);
     await expect(page.locator(`.square[data-square="${targetSquare}"]`)).toHaveClass(/square--path/);
 
-    await page.locator(`.square[data-square="${targetSquare}"]`).dblclick();
+    await page.locator(`.square[data-square="${targetSquare}"]`).click();
     const decision = page.locator('.move-decision');
     await expect(decision.getByRole('button', { name: 'Confirm Move' })).toBeVisible();
     await expect(decision.getByRole('button', { name: 'Plot Again' })).toBeVisible();

@@ -347,7 +347,7 @@ export function classifyClick(state: GameState, pos: Position): ClickIntent {
   const clickedKey = key(pos);
   const pieceOnSquare = state.pieces.find(p => key(p.position) === clickedKey);
 
-  // End activation: clicked the selected piece, or double-clicked the path tip
+  // End activation: clicked the selected piece or the already-plotted path tip.
   const pathTip = state.selectedPieceId
     ? (state.committedPath.length > 0
         ? state.committedPath[state.committedPath.length - 1]

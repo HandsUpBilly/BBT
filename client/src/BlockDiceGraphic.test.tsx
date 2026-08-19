@@ -43,7 +43,7 @@ describe('BlockFaceGraphic', () => {
     expect(container.querySelector('.block-dice-graphic')?.getAttribute('data-favor')).toBe('defender');
   });
 
-  it('colours the marker white/neutral when the attacker picked', () => {
+  it('marks attacker-picked dice for the white downhill/even treatment', () => {
     const { container } = render(<BlockFaceGraphic face="push" count={2} favor="attacker" />);
     expect(container.querySelector('.block-dice-graphic')?.getAttribute('data-favor')).toBe('attacker');
   });

@@ -210,9 +210,10 @@ its sibling `BlockDiceGraphic` is a pre-roll preview that animates each die
 as an independently randomized downward throw: drift, timing, spin, bounce,
 and shuffled settling face vary per die while all five face types remain in
 the preview. It falls back to a static Push face under `prefers-reduced-motion`.
-Both use the generated worn-iron WebP faces in
-`assets/block-dice/`; picker advantage remains a CSS outline rather than a
-second image set. No single face is "the" result yet.
+Both use the generated worn-iron WebP faces in `assets/block-dice/`; CSS colours
+the die body white when the attacker picks (downhill or the even one-die case)
+and red when the defender picks (uphill), without a separate outline box. No
+single face is "the" result yet.
 
 A resolved push (push / defender-stumbles-falls / defender-down with a legal
 push square) also draws a pushed-from/pushed-to indicator: an ice-blue arc

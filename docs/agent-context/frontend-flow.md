@@ -359,7 +359,7 @@ from the one final decision:
 - hover-capable pointers preview freely and click to add each waypoint;
 - non-hovering pointers tap once to preview and again to add a waypoint;
 - intermediate waypoints never open the final decision controls;
-- double-clicking or double-tapping the route endpoint marks the whole move
+- clicking or tapping the already-plotted route endpoint marks the whole move
   finished, then a green tick and red × appear beside that square for
   **Confirm Move** or **Plot Again**;
 - **Plot Again** rewinds the activation to its original board state.

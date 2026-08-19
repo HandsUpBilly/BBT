@@ -17,11 +17,11 @@
 }
 
 .block-die-icon[data-favor="attacker"] {
-  box-shadow: 0 0 0 1px rgba(228, 228, 235, 0.95), 0 1px 3px rgba(0, 0, 0, 0.8);
+  background: #e5e4de;
 }
 
 .block-die-icon[data-favor="defender"] {
-  box-shadow: 0 0 0 1px rgba(255, 90, 90, 0.95), 0 0 4px rgba(140, 18, 18, 0.75);
+  background: #a52d27;
 }
 
 .block-die-icon__art,
@@ -31,6 +31,19 @@
   height: 100%;
   object-fit: cover;
   user-select: none;
+}
+
+/* Colour the die itself instead of wrapping it in a white/red picker box.
+   Downhill (and the neutral one-die case) is a white die with dark artwork;
+   uphill uses screen blending to turn the dark iron body red while retaining
+   the worn face detail. */
+.block-die-icon[data-favor="attacker"] :is(.block-die-icon__art, .block-die-icon__face) {
+  filter: grayscale(1) invert(0.94) contrast(1.2);
+}
+
+.block-die-icon[data-favor="defender"] :is(.block-die-icon__art, .block-die-icon__face) {
+  filter: grayscale(1) contrast(1.2);
+  mix-blend-mode: screen;
 }
 
 .block-die-icon--animated {

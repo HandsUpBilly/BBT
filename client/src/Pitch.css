@@ -364,8 +364,8 @@
   cursor: pointer;
   box-sizing: border-box;
   overflow: hidden;
-  /* Kills the 300ms tap delay and stops double-tap-to-zoom firing during
-     quick play — two taps in a row on one square is the commit gesture. */
+  /* Kills the 300ms tap delay and stops tap gestures from zooming the page
+     while touch players preview, plot, and finish movement on the pitch. */
   touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
 }

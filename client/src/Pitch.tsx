@@ -194,10 +194,10 @@ export interface ResolvedBlockDice {
 
 /**
  * Marks a resolved block/blitz with the outcome it actually produced (e.g.
- * "Push Back", "Defender Down"), on the defender's square. Crimson- or
- * white-outlined by who picked the die (see BlockDiceGraphic's `favor`), and
- * drawn as `diceCount` icons — a 2- or 3-dice block reads as a genuine
- * handful of dice, not a single die standing in for the whole roll.
+ * "Push Back", "Defender Down"), on the defender's square. The die itself is
+ * red for an opponent-picked uphill block and white for a player-picked
+ * downhill/even block. It is drawn as `diceCount` icons, so a 2- or 3-dice
+ * block reads as a genuine handful rather than one die standing in for all.
  */
 function BlockDiceFace({ face, diceCount, picker }: ResolvedBlockDice) {
   return (
