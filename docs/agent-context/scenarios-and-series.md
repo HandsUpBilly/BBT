@@ -67,7 +67,7 @@ Descriptions use an OBJECTIVE clause followed by the rules needed to read the
 board. Keep this copy factual. Do not prescribe a single solved route unless
 the puzzle itself requires that action.
 
-The default series is player-facing **Humans X Orcs: The Nuffle Shuffle**, is
+The default series is player-facing **Humans vs Orcs: The Nuffle Shuffle**, is
 labelled as a Tutorial in the challenge screen, and uses this rules order:
 `scenario-001`, `scenario-004`, `scenario-002`, `scenario-003`,
 `scenario-005`, `scenario-006` (movement, dodging, handoff, pass, combined
