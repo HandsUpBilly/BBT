@@ -218,7 +218,7 @@
 .series-row {
   position: relative;
   display: grid;
-  grid-template-columns: 112px minmax(0, 1fr) auto;
+  grid-template-columns: 160px minmax(0, 1fr) auto;
   align-items: center;
   gap: 24px;
   min-height: 232px;
@@ -237,16 +237,18 @@
 .series-row__logo {
   position: relative;
   align-self: stretch;
-  display: grid;
-  place-items: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
   min-width: 0;
   border-right: 1px solid var(--color-border-subtle);
 }
 
 .series-row__logo img {
   display: block;
-  width: 100px;
-  height: 100px;
+  width: 84px;
+  height: 84px;
   object-fit: contain;
   filter: drop-shadow(0 6px 8px rgba(0, 0, 0, 0.35));
 }
@@ -473,19 +475,19 @@
   }
 
   .series-row {
-    grid-template-columns: 74px minmax(0, 1fr);
+    grid-template-columns: 112px minmax(0, 1fr);
     align-items: start;
     gap: 18px;
     padding: 26px 22px 24px;
   }
 
   .series-row__logo img {
-    width: 68px;
-    height: 68px;
+    width: 58px;
+    height: 58px;
   }
 
   .series-row__number {
-    font-size: 2.35rem;
+    font-size: 1.8rem;
   }
 
   .series-row__actions {

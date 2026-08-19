@@ -49,6 +49,11 @@ const isProd = existsSync(distPath);
 // table still has their personal best on record.
 const TOP_N = 20;
 
+function statisticsWindow(value) {
+  const days = Number(value);
+  return days === 7 || days === 30 ? days : undefined;
+}
+
 app.use(express.json({ limit: '256kb' }));
 registerEditorRoutes(app);
 
@@ -201,7 +206,10 @@ app.get('/api/editor/statistics', async (req, res) => {
   const scenarioBoards = Object.fromEntries(
     scenarios.map(scenario => [scenario.id, getBoard(scenario.id)]),
   );
-  return res.json(buildPlayerStatistics({ scenarios, scenarioBoards, seriesEntries: seriesBoard }));
+  return res.json(buildPlayerStatistics({
+    scenarios, scenarioBoards, seriesEntries: seriesBoard,
+    windowDays: statisticsWindow(req.query.window),
+  }));
 });
 
 // ── Combined home-screen progress ───────────────────────────────────────────

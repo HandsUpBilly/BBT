@@ -81,7 +81,9 @@ artwork while unknown or omitted keys retain the text-only fallback.
 
 Published series metadata can outlive a deployment in Netlify Blobs.
 `normalizeSeriesDefinition()` maps the two known legacy featured-series names
-to the current title while preserving any genuinely custom Puzzle Creator name.
+to the current title and backfills the featured crest when older published
+metadata has no `logo` field. The chooser always renders its `01` series marker
+beside the crest, so the identity does not disappear during runtime loading.
 
 `resolveSeriesScenarios()` in `client/src/series/index.ts` resolves series
 `scenarioIds` to scenario objects. Series Play should use the resolved series

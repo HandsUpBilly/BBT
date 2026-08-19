@@ -23,6 +23,7 @@ export interface PuzzlePerformanceSummary extends PerformanceSummary {
 
 export interface PlayerStatistics {
   generatedAt: string;
+  windowDays: number | null;
   totals: {
     recordedPlayers: number;
     puzzlePersonalBests: number;
@@ -33,6 +34,17 @@ export interface PlayerStatistics {
   };
   puzzles: PuzzlePerformanceSummary[];
   series: PerformanceSummary;
+  habits: {
+    signedInPlayers: number;
+    guestPlayers: number;
+    returningPlayers: number;
+    averagePuzzlesPerPlayer: number | null;
+    activePlayers7Days: number;
+    activePlayers30Days: number;
+    onePuzzlePlayers: number;
+    threePlusPuzzlePlayers: number;
+    actionCounts: Record<'dodge' | 'gfi' | 'pickup' | 'catch' | 'pass' | 'block' | 'blitz', number>;
+  };
 }
 
 export function summarizePerformance(entries: StatisticsEntry[] | undefined): PerformanceSummary;
@@ -42,4 +54,5 @@ export function buildPlayerStatistics(input: {
   scenarioBoards: Record<string, StatisticsEntry[] | undefined>;
   seriesEntries: StatisticsEntry[];
   generatedAt?: string;
+  windowDays?: number;
 }): PlayerStatistics;

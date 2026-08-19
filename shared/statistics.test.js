@@ -54,6 +54,17 @@ test('buildPlayerStatistics aggregates puzzle and series records separately', ()
   assert.equal(statistics.puzzles[0].recordedPlayers, 2);
   assert.equal(statistics.puzzles[1].bestProbability, 0.25);
   assert.equal(statistics.series.recordedPlayers, 1);
+  assert.deepEqual(statistics.habits, {
+    signedInPlayers: 1,
+    guestPlayers: 1,
+    returningPlayers: 1,
+    averagePuzzlesPerPlayer: 1.5,
+    activePlayers7Days: 0,
+    activePlayers30Days: 0,
+    onePuzzlePlayers: 1,
+    threePlusPuzzlePlayers: 0,
+    actionCounts: { dodge: 0, gfi: 0, pickup: 0, catch: 0, pass: 0, block: 0, blitz: 0 },
+  });
 });
 
 test('empty performance data returns null rates instead of misleading zeroes', () => {
@@ -66,4 +77,24 @@ test('empty performance data returns null rates instead of misleading zeroes', (
     averageDiceCount: null,
     latestScoreAt: null,
   });
+});
+
+test('a date window filters every statistic and excludes undated entries', () => {
+  const statistics = buildPlayerStatistics({
+    scenarios: [{ id: 'scenario-001', name: 'Opening Drive' }],
+    scenarioBoards: {
+      'scenario-001': [
+        { userId: 'old', name: 'Old', probability: 0.5, diceCount: 1, date: '2026-07-01T00:00:00.000Z' },
+        { userId: 'recent', name: 'Recent', probability: 1, diceCount: 0, date: '2026-08-18T12:00:00.000Z' },
+        { userId: 'undated', name: 'Undated', probability: 1, diceCount: 0 },
+      ],
+    },
+    seriesEntries: [],
+    generatedAt: '2026-08-19T12:00:00.000Z',
+    windowDays: 7,
+  });
+  assert.equal(statistics.windowDays, 7);
+  assert.equal(statistics.totals.recordedPlayers, 1);
+  assert.equal(statistics.puzzles[0].personalBests, 1);
+  assert.equal(statistics.habits.activePlayers7Days, 1);
 });

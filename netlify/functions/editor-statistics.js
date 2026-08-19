@@ -25,6 +25,9 @@ export default async function handler(req) {
 
   if (req.method !== 'GET') return jsonResponse(405, { errors: ['Method not allowed'] });
 
+  const windowValue = new URL(req.url).searchParams.get('window');
+  const windowDays = windowValue === '7' ? 7 : windowValue === '30' ? 30 : undefined;
+
   const drafts = editorStore();
   const [publishedScenarios, publishedSeries] = await Promise.all([
     readPublishedScenarios(drafts),
@@ -48,5 +51,6 @@ export default async function handler(req) {
     scenarios,
     scenarioBoards: Object.fromEntries(boards),
     seriesEntries: seriesResult.entries,
+    windowDays,
   }));
 }

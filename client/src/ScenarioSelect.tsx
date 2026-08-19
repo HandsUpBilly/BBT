@@ -182,11 +182,10 @@ export function ScenarioSelect({
         <section className="play-section">
           <div className="series-row">
             <div className="series-row__logo">
+              <span className="series-row__number" aria-hidden="true">01</span>
               {series.logo && SERIES_LOGOS[series.logo] ? (
                 <img src={SERIES_LOGOS[series.logo]} alt={`${series.name} logo`} />
-              ) : (
-                <span className="series-row__number" aria-hidden="true">01</span>
-              )}
+              ) : null}
             </div>
             <div className="series-row__body">
               <span className="series-row__eyebrow">Tutorial</span>

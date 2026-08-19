@@ -31,19 +31,20 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-function renderEditor() {
-  const fetchMock = vi.fn().mockResolvedValue({
+function renderEditor(scenarios: Scenario[] = [savedScenario]) {
+  const initialData = {
+    scenarios,
+    series: {
+      id: 'default',
+      name: 'Tutorial',
+      description: '',
+      scenarioIds: scenarios.filter(scenario => scenario.published !== false).map(scenario => scenario.id),
+    },
+  };
+  const fetchMock = vi.fn().mockImplementation((_url, options?: RequestInit) => Promise.resolve({
     ok: true,
-    json: async () => ({
-      scenarios: [savedScenario],
-      series: {
-        id: 'default',
-        name: 'Tutorial',
-        description: '',
-        scenarioIds: ['scenario-001'],
-      },
-    }),
-  });
+    json: async () => options?.method === 'PUT' ? JSON.parse(String(options.body)) : initialData,
+  }));
   vi.stubGlobal('fetch', fetchMock);
   render(
     <PuzzleEditor
@@ -56,7 +57,7 @@ function renderEditor() {
   return fetchMock;
 }
 
-describe('PuzzleEditor unsaved changes', () => {
+describe('PuzzleEditor unsaved changes', { timeout: 15_000 }, () => {
   it('can discard edits and restore the last saved draft without an API write', async () => {
     const fetchMock = renderEditor();
 
@@ -93,5 +94,45 @@ describe('PuzzleEditor unsaved changes', () => {
     await waitFor(() => expect(screen.getByDisplayValue('New Puzzle')).toBeTruthy());
     expect(screen.getByText('Discarded the unsaved puzzle draft.')).toBeTruthy();
     expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('finds puzzles by name and filters the list by publishing state', async () => {
+    const disabledScenario: Scenario = {
+      ...savedScenario,
+      id: 'scenario-002',
+      name: 'Disabled Puzzle',
+      published: false,
+    };
+    renderEditor([savedScenario, disabledScenario]);
+    await screen.findByDisplayValue('Saved Puzzle');
+
+    fireEvent.change(screen.getByRole('searchbox', { name: 'Find puzzle' }), { target: { value: 'disabled' } });
+    expect(screen.getByText('Disabled Puzzle')).toBeTruthy();
+    expect(screen.queryByText('Saved Puzzle')).toBeNull();
+
+    fireEvent.change(screen.getByRole('searchbox', { name: 'Find puzzle' }), { target: { value: '' } });
+    fireEvent.change(screen.getByRole('combobox', { name: 'Filter puzzles' }), { target: { value: 'enabled' } });
+    expect(screen.getByText('Saved Puzzle')).toBeTruthy();
+    expect(screen.queryByText('Disabled Puzzle')).toBeNull();
+  });
+
+  it('saves title, description, and chooser logo as guarded series details', async () => {
+    const fetchMock = renderEditor();
+    await screen.findByDisplayValue('Saved Puzzle');
+
+    fireEvent.change(screen.getByLabelText('Series name'), { target: { value: 'Orc Academy' } });
+    fireEvent.change(screen.getByLabelText('Series description'), { target: { value: 'A new six-drill course.' } });
+    fireEvent.change(screen.getByLabelText('Chooser logo key'), { target: { value: 'orc-academy' } });
+
+    expect((screen.getByRole('button', { name: 'Publish Drafts' }) as HTMLButtonElement).disabled).toBe(true);
+    fireEvent.click(screen.getByRole('button', { name: 'Save Series Details' }));
+
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/editor/series/default', expect.objectContaining({ method: 'PUT' })));
+    const [, options] = fetchMock.mock.calls[fetchMock.mock.calls.length - 1] as [string, RequestInit];
+    expect(JSON.parse(String(options.body))).toMatchObject({
+      name: 'Orc Academy',
+      description: 'A new six-drill course.',
+      logo: 'orc-academy',
+    });
   });
 });

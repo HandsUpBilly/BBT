@@ -97,6 +97,32 @@ test('a configured allowlist requires sign-in, then membership', async () => {
   assert.equal(auth.isAdminUser(null), false);
 });
 
+test('runtime-managed administrators are enforced alongside deployment administrators', async () => {
+  const auth = createGoogleAuth({
+    verifyIdToken: async token => ({ sub: token, email_verified: true, email: `${token}@example.com` }),
+    adminEmails: 'fixed@example.com',
+    getManagedAdminEmails: async () => ['managed@example.com'],
+  });
+  const managed = await auth.requireAdminGoogleUser(headers({ authorization: 'Bearer managed' }));
+  assert.equal(managed.email, 'managed@example.com');
+  await assert.rejects(
+    () => auth.requireAdminGoogleUser(headers({ authorization: 'Bearer stranger' })),
+    error => error instanceof AdminAuthError && error.status === 403,
+  );
+});
+
+test('an unreadable managed administrator store fails closed', async () => {
+  const auth = createGoogleAuth({
+    verifyIdToken: null,
+    adminEmails: '',
+    getManagedAdminEmails: async () => { throw new Error('storage failed'); },
+  });
+  await assert.rejects(
+    () => auth.requireAdminGoogleUser(headers({})),
+    error => error instanceof AdminAuthError && error.status === 503,
+  );
+});
+
 test('makeGoogleTokenVerifier checks the audience and returns the payload', async () => {
   // The OAuth2Client class is injected rather than imported so shared/ stays
   // dependency-free — importing google-auth-library here broke the Netlify

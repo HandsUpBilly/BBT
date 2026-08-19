@@ -53,6 +53,11 @@
   status = 200
 
 [[redirects]]
+  from   = "/api/editor/admins"
+  to     = "/.netlify/functions/editor-admins"
+  status = 200
+
+[[redirects]]
   from   = "/api/editor/scenarios"
   to     = "/.netlify/functions/editor-scenarios"
   status = 200

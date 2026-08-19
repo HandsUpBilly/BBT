@@ -13,6 +13,7 @@ import {
   AdminAuthError,
   entryAuthFields,
 } from '../shared/googleAuth.js';
+import { readManagedAdmins } from './adminStore.js';
 
 export { AuthError, AdminAuthError, entryAuthFields };
 
@@ -23,6 +24,7 @@ const auth = createGoogleAuth({
   verifyIdToken: makeGoogleTokenVerifier(OAuth2Client, process.env.GOOGLE_CLIENT_ID),
   adminEmails: process.env.ADMIN_EMAILS,
   allowUnauthenticated: process.env.EDITOR_ALLOW_UNAUTHENTICATED !== 'false',
+  getManagedAdminEmails: readManagedAdmins,
 });
 
 const headerReader = req => name => req.get(name) ?? null;
@@ -34,6 +36,12 @@ export function verifyOptionalGoogleUser(req) {
 export function requireAdminGoogleUser(req) {
   return auth.requireAdminGoogleUser(headerReader(req));
 }
+
+export function requireVerifiedGoogleUser(req) {
+  return auth.requireVerifiedGoogleUser(headerReader(req));
+}
+
+export const configuredAdminCount = auth.adminEmailCount;
 
 export function isAdminUser(user) {
   return auth.isAdminUser(user);
