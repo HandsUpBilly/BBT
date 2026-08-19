@@ -204,9 +204,7 @@ function IdentityGate({ authConfigured, googleSignedIn, onGoogleSignIn, onAlias 
         <div className="identity-gate__header">
           <span className="identity-gate__eyebrow">{UI_COPY.brand.tagline}</span>
           <h1 className="identity-gate__title">{UI_COPY.brand.name}</h1>
-          <p className="identity-gate__subtitle">
-            One turn remains. Sign the team sheet and find the route to the end zone.
-          </p>
+          <p className="identity-gate__subtitle">{UI_COPY.brand.landingSubtitle}</p>
         </div>
 
         {!googleSignedIn && (

@@ -8,7 +8,7 @@
 export const UI_COPY = {
   brand: {
     name: 'Turn 16',
-    tagline: 'The final turn',
+    tagline: 'Just the final turn',
     landingSubtitle: 'Playbook simulator',
   },
   landing: {
