@@ -4,6 +4,7 @@ import type { BranchSummary } from './blockBranchTree';
 import type { Scenario } from './types';
 import { useModalFocus } from './useModalFocus';
 import { ActionLogDetail } from './ActionLogDetail';
+import { BranchTreeGraphic } from './BranchTreeGraphic';
 import './SubmitModal.css'; // shared modal-backdrop/modal styles
 import './BranchRunSummary.css';
 
@@ -127,6 +128,8 @@ export function BranchRunSummary({
                 </div>
               )}
             </dl>
+
+            <BranchTreeGraphic run={run} summary={summary} branches={branches} />
 
             <ul className="branch-summary__branches" aria-label="Parallel Universes">
               {branches.map(branch => (

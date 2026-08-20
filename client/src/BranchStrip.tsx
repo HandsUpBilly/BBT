@@ -72,17 +72,24 @@ export function BranchStrip({ branches, deadWeight, score, onSelect, onConcede }
             >
               <span className="branch-chip__dice" aria-hidden="true">
                 {branch.outcomes.map((outcome, outcomeIndex) => (
-                  <span className="branch-chip__dice-group" key={`${outcomeIndex}-${outcome.label}`}>
-                    {outcome.faces.map(face => (
-                      <BlockFaceGraphic
-                        key={face}
-                        face={face}
-                        favor={outcome.favor}
-                        size={28}
-                        className="branch-chip__die"
-                      />
-                    ))}
-                    {outcomeIndex < branch.outcomes.length - 1 && <span className="branch-chip__arrow">→</span>}
+                  <span
+                    className="branch-chip__block"
+                    key={`${outcomeIndex}-${outcome.label}`}
+                    title={`${outcome.blockLabel}: ${outcome.label}`}
+                  >
+                    <span className="branch-chip__block-label">Block {outcomeIndex + 1}</span>
+                    <span className="branch-chip__dice-group">
+                      {outcome.faces.map(face => (
+                        <BlockFaceGraphic
+                          key={face}
+                          face={face}
+                          favor={outcome.favor}
+                          size={28}
+                          className="branch-chip__die"
+                        />
+                      ))}
+                    </span>
+                    <span className="branch-chip__outcome">{outcome.label}</span>
                   </span>
                 ))}
               </span>

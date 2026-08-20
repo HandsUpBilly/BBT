@@ -418,6 +418,8 @@ describe('a second block', () => {
     const branches = branchStrip(twoBlocks());
 
     expect(branches.every(branch => branch.outcomes.length === 2)).toBe(true);
+    expect(branches.every(branch => branch.outcomes[0].blockLabel === 'Aldric Swiftfoot ⚔ Grukk Ironjaw')).toBe(true);
+    expect(branches.every(branch => branch.outcomes[1].blockLabel === 'Cedric Linebreaker ⚔ Muzgash Skullkrak')).toBe(true);
     expect(branches.some(branch => branch.outcomes[0].faces.includes('push'))).toBe(true);
     expect(branches.some(branch => branch.outcomes[1].faces.includes('defender-down'))).toBe(true);
   });
