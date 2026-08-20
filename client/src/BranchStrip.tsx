@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useState, type CSSProperties } from 'react';
 import type { BranchStripEntry, BranchTreeBlockView, BranchTreeStateView } from './branchRun';
+import { branchTreeStripGrid } from './branchTreeStrips';
 import { BlockFaceGraphic } from './BlockDiceGraphic';
 import './BranchStrip.css';
 
@@ -27,51 +28,13 @@ function pct(value: number): string {
   return `${Math.round(value * 100)}%`;
 }
 
-function stateIsVisible(state: BranchTreeStateView, hideNeedsAttention: boolean): boolean {
-  if (!hideNeedsAttention) return true;
-  if (state.nextBlock) {
-    return state.nextBlock.states.some(child => stateIsVisible(child, true));
-  }
-  return state.status !== 'needs-attention';
-}
-
-interface BlockNodeProps {
-  block: BranchTreeBlockView;
-  hideNeedsAttention: boolean;
+function StateCard({
+  state, onSelect, onConcede,
+}: {
+  state: BranchTreeStateView;
   onSelect: (id: string) => void;
   onConcede: (id: string) => void;
-}
-
-function BlockNode({ block, hideNeedsAttention, onSelect, onConcede }: BlockNodeProps) {
-  const visibleStates = block.states.filter(state => stateIsVisible(state, hideNeedsAttention));
-
-  return (
-    <section className="branch-tree-nav__block" aria-label={`Block ${block.blockNumber}: ${block.blockLabel}`}>
-      <header className="branch-tree-nav__block-node">
-        <strong>Block {block.blockNumber}</strong>
-        <span>{block.blockLabel}</span>
-        <small>{block.diceCount} {block.diceCount === 1 ? 'die' : 'dice'}</small>
-      </header>
-      <ul className="branch-tree-nav__states">
-        {visibleStates.map(state => (
-          <StateNode
-            key={state.id}
-            state={state}
-            hideNeedsAttention={hideNeedsAttention}
-            onSelect={onSelect}
-            onConcede={onConcede}
-          />
-        ))}
-      </ul>
-    </section>
-  );
-}
-
-interface StateNodeProps extends Omit<BlockNodeProps, 'block'> {
-  state: BranchTreeStateView;
-}
-
-function StateNode({ state, hideNeedsAttention, onSelect, onConcede }: StateNodeProps) {
+}) {
   const outcome = state.outcomes[state.outcomes.length - 1];
   const classes = [
     'branch-chip',
@@ -102,46 +65,40 @@ function StateNode({ state, hideNeedsAttention, onSelect, onConcede }: StateNode
   );
 
   return (
-    <li className="branch-tree-nav__state">
-      <div className="branch-tree-nav__state-row">
-        {state.isSelectable ? (
-          <button
-            type="button"
-            className={classes}
-            aria-current={state.isViewed ? 'true' : undefined}
-            aria-label={label}
-            onClick={() => onSelect(state.id)}
-          >
-            {content}
-          </button>
-        ) : (
-          <div className={classes} aria-label={label}>{content}</div>
-        )}
-        {state.isSelectable && state.status !== 'scored' && state.status !== 'conceded' && (
-          <button
-            type="button"
-            className="branch-chip__concede"
-            title={`Give up on "${state.path}"; cost ${pct(state.weight)}`}
-            aria-label={`Give up on ${state.path}`}
-            onClick={() => onConcede(state.id)}
-          >
-            ✕
-          </button>
-        )}
-      </div>
-      {state.nextBlock && (
-        <BlockNode
-          block={state.nextBlock}
-          hideNeedsAttention={hideNeedsAttention}
-          onSelect={onSelect}
-          onConcede={onConcede}
-        />
+    <div className="branch-strip-state__actions">
+      {state.isSelectable ? (
+        <button
+          type="button"
+          className={classes}
+          aria-current={state.isViewed ? 'true' : undefined}
+          aria-label={label}
+          onClick={() => onSelect(state.id)}
+        >
+          {content}
+        </button>
+      ) : (
+        <div className={classes} aria-label={label}>{content}</div>
       )}
-    </li>
+      {state.isSelectable && state.status !== 'scored' && state.status !== 'conceded' && (
+        <button
+          type="button"
+          className="branch-chip__concede"
+          title={`Give up on "${state.path}"; cost ${pct(state.weight)}`}
+          aria-label={`Give up on ${state.path}`}
+          onClick={() => onConcede(state.id)}
+        >
+          ✕
+        </button>
+      )}
+    </div>
   );
 }
 
-/** The live parent-child tree of boards left behind by each block. */
+function columnStyle(startColumn: number, columnSpan: number): CSSProperties {
+  return { gridColumn: `${startColumn + 1} / span ${columnSpan}` };
+}
+
+/** One block depth per row, with descendants aligned beneath their parent state. */
 export function BranchStrip({ branches, tree, deadWeight, score, onSelect, onConcede }: Props) {
   const [hideNeedsAttention, setHideNeedsAttention] = useState(false);
 
@@ -149,7 +106,9 @@ export function BranchStrip({ branches, tree, deadWeight, score, onSelect, onCon
 
   const needsAttention = branches.filter(branch => branch.status === 'needs-attention');
   const unresolved = branches.filter(branch => branch.status === 'authoring' || branch.status === 'needs-attention');
-  const hasVisibleStates = tree?.states.some(state => stateIsVisible(state, hideNeedsAttention)) ?? false;
+  const layout = tree
+    ? branchTreeStripGrid(tree, state => !hideNeedsAttention || state.status !== 'needs-attention')
+    : null;
 
   function toggleNeedsAttentionFilter() {
     const willHide = !hideNeedsAttention;
@@ -193,13 +152,56 @@ export function BranchStrip({ branches, tree, deadWeight, score, onSelect, onCon
       </div>
 
       <div className="branch-tree-nav__scroll">
-        {tree && hasVisibleStates ? (
-          <BlockNode
-            block={tree}
-            hideNeedsAttention={hideNeedsAttention}
-            onSelect={onSelect}
-            onConcede={onConcede}
-          />
+        {layout && layout.leafColumns > 0 ? (
+          <div className="branch-tree-strips">
+            {layout.strips.map(strip => {
+              const gridStyle: CSSProperties = {
+                gridTemplateColumns: `repeat(${layout.leafColumns}, minmax(150px, 1fr))`,
+                minWidth: `${layout.leafColumns * 158}px`,
+              };
+              return (
+                <section
+                  className="branch-strip-row"
+                  key={strip.blockNumber}
+                  aria-label={`Block ${strip.blockNumber} states`}
+                >
+                  <header className="branch-strip-row__label">Block {strip.blockNumber}</header>
+                  <div className="branch-strip-row__content">
+                    <div className="branch-strip-row__groups" style={gridStyle}>
+                      {strip.blocks.map(placement => (
+                        <div
+                          className="branch-strip-row__block-group"
+                          key={`${placement.block.id}-${placement.startColumn}`}
+                          style={columnStyle(placement.startColumn, placement.columnSpan)}
+                        >
+                          <span>{placement.block.blockLabel}</span>
+                          <small>{placement.block.diceCount} {placement.block.diceCount === 1 ? 'die' : 'dice'}</small>
+                        </div>
+                      ))}
+                    </div>
+                    <ul className="branch-strip-row__states" style={gridStyle}>
+                      {strip.blocks.flatMap(placement => placement.states.map(statePlacement => (
+                        <li
+                          className="branch-strip-state"
+                          key={statePlacement.state.id}
+                          style={columnStyle(statePlacement.startColumn, statePlacement.columnSpan)}
+                          data-branch-id={statePlacement.state.id}
+                          data-column-start={statePlacement.startColumn}
+                          data-column-span={statePlacement.columnSpan}
+                        >
+                          <StateCard
+                            state={statePlacement.state}
+                            onSelect={onSelect}
+                            onConcede={onConcede}
+                          />
+                        </li>
+                      )))}
+                    </ul>
+                  </div>
+                </section>
+              );
+            })}
+          </div>
         ) : (
           <p className="branch-tree-nav__empty">All branches needing extra actions are hidden.</p>
         )}

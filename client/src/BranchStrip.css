@@ -2,13 +2,13 @@
   display: flex;
   flex-direction: column;
   gap: 8px;
+  min-width: 0;
   padding: 10px 12px;
+  box-sizing: border-box;
+  flex-shrink: 0;
   background: var(--color-surface-1);
   border: 1px solid var(--color-border-subtle);
   border-radius: 8px;
-  min-width: 0;
-  box-sizing: border-box;
-  flex-shrink: 0;
 }
 
 .branch-strip__header,
@@ -19,29 +19,14 @@
   gap: 12px;
 }
 
-.branch-strip__header {
-  font-size: 0.8rem;
-  color: var(--color-text-muted);
-}
-
-.branch-strip__score strong {
-  font-size: 1rem;
-  color: var(--color-text-strong);
-}
-
+.branch-strip__header { color: var(--color-text-muted); font-size: 0.8rem; }
+.branch-strip__score strong { color: var(--color-text-strong); font-size: 1rem; }
 .branch-strip__dead { color: var(--color-text-disabled); }
+.branch-strip__alert { color: var(--color-warning); font-weight: 700; }
 
-.branch-strip__alert {
-  color: var(--color-warning);
-  font-weight: 700;
-}
-
-.branch-tree-nav__toolbar {
-  justify-content: space-between;
-  font-size: 0.72rem;
-}
-
-.branch-tree-nav__toolbar > strong {
+.branch-tree-nav__toolbar { justify-content: space-between; font-size: 0.72rem; }
+.branch-tree-nav__toolbar > strong,
+.branch-strip-row__label {
   color: var(--color-text-strong);
   font-family: var(--font-display);
   letter-spacing: 0.06em;
@@ -67,95 +52,102 @@
 .branch-tree-nav__scroll {
   max-height: min(38vh, 360px);
   overflow: auto;
-  padding: 8px;
   background: var(--color-surface-sunken);
   border: 1px solid var(--color-border-subtle);
   border-radius: 7px;
   scrollbar-width: thin;
 }
 
-.branch-tree-nav__block {
-  width: max-content;
+.branch-tree-strips { width: max-content; min-width: 100%; }
+
+.branch-strip-row {
+  display: grid;
+  grid-template-columns: 74px minmax(0, 1fr);
+  align-items: stretch;
   min-width: 100%;
+  padding: 8px;
+  box-sizing: border-box;
 }
 
-.branch-tree-nav__block-node {
-  display: grid;
-  grid-template-columns: auto minmax(12ch, 1fr) auto;
-  gap: 8px;
-  align-items: baseline;
-  width: min(420px, calc(100vw - 64px));
-  box-sizing: border-box;
-  padding: 6px 9px;
-  color: var(--color-text-muted);
-  background: var(--color-surface-3);
-  border: 1px solid var(--color-accent-border);
-  border-radius: 6px;
+.branch-strip-row + .branch-strip-row { border-top: 1px solid var(--color-border-subtle); }
+
+.branch-strip-row__label {
+  position: sticky;
+  left: 0;
+  z-index: 3;
+  align-self: stretch;
+  padding: 7px 8px 0 2px;
+  background: var(--color-surface-sunken);
   font-size: 0.7rem;
 }
 
-.branch-tree-nav__block-node strong {
-  color: var(--color-text-strong);
-  font-family: var(--font-display);
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
+.branch-strip-row__content { min-width: 0; }
+
+.branch-strip-row__groups,
+.branch-strip-row__states {
+  display: grid;
+  gap: 8px;
 }
 
-.branch-tree-nav__block-node span {
+.branch-strip-row__block-group {
+  position: relative;
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  min-width: 0;
+  padding: 4px 8px;
+  color: var(--color-text-muted);
+  background: var(--color-surface-3);
+  border-top: 1px solid var(--color-accent-border);
+  border-radius: 5px 5px 0 0;
+  font-size: 0.66rem;
+}
+
+.branch-strip-row + .branch-strip-row .branch-strip-row__block-group::before {
+  content: '';
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  height: 9px;
+  border-left: 1px solid var(--color-border-selected);
+}
+
+.branch-strip-row__block-group span {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.branch-tree-nav__block-node small { color: var(--color-text-disabled); }
+.branch-strip-row__block-group small { flex: 0 0 auto; color: var(--color-text-disabled); }
 
-.branch-tree-nav__states {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  gap: 7px;
-  margin: 0 0 0 18px;
-  padding: 8px 0 0 20px;
+.branch-strip-row__states {
+  margin: 4px 0 0;
+  padding: 0;
   list-style: none;
-  border-left: 1px solid var(--color-border-selected);
 }
 
-.branch-tree-nav__state {
-  position: relative;
-}
+.branch-strip-state,
+.branch-strip-state__actions { min-width: 0; }
 
-.branch-tree-nav__state::before {
-  content: '';
-  position: absolute;
-  top: 18px;
-  left: -20px;
-  width: 20px;
-  border-top: 1px solid var(--color-border-selected);
-}
-
-.branch-tree-nav__state-row {
+.branch-strip-state__actions {
   display: flex;
   align-items: stretch;
-  width: max-content;
-}
-
-.branch-tree-nav__state > .branch-tree-nav__block {
-  margin-top: 7px;
-  margin-left: 20px;
+  height: 100%;
 }
 
 .branch-chip {
   display: grid;
-  grid-template-columns: auto minmax(8ch, 1fr) auto;
+  grid-template-columns: auto minmax(7ch, 1fr) auto;
   grid-template-areas:
     'dice outcome weight'
     'status status status';
   gap: 0 8px;
-  min-width: 250px;
+  width: 100%;
+  min-width: 0;
   padding: 6px 10px;
   text-align: left;
-  background: var(--color-surface-2);
   color: var(--color-text);
+  background: var(--color-surface-2);
   border: 1px solid var(--color-border);
   border-radius: 6px 0 0 6px;
 }
@@ -165,11 +157,11 @@ button.branch-chip:hover { background: var(--color-surface-hover); }
 
 .branch-chip__dice {
   grid-area: dice;
-  min-width: 34px;
-  min-height: 28px;
   display: flex;
   align-items: center;
   gap: 3px;
+  min-width: 34px;
+  min-height: 28px;
 }
 
 .branch-chip__die.block-dice-graphic { flex: 0 0 28px; gap: 0; }
@@ -178,32 +170,28 @@ button.branch-chip:hover { background: var(--color-surface-hover); }
 .branch-chip__outcome {
   grid-area: outcome;
   overflow: hidden;
-  font-size: 0.7rem;
   color: var(--color-text-muted);
+  font-size: 0.7rem;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .branch-chip__weight {
   grid-area: weight;
+  color: var(--color-text-strong);
   font-variant-numeric: tabular-nums;
   font-weight: 700;
-  color: var(--color-text-strong);
 }
 
 .branch-chip__status {
   grid-area: status;
-  font-size: 0.7rem;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
   color: var(--color-text-muted);
+  font-size: 0.7rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
 }
 
-.branch-chip--viewed {
-  border-color: var(--color-border-selected);
-  box-shadow: inset 3px 0 var(--color-accent);
-}
-
+.branch-chip--viewed { border-color: var(--color-border-selected); box-shadow: inset 3px 0 var(--color-accent); }
 .branch-chip--scored { border-color: var(--color-success); }
 .branch-chip--scored .branch-chip__status { color: var(--color-success); }
 .branch-chip--needs-attention { border-color: var(--color-warning); }
@@ -214,8 +202,8 @@ button.branch-chip:hover { background: var(--color-surface-hover); }
 .branch-chip__concede {
   min-width: 36px;
   padding: 0 8px;
-  background: var(--color-surface-2);
   color: var(--color-text-muted);
+  background: var(--color-surface-2);
   border: 1px solid var(--color-border);
   border-left: none;
   border-radius: 0 6px 6px 0;
@@ -223,23 +211,20 @@ button.branch-chip:hover { background: var(--color-surface-hover); }
 }
 
 .branch-chip__concede:hover { color: var(--color-danger); background: var(--color-surface-hover); }
-.branch-tree-nav__state-row > .branch-chip:only-child { border-radius: 6px; }
+.branch-strip-state__actions > .branch-chip:only-child { border-radius: 6px; }
 
 .branch-tree-nav__empty,
-.branch-strip__hint {
-  margin: 0;
-  font-size: 0.75rem;
-  color: var(--color-text-muted);
-}
+.branch-strip__hint { margin: 0; color: var(--color-text-muted); font-size: 0.75rem; }
+.branch-tree-nav__empty { padding: 8px; }
 
 @media (max-width: 1024px) {
   .branch-strip { width: 100%; gap: 5px; padding: 6px 8px; overflow: hidden; }
-  .branch-strip__header { flex-wrap: nowrap; gap: 8px; min-width: 0; white-space: nowrap; overflow: hidden; }
+  .branch-strip__header { flex-wrap: nowrap; gap: 8px; min-width: 0; overflow: hidden; white-space: nowrap; }
   .branch-strip__score,
   .branch-strip__alert,
   .branch-strip__dead { overflow: hidden; text-overflow: ellipsis; }
   .branch-tree-nav__scroll { max-height: min(30vh, 280px); }
-  .branch-chip { min-width: 220px; }
+  .branch-strip-row { grid-template-columns: 62px minmax(0, 1fr); padding: 6px; }
   .branch-chip__concede { min-width: 44px; }
   .branch-strip__hint { display: none; }
 }
