@@ -99,12 +99,12 @@ test('keeps Parallel Universe selectors below the HUD and within the screen', as
   await expect(page.locator('.hud .branch-strip')).toHaveCount(0);
   expect(await hasHorizontalOverflow(page)).toBe(false);
 
-  const list = await strip.locator('.branch-strip__list').evaluate(element => ({
+  const treeScroll = await strip.locator('.branch-tree-nav__scroll').evaluate(element => ({
     clientWidth: element.clientWidth,
     scrollWidth: element.scrollWidth,
   }));
-  expect(list.clientWidth).toBeGreaterThan(0);
-  expect(list.scrollWidth).toBeGreaterThanOrEqual(list.clientWidth);
+  expect(treeScroll.clientWidth).toBeGreaterThan(0);
+  expect(treeScroll.scrollWidth).toBeGreaterThanOrEqual(treeScroll.clientWidth);
 
   await page.locator('.square--push-target').first().click({ force: true });
   await page.getByRole('button', { name: 'Follow Up' }).click({ force: true });

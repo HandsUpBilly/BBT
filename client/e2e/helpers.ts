@@ -76,7 +76,7 @@ export async function startGame(page: Page, playerName = 'E2E Tester'): Promise<
 }
 
 /**
- * Starts one named puzzle from Single Plays rather than the series.
+ * Starts one named puzzle from the individual-puzzle picker rather than the series.
  *
  * Some behaviour needs a specific board — a Block, for instance, needs the two
  * teams already in contact, which only "Loose Ball on the Goal Line" gives you
@@ -93,7 +93,7 @@ export async function startScenario(
   await page.locator('.identity-gate__input').fill(playerName);
   await page.getByRole('button', { name: /^continue$/i }).click();
 
-  await page.getByRole('tab', { name: /single plays/i }).click();
+  await page.getByRole('tab', { name: /single plays|free play/i }).click();
   await page.locator('.challenge-tile', { hasText: scenarioName })
     .getByRole('button', { name: /^play$/i }).click();
 

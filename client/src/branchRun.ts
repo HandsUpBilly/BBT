@@ -527,6 +527,23 @@ export interface BranchStripEntry {
   isViewed: boolean;
 }
 
+export interface BranchTreeStateView extends Omit<BranchStripEntry, 'status'> {
+  status: BranchStripEntry['status'] | 'continued';
+  /** Historical states have already forked again and are display-only. */
+  isSelectable: boolean;
+  /** The later block that occurred in this state, if this is not a leaf. */
+  nextBlock?: BranchTreeBlockView;
+}
+
+export interface BranchTreeBlockView {
+  id: string;
+  blockNumber: number;
+  blockLabel: string;
+  diceCount: 1 | 2 | 3;
+  picker: 'attacker' | 'defender';
+  states: BranchTreeStateView[];
+}
+
 export interface GhostPiece {
   pieceId: string;
   position: Position;
@@ -653,4 +670,62 @@ export function branchStrip(run: BranchRun): BranchStripEntry[] {
         isViewed: line.id === run.viewedId,
       };
     });
+}
+
+/**
+ * Parent-child view of the real run tree. Block nodes own the states they
+ * created; a state that later split points at its next block. Only leaf states
+ * are selectable, so showing history can never rewind the authored run.
+ */
+export function branchTreeView(run: BranchRun): BranchTreeBlockView | null {
+  const { lines } = runSummary(run);
+  const weights = new Map(lines.map(line => [line.id, line]));
+  const viewedPath = new Set<string>();
+  let viewed: RunLine | undefined = run.lines[run.viewedId];
+  while (viewed) {
+    viewedPath.add(viewed.id);
+    viewed = viewed.parentId ? run.lines[viewed.parentId] : undefined;
+  }
+
+  const buildBlock = (line: RunLine, depth: number): BranchTreeBlockView | null => {
+    if (!line.split) return null;
+    const states: BranchTreeStateView[] = [];
+    for (const childId of line.split.childIds) {
+      const child = run.lines[childId];
+      if (!child) continue;
+      const summary = weights.get(child.id);
+      const isSelectable = child.split === null;
+      const status: BranchTreeStateView['status'] = child.split
+        ? 'continued'
+        : child.conceded
+          ? 'conceded'
+          : child.state.phase === 'touchdown'
+            ? 'scored'
+            : child.needsAttention
+              ? 'needs-attention'
+              : 'authoring';
+      const nextBlock = buildBlock(child, depth + 1);
+      states.push({
+        id: child.id,
+        label: child.label,
+        path: branchPath(run, child.id),
+        outcomes: branchOutcomes(run, child.id),
+        weight: summary?.weight ?? 0,
+        value: summary?.value ?? 0,
+        status,
+        isViewed: viewedPath.has(child.id),
+        isSelectable,
+        ...(nextBlock ? { nextBlock } : {}),
+      });
+    }
+    return {
+      id: line.id,
+      blockNumber: depth + 1,
+      blockLabel: `${line.split.attackerName} ⚔ ${line.split.defenderName}`,
+      diceCount: line.split.diceCount,
+      picker: line.split.picker,
+      states,
+    };
+  };
+  return buildBlock(run.lines[run.rootId], 0);
 }

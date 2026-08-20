@@ -1,5 +1,4 @@
-import type { BranchSummary } from './blockBranchTree';
-import type { BranchRun, BranchStripEntry, RunLine } from './branchRun';
+import type { BranchTreeBlockView, BranchTreeStateView } from './branchRun';
 import './BranchTreeGraphic.css';
 
 const NODE_WIDTH = 174;
@@ -9,19 +8,22 @@ const ROW_GAP = 72;
 const MARGIN = 18;
 
 interface Props {
-  run: BranchRun;
-  summary: BranchSummary;
-  branches: BranchStripEntry[];
+  tree: BranchTreeBlockView;
+  /** Leaf whose full route should be picked out during per-branch review. */
+  highlightedBranchId?: string;
+  variant?: 'summary' | 'review';
 }
 
 interface LayoutNode {
-  id: string;
+  key: string;
   x: number;
   y: number;
   title: string;
   detail: string;
   description: string;
-  kind: 'block' | BranchStripEntry['status'];
+  kind: 'block' | BranchTreeStateView['status'];
+  highlighted: boolean;
+  selected: boolean;
 }
 
 interface LayoutEdge {
@@ -38,81 +40,103 @@ function shorten(value: string, length: number): string {
   return value.length > length ? `${value.slice(0, length - 1)}…` : value;
 }
 
-function terminalLabel(status: BranchStripEntry['status']): string {
+function stateLabel(status: BranchTreeStateView['status']): string {
   switch (status) {
     case 'scored': return 'Scored';
     case 'conceded': return 'Given up';
     case 'needs-attention': return 'Needs a plan';
     case 'authoring': return 'In progress';
+    case 'continued': return 'Continued';
   }
 }
 
-/**
- * The actual block tree, laid out one block-depth per column. Internal nodes
- * name the block that forks the run; leaves show how that universe ended.
- */
-export function BranchTreeGraphic({ run, summary, branches }: Props) {
-  const weights = new Map(summary.lines.map(line => [line.id, line.weight]));
-  const leaves = new Map(branches.map(branch => [branch.id, branch]));
+function blockContains(block: BranchTreeBlockView, branchId: string): boolean {
+  return block.states.some(state =>
+    state.id === branchId || (state.nextBlock ? blockContains(state.nextBlock, branchId) : false));
+}
+
+/** The completed run using the same block → state → block model as the live tree. */
+export function BranchTreeGraphic({ tree, highlightedBranchId, variant = 'summary' }: Props) {
   const nodes: LayoutNode[] = [];
   const edges: LayoutEdge[] = [];
   let leafIndex = 0;
-  let maxDepth = 0;
-  let blockCount = 0;
+  let maxColumn = 0;
+  let maxBlockNumber = 0;
 
-  const visit = (line: RunLine, depth: number, parent?: LayoutNode): LayoutNode => {
-    maxDepth = Math.max(maxDepth, depth);
-    const childLines = line.split?.childIds
-      .map(id => run.lines[id])
-      .filter((child): child is RunLine => child !== undefined) ?? [];
-    const childNodes: LayoutNode[] = [];
-    const y = childLines.length === 0
-      ? MARGIN + NODE_HEIGHT / 2 + leafIndex++ * ROW_GAP
-      : 0;
+  const xFor = (column: number) => {
+    maxColumn = Math.max(maxColumn, column);
+    return MARGIN + NODE_WIDTH / 2 + column * (NODE_WIDTH + COLUMN_GAP);
+  };
 
-    const branch = leaves.get(line.id);
-    const blockNumber = depth + 1;
-    const isBlock = line.split !== null;
-    if (isBlock) blockCount = Math.max(blockCount, blockNumber);
-    const title = line.parentId === null
-      ? `Block ${blockNumber}`
-      : line.label;
-    const detail = line.split
-      ? line.parentId === null
-        ? shorten(`${line.split.attackerName} ⚔ ${line.split.defenderName}`, 29)
-        : `Block ${blockNumber} · ${shorten(`${line.split.attackerName} ⚔ ${line.split.defenderName}`, 20)}`
-      : `${terminalLabel(branch?.status ?? 'authoring')} · ${pct(weights.get(line.id) ?? 0)}`;
-    const description = line.split
-      ? `${line.parentId === null ? '' : `${line.label}; `}Block ${blockNumber}: ${line.split.attackerName} versus ${line.split.defenderName}`
-      : `${branch?.path ?? line.label}; ${terminalLabel(branch?.status ?? 'authoring')}; ${pct(weights.get(line.id) ?? 0)} chance`;
-
+  const visitState = (
+    state: BranchTreeStateView,
+    column: number,
+    key: string,
+    parent: LayoutNode,
+  ): LayoutNode => {
+    const highlighted = highlightedBranchId !== undefined
+      && (state.id === highlightedBranchId
+        || (state.nextBlock ? blockContains(state.nextBlock, highlightedBranchId) : false));
     const node: LayoutNode = {
-      id: line.id,
-      x: MARGIN + NODE_WIDTH / 2 + depth * (NODE_WIDTH + COLUMN_GAP),
-      y,
-      title,
-      detail,
-      description,
-      kind: isBlock ? 'block' : branch?.status ?? 'authoring',
+      key,
+      x: xFor(column),
+      y: 0,
+      title: state.label,
+      detail: `${stateLabel(state.status)} · ${pct(state.weight)}`,
+      description: `${state.path}; ${stateLabel(state.status)}; ${pct(state.weight)} chance`,
+      kind: state.status,
+      highlighted,
+      selected: state.id === highlightedBranchId,
     };
-
-    for (const child of childLines) childNodes.push(visit(child, depth + 1, node));
-    if (childNodes.length > 0) {
-      node.y = childNodes.reduce((total, child) => total + child.y, 0) / childNodes.length;
-    }
     nodes.push(node);
-    if (parent) edges.push({ from: parent, to: node });
+    edges.push({ from: parent, to: node });
+
+    if (state.nextBlock) {
+      const child = visitBlock(state.nextBlock, column + 1, `${key}/block`, node);
+      node.y = child.y;
+    } else {
+      node.y = MARGIN + NODE_HEIGHT / 2 + leafIndex++ * ROW_GAP;
+    }
     return node;
   };
 
-  visit(run.lines[run.rootId], 0);
+  const visitBlock = (
+    block: BranchTreeBlockView,
+    column: number,
+    key: string,
+    parent?: LayoutNode,
+  ): LayoutNode => {
+    maxBlockNumber = Math.max(maxBlockNumber, block.blockNumber);
+    const highlighted = highlightedBranchId !== undefined && blockContains(block, highlightedBranchId);
+    const node: LayoutNode = {
+      key,
+      x: xFor(column),
+      y: 0,
+      title: `Block ${block.blockNumber}`,
+      detail: shorten(block.blockLabel, 29),
+      description: `Block ${block.blockNumber}: ${block.blockLabel}; ${block.diceCount} ${block.diceCount === 1 ? 'die' : 'dice'}`,
+      kind: 'block',
+      highlighted,
+      selected: false,
+    };
+    nodes.push(node);
+    if (parent) edges.push({ from: parent, to: node });
 
-  const width = MARGIN * 2 + (maxDepth + 1) * NODE_WIDTH + maxDepth * COLUMN_GAP;
+    const children = block.states.map((state, index) =>
+      visitState(state, column + 1, `${key}/state-${index}-${state.id}`, node));
+    node.y = children.length > 0
+      ? children.reduce((total, child) => total + child.y, 0) / children.length
+      : MARGIN + NODE_HEIGHT / 2 + leafIndex++ * ROW_GAP;
+    return node;
+  };
+
+  visitBlock(tree, 0, `block-${tree.id}`);
+
+  const width = MARGIN * 2 + (maxColumn + 1) * NODE_WIDTH + maxColumn * COLUMN_GAP;
   const height = MARGIN * 2 + NODE_HEIGHT + Math.max(0, leafIndex - 1) * ROW_GAP;
-  const endingUniverses = branches.length;
 
   return (
-    <figure className="branch-tree">
+    <figure className={`branch-tree branch-tree--${variant}`}>
       <div className="branch-tree__heading">Game branches</div>
       <div className="branch-tree__scroll">
         <svg
@@ -120,7 +144,7 @@ export function BranchTreeGraphic({ run, summary, branches }: Props) {
           style={{ minWidth: `${width}px` }}
           viewBox={`0 0 ${width} ${height}`}
           role="img"
-          aria-label={`Game branch tree with ${blockCount} ${blockCount === 1 ? 'block' : 'blocks'} and ${endingUniverses} ending ${endingUniverses === 1 ? 'universe' : 'universes'}`}
+          aria-label={`Game branch tree with ${maxBlockNumber} ${maxBlockNumber === 1 ? 'block' : 'blocks'} and ${leafIndex} ending ${leafIndex === 1 ? 'universe' : 'universes'}${highlightedBranchId ? '; reviewed branch highlighted' : ''}`}
         >
           <g className="branch-tree__edges" aria-hidden="true">
             {edges.map(edge => {
@@ -129,7 +153,8 @@ export function BranchTreeGraphic({ run, summary, branches }: Props) {
               const middleX = (startX + endX) / 2;
               return (
                 <path
-                  key={`${edge.from.id}-${edge.to.id}`}
+                  key={`${edge.from.key}-${edge.to.key}`}
+                  className={edge.from.highlighted && edge.to.highlighted ? 'branch-tree__edge--highlighted' : undefined}
                   d={`M ${startX} ${edge.from.y} C ${middleX} ${edge.from.y}, ${middleX} ${edge.to.y}, ${endX} ${edge.to.y}`}
                 />
               );
@@ -138,8 +163,13 @@ export function BranchTreeGraphic({ run, summary, branches }: Props) {
           <g className="branch-tree__nodes">
             {nodes.map(node => (
               <g
-                key={node.id}
-                className={`branch-tree__node branch-tree__node--${node.kind}`}
+                key={node.key}
+                className={[
+                  'branch-tree__node',
+                  `branch-tree__node--${node.kind}`,
+                  node.highlighted ? 'branch-tree__node--highlighted' : '',
+                  node.selected ? 'branch-tree__node--selected' : '',
+                ].filter(Boolean).join(' ')}
                 transform={`translate(${node.x - NODE_WIDTH / 2} ${node.y - NODE_HEIGHT / 2})`}
               >
                 <title>{node.description}</title>

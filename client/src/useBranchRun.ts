@@ -19,6 +19,7 @@ import type { GameState } from './types';
 import { applySquareHover, applySquareLeave } from './useGameState';
 import {
   branchStrip,
+  branchTreeView,
   cancelActivation,
   chooseBlockTarget,
   chooseHandoffTarget,
@@ -52,6 +53,7 @@ export function useBranchRun(initialState: GameState) {
   // honest while the player authors: improving one branch moves the others.
   const summary = useMemo(() => runSummary(run), [run]);
   const strip = useMemo(() => branchStrip(run), [run]);
+  const tree = useMemo(() => branchTreeView(run), [run]);
   const ghosts = useMemo(() => ghostPieces(run), [run]);
 
   /**
@@ -109,6 +111,7 @@ export function useBranchRun(initialState: GameState) {
     run,
     summary,
     strip,
+    tree,
     ghosts,
     complete: isRunComplete(run),
     hasSplit: Object.values(run.lines).some(line => line.split !== null),
