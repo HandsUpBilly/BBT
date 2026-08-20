@@ -85,6 +85,14 @@
   grid-row: span 2;
 }
 
+/* The mobile sheet has the full viewport width available. Use it for one
+   five-stat strip instead of carrying the desktop card's two-column stack
+   below the portrait. */
+.info-sheet__panel--player .panel__stats {
+  grid-column: 1 / -1;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
 /* The card is a grid here, so the role tag would otherwise be dropped into the
    portrait's column as a cell. It is a caption for the whole card. */
 .info-sheet__panel--player .panel__role-tag {
