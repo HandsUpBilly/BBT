@@ -40,6 +40,12 @@
   opacity: 0.72;
 }
 
+.branch-tree__edges .branch-tree__edge--highlighted {
+  stroke: var(--color-accent);
+  stroke-width: 3;
+  opacity: 1;
+}
+
 .branch-tree__node rect {
   fill: var(--color-surface-2);
   stroke: var(--color-border);
@@ -62,6 +68,16 @@
 
 .branch-tree__node--conceded {
   opacity: 0.62;
+}
+
+.branch-tree__node--highlighted rect {
+  stroke: var(--color-accent);
+  stroke-width: 2.5;
+}
+
+.branch-tree__node--selected rect {
+  fill: rgba(185, 66, 41, 0.22);
+  filter: drop-shadow(0 0 4px rgba(201, 91, 71, 0.5));
 }
 
 .branch-tree__node-title,
@@ -88,8 +104,29 @@
   line-height: 1.3;
 }
 
+.branch-tree--review {
+  min-width: 0;
+  margin: 0;
+  padding: 10px 12px 8px;
+  background:
+    linear-gradient(rgba(255, 255, 255, 0.018), rgba(255, 255, 255, 0.006)),
+    #151917;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-card);
+}
+
+.branch-tree--review .branch-tree__scroll {
+  height: 230px;
+  max-height: 230px;
+}
+
 @media (max-width: 480px) {
   .branch-tree__scroll {
     max-height: 36vh;
+  }
+
+  .branch-tree--review .branch-tree__scroll {
+    height: 180px;
+    max-height: 180px;
   }
 }

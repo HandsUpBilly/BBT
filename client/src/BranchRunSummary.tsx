@@ -87,7 +87,13 @@ export function BranchRunSummary({
               ← Back to summary
             </button>
             <h2 id={titleId} className="modal__title branch-summary__detail-title">{detail.path}</h2>
-            <ActionLogDetail scenario={scenario} actionLog={run.lines[detail.id].state.actionLog} />
+            <ActionLogDetail
+              scenario={scenario}
+              actionLog={run.lines[detail.id].state.actionLog}
+              diagramAside={tree && (
+                <BranchTreeGraphic tree={tree} highlightedBranchId={detail.id} variant="review" />
+              )}
+            />
           </>
         ) : (
           <>

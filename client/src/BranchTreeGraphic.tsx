@@ -9,6 +9,9 @@ const MARGIN = 18;
 
 interface Props {
   tree: BranchTreeBlockView;
+  /** Leaf whose full route should be picked out during per-branch review. */
+  highlightedBranchId?: string;
+  variant?: 'summary' | 'review';
 }
 
 interface LayoutNode {
@@ -19,6 +22,8 @@ interface LayoutNode {
   detail: string;
   description: string;
   kind: 'block' | BranchTreeStateView['status'];
+  highlighted: boolean;
+  selected: boolean;
 }
 
 interface LayoutEdge {
@@ -45,8 +50,13 @@ function stateLabel(status: BranchTreeStateView['status']): string {
   }
 }
 
+function blockContains(block: BranchTreeBlockView, branchId: string): boolean {
+  return block.states.some(state =>
+    state.id === branchId || (state.nextBlock ? blockContains(state.nextBlock, branchId) : false));
+}
+
 /** The completed run using the same block → state → block model as the live tree. */
-export function BranchTreeGraphic({ tree }: Props) {
+export function BranchTreeGraphic({ tree, highlightedBranchId, variant = 'summary' }: Props) {
   const nodes: LayoutNode[] = [];
   const edges: LayoutEdge[] = [];
   let leafIndex = 0;
@@ -64,6 +74,9 @@ export function BranchTreeGraphic({ tree }: Props) {
     key: string,
     parent: LayoutNode,
   ): LayoutNode => {
+    const highlighted = highlightedBranchId !== undefined
+      && (state.id === highlightedBranchId
+        || (state.nextBlock ? blockContains(state.nextBlock, highlightedBranchId) : false));
     const node: LayoutNode = {
       key,
       x: xFor(column),
@@ -72,6 +85,8 @@ export function BranchTreeGraphic({ tree }: Props) {
       detail: `${stateLabel(state.status)} · ${pct(state.weight)}`,
       description: `${state.path}; ${stateLabel(state.status)}; ${pct(state.weight)} chance`,
       kind: state.status,
+      highlighted,
+      selected: state.id === highlightedBranchId,
     };
     nodes.push(node);
     edges.push({ from: parent, to: node });
@@ -92,6 +107,7 @@ export function BranchTreeGraphic({ tree }: Props) {
     parent?: LayoutNode,
   ): LayoutNode => {
     maxBlockNumber = Math.max(maxBlockNumber, block.blockNumber);
+    const highlighted = highlightedBranchId !== undefined && blockContains(block, highlightedBranchId);
     const node: LayoutNode = {
       key,
       x: xFor(column),
@@ -100,6 +116,8 @@ export function BranchTreeGraphic({ tree }: Props) {
       detail: shorten(block.blockLabel, 29),
       description: `Block ${block.blockNumber}: ${block.blockLabel}; ${block.diceCount} ${block.diceCount === 1 ? 'die' : 'dice'}`,
       kind: 'block',
+      highlighted,
+      selected: false,
     };
     nodes.push(node);
     if (parent) edges.push({ from: parent, to: node });
@@ -118,7 +136,7 @@ export function BranchTreeGraphic({ tree }: Props) {
   const height = MARGIN * 2 + NODE_HEIGHT + Math.max(0, leafIndex - 1) * ROW_GAP;
 
   return (
-    <figure className="branch-tree">
+    <figure className={`branch-tree branch-tree--${variant}`}>
       <div className="branch-tree__heading">Game branches</div>
       <div className="branch-tree__scroll">
         <svg
@@ -126,7 +144,7 @@ export function BranchTreeGraphic({ tree }: Props) {
           style={{ minWidth: `${width}px` }}
           viewBox={`0 0 ${width} ${height}`}
           role="img"
-          aria-label={`Game branch tree with ${maxBlockNumber} ${maxBlockNumber === 1 ? 'block' : 'blocks'} and ${leafIndex} ending ${leafIndex === 1 ? 'universe' : 'universes'}`}
+          aria-label={`Game branch tree with ${maxBlockNumber} ${maxBlockNumber === 1 ? 'block' : 'blocks'} and ${leafIndex} ending ${leafIndex === 1 ? 'universe' : 'universes'}${highlightedBranchId ? '; reviewed branch highlighted' : ''}`}
         >
           <g className="branch-tree__edges" aria-hidden="true">
             {edges.map(edge => {
@@ -136,6 +154,7 @@ export function BranchTreeGraphic({ tree }: Props) {
               return (
                 <path
                   key={`${edge.from.key}-${edge.to.key}`}
+                  className={edge.from.highlighted && edge.to.highlighted ? 'branch-tree__edge--highlighted' : undefined}
                   d={`M ${startX} ${edge.from.y} C ${middleX} ${edge.from.y}, ${middleX} ${edge.to.y}, ${endX} ${edge.to.y}`}
                 />
               );
@@ -145,7 +164,12 @@ export function BranchTreeGraphic({ tree }: Props) {
             {nodes.map(node => (
               <g
                 key={node.key}
-                className={`branch-tree__node branch-tree__node--${node.kind}`}
+                className={[
+                  'branch-tree__node',
+                  `branch-tree__node--${node.kind}`,
+                  node.highlighted ? 'branch-tree__node--highlighted' : '',
+                  node.selected ? 'branch-tree__node--selected' : '',
+                ].filter(Boolean).join(' ')}
                 transform={`translate(${node.x - NODE_WIDTH / 2} ${node.y - NODE_HEIGHT / 2})`}
               >
                 <title>{node.description}</title>

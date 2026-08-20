@@ -137,7 +137,7 @@ describe('BranchRunSummary branch list', () => {
   });
 
   it('opens a branch\'s own action summary and play diagram on click', () => {
-    render(<BranchRunSummary {...baseProps()} />);
+    const { container } = render(<BranchRunSummary {...baseProps()} />);
 
     // Exact match: "Pushed" alone would also match the "Pushed + Down" row.
     fireEvent.click(screen.getByRole('button', { name: 'View Aldric Swiftfoot ⚔ Grukk Ironjaw: Pushed' }));
@@ -149,6 +149,31 @@ describe('BranchRunSummary branch list', () => {
     expect(screen.queryByText(/run complete/)).toBeNull();
     expect(screen.getByText('Block → Push Back')).toBeTruthy();
     expect(screen.getByRole('button', { name: /Back to summary/ })).toBeTruthy();
+    expect(screen.getByRole('img', { name: /Completed play/ })).toBeTruthy();
+    expect(screen.getByRole('img', {
+      name: 'Game branch tree with 1 block and 3 ending universes; reviewed branch highlighted',
+    })).toBeTruthy();
+    expect(container.querySelectorAll('.action-log-detail__diagrams--paired > figure')).toHaveLength(2);
+    expect(container.querySelectorAll('.branch-tree__node--selected')).toHaveLength(1);
+    expect(container.querySelectorAll('.branch-tree__node--highlighted')).toHaveLength(2);
+  });
+
+  it('highlights the reviewed leaf and its full ancestry through multiple blocks', () => {
+    const run = twoBlockScoredRun();
+    const { container } = render(
+      <BranchRunSummary
+        {...baseProps()}
+        run={run}
+        summary={runSummary(run)}
+        branches={branchStrip(run)}
+      />,
+    );
+
+    fireEvent.click(screen.getAllByRole('button', { name: /^View / })[0]);
+
+    expect(container.querySelectorAll('.branch-tree__node--selected')).toHaveLength(1);
+    expect(container.querySelectorAll('.branch-tree__node--highlighted')).toHaveLength(4);
+    expect(container.querySelectorAll('.branch-tree__edge--highlighted')).toHaveLength(3);
   });
 
   it('returns to the summary and its submit controls on Back', () => {

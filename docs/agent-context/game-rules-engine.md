@@ -119,8 +119,9 @@ dice tie-break.
   changing the score; the unresolved count remains visible. Those are exactly
   the branches that could not share an authored action because it was illegal
   there or would add rolls beyond the viewed branch. The completed-run analysis
-  renders the same tree as a scrollable graphic, while the universe list remains
-  the drill-down into each branch's action log.
+  renders the same tree as a scrollable graphic. Opening a universe from that
+  list pairs its playbook-style board diagram with the tree and highlights the
+  reviewed leaf plus its full ancestry, alongside that branch's action log.
 - Block dice use 1–3 dice from the effective-Strength comparison. The player
   chooses acceptable faces; probability is combined according to whether the
   attacker or defender picks the result.
