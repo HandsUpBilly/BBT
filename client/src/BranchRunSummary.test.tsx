@@ -154,8 +154,10 @@ describe('BranchRunSummary branch list', () => {
       name: 'Game branch tree with 1 block and 3 ending universes; reviewed branch highlighted',
     })).toBeTruthy();
     expect(container.querySelectorAll('.action-log-detail__diagrams--paired > figure')).toHaveLength(2);
-    expect(container.querySelectorAll('.branch-tree__node--selected')).toHaveLength(1);
-    expect(container.querySelectorAll('.branch-tree__node--highlighted')).toHaveLength(2);
+    expect(container.querySelectorAll('.branch-review__node--selected')).toHaveLength(1);
+    expect(container.querySelectorAll('.branch-review__node--highlighted')).toHaveLength(1);
+    expect(container.querySelectorAll('.branch-review__die')).toHaveLength(1);
+    expect(container.querySelectorAll('.branch-review__edge--highlighted')).toHaveLength(1);
   });
 
   it('highlights the reviewed leaf and its full ancestry through multiple blocks', () => {
@@ -171,9 +173,9 @@ describe('BranchRunSummary branch list', () => {
 
     fireEvent.click(screen.getAllByRole('button', { name: /^View / })[0]);
 
-    expect(container.querySelectorAll('.branch-tree__node--selected')).toHaveLength(1);
-    expect(container.querySelectorAll('.branch-tree__node--highlighted')).toHaveLength(4);
-    expect(container.querySelectorAll('.branch-tree__edge--highlighted')).toHaveLength(3);
+    expect(container.querySelectorAll('.branch-review__node--selected')).toHaveLength(1);
+    expect(container.querySelectorAll('.branch-review__node--highlighted')).toHaveLength(2);
+    expect(container.querySelectorAll('.branch-review__edge--highlighted')).toHaveLength(2);
   });
 
   it('returns to the summary and its submit controls on Back', () => {

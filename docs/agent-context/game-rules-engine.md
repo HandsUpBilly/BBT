@@ -120,8 +120,9 @@ dice tie-break.
   the branches that could not share an authored action because it was illegal
   there or would add rolls beyond the viewed branch. The completed-run analysis
   renders the same tree as a scrollable graphic. Opening a universe from that
-  list pairs its playbook-style board diagram with the tree and highlights the
-  reviewed leaf plus its full ancestry, alongside that branch's action log.
+  list pairs its board diagram with a simplified playbook-style branch route:
+  dotted parent-child lines, block-die results beside each outcome point, and
+  the reviewed leaf's ancestry highlighted alongside that branch's action log.
 - Block dice use 1–3 dice from the effective-Strength comparison. The player
   chooses acceptable faces; probability is combined according to whether the
   attacker or defender picks the result.

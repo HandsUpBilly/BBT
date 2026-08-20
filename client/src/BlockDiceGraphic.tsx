@@ -36,6 +36,11 @@ const BLOCK_FACE_IMAGES: Record<BlockOutcomeFace, string> = {
   'defender-down': defenderDownDie,
 };
 
+/** Source artwork for compact SVG summaries such as the branch playbook. */
+export function blockFaceImage(face: BlockOutcomeFace): string {
+  return BLOCK_FACE_IMAGES[face];
+}
+
 interface DieRollMotion {
   style: CSSProperties;
   faces: BlockOutcomeFace[];
