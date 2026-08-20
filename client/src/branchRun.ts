@@ -516,6 +516,8 @@ export interface BranchStripEntry {
     faces: BlockOutcomeFace[];
     favor: 'attacker' | 'defender';
     label: string;
+    /** The players involved in this fork, for the per-block card row. */
+    blockLabel: string;
   }>;
   /** P(reaching this branch) — derived, and it moves as branches are authored. */
   weight: number;
@@ -612,7 +614,14 @@ function branchOutcomes(run: BranchRun, lineId: string): BranchStripEntry['outco
     if (!split) break;
     const stateIndex = split.childIds.indexOf(current.id);
     const state = split.resolution.states[stateIndex];
-    if (state) outcomes.unshift({ faces: state.faces, favor: split.picker, label: current.label });
+    if (state) {
+      outcomes.unshift({
+        faces: state.faces,
+        favor: split.picker,
+        label: current.label,
+        blockLabel: `${split.attackerName} ⚔ ${split.defenderName}`,
+      });
+    }
     current = parent;
   }
 

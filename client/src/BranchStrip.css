@@ -73,7 +73,29 @@
   min-width: 34px;
   min-height: 28px;
   display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 4px;
+}
+
+.branch-chip__block {
+  display: grid;
+  grid-template-columns: auto auto minmax(7ch, 1fr);
   align-items: center;
+  gap: 6px;
+}
+
+.branch-chip__block + .branch-chip__block {
+  padding-top: 4px;
+  border-top: 1px solid var(--color-border-subtle);
+}
+
+.branch-chip__block-label {
+  color: var(--color-text-disabled);
+  font-size: 0.64rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
 }
 
 .branch-chip__dice-group {
@@ -91,9 +113,12 @@
   width: 100% !important;
 }
 
-.branch-chip__arrow {
-  margin: 0 2px;
+.branch-chip__outcome {
+  overflow: hidden;
+  font-size: 0.7rem;
   color: var(--color-text-muted);
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 @media (max-width: 1024px) {

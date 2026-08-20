@@ -1,0 +1,95 @@
+.branch-tree {
+  align-self: stretch;
+  width: 100%;
+  margin: 0 0 12px;
+  color: var(--color-text-muted);
+  text-align: left;
+}
+
+.branch-tree__heading {
+  margin-bottom: 6px;
+  color: var(--color-text);
+  font-family: var(--font-display);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.branch-tree__scroll {
+  max-height: min(44vh, 440px);
+  overflow: auto;
+  background:
+    linear-gradient(rgba(255, 255, 255, 0.018), rgba(255, 255, 255, 0.006)),
+    var(--color-surface-sunken);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-card);
+  scrollbar-width: thin;
+}
+
+.branch-tree__svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.branch-tree__edges path {
+  fill: none;
+  stroke: var(--color-border-selected);
+  stroke-width: 1.5;
+  opacity: 0.72;
+}
+
+.branch-tree__node rect {
+  fill: var(--color-surface-2);
+  stroke: var(--color-border);
+  stroke-width: 1.5;
+}
+
+.branch-tree__node--block rect {
+  fill: var(--color-surface-3);
+  stroke: var(--color-accent-border);
+}
+
+.branch-tree__node--scored rect {
+  fill: var(--color-surface-3);
+  stroke: var(--color-success);
+}
+
+.branch-tree__node--needs-attention rect {
+  stroke: var(--color-warning);
+}
+
+.branch-tree__node--conceded {
+  opacity: 0.62;
+}
+
+.branch-tree__node-title,
+.branch-tree__node-detail {
+  font-family: var(--font-body);
+  pointer-events: none;
+}
+
+.branch-tree__node-title {
+  fill: var(--color-text-strong);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.branch-tree__node-detail {
+  fill: var(--color-text-muted);
+  font-size: 9px;
+}
+
+.branch-tree figcaption {
+  margin-top: 5px;
+  color: var(--color-text-disabled);
+  font-size: 0.68rem;
+  line-height: 1.3;
+}
+
+@media (max-width: 480px) {
+  .branch-tree__scroll {
+    max-height: 36vh;
+  }
+}
