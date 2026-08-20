@@ -25,6 +25,16 @@
   user-select: none;
 }
 
+/* The PNGs have real transparency, so these filters recolour only the
+   physical die: white when the player chooses, red for an uphill block. */
+.block-die-icon[data-favor="attacker"] :is(.block-die-icon__art, .block-die-icon__face) {
+  filter: grayscale(1) invert(0.94) contrast(1.2);
+}
+
+.block-die-icon[data-favor="defender"] :is(.block-die-icon__art, .block-die-icon__face) {
+  filter: grayscale(1) invert(0.94) sepia(1) saturate(7) hue-rotate(325deg) brightness(0.78) contrast(1.25);
+}
+
 .block-die-icon__face {
   position: absolute;
   inset: 0;
