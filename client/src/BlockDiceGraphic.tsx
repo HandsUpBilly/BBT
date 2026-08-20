@@ -3,11 +3,11 @@ import type { CSSProperties } from 'react';
 import type { BlockOutcomeFace } from './types';
 import { BLOCK_FACE_LABELS } from './blockFacePresentation';
 import { BLOCK_OUTCOME_FACES } from './bfs';
-import attackerDownDie from './assets/block-dice/attacker-down.webp';
-import bothDownDie from './assets/block-dice/both-down.webp';
-import pushDie from './assets/block-dice/push.webp';
-import defenderStumblesDie from './assets/block-dice/defender-stumbles.webp';
-import defenderDownDie from './assets/block-dice/defender-down.webp';
+import attackerDownDie from './assets/block-dice/attacker-down.png';
+import bothDownDie from './assets/block-dice/both-down.png';
+import pushDie from './assets/block-dice/push.png';
+import defenderStumblesDie from './assets/block-dice/defender-stumbles.png';
+import defenderDownDie from './assets/block-dice/defender-down.png';
 import './BlockDiceGraphic.css';
 
 // Block dice don't carry a single target number the way a dodge or pick-up

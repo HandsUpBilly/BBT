@@ -22,10 +22,6 @@
   height: 100%;
   aspect-ratio: 1 / 1;
   object-fit: contain;
-  /* The source photographs are square and include a dark studio backdrop.
-     Crop to the physical die's rounded silhouette so the animation is the
-     die itself, not a die travelling inside a second square tile. */
-  clip-path: inset(5.5% round 19%);
   user-select: none;
 }
 
@@ -41,12 +37,6 @@
   filter: grayscale(1) sepia(1) saturate(5) hue-rotate(325deg) brightness(0.72) contrast(1.25);
 }
 
-.block-die-icon--animated {
-  /* Fruit-machine presentation: every die stays fixed in the row and faces
-     change in place. There is deliberately no reel viewport to clip or frame. */
-  overflow: visible;
-}
-
 .block-die-icon__face {
   position: absolute;
   inset: 0;
@@ -55,15 +45,6 @@
   animation-delay: var(--die-reel-delay, 0s);
   animation-timing-function: steps(1, end);
   animation-iteration-count: infinite;
-}
-
-/* Animated dice use the source art directly. Screen blending makes the black
-   studio backdrop disappear into the panel, avoiding the white/red rounded
-   tile created when the entire photograph was filtered and clipped. */
-.block-die-icon.block-die-icon--animated .block-die-icon__face {
-  clip-path: none;
-  filter: none;
-  mix-blend-mode: screen;
 }
 
 /* Five shuffled faces change in place like aligned fruit-machine windows. The
