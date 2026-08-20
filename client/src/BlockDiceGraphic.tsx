@@ -41,7 +41,7 @@ export function blockFaceImage(face: BlockOutcomeFace): string {
   return BLOCK_FACE_IMAGES[face];
 }
 
-interface DieRollMotion {
+interface DieReelMotion {
   style: CSSProperties;
   faces: BlockOutcomeFace[];
 }
@@ -59,20 +59,11 @@ function shuffledFaces(): BlockOutcomeFace[] {
   return faces;
 }
 
-function createRollMotion(dieIndex: number): DieRollMotion {
-  const direction = Math.random() < 0.5 ? -1 : 1;
-  const duration = randomBetween(4.8, 6.2);
-  const impactSpin = direction * randomBetween(240, 420);
+function createReelMotion(dieIndex: number): DieReelMotion {
+  const duration = randomBetween(6.4, 7.8);
   const customStyle = {
-    '--die-roll-duration': `${duration.toFixed(2)}s`,
-    '--die-roll-delay': `${(-randomBetween(0, duration) - dieIndex * 0.11).toFixed(2)}s`,
-    '--die-x-start': `${randomBetween(-22, 22).toFixed(1)}px`,
-    '--die-x-impact': `${randomBetween(-12, 12).toFixed(1)}px`,
-    '--die-x-bounce': `${randomBetween(-7, 7).toFixed(1)}px`,
-    '--die-spin-start': `${randomBetween(-35, 35).toFixed(1)}deg`,
-    '--die-spin-impact': `${impactSpin.toFixed(1)}deg`,
-    '--die-spin-bounce': `${(impactSpin + direction * randomBetween(25, 55)).toFixed(1)}deg`,
-    '--die-spin-end': `${(direction * randomBetween(-12, 12)).toFixed(1)}deg`,
+    '--die-reel-duration': `${duration.toFixed(2)}s`,
+    '--die-reel-delay': `${(-randomBetween(0, duration) - dieIndex * 0.28).toFixed(2)}s`,
   } as CSSProperties;
 
   return { style: customStyle, faces: shuffledFaces() };
@@ -83,7 +74,7 @@ function BlockDieIcon({ favor, style, dieIndex }: {
   style?: CSSProperties;
   dieIndex: number;
 }) {
-  const [motion] = useState(() => createRollMotion(dieIndex));
+  const [motion] = useState(() => createReelMotion(dieIndex));
 
   return (
     <span

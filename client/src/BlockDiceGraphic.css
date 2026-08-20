@@ -42,58 +42,54 @@
 }
 
 .block-die-icon--animated {
-  transform-box: fill-box;
-  transform-origin: center;
-  animation-name: block-die-roll-down;
-  animation-duration: var(--die-roll-duration, 5.4s);
-  animation-delay: var(--die-roll-delay, 0s);
-  animation-timing-function: cubic-bezier(0.22, 0.72, 0.28, 1);
-  animation-iteration-count: infinite;
+  /* Fruit-machine presentation: every die stays fixed in the row while its
+     face artwork moves inside the square. */
+  overflow: hidden;
 }
 
 .block-die-icon__face {
   position: absolute;
   inset: 0;
   opacity: 0;
-  animation-duration: var(--die-roll-duration, 5.4s);
-  animation-delay: var(--die-roll-delay, 0s);
-  animation-timing-function: steps(1, end);
+  transform: translateY(-105%);
+  animation-duration: var(--die-reel-duration, 7.1s);
+  animation-delay: var(--die-reel-delay, 0s);
+  animation-timing-function: linear;
   animation-iteration-count: infinite;
 }
 
-/* Five shuffled face layers cycle during the throw. The fifth holds while the
-   die settles, so every loop ends on a different randomly chosen preview face
-   instead of ticking mechanically forever. */
+/* Five shuffled layers travel from top to bottom like a slot-machine reel.
+   The fifth result holds, keeping the deliberately slower preview readable. */
 .block-die-icon__face:nth-child(1) { animation-name: block-die-face-1; }
 .block-die-icon__face:nth-child(2) { animation-name: block-die-face-2; }
 .block-die-icon__face:nth-child(3) { animation-name: block-die-face-3; }
 .block-die-icon__face:nth-child(4) { animation-name: block-die-face-4; }
 .block-die-icon__face:nth-child(5) { animation-name: block-die-face-5; }
 
-@keyframes block-die-roll-down {
-  0% {
-    opacity: 0;
-    transform: translate(var(--die-x-start, -12px), -78%) rotate(var(--die-spin-start, -20deg)) scale(0.88);
-  }
-  6% { opacity: 1; }
-  46% {
-    opacity: 1;
-    transform: translate(var(--die-x-impact, 8px), 28%) rotate(var(--die-spin-impact, 340deg)) scale(1.04);
-  }
-  59% {
-    transform: translate(var(--die-x-bounce, -4px), -4%) rotate(var(--die-spin-bounce, 380deg)) scale(0.98);
-  }
-  72%, 100% {
-    opacity: 1;
-    transform: translate(0, 16%) rotate(var(--die-spin-end, 7deg)) scale(1);
-  }
+@keyframes block-die-face-1 {
+  0%, 10% { opacity: 1; transform: translateY(0); }
+  12%, 100% { opacity: 0; transform: translateY(105%); }
 }
-
-@keyframes block-die-face-1 { 0%, 13.999% { opacity: 1; } 14%, 100% { opacity: 0; } }
-@keyframes block-die-face-2 { 0%, 13.999%, 28%, 100% { opacity: 0; } 14%, 27.999% { opacity: 1; } }
-@keyframes block-die-face-3 { 0%, 27.999%, 42%, 100% { opacity: 0; } 28%, 41.999% { opacity: 1; } }
-@keyframes block-die-face-4 { 0%, 41.999%, 56%, 100% { opacity: 0; } 42%, 55.999% { opacity: 1; } }
-@keyframes block-die-face-5 { 0%, 55.999% { opacity: 0; } 56%, 100% { opacity: 1; } }
+@keyframes block-die-face-2 {
+  0%, 9.999% { opacity: 0; transform: translateY(-105%); }
+  12%, 22% { opacity: 1; transform: translateY(0); }
+  24%, 100% { opacity: 0; transform: translateY(105%); }
+}
+@keyframes block-die-face-3 {
+  0%, 21.999% { opacity: 0; transform: translateY(-105%); }
+  24%, 34% { opacity: 1; transform: translateY(0); }
+  36%, 100% { opacity: 0; transform: translateY(105%); }
+}
+@keyframes block-die-face-4 {
+  0%, 33.999% { opacity: 0; transform: translateY(-105%); }
+  36%, 46% { opacity: 1; transform: translateY(0); }
+  48%, 100% { opacity: 0; transform: translateY(105%); }
+}
+@keyframes block-die-face-5 {
+  0%, 45.999% { opacity: 0; transform: translateY(-105%); }
+  48%, 98% { opacity: 1; transform: translateY(0); }
+  100% { opacity: 0; transform: translateY(105%); }
+}
 
 /* Shrink as more dice join the row, same shrink-to-fit spirit as the
    movement-roll dice (square__roll-die's max-height) — a lone die reads
@@ -122,5 +118,6 @@
 
   .block-die-icon__face[data-face="push"] {
     opacity: 1;
+    transform: none;
   }
 }
