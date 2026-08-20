@@ -102,18 +102,6 @@
   filter: drop-shadow(0 0 3px rgba(217, 163, 78, 0.7));
 }
 
-.branch-review__die {
-  clip-path: inset(5.5% round 19%);
-}
-
-.branch-review__die--attacker {
-  filter: grayscale(1) invert(0.94) contrast(1.2);
-}
-
-.branch-review__die--defender {
-  filter: grayscale(1) sepia(1) saturate(5) hue-rotate(325deg) brightness(0.72) contrast(1.25);
-}
-
 .branch-review figcaption {
   margin-top: 5px;
   color: var(--color-text-disabled);

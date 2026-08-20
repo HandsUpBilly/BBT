@@ -3,11 +3,16 @@ import type { CSSProperties } from 'react';
 import type { BlockOutcomeFace } from './types';
 import { BLOCK_FACE_LABELS } from './blockFacePresentation';
 import { BLOCK_OUTCOME_FACES } from './bfs';
-import attackerDownDie from './assets/block-dice/attacker-down.png';
-import bothDownDie from './assets/block-dice/both-down.png';
-import pushDie from './assets/block-dice/push.png';
-import defenderStumblesDie from './assets/block-dice/defender-stumbles.png';
-import defenderDownDie from './assets/block-dice/defender-down.png';
+import whiteAttackerDownDie from './assets/block-dice/white/attacker-down.png';
+import whiteBothDownDie from './assets/block-dice/white/both-down.png';
+import whitePushDie from './assets/block-dice/white/push.png';
+import whiteDefenderStumblesDie from './assets/block-dice/white/defender-stumbles.png';
+import whiteDefenderDownDie from './assets/block-dice/white/defender-down.png';
+import redAttackerDownDie from './assets/block-dice/red/attacker-down.png';
+import redBothDownDie from './assets/block-dice/red/both-down.png';
+import redPushDie from './assets/block-dice/red/push.png';
+import redDefenderStumblesDie from './assets/block-dice/red/defender-stumbles.png';
+import redDefenderDownDie from './assets/block-dice/red/defender-down.png';
 import './BlockDiceGraphic.css';
 
 // Block dice don't carry a single target number the way a dodge or pick-up
@@ -28,17 +33,26 @@ import './BlockDiceGraphic.css';
  */
 export type BlockDiceFavor = 'attacker' | 'defender';
 
-const BLOCK_FACE_IMAGES: Record<BlockOutcomeFace, string> = {
-  'attacker-down': attackerDownDie,
-  'both-down': bothDownDie,
-  push: pushDie,
-  'defender-stumbles': defenderStumblesDie,
-  'defender-down': defenderDownDie,
+const BLOCK_FACE_IMAGES: Record<BlockDiceFavor, Record<BlockOutcomeFace, string>> = {
+  attacker: {
+    'attacker-down': whiteAttackerDownDie,
+    'both-down': whiteBothDownDie,
+    push: whitePushDie,
+    'defender-stumbles': whiteDefenderStumblesDie,
+    'defender-down': whiteDefenderDownDie,
+  },
+  defender: {
+    'attacker-down': redAttackerDownDie,
+    'both-down': redBothDownDie,
+    push: redPushDie,
+    'defender-stumbles': redDefenderStumblesDie,
+    'defender-down': redDefenderDownDie,
+  },
 };
 
 /** Source artwork for compact SVG summaries such as the branch playbook. */
-export function blockFaceImage(face: BlockOutcomeFace): string {
-  return BLOCK_FACE_IMAGES[face];
+export function blockFaceImage(face: BlockOutcomeFace, favor: BlockDiceFavor = 'attacker'): string {
+  return BLOCK_FACE_IMAGES[favor][face];
 }
 
 interface DieReelMotion {
@@ -87,7 +101,7 @@ function BlockDieIcon({ favor, style, dieIndex }: {
           key={face}
           className="block-die-icon__face"
           data-face={face}
-          src={BLOCK_FACE_IMAGES[face]}
+          src={BLOCK_FACE_IMAGES[favor][face]}
           alt=""
           draggable={false}
         />
@@ -126,7 +140,7 @@ export function BlockDiceGraphic({ count, favor, className, size }: BlockDiceGra
 function BlockFaceIcon({ face, favor, style }: { face: BlockOutcomeFace; favor: BlockDiceFavor; style?: CSSProperties }) {
   return (
     <span className="block-die-icon" style={style} data-favor={favor}>
-      <img className="block-die-icon__art" src={BLOCK_FACE_IMAGES[face]} alt="" draggable={false} />
+      <img className="block-die-icon__art" src={BLOCK_FACE_IMAGES[favor][face]} alt="" draggable={false} />
     </span>
   );
 }

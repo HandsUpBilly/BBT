@@ -146,7 +146,7 @@ export function BranchReviewGraphic({ tree, highlightedBranchId }: Props) {
                     <image
                       key={face}
                       className={`branch-review__die branch-review__die--${outcome?.favor ?? 'attacker'}`}
-                      href={blockFaceImage(face)}
+                      href={blockFaceImage(face, outcome?.favor ?? 'attacker')}
                       x={diceX + index * (DIE_SIZE + 3)}
                       y={point.y - 31}
                       width={DIE_SIZE}
