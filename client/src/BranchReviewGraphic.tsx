@@ -1,6 +1,6 @@
 import type { BranchTreeBlockView, BranchTreeStateView } from './branchRun';
 import { branchTreeContains, branchTreeStripGrid } from './branchTreeStrips';
-import { blockFaceImage } from './BlockDiceGraphic';
+import { blockFaceImage } from './blockDiceAssets';
 import './BranchReviewGraphic.css';
 
 const COLUMN_WIDTH = 126;

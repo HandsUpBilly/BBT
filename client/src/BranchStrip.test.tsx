@@ -92,10 +92,18 @@ describe('BranchStrip game tree', () => {
   it('nests a later block beneath the state where it occurred', () => {
     const { container, onSelect } = renderTree();
 
-    const blocks = container.querySelectorAll('.branch-tree-nav__block');
-    expect(blocks).toHaveLength(2);
-    expect(blocks[0].querySelector('.branch-tree-nav__block-node')?.textContent).toContain('Block 1');
-    expect(blocks[1].querySelector('.branch-tree-nav__block-node')?.textContent).toContain('Block 2');
+    const rows = container.querySelectorAll('.branch-strip-row');
+    expect(rows).toHaveLength(2);
+    expect(rows[0].querySelector('.branch-strip-row__label')?.textContent).toBe('Block 1');
+    expect(rows[0].querySelector('.branch-strip-row__block-group')?.textContent).toContain('Aldric ⚔ Grukk');
+    expect(rows[1].querySelector('.branch-strip-row__label')?.textContent).toBe('Block 2');
+    expect(rows[1].querySelector('.branch-strip-row__block-group')?.textContent).toContain('Sera ⚔ Dorg');
+
+    // The parent spans both ending-universe columns, while each result of the
+    // second block occupies one column directly underneath it.
+    expect(container.querySelector('[data-branch-id="L1"]')?.getAttribute('data-column-span')).toBe('2');
+    expect(container.querySelector('[data-branch-id="L2"]')?.getAttribute('data-column-start')).toBe('0');
+    expect(container.querySelector('[data-branch-id="L3"]')?.getAttribute('data-column-start')).toBe('1');
 
     // The first state is structural history. Only the two current leaves can
     // select a board, so the tree cannot be used to rewind authored play.

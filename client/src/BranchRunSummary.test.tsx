@@ -156,7 +156,9 @@ describe('BranchRunSummary branch list', () => {
     expect(container.querySelectorAll('.action-log-detail__diagrams--paired > figure')).toHaveLength(2);
     expect(container.querySelectorAll('.branch-review__node--selected')).toHaveLength(1);
     expect(container.querySelectorAll('.branch-review__node--highlighted')).toHaveLength(1);
-    expect(container.querySelectorAll('.branch-review__die')).toHaveLength(1);
+    // Every node carries its dice result; the selected Push node has one die.
+    expect(container.querySelectorAll('.branch-review__die')).toHaveLength(4);
+    expect(container.querySelectorAll('.branch-review__node--selected .branch-review__die')).toHaveLength(1);
     expect(container.querySelectorAll('.branch-review__edge--highlighted')).toHaveLength(1);
   });
 

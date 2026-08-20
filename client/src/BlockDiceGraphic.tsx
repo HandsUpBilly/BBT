@@ -3,17 +3,11 @@ import type { CSSProperties } from 'react';
 import type { BlockOutcomeFace } from './types';
 import { BLOCK_FACE_LABELS } from './blockFacePresentation';
 import { BLOCK_OUTCOME_FACES } from './bfs';
-import whiteAttackerDownDie from './assets/block-dice/white/attacker-down.png';
-import whiteBothDownDie from './assets/block-dice/white/both-down.png';
-import whitePushDie from './assets/block-dice/white/push.png';
-import whiteDefenderStumblesDie from './assets/block-dice/white/defender-stumbles.png';
-import whiteDefenderDownDie from './assets/block-dice/white/defender-down.png';
-import redAttackerDownDie from './assets/block-dice/red/attacker-down.png';
-import redBothDownDie from './assets/block-dice/red/both-down.png';
-import redPushDie from './assets/block-dice/red/push.png';
-import redDefenderStumblesDie from './assets/block-dice/red/defender-stumbles.png';
-import redDefenderDownDie from './assets/block-dice/red/defender-down.png';
+import { BLOCK_FACE_IMAGES } from './blockDiceAssets';
+import type { BlockDiceFavor } from './blockDiceAssets';
 import './BlockDiceGraphic.css';
+
+export type { BlockDiceFavor } from './blockDiceAssets';
 
 // Block dice don't carry a single target number the way a dodge or pick-up
 // roll does (a block has five possible face types, not a threshold), so while
@@ -31,30 +25,6 @@ import './BlockDiceGraphic.css';
  * picks (downhill, or the even one-die case), so the declare-time dialog and
  * resolved pitch marker expose the risk without a separate outline box.
  */
-export type BlockDiceFavor = 'attacker' | 'defender';
-
-const BLOCK_FACE_IMAGES: Record<BlockDiceFavor, Record<BlockOutcomeFace, string>> = {
-  attacker: {
-    'attacker-down': whiteAttackerDownDie,
-    'both-down': whiteBothDownDie,
-    push: whitePushDie,
-    'defender-stumbles': whiteDefenderStumblesDie,
-    'defender-down': whiteDefenderDownDie,
-  },
-  defender: {
-    'attacker-down': redAttackerDownDie,
-    'both-down': redBothDownDie,
-    push: redPushDie,
-    'defender-stumbles': redDefenderStumblesDie,
-    'defender-down': redDefenderDownDie,
-  },
-};
-
-/** Source artwork for compact SVG summaries such as the branch playbook. */
-export function blockFaceImage(face: BlockOutcomeFace, favor: BlockDiceFavor = 'attacker'): string {
-  return BLOCK_FACE_IMAGES[favor][face];
-}
-
 interface DieReelMotion {
   style: CSSProperties;
   faces: BlockOutcomeFace[];
