@@ -418,7 +418,11 @@ pickup stacking on one square; keep the two together and keep
   It starts collapsed so the board keeps the height, opens when the player taps
   a player who has no action menu, and opens after an action is chosen. The
   action menu itself carries the same five-stat summary, so stats never depend
-  on finding a separate gesture.
+  on finding a separate gesture. In the sheet the card is a two-column grid
+  (portrait beside name), but the stats, skills, and crest span both columns —
+  the five stat badges run in a single horizontal row across the sheet's full
+  width. Left in the portrait's narrow column they auto-stacked three rows deep
+  and forced the short sheet to scroll while the wide column sat empty (#198).
 - `PieceMenu` is a floating box anchored to the clicked player's square on
   every pointer type. `placeMenuBesideAnchor()` prefers right, left, below,
   then above while keeping the whole box in the viewport; coarse pointers use

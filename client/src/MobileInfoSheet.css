@@ -91,6 +91,22 @@
   grid-column: 1 / -1;
 }
 
+/* Only the portrait and the name/role pair belong in the two-column split.
+   Everything after them auto-placed back into the 92px portrait column, so the
+   five stat badges stacked three rows deep in a quarter of the sheet's width
+   and pushed the card into a scroll, with the wide column beside them empty
+   (#198). Below the portrait the whole sheet width is available. */
+.info-sheet__panel--player .panel__stats,
+.info-sheet__panel--player .panel__skills,
+.info-sheet__panel--player .panel__crest {
+  grid-column: 1 / -1;
+}
+
+/* The sheet is wide and short, so the stats read across it, not down it. */
+.info-sheet__panel--player .panel__stats {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
 @media (prefers-reduced-motion: reduce) {
   .info-sheet__tab { transition: none; }
 }
