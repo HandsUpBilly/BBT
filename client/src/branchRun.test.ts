@@ -7,6 +7,7 @@ import { validateScoreSubmission } from '../../shared/scoreValidation.js';
 import {
   branchPath,
   branchStrip,
+  branchTreeView,
   cancelActivation,
   chooseBlockTarget,
   chooseHandoffTarget,
@@ -370,6 +371,22 @@ describe('a second block', () => {
 
     // Three boards from the first block, each forking into three again.
     expect(branchStrip(run)).toHaveLength(9);
+  });
+
+  it('nests each later block beneath the state where it occurred', () => {
+    const tree = branchTreeView(twoBlocks());
+
+    expect(tree?.blockNumber).toBe(1);
+    expect(tree?.blockLabel).toBe('Aldric Swiftfoot ⚔ Grukk Ironjaw');
+    expect(tree?.states).toHaveLength(3);
+    expect(tree?.states.every(state => state.status === 'continued' && !state.isSelectable)).toBe(true);
+
+    const laterBlocks = tree?.states.map(state => state.nextBlock);
+    expect(laterBlocks?.every(block => block?.blockNumber === 2)).toBe(true);
+    expect(laterBlocks?.every(block => block?.blockLabel === 'Cedric Linebreaker ⚔ Muzgash Skullkrak')).toBe(true);
+    const leaves = laterBlocks?.flatMap(block => block?.states ?? []) ?? [];
+    expect(leaves).toHaveLength(9);
+    expect(leaves.every(state => state.status !== 'continued' && state.isSelectable)).toBe(true);
   });
 
   it('keeps all nine branches in one lockstep group', () => {

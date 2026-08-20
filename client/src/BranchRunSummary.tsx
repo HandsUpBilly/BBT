@@ -1,5 +1,5 @@
 import { useId, useState } from 'react';
-import type { BranchRun, BranchStripEntry } from './branchRun';
+import { branchTreeView, type BranchRun, type BranchStripEntry } from './branchRun';
 import type { BranchSummary } from './blockBranchTree';
 import type { Scenario } from './types';
 import { useModalFocus } from './useModalFocus';
@@ -69,6 +69,7 @@ export function BranchRunSummary({
   const scored = branches.filter(b => b.status === 'scored');
   const givenUp = branches.filter(b => b.status === 'conceded');
   const detail = detailId ? branches.find(b => b.id === detailId) ?? null : null;
+  const tree = branchTreeView(run);
 
   return (
     <div className="modal-backdrop">
@@ -129,7 +130,7 @@ export function BranchRunSummary({
               )}
             </dl>
 
-            <BranchTreeGraphic run={run} summary={summary} branches={branches} />
+            {tree && <BranchTreeGraphic tree={tree} />}
 
             <ul className="branch-summary__branches" aria-label="Parallel Universes">
               {branches.map(branch => (

@@ -1534,6 +1534,7 @@ export default function App() {
 
       <BranchStrip
         branches={branchedBoards.strip}
+        tree={branchedBoards.tree}
         deadWeight={branchedBoards.summary.deadWeight}
         score={branchedBoards.summary.score}
         onSelect={branchedBoards.handleSelectBranch}

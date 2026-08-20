@@ -111,12 +111,16 @@ dice tie-break.
   preview, not a face-selection step: live board states name the die faces that
   produce them, turnover names every face that ends the drive, and **Progress**
   commits the split.
-- Each live-universe card presents its outcome history as one labelled row per
-  block, rather than compressing a multi-block permutation into one horizontal
-  dice chain. The completed-run analysis also renders the actual `BranchRun`
-  tree as a scrollable graphic: block nodes fork into resulting universes, and
-  terminal nodes show each universe's status and derived weight. The existing
-  universe list remains the drill-down into each branch's action log.
+- The live universe view is a parent-child tree: each block owns its resulting
+  state cards, and a later block grows beneath the specific state where it
+  occurred. Historical states are structural and cannot rewind play; only
+  current leaves are selectable or concedeable. A reversible filter can hide
+  leaves marked **Needs a plan** (and empty ancestry) without conceding them or
+  changing the score; the unresolved count remains visible. Those are exactly
+  the branches that could not share an authored action because it was illegal
+  there or would add rolls beyond the viewed branch. The completed-run analysis
+  renders the same tree as a scrollable graphic, while the universe list remains
+  the drill-down into each branch's action log.
 - Block dice use 1–3 dice from the effective-Strength comparison. The player
   chooses acceptable faces; probability is combined according to whether the
   attacker or defender picks the result.

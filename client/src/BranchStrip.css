@@ -11,11 +11,15 @@
   flex-shrink: 0;
 }
 
-.branch-strip__header {
+.branch-strip__header,
+.branch-tree-nav__toolbar {
   display: flex;
   flex-wrap: wrap;
   align-items: baseline;
   gap: 12px;
+}
+
+.branch-strip__header {
   font-size: 0.8rem;
   color: var(--color-text-muted);
 }
@@ -25,153 +29,159 @@
   color: var(--color-text-strong);
 }
 
-.branch-strip__dead {
-  color: var(--color-text-disabled);
-}
+.branch-strip__dead { color: var(--color-text-disabled); }
 
 .branch-strip__alert {
   color: var(--color-warning);
   font-weight: 700;
 }
 
-.branch-strip__list {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin: 0;
-  padding: 0;
-  list-style: none;
+.branch-tree-nav__toolbar {
+  justify-content: space-between;
+  font-size: 0.72rem;
 }
 
-.branch-strip__list > li {
+.branch-tree-nav__toolbar > strong {
+  color: var(--color-text-strong);
+  font-family: var(--font-display);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.branch-tree-nav__filter {
+  padding: 4px 8px;
+  color: var(--color-text-muted);
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.branch-tree-nav__filter:hover,
+.branch-tree-nav__filter[aria-pressed='true'] {
+  color: var(--color-text-strong);
+  border-color: var(--color-border-selected);
+  background: var(--color-surface-hover);
+}
+
+.branch-tree-nav__scroll {
+  max-height: min(38vh, 360px);
+  overflow: auto;
+  padding: 8px;
+  background: var(--color-surface-sunken);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: 7px;
+  scrollbar-width: thin;
+}
+
+.branch-tree-nav__block {
+  width: max-content;
+  min-width: 100%;
+}
+
+.branch-tree-nav__block-node {
+  display: grid;
+  grid-template-columns: auto minmax(12ch, 1fr) auto;
+  gap: 8px;
+  align-items: baseline;
+  width: min(420px, calc(100vw - 64px));
+  box-sizing: border-box;
+  padding: 6px 9px;
+  color: var(--color-text-muted);
+  background: var(--color-surface-3);
+  border: 1px solid var(--color-accent-border);
+  border-radius: 6px;
+  font-size: 0.7rem;
+}
+
+.branch-tree-nav__block-node strong {
+  color: var(--color-text-strong);
+  font-family: var(--font-display);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.branch-tree-nav__block-node span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.branch-tree-nav__block-node small { color: var(--color-text-disabled); }
+
+.branch-tree-nav__states {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  margin: 0 0 0 18px;
+  padding: 8px 0 0 20px;
+  list-style: none;
+  border-left: 1px solid var(--color-border-selected);
+}
+
+.branch-tree-nav__state {
+  position: relative;
+}
+
+.branch-tree-nav__state::before {
+  content: '';
+  position: absolute;
+  top: 18px;
+  left: -20px;
+  width: 20px;
+  border-top: 1px solid var(--color-border-selected);
+}
+
+.branch-tree-nav__state-row {
   display: flex;
   align-items: stretch;
+  width: max-content;
+}
+
+.branch-tree-nav__state > .branch-tree-nav__block {
+  margin-top: 7px;
+  margin-left: 20px;
 }
 
 .branch-chip {
   display: grid;
-  grid-template-columns: auto auto;
+  grid-template-columns: auto minmax(8ch, 1fr) auto;
   grid-template-areas:
-    'dice weight'
-    'status status';
+    'dice outcome weight'
+    'status status status';
   gap: 0 8px;
+  min-width: 250px;
   padding: 6px 10px;
   text-align: left;
   background: var(--color-surface-2);
   color: var(--color-text);
   border: 1px solid var(--color-border);
   border-radius: 6px 0 0 6px;
-  cursor: pointer;
 }
 
-.branch-chip:hover {
-  background: var(--color-surface-hover);
-}
+button.branch-chip { cursor: pointer; }
+button.branch-chip:hover { background: var(--color-surface-hover); }
 
 .branch-chip__dice {
   grid-area: dice;
   min-width: 34px;
   min-height: 28px;
   display: flex;
-  flex-direction: column;
-  align-items: stretch;
-  gap: 4px;
-}
-
-.branch-chip__block {
-  display: grid;
-  grid-template-columns: auto auto minmax(7ch, 1fr);
-  align-items: center;
-  gap: 6px;
-}
-
-.branch-chip__block + .branch-chip__block {
-  padding-top: 4px;
-  border-top: 1px solid var(--color-border-subtle);
-}
-
-.branch-chip__block-label {
-  color: var(--color-text-disabled);
-  font-size: 0.64rem;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-}
-
-.branch-chip__dice-group {
-  display: inline-flex;
   align-items: center;
   gap: 3px;
 }
 
-.branch-chip__die.block-dice-graphic {
-  flex: 0 0 28px;
-  gap: 0;
-}
-
-.branch-chip__die .block-die-icon {
-  width: 100% !important;
-}
+.branch-chip__die.block-dice-graphic { flex: 0 0 28px; gap: 0; }
+.branch-chip__die .block-die-icon { width: 100% !important; }
 
 .branch-chip__outcome {
+  grid-area: outcome;
   overflow: hidden;
   font-size: 0.7rem;
   color: var(--color-text-muted);
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-
-@media (max-width: 1024px) {
-  .branch-strip {
-    width: 100%;
-    gap: 5px;
-    padding: 6px 8px;
-    overflow: hidden;
-  }
-
-  .branch-strip__header {
-    flex-wrap: nowrap;
-    gap: 8px;
-    min-width: 0;
-    white-space: nowrap;
-    overflow: hidden;
-  }
-
-  .branch-strip__score,
-  .branch-strip__alert,
-  .branch-strip__dead {
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-
-  .branch-strip__list {
-    flex-wrap: nowrap;
-    gap: 6px;
-    width: 100%;
-    overflow-x: auto;
-    overscroll-behavior-x: contain;
-    scrollbar-width: thin;
-  }
-
-  .branch-strip__list > li {
-    /* Cards now contain only outcome dice, a chance, and status. Keep them
-       content-sized so parallel universes can be compared at a glance. */
-    flex: 0 0 auto;
-    min-width: 0;
-  }
-
-  .branch-chip {
-    min-width: 0;
-    grid-template-columns: minmax(0, 1fr) auto;
-  }
-
-  .branch-chip__concede {
-    min-width: 44px;
-  }
-
-  .branch-strip__hint {
-    display: none;
-  }
 }
 
 .branch-chip__weight {
@@ -189,34 +199,20 @@
   color: var(--color-text-muted);
 }
 
-/* The branch whose board the pitch is currently drawing. */
 .branch-chip--viewed {
   border-color: var(--color-border-selected);
   box-shadow: inset 3px 0 var(--color-accent);
 }
 
-.branch-chip--scored {
-  border-color: var(--color-success);
-}
-
-.branch-chip--scored .branch-chip__status {
-  color: var(--color-success);
-}
-
-.branch-chip--needs-attention {
-  border-color: var(--color-warning);
-}
-
-.branch-chip--needs-attention .branch-chip__status {
-  color: var(--color-warning);
-  font-weight: 700;
-}
-
-.branch-chip--conceded {
-  opacity: 0.55;
-}
+.branch-chip--scored { border-color: var(--color-success); }
+.branch-chip--scored .branch-chip__status { color: var(--color-success); }
+.branch-chip--needs-attention { border-color: var(--color-warning); }
+.branch-chip--needs-attention .branch-chip__status { color: var(--color-warning); font-weight: 700; }
+.branch-chip--conceded { opacity: 0.55; }
+.branch-chip--historical { opacity: 0.72; }
 
 .branch-chip__concede {
+  min-width: 36px;
   padding: 0 8px;
   background: var(--color-surface-2);
   color: var(--color-text-muted);
@@ -226,18 +222,24 @@
   cursor: pointer;
 }
 
-.branch-chip__concede:hover {
-  color: var(--color-danger);
-  background: var(--color-surface-hover);
-}
+.branch-chip__concede:hover { color: var(--color-danger); background: var(--color-surface-hover); }
+.branch-tree-nav__state-row > .branch-chip:only-child { border-radius: 6px; }
 
-/* A chip with no concede button still needs its right edge rounded. */
-.branch-strip__list > li > .branch-chip:only-child {
-  border-radius: 6px;
-}
-
+.branch-tree-nav__empty,
 .branch-strip__hint {
   margin: 0;
   font-size: 0.75rem;
   color: var(--color-text-muted);
+}
+
+@media (max-width: 1024px) {
+  .branch-strip { width: 100%; gap: 5px; padding: 6px 8px; overflow: hidden; }
+  .branch-strip__header { flex-wrap: nowrap; gap: 8px; min-width: 0; white-space: nowrap; overflow: hidden; }
+  .branch-strip__score,
+  .branch-strip__alert,
+  .branch-strip__dead { overflow: hidden; text-overflow: ellipsis; }
+  .branch-tree-nav__scroll { max-height: min(30vh, 280px); }
+  .branch-chip { min-width: 220px; }
+  .branch-chip__concede { min-width: 44px; }
+  .branch-strip__hint { display: none; }
 }
