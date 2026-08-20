@@ -25,18 +25,6 @@
   user-select: none;
 }
 
-/* Colour the die itself instead of wrapping it in a white/red picker box.
-   Downhill (and the neutral one-die case) is a white die with dark artwork;
-   uphill directly tints the photographed die red while retaining its worn
-   face detail. */
-.block-die-icon[data-favor="attacker"] :is(.block-die-icon__art, .block-die-icon__face) {
-  filter: grayscale(1) invert(0.94) contrast(1.2);
-}
-
-.block-die-icon[data-favor="defender"] :is(.block-die-icon__art, .block-die-icon__face) {
-  filter: grayscale(1) sepia(1) saturate(5) hue-rotate(325deg) brightness(0.72) contrast(1.25);
-}
-
 .block-die-icon__face {
   position: absolute;
   inset: 0;
