@@ -56,8 +56,8 @@ function shuffledFaces(): BlockOutcomeFace[] {
 
 function createRollMotion(dieIndex: number): DieRollMotion {
   const direction = Math.random() < 0.5 ? -1 : 1;
-  const duration = randomBetween(2.45, 3.35);
-  const impactSpin = direction * randomBetween(320, 680);
+  const duration = randomBetween(4.8, 6.2);
+  const impactSpin = direction * randomBetween(240, 420);
   const customStyle = {
     '--die-roll-duration': `${duration.toFixed(2)}s`,
     '--die-roll-delay': `${(-randomBetween(0, duration) - dieIndex * 0.11).toFixed(2)}s`,
@@ -66,7 +66,7 @@ function createRollMotion(dieIndex: number): DieRollMotion {
     '--die-x-bounce': `${randomBetween(-7, 7).toFixed(1)}px`,
     '--die-spin-start': `${randomBetween(-35, 35).toFixed(1)}deg`,
     '--die-spin-impact': `${impactSpin.toFixed(1)}deg`,
-    '--die-spin-bounce': `${(impactSpin + direction * randomBetween(35, 85)).toFixed(1)}deg`,
+    '--die-spin-bounce': `${(impactSpin + direction * randomBetween(25, 55)).toFixed(1)}deg`,
     '--die-spin-end': `${(direction * randomBetween(-12, 12)).toFixed(1)}deg`,
   } as CSSProperties;
 

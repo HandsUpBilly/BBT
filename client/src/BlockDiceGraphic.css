@@ -8,20 +8,11 @@
 
 .block-die-icon {
   position: relative;
-  aspect-ratio: 1;
+  aspect-ratio: 1 / 1;
   flex-shrink: 0;
   display: block;
-  overflow: hidden;
-  background: #080807;
-  border-radius: 18%;
-}
-
-.block-die-icon[data-favor="attacker"] {
-  background: #e5e4de;
-}
-
-.block-die-icon[data-favor="defender"] {
-  background: #a52d27;
+  overflow: visible;
+  background: transparent;
 }
 
 .block-die-icon__art,
@@ -29,28 +20,32 @@
   display: block;
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  aspect-ratio: 1 / 1;
+  object-fit: contain;
+  /* The source photographs are square and include a dark studio backdrop.
+     Crop to the physical die's rounded silhouette so the animation is the
+     die itself, not a die travelling inside a second square tile. */
+  clip-path: inset(5.5% round 19%);
   user-select: none;
 }
 
 /* Colour the die itself instead of wrapping it in a white/red picker box.
    Downhill (and the neutral one-die case) is a white die with dark artwork;
-   uphill uses screen blending to turn the dark iron body red while retaining
-   the worn face detail. */
+   uphill directly tints the photographed die red while retaining its worn
+   face detail. */
 .block-die-icon[data-favor="attacker"] :is(.block-die-icon__art, .block-die-icon__face) {
   filter: grayscale(1) invert(0.94) contrast(1.2);
 }
 
 .block-die-icon[data-favor="defender"] :is(.block-die-icon__art, .block-die-icon__face) {
-  filter: grayscale(1) contrast(1.2);
-  mix-blend-mode: screen;
+  filter: grayscale(1) sepia(1) saturate(5) hue-rotate(325deg) brightness(0.72) contrast(1.25);
 }
 
 .block-die-icon--animated {
   transform-box: fill-box;
   transform-origin: center;
   animation-name: block-die-roll-down;
-  animation-duration: var(--die-roll-duration, 2.9s);
+  animation-duration: var(--die-roll-duration, 5.4s);
   animation-delay: var(--die-roll-delay, 0s);
   animation-timing-function: cubic-bezier(0.22, 0.72, 0.28, 1);
   animation-iteration-count: infinite;
@@ -60,7 +55,7 @@
   position: absolute;
   inset: 0;
   opacity: 0;
-  animation-duration: var(--die-roll-duration, 2.9s);
+  animation-duration: var(--die-roll-duration, 5.4s);
   animation-delay: var(--die-roll-delay, 0s);
   animation-timing-function: steps(1, end);
   animation-iteration-count: infinite;
@@ -83,10 +78,10 @@
   6% { opacity: 1; }
   46% {
     opacity: 1;
-    transform: translate(var(--die-x-impact, 8px), 28%) rotate(var(--die-spin-impact, 480deg)) scale(1.07, 0.92);
+    transform: translate(var(--die-x-impact, 8px), 28%) rotate(var(--die-spin-impact, 340deg)) scale(1.04);
   }
   59% {
-    transform: translate(var(--die-x-bounce, -4px), -4%) rotate(var(--die-spin-bounce, 535deg)) scale(0.97, 1.04);
+    transform: translate(var(--die-x-bounce, -4px), -4%) rotate(var(--die-spin-bounce, 380deg)) scale(0.98);
   }
   72%, 100% {
     opacity: 1;
