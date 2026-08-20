@@ -3,12 +3,11 @@ import type { CSSProperties } from 'react';
 import type { BlockOutcomeFace } from './types';
 import { BLOCK_FACE_LABELS } from './blockFacePresentation';
 import { BLOCK_OUTCOME_FACES } from './bfs';
-import attackerDownDie from './assets/block-dice/attacker-down.webp';
-import bothDownDie from './assets/block-dice/both-down.webp';
-import pushDie from './assets/block-dice/push.webp';
-import defenderStumblesDie from './assets/block-dice/defender-stumbles.webp';
-import defenderDownDie from './assets/block-dice/defender-down.webp';
+import { BLOCK_FACE_IMAGES } from './blockDiceAssets';
+import type { BlockDiceFavor } from './blockDiceAssets';
 import './BlockDiceGraphic.css';
+
+export type { BlockDiceFavor } from './blockDiceAssets';
 
 // Block dice don't carry a single target number the way a dodge or pick-up
 // roll does (a block has five possible face types, not a threshold), so while
@@ -26,17 +25,7 @@ import './BlockDiceGraphic.css';
  * picks (downhill, or the even one-die case), so the declare-time dialog and
  * resolved pitch marker expose the risk without a separate outline box.
  */
-export type BlockDiceFavor = 'attacker' | 'defender';
-
-const BLOCK_FACE_IMAGES: Record<BlockOutcomeFace, string> = {
-  'attacker-down': attackerDownDie,
-  'both-down': bothDownDie,
-  push: pushDie,
-  'defender-stumbles': defenderStumblesDie,
-  'defender-down': defenderDownDie,
-};
-
-interface DieRollMotion {
+interface DieReelMotion {
   style: CSSProperties;
   faces: BlockOutcomeFace[];
 }
@@ -54,20 +43,11 @@ function shuffledFaces(): BlockOutcomeFace[] {
   return faces;
 }
 
-function createRollMotion(dieIndex: number): DieRollMotion {
-  const direction = Math.random() < 0.5 ? -1 : 1;
-  const duration = randomBetween(2.45, 3.35);
-  const impactSpin = direction * randomBetween(320, 680);
+function createReelMotion(dieIndex: number): DieReelMotion {
+  const duration = randomBetween(6.4, 7.8);
   const customStyle = {
-    '--die-roll-duration': `${duration.toFixed(2)}s`,
-    '--die-roll-delay': `${(-randomBetween(0, duration) - dieIndex * 0.11).toFixed(2)}s`,
-    '--die-x-start': `${randomBetween(-22, 22).toFixed(1)}px`,
-    '--die-x-impact': `${randomBetween(-12, 12).toFixed(1)}px`,
-    '--die-x-bounce': `${randomBetween(-7, 7).toFixed(1)}px`,
-    '--die-spin-start': `${randomBetween(-35, 35).toFixed(1)}deg`,
-    '--die-spin-impact': `${impactSpin.toFixed(1)}deg`,
-    '--die-spin-bounce': `${(impactSpin + direction * randomBetween(35, 85)).toFixed(1)}deg`,
-    '--die-spin-end': `${(direction * randomBetween(-12, 12)).toFixed(1)}deg`,
+    '--die-reel-duration': `${duration.toFixed(2)}s`,
+    '--die-reel-delay': `${(-randomBetween(0, duration) - dieIndex * 0.28).toFixed(2)}s`,
   } as CSSProperties;
 
   return { style: customStyle, faces: shuffledFaces() };
@@ -78,7 +58,7 @@ function BlockDieIcon({ favor, style, dieIndex }: {
   style?: CSSProperties;
   dieIndex: number;
 }) {
-  const [motion] = useState(() => createRollMotion(dieIndex));
+  const [motion] = useState(() => createReelMotion(dieIndex));
 
   return (
     <span
@@ -91,7 +71,7 @@ function BlockDieIcon({ favor, style, dieIndex }: {
           key={face}
           className="block-die-icon__face"
           data-face={face}
-          src={BLOCK_FACE_IMAGES[face]}
+          src={BLOCK_FACE_IMAGES[favor][face]}
           alt=""
           draggable={false}
         />
@@ -130,7 +110,7 @@ export function BlockDiceGraphic({ count, favor, className, size }: BlockDiceGra
 function BlockFaceIcon({ face, favor, style }: { face: BlockOutcomeFace; favor: BlockDiceFavor; style?: CSSProperties }) {
   return (
     <span className="block-die-icon" style={style} data-favor={favor}>
-      <img className="block-die-icon__art" src={BLOCK_FACE_IMAGES[face]} alt="" draggable={false} />
+      <img className="block-die-icon__art" src={BLOCK_FACE_IMAGES[favor][face]} alt="" draggable={false} />
     </span>
   );
 }

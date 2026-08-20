@@ -15,9 +15,8 @@ describe('BlockDiceGraphic', () => {
     expect(graphic?.getAttribute('title')).toContain('possible outcomes');
 
     graphic?.querySelectorAll<HTMLElement>('.block-die-icon').forEach(die => {
-      expect(die.style.getPropertyValue('--die-roll-duration')).toMatch(/^\d+\.\d{2}s$/);
-      expect(die.style.getPropertyValue('--die-x-start')).toMatch(/^-?\d+\.\dpx$/);
-      expect(die.style.getPropertyValue('--die-spin-impact')).toMatch(/^-?\d+\.\ddeg$/);
+      expect(die.style.getPropertyValue('--die-reel-duration')).toMatch(/^\d+\.\d{2}s$/);
+      expect(die.style.getPropertyValue('--die-reel-delay')).toMatch(/^-\d+\.\d{2}s$/);
     });
   });
 

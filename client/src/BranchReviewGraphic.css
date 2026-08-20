@@ -1,0 +1,115 @@
+.branch-review {
+  width: 100%;
+  min-width: 0;
+  height: 100%;
+  margin: 0;
+  padding: 10px 12px 8px;
+  box-sizing: border-box;
+  color: var(--color-text-muted);
+  background:
+    linear-gradient(rgba(255, 255, 255, 0.018), rgba(255, 255, 255, 0.006)),
+    #151917;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-card);
+  text-align: left;
+}
+
+.branch-review__heading {
+  margin-bottom: 7px;
+  color: var(--color-text);
+  font-family: var(--font-display);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.branch-review__scroll {
+  height: 230px;
+  overflow: auto;
+  scrollbar-width: thin;
+}
+
+.branch-review__svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  min-height: 100%;
+  background: #242a26;
+  border: 1px solid #a19f94;
+  border-radius: 3px;
+}
+
+.branch-review__routes path {
+  fill: none;
+  stroke: #f1ede2;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-dasharray: 5 5;
+  opacity: 0.35;
+}
+
+.branch-review__routes .branch-review__edge--highlighted {
+  stroke: #d9a34e;
+  stroke-width: 3;
+  opacity: 1;
+}
+
+.branch-review__row-label {
+  fill: #8d918a;
+  font-family: var(--font-display);
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+.branch-review__node circle {
+  fill: #242a26;
+  stroke: #ddd8c9;
+  stroke-width: 2;
+}
+
+.branch-review__root circle {
+  fill: #d9a34e;
+  stroke: #f0c47d;
+  stroke-width: 2;
+}
+
+.branch-review__root text {
+  fill: #d9a34e;
+  font-family: var(--font-display);
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+}
+
+.branch-review__node text {
+  fill: #b8b5aa;
+  font-family: var(--font-body);
+  font-size: 9px;
+  text-anchor: middle;
+}
+
+.branch-review__node--highlighted circle {
+  stroke: #d9a34e;
+  stroke-width: 3;
+}
+
+.branch-review__node--highlighted text { fill: #f1ede2; }
+
+.branch-review__node--selected circle {
+  fill: #d9a34e;
+  filter: drop-shadow(0 0 3px rgba(217, 163, 78, 0.7));
+}
+
+.branch-review figcaption {
+  margin-top: 5px;
+  color: var(--color-text-disabled);
+  font-size: 0.68rem;
+  line-height: 1.3;
+}
+
+@media (max-width: 480px) {
+  .branch-review { padding-inline: 8px; }
+  .branch-review__scroll { height: 180px; }
+}

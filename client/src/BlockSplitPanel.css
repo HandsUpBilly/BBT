@@ -13,12 +13,9 @@
   width: 100%;
   margin: 2px 0 0;
   gap: 14px;
-  min-height: 104px;
-  /* The modal centres flex children, so an auto-width row shrinks to one
-     64px die. Its overflow clip then shears every rotated/drifting edge at
-     that narrow boundary. Keep the vertical throw contained across the full
-     modal width instead. */
-  overflow: hidden;
+  min-height: 72px;
+  /* The fruit-machine dice stay in one compact horizontal line. */
+  overflow: visible;
 }
 
 .block-split__possible {

@@ -8,20 +8,11 @@
 
 .block-die-icon {
   position: relative;
-  aspect-ratio: 1;
+  aspect-ratio: 1 / 1;
   flex-shrink: 0;
   display: block;
-  overflow: hidden;
-  background: #080807;
-  border-radius: 18%;
-}
-
-.block-die-icon[data-favor="attacker"] {
-  background: #e5e4de;
-}
-
-.block-die-icon[data-favor="defender"] {
-  background: #a52d27;
+  overflow: visible;
+  background: transparent;
 }
 
 .block-die-icon__art,
@@ -29,76 +20,49 @@
   display: block;
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  aspect-ratio: 1 / 1;
+  object-fit: contain;
   user-select: none;
-}
-
-/* Colour the die itself instead of wrapping it in a white/red picker box.
-   Downhill (and the neutral one-die case) is a white die with dark artwork;
-   uphill uses screen blending to turn the dark iron body red while retaining
-   the worn face detail. */
-.block-die-icon[data-favor="attacker"] :is(.block-die-icon__art, .block-die-icon__face) {
-  filter: grayscale(1) invert(0.94) contrast(1.2);
-}
-
-.block-die-icon[data-favor="defender"] :is(.block-die-icon__art, .block-die-icon__face) {
-  filter: grayscale(1) contrast(1.2);
-  mix-blend-mode: screen;
-}
-
-.block-die-icon--animated {
-  transform-box: fill-box;
-  transform-origin: center;
-  animation-name: block-die-roll-down;
-  animation-duration: var(--die-roll-duration, 2.9s);
-  animation-delay: var(--die-roll-delay, 0s);
-  animation-timing-function: cubic-bezier(0.22, 0.72, 0.28, 1);
-  animation-iteration-count: infinite;
 }
 
 .block-die-icon__face {
   position: absolute;
   inset: 0;
   opacity: 0;
-  animation-duration: var(--die-roll-duration, 2.9s);
-  animation-delay: var(--die-roll-delay, 0s);
+  animation-duration: var(--die-reel-duration, 7.1s);
+  animation-delay: var(--die-reel-delay, 0s);
   animation-timing-function: steps(1, end);
   animation-iteration-count: infinite;
 }
 
-/* Five shuffled face layers cycle during the throw. The fifth holds while the
-   die settles, so every loop ends on a different randomly chosen preview face
-   instead of ticking mechanically forever. */
+/* Five shuffled faces change in place like aligned fruit-machine windows. The
+   fifth result holds, keeping the deliberately slower preview readable. */
 .block-die-icon__face:nth-child(1) { animation-name: block-die-face-1; }
 .block-die-icon__face:nth-child(2) { animation-name: block-die-face-2; }
 .block-die-icon__face:nth-child(3) { animation-name: block-die-face-3; }
 .block-die-icon__face:nth-child(4) { animation-name: block-die-face-4; }
 .block-die-icon__face:nth-child(5) { animation-name: block-die-face-5; }
 
-@keyframes block-die-roll-down {
-  0% {
-    opacity: 0;
-    transform: translate(var(--die-x-start, -12px), -78%) rotate(var(--die-spin-start, -20deg)) scale(0.88);
-  }
-  6% { opacity: 1; }
-  46% {
-    opacity: 1;
-    transform: translate(var(--die-x-impact, 8px), 28%) rotate(var(--die-spin-impact, 480deg)) scale(1.07, 0.92);
-  }
-  59% {
-    transform: translate(var(--die-x-bounce, -4px), -4%) rotate(var(--die-spin-bounce, 535deg)) scale(0.97, 1.04);
-  }
-  72%, 100% {
-    opacity: 1;
-    transform: translate(0, 16%) rotate(var(--die-spin-end, 7deg)) scale(1);
-  }
+@keyframes block-die-face-1 {
+  0%, 11.999% { opacity: 1; }
+  12%, 100% { opacity: 0; }
 }
-
-@keyframes block-die-face-1 { 0%, 13.999% { opacity: 1; } 14%, 100% { opacity: 0; } }
-@keyframes block-die-face-2 { 0%, 13.999%, 28%, 100% { opacity: 0; } 14%, 27.999% { opacity: 1; } }
-@keyframes block-die-face-3 { 0%, 27.999%, 42%, 100% { opacity: 0; } 28%, 41.999% { opacity: 1; } }
-@keyframes block-die-face-4 { 0%, 41.999%, 56%, 100% { opacity: 0; } 42%, 55.999% { opacity: 1; } }
-@keyframes block-die-face-5 { 0%, 55.999% { opacity: 0; } 56%, 100% { opacity: 1; } }
+@keyframes block-die-face-2 {
+  0%, 11.999%, 24%, 100% { opacity: 0; }
+  12%, 23.999% { opacity: 1; }
+}
+@keyframes block-die-face-3 {
+  0%, 23.999%, 36%, 100% { opacity: 0; }
+  24%, 35.999% { opacity: 1; }
+}
+@keyframes block-die-face-4 {
+  0%, 35.999%, 48%, 100% { opacity: 0; }
+  36%, 47.999% { opacity: 1; }
+}
+@keyframes block-die-face-5 {
+  0%, 47.999% { opacity: 0; }
+  48%, 100% { opacity: 1; }
+}
 
 /* Shrink as more dice join the row, same shrink-to-fit spirit as the
    movement-roll dice (square__roll-die's max-height) — a lone die reads

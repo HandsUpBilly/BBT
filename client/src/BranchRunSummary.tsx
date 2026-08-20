@@ -4,6 +4,7 @@ import type { BranchSummary } from './blockBranchTree';
 import type { Scenario } from './types';
 import { useModalFocus } from './useModalFocus';
 import { ActionLogDetail } from './ActionLogDetail';
+import { BranchReviewGraphic } from './BranchReviewGraphic';
 import { BranchTreeGraphic } from './BranchTreeGraphic';
 import './SubmitModal.css'; // shared modal-backdrop/modal styles
 import './BranchRunSummary.css';
@@ -91,7 +92,7 @@ export function BranchRunSummary({
               scenario={scenario}
               actionLog={run.lines[detail.id].state.actionLog}
               diagramAside={tree && (
-                <BranchTreeGraphic tree={tree} highlightedBranchId={detail.id} variant="review" />
+                <BranchReviewGraphic tree={tree} highlightedBranchId={detail.id} />
               )}
             />
           </>
