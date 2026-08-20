@@ -42,24 +42,32 @@
 }
 
 .block-die-icon--animated {
-  /* Fruit-machine presentation: every die stays fixed in the row while its
-     face artwork moves inside the square. */
-  overflow: hidden;
+  /* Fruit-machine presentation: every die stays fixed in the row and faces
+     change in place. There is deliberately no reel viewport to clip or frame. */
+  overflow: visible;
 }
 
 .block-die-icon__face {
   position: absolute;
   inset: 0;
   opacity: 0;
-  transform: translateY(-105%);
   animation-duration: var(--die-reel-duration, 7.1s);
   animation-delay: var(--die-reel-delay, 0s);
-  animation-timing-function: linear;
+  animation-timing-function: steps(1, end);
   animation-iteration-count: infinite;
 }
 
-/* Five shuffled layers travel from top to bottom like a slot-machine reel.
-   The fifth result holds, keeping the deliberately slower preview readable. */
+/* Animated dice use the source art directly. Screen blending makes the black
+   studio backdrop disappear into the panel, avoiding the white/red rounded
+   tile created when the entire photograph was filtered and clipped. */
+.block-die-icon.block-die-icon--animated .block-die-icon__face {
+  clip-path: none;
+  filter: none;
+  mix-blend-mode: screen;
+}
+
+/* Five shuffled faces change in place like aligned fruit-machine windows. The
+   fifth result holds, keeping the deliberately slower preview readable. */
 .block-die-icon__face:nth-child(1) { animation-name: block-die-face-1; }
 .block-die-icon__face:nth-child(2) { animation-name: block-die-face-2; }
 .block-die-icon__face:nth-child(3) { animation-name: block-die-face-3; }
@@ -67,28 +75,24 @@
 .block-die-icon__face:nth-child(5) { animation-name: block-die-face-5; }
 
 @keyframes block-die-face-1 {
-  0%, 10% { opacity: 1; transform: translateY(0); }
-  12%, 100% { opacity: 0; transform: translateY(105%); }
+  0%, 11.999% { opacity: 1; }
+  12%, 100% { opacity: 0; }
 }
 @keyframes block-die-face-2 {
-  0%, 9.999% { opacity: 0; transform: translateY(-105%); }
-  12%, 22% { opacity: 1; transform: translateY(0); }
-  24%, 100% { opacity: 0; transform: translateY(105%); }
+  0%, 11.999%, 24%, 100% { opacity: 0; }
+  12%, 23.999% { opacity: 1; }
 }
 @keyframes block-die-face-3 {
-  0%, 21.999% { opacity: 0; transform: translateY(-105%); }
-  24%, 34% { opacity: 1; transform: translateY(0); }
-  36%, 100% { opacity: 0; transform: translateY(105%); }
+  0%, 23.999%, 36%, 100% { opacity: 0; }
+  24%, 35.999% { opacity: 1; }
 }
 @keyframes block-die-face-4 {
-  0%, 33.999% { opacity: 0; transform: translateY(-105%); }
-  36%, 46% { opacity: 1; transform: translateY(0); }
-  48%, 100% { opacity: 0; transform: translateY(105%); }
+  0%, 35.999%, 48%, 100% { opacity: 0; }
+  36%, 47.999% { opacity: 1; }
 }
 @keyframes block-die-face-5 {
-  0%, 45.999% { opacity: 0; transform: translateY(-105%); }
-  48%, 98% { opacity: 1; transform: translateY(0); }
-  100% { opacity: 0; transform: translateY(105%); }
+  0%, 47.999% { opacity: 0; }
+  48%, 100% { opacity: 1; }
 }
 
 /* Shrink as more dice join the row, same shrink-to-fit spirit as the
@@ -118,6 +122,5 @@
 
   .block-die-icon__face[data-face="push"] {
     opacity: 1;
-    transform: none;
   }
 }
