@@ -63,7 +63,9 @@ describe('BlockSplitPanel', () => {
     );
     expect(screen.getByText('ST 3 + 0 assists = 3')).toBeTruthy();
     expect(screen.getByText('ST 4 + 0 assists = 4')).toBeTruthy();
-    expect(screen.getByText('2 dice, uphill')).toBeTruthy();
+    const uphillLabel = screen.getByText('2 dice, uphill');
+    expect(uphillLabel).toBeTruthy();
+    expect(uphillLabel.classList.contains('block-split__dice-label--downhill')).toBe(false);
     expect(screen.queryByText(/pick/i)).toBeNull();
 
     rerender(
@@ -76,7 +78,8 @@ describe('BlockSplitPanel', () => {
       />,
     );
     expect(screen.getByText('ST 3 + 1 assist = 4')).toBeTruthy();
-    expect(screen.getByText('2 dice, downhill')).toBeTruthy();
+    const downhillLabel = screen.getByText('2 dice, downhill');
+    expect(downhillLabel.classList.contains('block-split__dice-label--downhill')).toBe(true);
   });
 
   it('lists every die face that leads to turnover', () => {

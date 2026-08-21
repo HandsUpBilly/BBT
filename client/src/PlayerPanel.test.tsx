@@ -45,6 +45,30 @@ describe('PlayerPanel', () => {
     expect(value('AV')).toBe('9');
   });
 
+  it('uses matching dedicated stat icons for both teams, including Passing', () => {
+    const { container: human } = render(<PlayerPanel piece={humanBlocker()} side="right" />);
+    expect(Array.from(human.querySelectorAll<HTMLImageElement>('.panel__stat-icon'), image => image.getAttribute('src')))
+      .toEqual([
+        '/stat-icons/human-ma.webp',
+        '/stat-icons/human-st.webp',
+        '/stat-icons/human-ag.webp',
+        '/stat-icons/human-pa.webp',
+        '/stat-icons/human-av.webp',
+      ]);
+
+    cleanup();
+
+    const { container: orc } = render(<PlayerPanel piece={orcBlocker()} side="right" />);
+    expect(Array.from(orc.querySelectorAll<HTMLImageElement>('.panel__stat-icon'), image => image.getAttribute('src')))
+      .toEqual([
+        '/stat-icons/orc-ma.webp',
+        '/stat-icons/orc-st.webp',
+        '/stat-icons/orc-ag.webp',
+        '/stat-icons/orc-pa.webp',
+        '/stat-icons/orc-av.webp',
+      ]);
+  });
+
   it('uses the dedicated Human Blitzer portrait', () => {
     const piece = humanBlocker({ role: 'blitzer' });
     const { container } = render(<PlayerPanel piece={piece} side="right" />);

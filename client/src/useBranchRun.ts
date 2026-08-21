@@ -34,6 +34,9 @@ import {
   isBlockPending,
   isRunComplete,
   runSummary,
+  resetBranchActivation,
+  resetBranchToPoint,
+  resetMovement,
   selectBranch,
   splitOnBlock,
   startRun,
@@ -85,6 +88,7 @@ export function useBranchRun(initialState: GameState) {
       setRun(prev => updateViewedState(prev, applySquareLeave));
     }, []),
     handleCancelSelection: useCallback(() => setRun(cancelActivation), []),
+    handleResetMovement: useCallback(() => setRun(resetMovement), []),
     handleHandoffAction: useCallback((pieceId: string) => {
       setRun(prev => declareHandoff(prev, pieceId));
     }, []),
@@ -124,6 +128,12 @@ export function useBranchRun(initialState: GameState) {
     }, []),
     handleConcedeBranch: useCallback((id: string) => {
       setRun(prev => concedeBranch(prev, id));
+    }, []),
+    handleResetBranch: useCallback((id: string) => {
+      setRun(prev => resetBranchActivation(prev, id));
+    }, []),
+    handleResetBranchToPoint: useCallback((id: string) => {
+      setRun(prev => resetBranchToPoint(prev, id));
     }, []),
   };
 }

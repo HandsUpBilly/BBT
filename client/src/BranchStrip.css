@@ -25,6 +25,13 @@
 .branch-strip__alert { color: var(--color-warning); font-weight: 700; }
 
 .branch-tree-nav__toolbar { justify-content: space-between; font-size: 0.72rem; }
+.branch-tree-nav__filters {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 6px;
+  margin-left: auto;
+}
 .branch-tree-nav__toolbar > strong,
 .branch-strip-row__label {
   color: var(--color-text-strong);
@@ -194,11 +201,15 @@ button.branch-chip:hover { background: var(--color-surface-hover); }
 .branch-chip--viewed { border-color: var(--color-border-selected); box-shadow: inset 3px 0 var(--color-accent); }
 .branch-chip--scored { border-color: var(--color-success); }
 .branch-chip--scored .branch-chip__status { color: var(--color-success); }
+.branch-chip--complete { border-color: var(--color-success); }
+.branch-chip--complete .branch-chip__status { color: var(--color-success); }
 .branch-chip--needs-attention { border-color: var(--color-warning); }
 .branch-chip--needs-attention .branch-chip__status { color: var(--color-warning); font-weight: 700; }
 .branch-chip--conceded { opacity: 0.55; }
 .branch-chip--historical { opacity: 0.72; }
 
+.branch-chip__reset,
+.branch-chip__rewind,
 .branch-chip__concede {
   min-width: 36px;
   padding: 0 8px;
@@ -210,6 +221,28 @@ button.branch-chip:hover { background: var(--color-surface-hover); }
   cursor: pointer;
 }
 
+.branch-chip__reset {
+  border-radius: 0;
+  color: var(--color-text-muted);
+  font-family: var(--font-display);
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.branch-chip__rewind {
+  min-width: 54px;
+  border-radius: 0;
+  color: var(--color-text-muted);
+  font-family: var(--font-display);
+  font-size: 0.61rem;
+  text-transform: uppercase;
+}
+
+.branch-chip__reset:last-child { border-radius: 0 6px 6px 0; }
+.branch-chip__rewind:last-child { border-radius: 0 6px 6px 0; }
+.branch-chip__reset:hover { color: var(--color-text-strong); background: var(--color-surface-hover); }
+.branch-chip__rewind:hover { color: var(--color-danger); background: var(--color-surface-hover); }
 .branch-chip__concede:hover { color: var(--color-danger); background: var(--color-surface-hover); }
 .branch-strip-state__actions > .branch-chip:only-child { border-radius: 6px; }
 
@@ -225,6 +258,8 @@ button.branch-chip:hover { background: var(--color-surface-hover); }
   .branch-strip__dead { overflow: hidden; text-overflow: ellipsis; }
   .branch-tree-nav__scroll { max-height: min(30vh, 280px); }
   .branch-strip-row { grid-template-columns: 62px minmax(0, 1fr); padding: 6px; }
+  .branch-chip__reset,
+  .branch-chip__rewind,
   .branch-chip__concede { min-width: 44px; }
   .branch-strip__hint { display: none; }
 }

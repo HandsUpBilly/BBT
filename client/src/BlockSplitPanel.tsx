@@ -92,7 +92,9 @@ export function BlockSplitPanel({
               {' = '}{defenderEffectiveStrength}
             </strong>
           </div>
-          <p className="block-split__dice-label">{diceLabel}</p>
+          <p className={`block-split__dice-label block-split__dice-label--${slope.replace(' ', '-')}`}>
+            {diceLabel}
+          </p>
         </div>
 
         <div className="block-split__rows">

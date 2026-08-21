@@ -168,7 +168,8 @@ export type AppMode =
   | 'admin'
   | 'series-puzzle'
   | 'series-leaderboard'
-  | 'settings';
+  | 'settings'
+  | 'help';
 
 /** Board state captured when an activation begins, so a cancel can rewind it. */
 export interface ActivationSnapshot {

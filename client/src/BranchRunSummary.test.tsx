@@ -103,12 +103,14 @@ function baseProps() {
 }
 
 describe('BranchRunSummary branch list', () => {
-  it('shows each branch labelled with the block that produced it, not a bare state name', () => {
+  it('shows compact hierarchical universe labels while retaining the full path', () => {
     render(<BranchRunSummary {...baseProps()} />);
 
-    // "Pushed" alone would not say which block; the row shows the full path.
-    expect(screen.getByText('Aldric Swiftfoot ⚔ Grukk Ironjaw: Pushed')).toBeTruthy();
-    expect(screen.getByText('Aldric Swiftfoot ⚔ Grukk Ironjaw: Down in place')).toBeTruthy();
+    expect(screen.getByText('Universe 2')).toBeTruthy();
+    expect(screen.getByText('Universe 3')).toBeTruthy();
+    expect(screen.getByRole('button', {
+      name: 'View Universe 3: Aldric Swiftfoot ⚔ Grukk Ironjaw: Pushed',
+    })).toBeTruthy();
   });
 
   it('shows the completed game as a branch graphic', () => {
@@ -118,6 +120,7 @@ describe('BranchRunSummary branch list', () => {
       name: 'Game branch tree with 1 block and 3 ending universes',
     })).toBeTruthy();
     expect(screen.getByText('Game branches')).toBeTruthy();
+    expect(screen.getByText('3 — Pushed')).toBeTruthy();
   });
 
   it('lays out a multi-block run as two block depths and all ending universes', () => {
@@ -134,18 +137,26 @@ describe('BranchRunSummary branch list', () => {
     expect(screen.getByRole('img', {
       name: 'Game branch tree with 2 blocks and 9 ending universes',
     })).toBeTruthy();
+    expect(screen.getByText('Universe 1.1')).toBeTruthy();
   });
 
   it('opens a branch\'s own action summary and play diagram on click', () => {
     const { container } = render(<BranchRunSummary {...baseProps()} />);
 
     // Exact match: "Pushed" alone would also match the "Pushed + Down" row.
-    fireEvent.click(screen.getByRole('button', { name: 'View Aldric Swiftfoot ⚔ Grukk Ironjaw: Pushed' }));
+    fireEvent.click(screen.getByRole('button', {
+      name: 'View Universe 3: Aldric Swiftfoot ⚔ Grukk Ironjaw: Pushed',
+    }));
 
-    // Detail view: heading is the branch's path, summary body is gone,
-    // and the play diagram + move table (ActionLogDetail) are in its place —
-    // this branch's own block, resolved as a Push Back, shows up as a row.
-    expect(screen.getByRole('heading', { name: 'Aldric Swiftfoot ⚔ Grukk Ironjaw: Pushed' })).toBeTruthy();
+    // Detail view: the visual heading stays short while its accessible name
+    // retains the full branch path. The summary body is gone, and the play
+    // diagram + move table (ActionLogDetail) are in its place — this branch's
+    // own block, resolved as a Push Back, shows up as a row.
+    const detailTitle = screen.getByRole('heading', {
+      name: 'Universe 3: Aldric Swiftfoot ⚔ Grukk Ironjaw: Pushed',
+    });
+    expect(detailTitle.textContent).toBe('Universe 3— Pushed');
+    expect(detailTitle.getAttribute('title')).toBe('Aldric Swiftfoot ⚔ Grukk Ironjaw: Pushed');
     expect(screen.queryByText(/run complete/)).toBeNull();
     expect(screen.getByText('Block → Push Back')).toBeTruthy();
     expect(screen.getByRole('button', { name: /Back to summary/ })).toBeTruthy();

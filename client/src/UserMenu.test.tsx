@@ -48,6 +48,17 @@ describe('UserMenu', () => {
     expect(screen.queryByRole('menu')).toBeNull();
   });
 
+  it('opens Help from the player menu', () => {
+    const onHelp = vi.fn();
+    render(<UserMenu name="Endzone Expert" onHelp={onHelp} />);
+    openMenu();
+
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Help & rules' }));
+
+    expect(onHelp).toHaveBeenCalledOnce();
+    expect(screen.queryByRole('menu')).toBeNull();
+  });
+
   it('offers About beside Settings and closes the menu when chosen', () => {
     const onAbout = vi.fn();
     render(<UserMenu name="Endzone Expert" onSettings={() => undefined} onAbout={onAbout} />);

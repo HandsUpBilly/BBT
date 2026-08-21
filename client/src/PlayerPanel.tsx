@@ -18,25 +18,28 @@ const CRESTS: Record<Team, string> = {
   orc:   '/orc-crest.png',
 };
 
-// Stat icons using the token images
-const STAT_ICONS: Record<Team, Record<string, string>> = {
+type StatKey = 'ma' | 'st' | 'ag' | 'pa' | 'av';
+
+const STAT_ICONS: Record<Team, Record<StatKey, string>> = {
   human: {
-    ma:  '/human-token-helmet.png',
-    st:  '/human-token-exclaim.png',
-    ag:  '/human-token-star.png',
-    av:  '/human-token-cross.png',
+    ma: '/stat-icons/human-ma.webp',
+    st: '/stat-icons/human-st.webp',
+    ag: '/stat-icons/human-ag.webp',
+    pa: '/stat-icons/human-pa.webp',
+    av: '/stat-icons/human-av.webp',
   },
   orc: {
-    ma:  '/orc-token-helmet.png',
-    st:  '/orc-token-exclaim.png',
-    ag:  '/orc-token-burst.png',
-    av:  '/orc-token-cross.png',
+    ma: '/stat-icons/orc-ma.webp',
+    st: '/stat-icons/orc-st.webp',
+    ag: '/stat-icons/orc-ag.webp',
+    pa: '/stat-icons/orc-pa.webp',
+    av: '/stat-icons/orc-av.webp',
   },
 };
 
 interface StatProps {
   team: Team;
-  stat: string;
+  stat: StatKey;
   label: string;
   value: number;
 }
@@ -45,9 +48,7 @@ function StatBadge({ team, stat, label, value }: StatProps) {
   const icon = STAT_ICONS[team][stat];
   return (
     <div className="panel__stat">
-      {icon
-        ? <img className="panel__stat-icon" src={icon} alt="" draggable={false} />
-        : <span className="panel__stat-symbol" aria-hidden="true">{label}</span>}
+      <img className="panel__stat-icon" src={icon} alt="" draggable={false} />
       <span className="panel__stat-value">{value}</span>
       <span className="panel__stat-label">{label}</span>
     </div>

@@ -60,6 +60,20 @@ If a declared pass/handoff has no valid target after carrier movement:
 
 Receiving a pass/handoff should not itself mark the receiver activated.
 
+Selecting a valid pass or hand-off receiver is provisional in `App.tsx`.
+`Pitch` anchors the same red/green decision control used by completed movement
+beside that receiver: red clears only the staged receiver and returns to target
+selection; green calls `handlePassTarget` / `handleHandoffTarget` and commits
+the action. Escape has the same two-stage behavior, dismissing a staged receiver
+before a later Escape cancels and rewinds the activation.
+
+Before any movement is plotted, tapping the selected player again is also a
+cancel, including after declaring Move + Pass or Move + Hand-off. It clears the
+selection through `handleCancelSelection`, restores the activation snapshot,
+and leaves the player unactivated and available to select again. Once movement
+has been plotted, tapping the player or route tip retains its separate meaning:
+open the final route confirmation.
+
 ## Cancel Must Rewind the Board, Not Just the Log
 
 Several sub-steps commit to `pieces`/`ballPosition` *before* the activation
@@ -74,6 +88,12 @@ exploit directly against the score. `resumeMovementAfterBlitz` re-baselines the
 snapshot after a block resolves, so cancelling the leftover movement can't undo
 a block that has already been paid for.
 
+The movement confirmation's **Plot Again** action is deliberately different
+from cancellation. `applyResetMovement` restores the same snapshot and action
+log boundary, but keeps the player and declared action selected so a replacement
+route can be plotted immediately. Both operations replay across the current
+lockstep group in `branchRun.ts`.
+
 Regression tests: `client/src/activationRollback.test.ts`.
 
 ## Block / Blitz Invariants
@@ -87,8 +107,17 @@ before the run completes. Legal actions replay across lockstep siblings only
 while they add no more rolls than the action authored on the viewed board. If a
 sibling would introduce another dodge, Rush, pickup, or other roll, none of
 that action is recorded there: it leaves lockstep as **Needs a plan** at the
-pre-action state. The score is the summed weight of scoring universes. Series
-submissions carry the same tree as individual submissions so
+pre-action state. Movement also looks one step ahead: when a replayed route
+would enter an extra opposing tackle zone, the sibling keeps the safe prefix
+but stops before that marked square, instead of waiting until the following
+click discovers the forced dodge. The universe strip then offers **Reset move** for
+that inherited partial activation; it rewinds only that leaf to the player's
+activation start and leaves it marked **Needs a plan**. A separate confirmed
+**Reset branch** returns any authored universe to the snapshot created by its
+parent block. Resetting a historical parent deletes every later child split
+beneath it, makes that parent the viewed playable leaf, and never changes its
+siblings. The score is the summed
+weight of scoring universes. Series submissions carry the same tree as individual submissions so
 `shared/scoreValidation.js` recomputes the expected-value score and fractional
 dice tie-break.
 
@@ -114,9 +143,15 @@ dice tie-break.
 - The live universe view is a parent-child tree: each block owns its resulting
   state cards, and a later block grows beneath the specific state where it
   occurred. Historical states are structural and cannot rewind play; only
-  current leaves are selectable or concedeable. A reversible filter can hide
-  leaves marked **Needs a plan** (and empty ancestry) without conceding them or
-  changing the score; the unresolved count remains visible. Those are exactly
+  current leaves are selectable or concedeable. Giving up a leaf requires a
+  destructive confirmation because its probability mass is removed from the
+  scoring plan. In the live strip, a historical parent turns green and reads
+  **All branches scored** only when every ending universe beneath it scored;
+  one unresolved or conceded descendant keeps the parent neutral. Reversible
+  strip controls can collapse green completed leaves or hide leaves marked
+  **Needs a plan** (and their empty ancestry) without conceding them or changing
+  the score. Collapsing a viewed completed leaf switches to an unfinished leaf
+  when one remains; the unresolved count stays visible. Those are exactly
   the branches that could not share an authored action because it was illegal
   there or would add rolls beyond the viewed branch. The completed-run analysis
   renders the same tree as a scrollable graphic. Opening a universe from that

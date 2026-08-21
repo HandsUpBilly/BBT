@@ -730,6 +730,49 @@ export function applyCancelSelection(state: GameState): GameState {
   return state.selectedPieceId ? clearSelection(state, true) : state;
 }
 
+/**
+ * Rewind only the route being plotted while keeping the same activation open.
+ *
+ * The red movement control means "plot again", not "cancel this player". Any
+ * provisional moves, rolls, or pickup are restored from the activation
+ * snapshot, while the declared action (Move, Pass, Hand-off, or Blitz) stays
+ * selected so the coach can immediately choose a different route.
+ */
+export function applyResetMovement(state: GameState): GameState {
+  if (!state.selectedPieceId || !state.activationSnapshot) return state;
+
+  const snapshot = state.activationSnapshot;
+  const selectedPiece = snapshot.pieces.find(piece => piece.id === state.selectedPieceId);
+  if (!selectedPiece) return state;
+  const restoredState = {
+    ...state,
+    pieces: snapshot.pieces,
+    ballPosition: snapshot.ballPosition,
+  };
+  const { reachableKeys } = recomputeReachable(
+    restoredState,
+    selectedPiece.id,
+    selectedPiece.position,
+    snapshot.remainingMa,
+    snapshot.remainingGfi,
+  );
+
+  return {
+    ...restoredState,
+    originPos: selectedPiece.position,
+    reachableKeys,
+    committedPath: [],
+    walkedSquares: [],
+    pathPreview: [],
+    remainingMa: snapshot.remainingMa,
+    remainingGfi: snapshot.remainingGfi,
+    pendingDodgeTargets: [],
+    dodgeRerollAvailability: selectedPiece.skills.includes('Dodge') ? 1 : 0,
+    pendingProb: 1,
+    actionLog: state.actionLog.slice(0, state.activationLogStart),
+  };
+}
+
 /** Pure hover preview used by both the one-board hook and Parallel Universes. */
 export function applySquareHover(prev: GameState, hovered: Position): GameState {
   if (prev.phase !== 'playing' || !prev.selectedPieceId) return prev;
@@ -1328,6 +1371,10 @@ export function useGameState(initialState: GameState) {
     setState(applyCancelSelection);
   }, []);
 
+  const handleResetMovement = useCallback(() => {
+    setState(applyResetMovement);
+  }, []);
+
   /**
    * Called when the player clicks "Hand Off" in the PieceMenu.
    * Selects the carrier for normal movement (same as "Move") but sets pendingHandoff.
@@ -1532,7 +1579,8 @@ export function useGameState(initialState: GameState) {
   }, []);
 
   return {
-    state, setState, handleSquareClick, handleSquareHover, handleSquareLeave, handleCancelSelection,
+    state, setState, handleSquareClick, handleSquareHover, handleSquareLeave,
+    handleCancelSelection, handleResetMovement,
     handleHandoffAction, handleHandoffTarget, handlePassAction, handlePassTarget,
     handleBlockAction, handleBlockTarget, handleBlockOutcomeChoice, handlePushChoice,
   };

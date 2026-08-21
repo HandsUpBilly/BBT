@@ -1,7 +1,15 @@
 import { describe, expect, it } from 'vitest';
 import type { GameState } from './types';
 import { applyClick, classifyClick } from './useGameState';
-import { addedRollCount, boardHash, groupByBoard, replayAcrossBranches, replayClick } from './branchReplay';
+import {
+  addedRollCount,
+  boardHash,
+  groupByBoard,
+  positionBeforeExtraTackleZone,
+  replayAcrossBranches,
+  replayClick,
+  selectedPieceIsMarked,
+} from './branchReplay';
 import { makeState, humanBlocker, orcBlocker, humanThrower } from './test/gameState';
 
 /** Board with a human carrier at (7,10) and one orc marking it at (7,9). */
@@ -165,6 +173,27 @@ describe('addedRollCount', () => {
 
     expect(addedRollCount(proneBranch, safe)).toBe(0);
     expect(addedRollCount(standingBranch, risky)).toBe(2);
+  });
+});
+
+describe('anticipating a future dodge', () => {
+  it('identifies the step before a sibling enters an extra tackle zone', () => {
+    const mover = humanBlocker({ id: 'runner', position: { col: 6, row: 10 } });
+    const safeBefore = select(makeState([
+      mover,
+      orcBlocker({ position: { col: 7, row: 8 }, down: true }),
+    ]), 6, 10);
+    const markedBefore = select(makeState([
+      mover,
+      orcBlocker({ position: { col: 7, row: 8 } }),
+    ]), 6, 10);
+    const safeAfter = applyClick(safeBefore, { col: 6, row: 9 });
+    const markedAfter = applyClick(markedBefore, { col: 6, row: 9 });
+
+    expect(selectedPieceIsMarked(safeAfter)).toBe(false);
+    expect(selectedPieceIsMarked(markedAfter)).toBe(true);
+    expect(positionBeforeExtraTackleZone(markedBefore, markedAfter, safeAfter))
+      .toEqual({ col: 6, row: 10 });
   });
 });
 

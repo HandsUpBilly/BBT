@@ -63,6 +63,26 @@ describe('cancelling an activation rewinds the board', () => {
     expect(after.actionLog).toHaveLength(0);
   });
 
+  it('Plot Again rewinds movement while keeping the same player active', () => {
+    const state = makeState([
+      thrower({ position: { col: 7, row: 12 } }),
+    ]);
+    const { result } = renderHook(() => useGameState(state));
+
+    act(() => result.current.handleSquareClick(7, 12));
+    act(() => result.current.handleSquareClick(7, 10));
+    expect(result.current.state.committedPath).not.toHaveLength(0);
+    expect(result.current.state.remainingMa).toBeLessThan(6);
+
+    act(() => result.current.handleResetMovement());
+
+    expect(result.current.state.selectedPieceId).toBe('thrower');
+    expect(result.current.state.committedPath).toEqual([]);
+    expect(result.current.state.walkedSquares).toEqual([]);
+    expect(result.current.state.remainingMa).toBe(6);
+    expect(result.current.state.pieces.find(piece => piece.id === 'thrower')?.activated).toBe(false);
+  });
+
   it('cancelling a declared Pass before targeting rewinds the movement', () => {
     const state = makeState([
       thrower({ position: { col: 7, row: 12 } }),
@@ -80,6 +100,31 @@ describe('cancelling an activation rewinds the board', () => {
     expect(after.pieces.find(p => p.id === 'thrower')!.position).toEqual({ col: 7, row: 12 });
     expect(after.actionLog).toHaveLength(0);
     expect(after.passUsed).toBe(false);
+  });
+
+  it('deselecting a zero-square Move + Pass leaves the carrier available to play again', () => {
+    const state = makeState([
+      thrower({ position: { col: 7, row: 12 } }),
+      blocker({ id: 'mate', position: { col: 7, row: 9 } }),
+    ]);
+    const { result } = renderHook(() => useGameState(state));
+
+    act(() => result.current.handlePassAction('thrower'));
+    expect(result.current.state.pendingPass).toBe(true);
+    expect(result.current.state.selectedPieceId).toBe('thrower');
+
+    // App maps a second tap on the unmoved selected player to cancellation,
+    // rather than the end-activation click used to enter receiver targeting.
+    act(() => result.current.handleCancelSelection());
+
+    const deselected = result.current.state;
+    expect(deselected.selectedPieceId).toBeNull();
+    expect(deselected.pendingPass).toBe(false);
+    expect(deselected.pieces.find(piece => piece.id === 'thrower')!.activated).toBe(false);
+
+    act(() => result.current.handlePassAction('thrower'));
+    expect(result.current.state.selectedPieceId).toBe('thrower');
+    expect(result.current.state.pendingPass).toBe(true);
   });
 
   it('a resolved block survives a later cancel of the leftover Blitz movement', () => {

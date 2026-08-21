@@ -1,9 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import type { GameState, PlayerPiece } from './types';
+import type { GameState, PlayerPiece, Scenario } from './types';
 import { blockOutcomeProbabilities } from './bfs';
-import { applyClick } from './useGameState';
+import { applyClick, makeScenarioState } from './useGameState';
 import { makeState, humanBlocker, orcBlocker, humanThrower } from './test/gameState';
 import { validateScoreSubmission } from '../../shared/scoreValidation.js';
+import looseBallScenario from './scenarios/scenario-006.json';
 import {
   branchPath,
   branchStrip,
@@ -20,10 +21,13 @@ import {
   isBlockPending,
   isRunComplete,
   runSummary,
+  resetBranchActivation,
+  resetBranchToPoint,
   selectBranch,
   splitOnBlock,
   startRun,
   toSubmissionTree,
+  universeNumber,
   unresolvedLines,
   viewedLine,
   type BranchRun,
@@ -146,6 +150,16 @@ describe('branchPath', () => {
   });
 });
 
+describe('universeNumber', () => {
+  it('numbers the root and first split hierarchically', () => {
+    const unsplit = startRun(declaredBlock());
+    expect(universeNumber(unsplit, unsplit.rootId)).toBe('1');
+    expect(branchStrip(blockRun()).map(branch => branch.number))
+      .toEqual(['1', '2', '3']);
+  });
+
+});
+
 describe('lockstep authoring', () => {
   /** A spare human who can move after the block resolves. */
   const runner = () => humanBlocker({ id: 'runner', position: { col: 6, row: 10 } });
@@ -159,16 +173,40 @@ describe('lockstep authoring', () => {
     expect(branchStrip(pushed).every(e => e.status !== 'needs-attention')).toBe(true);
   });
 
-  it('carries one authored move into every branch that can follow it', () => {
+  it('stops before entering a square that would force a later dodge', () => {
     let run = choosePush(blockRun([runner()]), { col: 7, row: 8 }, false);
     run = clickSquare(run, { col: 6, row: 10 }); // select the runner
-    run = clickSquare(run, { col: 6, row: 9 });  // step forward
+    const standingBefore = Object.values(run.lines).find(line => line.label === 'Pushed')!;
+    run = clickSquare(run, { col: 6, row: 9 });  // marked only by the standing pushed defender
 
-    for (const line of Object.values(run.lines)) {
-      if (line.split) continue;
-      expect(line.state.committedPath).toHaveLength(1);
-    }
-    expect(branchStrip(run).every(e => e.status !== 'needs-attention')).toBe(true);
+    const standingAfter = Object.values(run.lines).find(line => line.label === 'Pushed')!;
+    expect(viewedLine(run).state.committedPath).toEqual([{ col: 6, row: 9 }]);
+    expect(entry(run, 'Down in place')?.status).toBe('authoring');
+    expect(standingAfter.state).toBe(standingBefore.state);
+    expect(entry(run, 'Pushed')?.status).toBe('needs-attention');
+    expect(entry(run, 'Pushed')?.canResetActivation).toBe(true);
+  });
+
+  it('keeps a multi-square move only up to the square before the dodge trap', () => {
+    const longRunner = runner();
+    longRunner.position = { col: 5, row: 11 };
+    let run = choosePush(blockRun([longRunner]), { col: 7, row: 8 }, false);
+    run = clickSquare(run, { col: 5, row: 11 });
+    run = clickSquare(run, { col: 6, row: 9 });
+
+    const standing = Object.values(run.lines).find(line => line.label === 'Pushed')!;
+    expect(viewedLine(run).state.walkedSquares).toHaveLength(2);
+    expect(standing.state.walkedSquares).toHaveLength(1);
+    expect(standing.state.committedPath.at(-1)).not.toEqual({ col: 6, row: 9 });
+    expect(entry(run, 'Pushed')?.status).toBe('needs-attention');
+
+    run = resetBranchActivation(run, standing.id);
+    const reset = run.lines[standing.id];
+    expect(reset.state.pieces.find(piece => piece.id === 'runner')?.position)
+      .toEqual({ col: 5, row: 11 });
+    expect(reset.state.selectedPieceId).toBeNull();
+    expect(reset.state.committedPath).toEqual([]);
+    expect(branchStrip(run).find(branch => branch.id === standing.id)?.canResetActivation).toBe(false);
   });
 
   it('stops before replaying a move that adds a roll in a sibling branch', () => {
@@ -196,7 +234,7 @@ describe('lockstep authoring', () => {
     expect(entry(run, 'Pushed')?.status).toBe('needs-attention');
   });
 
-  it('flags only the branch where the move is no longer legal', () => {
+  it('flags both an occupied branch and a branch where the target is a dodge trap', () => {
     let run = choosePush(blockRun([runner()]), { col: 7, row: 8 }, false);
     run = clickSquare(run, { col: 6, row: 10 });
     // (7,9) is the defender's original square: vacated in the pushed branches,
@@ -205,7 +243,7 @@ describe('lockstep authoring', () => {
 
     expect(entry(run, 'Down in place')?.status).toBe('needs-attention');
     expect(entry(run, 'Pushed + Down')?.status).toBe('authoring');
-    expect(entry(run, 'Pushed')?.status).toBe('authoring');
+    expect(entry(run, 'Pushed')?.status).toBe('needs-attention');
   });
 
   it('stops replaying into a branch once it has diverged', () => {
@@ -237,7 +275,7 @@ describe('lockstep authoring', () => {
   it('rewinds an activation across the whole lockstep group', () => {
     let run = choosePush(blockRun([runner()]), { col: 7, row: 8 }, false);
     run = clickSquare(run, { col: 6, row: 10 });
-    run = clickSquare(run, { col: 6, row: 9 });
+    run = clickSquare(run, { col: 5, row: 10 });
     run = cancelActivation(run);
 
     for (const line of Object.values(run.lines)) {
@@ -245,6 +283,28 @@ describe('lockstep authoring', () => {
       expect(line.state.selectedPieceId).toBeNull();
       expect(line.state.committedPath).toEqual([]);
       expect(line.state.pieces.find(p => p.id === 'runner')?.position).toEqual({ col: 6, row: 10 });
+    }
+  });
+});
+
+describe('Loose Ball on the Goal Line', () => {
+  it('does not add a dodge when Aldric runs up column H after Muzgash is pushed away', () => {
+    let run = startRun(makeScenarioState(looseBallScenario as Scenario));
+    run = declareBlock(run, 'cedric', false);
+    run = chooseBlockTarget(run, { col: 6, row: 6 });
+    run = splitOnBlock(run);
+    run = choosePush(run, { col: 5, row: 5 }, true);
+    run = clickSquare(run, { col: 7, row: 7 });
+    run = clickSquare(run, { col: 7, row: 5 });
+
+    for (const line of Object.values(run.lines).filter(candidate => !candidate.split)) {
+      const aldricMoves = line.state.actionLog.filter(entry =>
+        entry.kind === 'move' && entry.pieceName === 'Aldric Swiftfoot');
+
+      expect(aldricMoves).toHaveLength(2);
+      expect(aldricMoves.map(entry => entry.dodgeTarget)).toEqual([null, null]);
+      expect(aldricMoves.map(entry => entry.kind === 'move' ? entry.pickupTarget : null))
+        .toEqual([null, 3]);
     }
   });
 });
@@ -366,6 +426,14 @@ describe('a second block', () => {
     return choosePush(run, { col: 2, row: 8 }, false);
   }
 
+  it('adds one universe-number segment for every later split', () => {
+    expect(branchStrip(twoBlocks()).map(branch => branch.number)).toEqual([
+      '1.1', '1.2', '1.3',
+      '2.1', '2.2', '2.3',
+      '3.1', '3.2', '3.3',
+    ]);
+  });
+
   it('splits every branch of the group at once', () => {
     const run = twoBlocks();
 
@@ -379,6 +447,7 @@ describe('a second block', () => {
     expect(tree?.blockNumber).toBe(1);
     expect(tree?.blockLabel).toBe('Aldric Swiftfoot ⚔ Grukk Ironjaw');
     expect(tree?.states).toHaveLength(3);
+    expect(tree?.states.map(state => state.number)).toEqual(['1', '2', '3']);
     expect(tree?.states.every(state => state.status === 'continued' && !state.isSelectable)).toBe(true);
 
     const laterBlocks = tree?.states.map(state => state.nextBlock);
@@ -439,6 +508,28 @@ describe('a second block', () => {
     expect(branches.every(branch => branch.outcomes[1].blockLabel === 'Cedric Linebreaker ⚔ Muzgash Skullkrak')).toBe(true);
     expect(branches.some(branch => branch.outcomes[0].faces.includes('push'))).toBe(true);
     expect(branches.some(branch => branch.outcomes[1].faces.includes('defender-down'))).toBe(true);
+  });
+
+  it('resets a parent branch to its fork and removes every child below it', () => {
+    const original = twoBlocks();
+    const originalTree = branchTreeView(original)!;
+    const parent = originalTree.states[0];
+    const childIds = parent.nextBlock!.states.map(state => state.id);
+    const siblingId = originalTree.states[1].id;
+
+    const reset = resetBranchToPoint(original, parent.id);
+
+    expect(reset.viewedId).toBe(parent.id);
+    expect(reset.lines[parent.id].split).toBeNull();
+    expect(reset.lines[parent.id].state).toBe(reset.lines[parent.id].startState);
+    expect(reset.lines[parent.id].conceded).toBe(false);
+    expect(childIds.every(id => reset.lines[id] === undefined)).toBe(true);
+    expect(reset.lines[siblingId]).toBe(original.lines[siblingId]);
+    expect(branchStrip(reset).map(branch => branch.number)).toEqual([
+      '1',
+      '2.1', '2.2', '2.3',
+      '3.1', '3.2', '3.3',
+    ]);
   });
 });
 

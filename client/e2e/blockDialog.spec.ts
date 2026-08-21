@@ -7,7 +7,7 @@ test.beforeEach(async ({ page }) => {
   await page.locator('.identity-gate__input').fill('Block Dialog Tester');
   await page.getByRole('button', { name: /^continue$/i }).click();
 
-  await page.getByRole('tab', { name: /single plays/i }).click();
+  await page.getByRole('tab', { name: /free play/i }).click();
   await page.locator('.challenge-tile', { hasText: 'Loose Ball on the Goal Line' })
     .getByRole('button', { name: /^play$/i }).click();
 
@@ -36,21 +36,26 @@ test('explains the dice and fits every supported viewport', async ({ page }) => 
   const diceCount = await dice.count();
   expect(diceCount).toBeGreaterThan(0);
   await expect(dialog.locator('.block-die-icon__face')).toHaveCount(diceCount * 5);
-  expect(await dice.first().evaluate(el => getComputedStyle(el).animationName))
-    .toContain('block-die-roll-down');
+  const reducedMotion = await page.evaluate(() =>
+    matchMedia('(prefers-reduced-motion: reduce)').matches);
+  const animationName = await dialog.locator('.block-die-icon__face').first()
+    .evaluate(el => getComputedStyle(el).animationName);
+  if (reducedMotion) {
+    expect(animationName).toBe('none');
+  } else {
+    expect(animationName).toContain('block-die-face-');
+  }
 
   const rollStyles = await dice.evaluateAll(elements => elements.map((element) => {
     const style = getComputedStyle(element);
     return {
-      duration: style.getPropertyValue('--die-roll-duration'),
-      xStart: style.getPropertyValue('--die-x-start'),
-      impactSpin: style.getPropertyValue('--die-spin-impact'),
+      duration: style.getPropertyValue('--die-reel-duration'),
+      delay: style.getPropertyValue('--die-reel-delay'),
     };
   }));
   for (const style of rollStyles) {
     expect(style.duration).toMatch(/^\d+\.\d{2}s$/);
-    expect(style.xStart).toMatch(/^-?\d+\.\dpx$/);
-    expect(style.impactSpin).toMatch(/^-?\d+\.\ddeg$/);
+    expect(style.delay).toMatch(/^-?\d+\.\d{2}s$/);
   }
 
   for (let index = 0; index < diceCount; index += 1) {
