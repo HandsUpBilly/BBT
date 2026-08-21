@@ -1,3 +1,5 @@
+import { OBJECTIVE_GUIDANCE } from './objectiveCopy';
+
 /**
  * Player-facing brand and landing-screen copy.
  *
@@ -12,6 +14,7 @@ export const UI_COPY = {
     landingSubtitle: 'Playbook simulator',
   },
   landing: {
+    objectiveGuidance: OBJECTIVE_GUIDANCE,
     playModeLabel: 'Play mode',
     seriesTab: 'Series',
     singlePlaysTab: 'Free Play',

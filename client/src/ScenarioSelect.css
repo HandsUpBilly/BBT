@@ -211,6 +211,17 @@
   border-radius: var(--radius-card) var(--radius-card) 0 0;
 }
 
+.scenario-select__objective-guide {
+  align-self: stretch;
+  margin: -10px 0 0;
+  padding: 11px 15px;
+  color: var(--color-text-muted);
+  background: var(--color-surface-1);
+  border-left: 3px solid var(--color-accent);
+  font-size: 0.86rem;
+  line-height: 1.5;
+}
+
 .play-section {
   width: 100%;
 }

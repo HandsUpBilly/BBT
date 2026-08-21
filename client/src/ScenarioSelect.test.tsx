@@ -27,6 +27,8 @@ describe('ScenarioSelect Free Play', () => {
       />,
     );
 
+    expect(screen.getByText(/highest probability of meeting the puzzle's stated objective/i)).toBeTruthy();
+
     fireEvent.click(screen.getByRole('tab', { name: 'Free Play' }));
 
     expect(screen.getByText(freePlay!.name)).toBeTruthy();

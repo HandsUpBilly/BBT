@@ -164,6 +164,7 @@ describe('BranchRunSummary branch list', () => {
     expect(screen.getByRole('img', {
       name: 'Game branch tree with 1 block and 3 ending universes; reviewed branch highlighted',
     })).toBeTruthy();
+    expect(screen.getByTestId('branch-detail-scroll')).toBeTruthy();
     expect(container.querySelectorAll('.action-log-detail__diagrams--paired > figure')).toHaveLength(2);
     expect(container.querySelectorAll('.branch-review__node--selected')).toHaveLength(1);
     expect(container.querySelectorAll('.branch-review__node--highlighted')).toHaveLength(1);
