@@ -102,5 +102,10 @@ describe('PlayDiagram', () => {
     expect(container.querySelectorAll('[data-route-kind="handoff"]')).toHaveLength(0);
     expect(container.querySelectorAll('[data-route-kind="block"]')).toHaveLength(1);
     expect(container.querySelector('.play-diagram__ball')).not.toBeNull();
+
+    // The played board is the clockwise landscape view: increasing portrait
+    // rows travel from right to left, rather than mirroring the pitch.
+    expect(container.querySelector('[data-route-kind="movement"]')?.getAttribute('points'))
+      .toBe('408,168 388,168 368,168');
   });
 });

@@ -5356,3 +5356,30 @@ start/retention caveat; do not label pre-launch zeroes as inactivity.
   and turns the parent back into a playable leaf at its original board state.
 - Resetting never rewinds a sibling branch or silently concedes probability.
 - No branch data is discarded before the confirmation step.
+
+---
+
+# Completed-play Review Orientation and Objective Guidance
+
+**Status:** Shipped.
+
+## Requirements
+
+- Render completed-play diagrams in the same clockwise landscape orientation
+  as the played pitch.
+- Keep the branch-review heading visible and give the diagrams and action log a
+  dedicated scroll region that remains usable on short phone viewports.
+- State on the main screen, Getting started help, and every Tutorial briefing
+  that the aim is to find the sequence of moves with the highest probability of
+  meeting the puzzle's stated objective.
+- Keep that general rule independent of touchdowns so later one-turn puzzles
+  can define outcomes such as a successful foul or a crowd surf.
+
+## Success Criteria
+
+- Increasing portrait row coordinates run right-to-left in the completed-play
+  landscape diagram, matching the live board.
+- A long branch review can scroll through to its action log without moving its
+  title off-screen.
+- The shared objective sentence appears consistently on home, in Help, and in
+  every Tutorial briefing.

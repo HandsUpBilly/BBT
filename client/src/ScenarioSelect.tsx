@@ -187,6 +187,10 @@ export function ScenarioSelect({
         )}
       </div>
 
+      <p className="scenario-select__objective-guide">
+        {UI_COPY.landing.objectiveGuidance}
+      </p>
+
       {playView === 'series' ? (
         <section className="play-section">
           <div className="series-row">

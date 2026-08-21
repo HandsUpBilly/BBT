@@ -96,13 +96,15 @@ export function BranchRunSummary({
               <span>Universe {detail.number}</span>
               <span className="branch-summary__detail-outcome" aria-hidden="true">— {detail.label}</span>
             </h2>
-            <ActionLogDetail
-              scenario={scenario}
-              actionLog={run.lines[detail.id].state.actionLog}
-              diagramAside={tree && (
-                <BranchReviewGraphic tree={tree} highlightedBranchId={detail.id} />
-              )}
-            />
+            <div className="branch-summary__detail-scroll" data-testid="branch-detail-scroll">
+              <ActionLogDetail
+                scenario={scenario}
+                actionLog={run.lines[detail.id].state.actionLog}
+                diagramAside={tree && (
+                  <BranchReviewGraphic tree={tree} highlightedBranchId={detail.id} />
+                )}
+              />
+            </div>
           </>
         ) : (
           <>
@@ -110,7 +112,7 @@ export function BranchRunSummary({
 
             <p className="branch-summary__score">
               <strong>{pct(summary.score)}</strong>
-              <span>SCORING CHANCE</span>
+              <span>OBJECTIVE CHANCE</span>
             </p>
 
             <dl className="branch-summary__breakdown">

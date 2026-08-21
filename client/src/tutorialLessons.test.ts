@@ -32,4 +32,12 @@ describe('tutorial lessons', () => {
       ['move', 'handoff', 'pass'],
     ]);
   });
+
+  it('frames every drill as finding the most probable sequence for its objective', () => {
+    for (const lesson of TUTORIAL_LESSONS) {
+      expect(lesson.paragraphs.join(' ')).toContain(
+        "Find the sequence of moves with the highest probability of meeting the puzzle's stated objective.",
+      );
+    }
+  });
 });

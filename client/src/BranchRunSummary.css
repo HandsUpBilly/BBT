@@ -175,6 +175,29 @@
   gap: 12px;
 }
 
+/* The header stays visible while long branch reviews scroll. Giving the detail
+   body its own flex area also avoids relying on iOS to scroll the modal itself. */
+.app--playbook .branch-summary--detail {
+  max-height: calc(100dvh - 32px);
+  overflow: hidden;
+}
+
+.branch-summary__detail-scroll {
+  align-self: stretch;
+  flex: 1 1 auto;
+  min-height: 0;
+  width: 100%;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+@media (max-width: 600px) {
+  .app--playbook .branch-summary--detail {
+    max-height: calc(100dvh - 20px);
+  }
+}
+
 .branch-summary__note {
   margin: 0 0 12px;
   font-size: 0.75rem;

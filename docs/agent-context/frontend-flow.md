@@ -56,6 +56,13 @@ depending on a particular puzzle screenshot. Like Settings, `App.tsx` records
 `helpReturnMode`, so opening Help from the game HUD preserves the puzzle and
 returns to it unchanged.
 
+The landing screen, Getting started help, and every Tutorial briefing share the
+same objective framing: find the sequence of moves with the highest probability
+of meeting the puzzle's stated objective. Current shipped puzzles end in a
+touchdown, but the player-facing rule deliberately does not make touchdown the
+only possible objective; later one-turn puzzles can target outcomes such as a
+successful foul or crowd surf.
+
 About's focus-trapped dialog is the single player-facing location for the build version
 (`__BBT_VERSION__`) and deployment time (`__BBT_DEPLOYED_AT__`), formatted in
 the viewer's local timezone. Vite stamps the deployment time when it builds the

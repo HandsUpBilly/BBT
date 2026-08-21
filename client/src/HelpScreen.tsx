@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { OBJECTIVE_GUIDANCE } from './objectiveCopy';
 import './HelpScreen.css';
 
 type HelpPage = 'basics' | 'actions' | 'universes';
@@ -176,8 +177,8 @@ export function HelpScreen({ onBack }: Props) {
           <div className="help-screen__intro">
             <div>
               <p className="help-screen__kicker">One puzzle. One turn.</p>
-              <h2>Build the whole scoring play</h2>
-              <p>Activate each player at most once. The run ends when the ball reaches the end zone. Every roll you commit multiplies the scoring chance shown in the HUD.</p>
+              <h2>Find the strongest sequence</h2>
+              <p>{OBJECTIVE_GUIDANCE} Activate each player at most once. Every roll you commit multiplies the objective chance shown in the HUD.</p>
             </div>
             <DecisionPicture />
           </div>
@@ -185,8 +186,12 @@ export function HelpScreen({ onBack }: Props) {
             <li><strong>Select a player.</strong><span>Choose Move, Hand-off, Pass, Block, or Blitz from their action menu.</span></li>
             <li><strong>Preview the plan.</strong><span>Highlighted squares are legal. Dashed routes and target lines show what will happen.</span></li>
             <li><strong>Confirm the target.</strong><span>Movement, passes, and hand-offs wait for the green control. Red lets you choose again.</span></li>
-            <li><strong>Finish the turn.</strong><span>You score only by reaching the end zone; there is no End Turn button or fresh probability chain.</span></li>
+            <li><strong>Meet the objective.</strong><span>The puzzle ends when its stated objective is achieved; there is no End Turn button or fresh probability chain.</span></li>
           </ol>
+          <aside className="help-screen__callout">
+            <strong>The objective can change.</strong>
+            <span>Today's puzzles ask for a touchdown. Future puzzles may ask for a successful foul, a crowd surf, or another one-turn outcome.</span>
+          </aside>
         </article>
       )}
 

@@ -8,7 +8,9 @@ describe('HelpScreen', () => {
   it('explains the one-turn rules and the shared action confirmation', () => {
     render(<HelpScreen onBack={() => undefined} />);
 
-    expect(screen.getByRole('heading', { name: 'Build the whole scoring play' })).toBeTruthy();
+    expect(screen.getByRole('heading', { name: 'Find the strongest sequence' })).toBeTruthy();
+    expect(screen.getByText(/highest probability of meeting the puzzle's stated objective/i)).toBeTruthy();
+    expect(screen.getByText(/successful foul, a crowd surf/i)).toBeTruthy();
     expect(screen.getByRole('img', { name: /plotted movement route/i })).toBeTruthy();
     expect(screen.getByText(/Movement, passes, and hand-offs wait for the green control/)).toBeTruthy();
   });
