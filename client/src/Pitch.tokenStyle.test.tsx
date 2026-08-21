@@ -452,4 +452,29 @@ describe('Pitch move decision', () => {
     expect(onCancel).toHaveBeenCalledOnce();
     expect(onConfirm).toHaveBeenCalledOnce();
   });
+
+  it('uses action-specific labels for a pass or hand-off decision', () => {
+    render(
+      <Pitch
+        state={state}
+        onSquareClick={noop}
+        onPieceClick={noop}
+        onSquareHover={noop}
+        onSquareLeave={noop}
+        moveDecision={{
+          position: { col: 1, row: 1 },
+          probability: null,
+          ariaLabel: 'Confirm pass',
+          cancelLabel: 'Choose Another Receiver',
+          confirmLabel: 'Confirm Pass',
+          onCancel: noop,
+          onConfirm: noop,
+        }}
+      />,
+    );
+
+    expect(screen.getByRole('group', { name: 'Confirm pass' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Choose Another Receiver' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Confirm Pass' })).toBeTruthy();
+  });
 });

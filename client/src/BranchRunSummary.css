@@ -100,10 +100,24 @@
 }
 
 .branch-summary__branch-path {
+  display: flex;
+  gap: 0.45em;
   min-width: 0;
   overflow: hidden;
-  text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.branch-summary__branch-number {
+  flex-shrink: 0;
+  color: var(--color-text);
+  font-weight: 700;
+}
+
+.branch-summary__branch-outcome {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--color-text-muted);
+  text-overflow: ellipsis;
 }
 
 .branch-summary__branch-weight {
@@ -136,7 +150,29 @@
 
 .branch-summary__detail-title {
   align-self: flex-start;
+  display: flex;
+  align-items: baseline;
+  max-width: 100%;
+  margin: 0;
   text-align: left;
+  white-space: nowrap;
+}
+
+.branch-summary__detail-title > span:first-child {
+  flex-shrink: 0;
+}
+
+.branch-summary__detail-outcome {
+  min-width: 0;
+  margin-left: 0.5em;
+  overflow: hidden;
+  color: var(--color-text-muted);
+  font-size: 0.72em;
+  text-overflow: ellipsis;
+}
+
+.branch-summary--detail {
+  gap: 12px;
 }
 
 .branch-summary__note {

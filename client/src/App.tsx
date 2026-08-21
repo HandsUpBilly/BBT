@@ -31,6 +31,7 @@ import { ReportProblemButton } from './ReportProblemButton';
 import { ReportProblemModal } from './ReportProblemModal';
 import { AboutDialog } from './AboutDialog';
 import { SettingsScreen } from './SettingsScreen';
+import { HelpScreen } from './HelpScreen';
 import { TutorialLessonDialog } from './TutorialLessonDialog';
 import { TUTORIAL_LESSON_IDS, tutorialLessonFor } from './tutorialLessons';
 import type { TutorialLesson } from './tutorialLessons';
@@ -293,6 +294,7 @@ export default function App() {
   // game HUD, so it must not always land on home, and mid-puzzle game state
   // lives above appMode and survives the round trip untouched.
   const [settingsReturnMode, setSettingsReturnMode] = useState<AppMode>('home');
+  const [helpReturnMode, setHelpReturnMode] = useState<AppMode>('home');
   const [appMode, setAppMode] = useState<AppMode>('home');
   // Re-fetch whenever the player lands on the home/select screen (including on
   // first load) so a scenario published while this tab was open — or before
@@ -422,7 +424,7 @@ export default function App() {
   const branchedSummary = branchedBoards.summary;
 
   const { state, setState, handleSquareClick: hookSquareClick, handleSquareHover: hookSquareHover,
-          handleSquareLeave: hookSquareLeave, handleCancelSelection,
+          handleSquareLeave: hookSquareLeave, handleCancelSelection, handleResetMovement,
           handleHandoffAction, handleHandoffTarget,
           handlePassAction, handlePassTarget,
           handleBlockAction, handleBlockTarget, handlePushChoice } = game;
@@ -607,10 +609,17 @@ export default function App() {
     setAppMode('settings');
   }, [appMode]);
 
+  const openHelp = useCallback(() => {
+    trackAnalytics('interaction', { name: 'help', outcome: 'opened' });
+    setHelpReturnMode(current => (appMode === 'help' ? current : appMode));
+    setAppMode('help');
+  }, [appMode]);
+
   const accountMenu = (
     <UserMenu
       name={identityName}
       avatar={prefs.avatar}
+      onHelp={openHelp}
       onSettings={openSettings}
       onAbout={() => {
         trackAnalytics('interaction', { name: 'about', outcome: 'opened' });
@@ -672,11 +681,27 @@ export default function App() {
     context: string;
     destination: Position;
   } | null>(null);
+  // Passing and handing off used to execute as soon as a receiver was tapped.
+  // Keep that target provisional until the same red/green pitch decision used
+  // for movement has been answered.
+  const [pendingTransfer, setPendingTransfer] = useState<{
+    kind: 'pass' | 'handoff';
+    position: Position;
+  } | null>(null);
   const movementContext = state.selectedPieceId
     ? `${state.selectedPieceId}:${state.walkedSquares.length}`
     : null;
   const activeArmedMove = armedMove?.context === movementContext ? armedMove : null;
   const activeFinishedMove = finishedMove?.context === movementContext ? finishedMove : null;
+  const activeTransfer = pendingTransfer
+    && ((pendingTransfer.kind === 'pass'
+      && state.isPassTargeting
+      && state.passReceiverKeys.has(key(pendingTransfer.position)))
+    || (pendingTransfer.kind === 'handoff'
+      && state.isHandoffTargeting
+      && state.handoffTargets.has(key(pendingTransfer.position))))
+    ? pendingTransfer
+    : null;
   // Which player's card the side panel / bottom sheet is showing. Follows the
   // cursor on a mouse and the last tapped square on touch.
   const [hoveredPiece, setHoveredPiece] = useState<PlayerPiece | null>(null);
@@ -685,6 +710,7 @@ export default function App() {
   const disarm = useCallback(() => {
     setArmedMove(null);
     setFinishedMove(null);
+    setPendingTransfer(null);
   }, []);
 
   const finishMove = useCallback((
@@ -742,9 +768,13 @@ export default function App() {
   // Route square clicks: targeting modes take priority over normal movement
   const handleSquareClick = useCallback((col: number, row: number) => {
     if (state.isHandoffTargeting) {
-      handleHandoffTarget(col, row);
+      if (state.handoffTargets.has(key({ col, row }))) {
+        setPendingTransfer({ kind: 'handoff', position: { col, row } });
+      }
     } else if (state.isPassTargeting) {
-      handlePassTarget(col, row);
+      if (state.passReceiverKeys.has(key({ col, row }))) {
+        setPendingTransfer({ kind: 'pass', position: { col, row } });
+      }
     } else if (state.isBlockTargeting) {
       handleBlockTarget(col, row);
     } else if (state.pendingBlockResolution) {
@@ -764,9 +794,10 @@ export default function App() {
       setArmedMove(null);
       hookSquareClick(col, row);
     }
-  }, [state.isHandoffTargeting, state.isPassTargeting, state.isBlockTargeting, state.pendingBlockResolution,
+  }, [state.isHandoffTargeting, state.handoffTargets, state.isPassTargeting, state.passReceiverKeys,
+      state.isBlockTargeting, state.pendingBlockResolution,
       state.pushTargetKeys, state.committedPath, state.pendingBlock, movementContext,
-      handleHandoffTarget, handlePassTarget, handleBlockTarget, handlePushChoice,
+      handleBlockTarget, handlePushChoice,
       hookSquareClick, previewBeforeCommit, finishMove]);
 
   // Escape cancels the current activation. Dialogs handle their own Escape via
@@ -774,6 +805,10 @@ export default function App() {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key !== 'Escape') return;
+      if (activeTransfer) {
+        setPendingTransfer(null);
+        return;
+      }
       if (analyticsAttemptIdRef.current && state.selectedPieceId) {
         trackAnalytics('puzzle-action', {
           attemptId: analyticsAttemptIdRef.current, action: 'action-cancel',
@@ -784,7 +819,7 @@ export default function App() {
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [disarm, handleCancelSelection, state.selectedPieceId]);
+  }, [activeTransfer, disarm, handleCancelSelection, state.selectedPieceId]);
 
   // Context menu state
   const [pieceMenu, setPieceMenu] = useState<{ piece: PlayerPiece; anchor: MenuAnchor } | null>(null);
@@ -800,21 +835,23 @@ export default function App() {
     if (!hoverCapable) setHoveredPiece(piece);
     if (compact) setMobileInfoOpen(true);
 
-    // During handoff targeting, clicking a highlighted receiver executes the handoff
+    // During handoff targeting, clicking a highlighted receiver stages it for confirmation.
     if (state.isHandoffTargeting) {
       if (state.handoffTargets.has(k)) {
-        handleHandoffTarget(col, row);
+        setPendingTransfer({ kind: 'handoff', position: { col, row } });
       } else {
+        setPendingTransfer(null);
         handleCancelSelection();
       }
       return;
     }
 
-    // During pass targeting, clicking a highlighted receiver executes the pass
+    // During pass targeting, clicking a highlighted receiver stages it for confirmation.
     if (state.isPassTargeting) {
       if (state.passReceiverKeys.has(k)) {
-        handlePassTarget(col, row);
+        setPendingTransfer({ kind: 'pass', position: { col, row } });
       } else {
+        setPendingTransfer(null);
         handleCancelSelection();
       }
       return;
@@ -847,15 +884,18 @@ export default function App() {
     }
 
     // With movement plotted, clicking either the route-tip ghost or the
-    // original token opens the one final confirmation. A zero-square action
-    // still ends normally with one click.
+    // original token opens the one final confirmation. Before any movement,
+    // clicking the selected player again cancels the provisional activation:
+    // it must not spend that player's turn merely because the player backed
+    // out of Move + Pass (or another declared action).
     if (piece.id === state.selectedPieceId) {
       const routeTip = state.committedPath[state.committedPath.length - 1];
       if (movementContext && routeTip) {
         finishMove(movementContext, routeTip);
         return;
       }
-      hookSquareClick(col, row);
+      disarm();
+      handleCancelSelection();
       return;
     }
 
@@ -872,11 +912,12 @@ export default function App() {
       state.isHandoffTargeting, state.handoffTargets, state.isPassTargeting, state.passReceiverKeys,
       state.isBlockTargeting, state.blockTargets, state.pendingBlockIsBlitz, state.blitzTargetId,
       state.committedPath, movementContext,
-      hookSquareClick, handleHandoffTarget, handlePassTarget, handleBlockTarget, handleCancelSelection,
+      hookSquareClick, handleBlockTarget, handleCancelSelection,
       previewBeforeCommit, finishMove, disarm, hoverCapable, compact]);
 
   const handleMenuAction = useCallback((actionKey: string, moveFirst: boolean) => {
     if (!pieceMenu) return;
+    setPendingTransfer(null);
     engageAnalyticsAttempt();
     if (analyticsAttemptIdRef.current) {
       trackAnalytics('puzzle-action', { attemptId: analyticsAttemptIdRef.current, action: 'select' });
@@ -1343,6 +1384,24 @@ export default function App() {
     );
   }
 
+  if (effectiveAppMode === 'help') {
+    return (
+      <div className="app app--home app--archive app--playbook">
+        {archiveControls}
+        <HelpScreen
+          onBack={() => {
+            trackAnalytics('interaction', { name: 'help', outcome: 'closed' });
+            setAppMode(helpReturnMode);
+          }}
+        />
+        {notice}
+        {reportModal}
+        {aboutModal}
+        <AppFooter />
+      </div>
+    );
+  }
+
   if (effectiveAppMode === 'leaderboard' && activeScenario) {
     if (selectedEntry) {
       return (
@@ -1402,7 +1461,11 @@ export default function App() {
   const blitzTarget = state.blitzTargetId
     ? state.pieces.find(piece => piece.id === state.blitzTargetId) ?? null
     : null;
-  const activationStatus = state.isHandoffTargeting
+  const activationStatus = activeTransfer?.kind === 'handoff'
+    ? 'HAND-OFF READY: Confirm the receiver or choose another.'
+    : activeTransfer?.kind === 'pass'
+    ? 'PASS READY: Confirm the receiver or choose another.'
+    : state.isHandoffTargeting
     ? 'HAND-OFF: Select a receiver. Press Esc to cancel.'
     : state.isPassTargeting
     ? 'PASS: Select a receiver. Press Esc to cancel.'
@@ -1423,7 +1486,7 @@ export default function App() {
     : activeFinishedMove
     ? 'MOVE READY: Confirm the whole route or plot it again.'
     : activeArmedMove
-    ? 'ROUTE READY: Click the preview endpoint when finished.'
+    ? `ROUTE READY: ${state.remainingMa} MA remaining. Click the preview endpoint when finished.`
     : state.selectedPieceId && state.committedPath.length > 0
     ? `ACTIVATION: ${state.remainingMa} MA remaining. Click the route endpoint when finished.`
     : allActivated && !state.selectedPieceId
@@ -1538,6 +1601,8 @@ export default function App() {
         deadWeight={branchedBoards.summary.deadWeight}
         score={branchedBoards.summary.score}
         onSelect={branchedBoards.handleSelectBranch}
+        onReset={branchedBoards.handleResetBranch}
+        onResetToBranchPoint={branchedBoards.handleResetBranchToPoint}
         onConcede={id => {
           if (analyticsAttemptIdRef.current) {
             trackAnalytics('puzzle-action', {
@@ -1562,13 +1627,29 @@ export default function App() {
             pitchSurface={prefs.pitchSurface ?? 'grass'}
             showCoordinates={prefs.showCoordinates ?? true}
             branchGhosts={branchedBoards.ghosts}
-            moveDecision={finishedPreview ? {
+            moveDecision={activeTransfer ? {
+              position: activeTransfer.position,
+              probability: null,
+              ariaLabel: activeTransfer.kind === 'pass' ? 'Confirm pass' : 'Confirm hand-off',
+              cancelLabel: 'Choose Another Receiver',
+              confirmLabel: activeTransfer.kind === 'pass' ? 'Confirm Pass' : 'Confirm Hand-off',
+              onCancel: () => setPendingTransfer(null),
+              onConfirm: () => {
+                const transfer = activeTransfer;
+                setPendingTransfer(null);
+                if (transfer.kind === 'pass') {
+                  handlePassTarget(transfer.position.col, transfer.position.row);
+                } else {
+                  handleHandoffTarget(transfer.position.col, transfer.position.row);
+                }
+              },
+            } : finishedPreview ? {
               position: finishedPreview,
               probability: showSuccessChance ? liveProbPct : null,
               onCancel: () => {
                 disarm();
                 hookSquareLeave();
-                handleCancelSelection();
+                handleResetMovement();
               },
               onConfirm: () => {
                 disarm();

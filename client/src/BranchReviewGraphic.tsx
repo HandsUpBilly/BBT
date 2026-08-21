@@ -141,7 +141,7 @@ export function BranchReviewGraphic({ tree, highlightedBranchId }: Props) {
                     point.selected ? 'branch-review__node--selected' : '',
                   ].filter(Boolean).join(' ')}
                 >
-                  <title>{point.state.path}</title>
+                  <title>{`Universe ${point.state.number}: ${point.state.path}`}</title>
                   {faces.map((face, index) => (
                     <image
                       key={face}
@@ -155,7 +155,9 @@ export function BranchReviewGraphic({ tree, highlightedBranchId }: Props) {
                     />
                   ))}
                   <circle cx={point.x} cy={point.y} r={point.selected ? 6 : 4.5} />
-                  <text x={point.x} y={point.y + 18}>{shorten(point.state.label, 18)}</text>
+                  <text x={point.x} y={point.y + 18}>
+                    {shorten(`${point.state.number} · ${point.state.label}`, 18)}
+                  </text>
                 </g>
               );
             })}

@@ -27,6 +27,7 @@ import {
   applyBlockBoardState,
   applyBlockTarget,
   applyCancelSelection,
+  applyResetMovement,
   applyClick,
   applyHandoffAction,
   applyHandoffTarget,
@@ -38,7 +39,8 @@ import {
 } from './useGameState';
 import { blockBoardStates, type BlockBoardState, type BlockResolution } from './blockBranching';
 import { branchSummary, type BranchSummary, type LineNode } from './blockBranchTree';
-import { addedRollCount, replayClick } from './branchReplay';
+import { key } from './bfs';
+import { addedRollCount, positionBeforeExtraTackleZone, replayClick } from './branchReplay';
 import { summarizeActionLog } from './riskyMoves';
 
 /** One authored segment: a board plus how it relates to the rest of the run. */
@@ -50,6 +52,8 @@ export interface RunLine {
   /** Lines sharing this id move together when the player acts. */
   lockstepId: string;
   state: GameState;
+  /** Immutable board snapshot from the moment this branch was created. */
+  startState: GameState;
   /** Cumulative roll probability at the moment this segment began. */
   startCumProb: number;
   /** Index into `state.actionLog` where this segment's own entries start. */
@@ -113,6 +117,7 @@ export function startRun(state: GameState): BranchRun {
     label: 'Main',
     lockstepId: 'G0',
     state,
+    startState: state,
     startCumProb: cumProbOf(state),
     startLogIndex: state.actionLog.length,
     conceded: false,
@@ -170,14 +175,21 @@ export function selectBranch(run: BranchRun, id: string): BranchRun {
  *
  * `apply` runs on the viewed board; `replay` decides whether a sibling can
  * follow. A legal replay is still refused if it introduces more rolls than the
- * viewed action: the sibling stays at the exact decision point where its safer
- * route needs separate authoring. Refused siblings get their own lockstep id,
- * so later actions no longer touch them.
+ * viewed action. Movement also anticipates the next dodge: if the sibling's
+ * route would finish in an extra tackle zone, it keeps only the safe prefix and
+ * stops before entering that square. Refused siblings get their own lockstep
+ * id, so later actions no longer touch them.
  */
 function authorAcrossGroup(
   run: BranchRun,
   apply: (state: GameState) => GameState,
   replay: (state: GameState) => GameState | null,
+  stopBeforeDivergence?: (
+    before: GameState,
+    replayed: GameState,
+    viewedAfter: GameState,
+    allowedAddedRolls: number,
+  ) => GameState | null,
 ): BranchRun {
   const viewed = viewedLine(run);
   if (viewed.conceded || viewed.split) return run;
@@ -191,6 +203,18 @@ function authorAcrossGroup(
 
   for (const sibling of lockstepGroup(run, viewed)) {
     const replayed = replay(sibling.state);
+    const stopped = replayed
+      ? stopBeforeDivergence?.(sibling.state, replayed, nextViewedState, allowedAddedRolls) ?? null
+      : null;
+    if (stopped) {
+      updates.push({
+        ...sibling,
+        state: stopped,
+        needsAttention: true,
+        lockstepId: `G${seq++}`,
+      });
+      continue;
+    }
     const addsNoExtraRolls = replayed
       && addedRollCount(sibling.state, replayed) <= allowedAddedRolls;
     if (replayed && addsNoExtraRolls) {
@@ -223,6 +247,22 @@ export function clickSquare(run: BranchRun, pos: Position): BranchRun {
     state => {
       const result = replayClick(state, pos, intent);
       return result.ok ? result.state : null;
+    },
+    (before, replayed, viewedAfter, allowedAddedRolls) => {
+      if (intent !== 'commit-move') return null;
+      const stop = positionBeforeExtraTackleZone(before, replayed, viewedAfter);
+      if (!stop) return null;
+
+      const selected = before.pieces.find(piece => piece.id === before.selectedPieceId);
+      const activePosition = before.committedPath[before.committedPath.length - 1]
+        ?? before.originPos
+        ?? selected?.position;
+      if (!activePosition || key(activePosition) === key(stop)) return before;
+
+      const prefix = replayClick(before, stop, intent);
+      return prefix.ok && addedRollCount(before, prefix.state) <= allowedAddedRolls
+        ? prefix.state
+        : before;
     },
   );
 }
@@ -311,6 +351,68 @@ export function cancelActivation(run: BranchRun): BranchRun {
   return authorUniform(run, applyCancelSelection);
 }
 
+/** Rewind the provisional route across its lockstep group without deselecting the player. */
+export function resetMovement(run: BranchRun): BranchRun {
+  return authorUniform(run, applyResetMovement);
+}
+
+function canResetLineActivation(line: RunLine): boolean {
+  return line.state.selectedPieceId !== null
+    && line.state.activationSnapshot !== null
+    && (line.needsAttention || line.state.committedPath.length > 0);
+}
+
+/** Rewind one leaf's inherited partial activation without touching siblings. */
+export function resetBranchActivation(run: BranchRun, id: string): BranchRun {
+  const line = run.lines[id];
+  if (!line || line.split || line.conceded || !canResetLineActivation(line)) return run;
+
+  const state = applyCancelSelection(line.state);
+  if (state === line.state) return run;
+
+  const reset = {
+    ...line,
+    state,
+    needsAttention: true,
+    lockstepId: `G${run.seq}`,
+  };
+  return { ...withLines(run, [reset]), seq: run.seq + 1 };
+}
+
+function descendantLineIds(run: BranchRun, line: RunLine): string[] {
+  if (!line.split) return [];
+  return line.split.childIds.flatMap(childId => {
+    const child = run.lines[childId];
+    return child ? [childId, ...descendantLineIds(run, child)] : [];
+  });
+}
+
+/**
+ * Rewind one branch to the board created by its parent block.
+ *
+ * Any later split belongs to play authored inside this branch, so resetting the
+ * branch removes that whole descendant subtree. Sibling branches are untouched.
+ */
+export function resetBranchToPoint(run: BranchRun, id: string): BranchRun {
+  const line = run.lines[id];
+  if (!line) return run;
+  const descendants = descendantLineIds(run, line);
+  const hasAuthoredPlay = line.state !== line.startState || line.split !== null || line.conceded;
+  if (!hasAuthoredPlay) return run;
+
+  const lines = { ...run.lines };
+  for (const descendantId of descendants) delete lines[descendantId];
+  lines[id] = {
+    ...line,
+    state: line.startState,
+    split: null,
+    conceded: false,
+    needsAttention: false,
+    lockstepId: `G${run.seq}`,
+  };
+  return { ...run, lines, viewedId: id, seq: run.seq + 1 };
+}
+
 /**
  * Resolve the viewed branch's declared block by splitting it into one child per
  * live board state.
@@ -354,21 +456,25 @@ export function splitOnBlock(run: BranchRun): BranchRun {
     const ctx = { attackerId: attacker.id, defenderId: defender.id, isBlitz: choice.isBlitz };
     const startCumProb = cumProbOf(state);
 
-    const children: RunLine[] = resolution.states.map(boardState => ({
-      id: `L${seq++}`,
-      parentId: parent.id,
-      label: BOARD_STATE_LABELS[boardState.kind],
-      lockstepId,
-      state: applyBlockBoardState(state, boardState, ctx),
-      startCumProb,
-      // The block entry itself is logged at actionProb 1, so including it in
-      // the child's segment leaves the segment product untouched while keeping
-      // the block visible in that branch's own history.
-      startLogIndex: state.actionLog.length,
-      conceded: false,
-      needsAttention: false,
-      split: null,
-    }));
+    const children: RunLine[] = resolution.states.map(boardState => {
+      const childState = applyBlockBoardState(state, boardState, ctx);
+      return {
+        id: `L${seq++}`,
+        parentId: parent.id,
+        label: BOARD_STATE_LABELS[boardState.kind],
+        lockstepId,
+        state: childState,
+        startState: childState,
+        startCumProb,
+        // The block entry itself is logged at actionProb 1, so including it in
+        // the child's segment leaves the segment product untouched while keeping
+        // the block visible in that branch's own history.
+        startLogIndex: state.actionLog.length,
+        conceded: false,
+        needsAttention: false,
+        split: null,
+      };
+    });
 
     const split: RunSplit = {
       resolution,
@@ -508,6 +614,8 @@ export function toSubmissionTree(run: BranchRun, lineId: string = run.rootId): S
 
 export interface BranchStripEntry {
   id: string;
+  /** Stable tree address: root 1, then one segment per resulting board state. */
+  number: string;
   label: string;
   /** Full lineage back to the block(s) that produced this branch — see `branchPath`. */
   path: string;
@@ -525,12 +633,16 @@ export interface BranchStripEntry {
   value: number;
   status: 'scored' | 'conceded' | 'needs-attention' | 'authoring';
   isViewed: boolean;
+  /** This leaf inherited movement that can be rewound to its activation start. */
+  canResetActivation: boolean;
 }
 
 export interface BranchTreeStateView extends Omit<BranchStripEntry, 'status'> {
   status: BranchStripEntry['status'] | 'continued';
   /** Historical states have already forked again and are display-only. */
   isSelectable: boolean;
+  /** Whether authored play exists after this branch's creation snapshot. */
+  canResetBranchPoint: boolean;
   /** The later block that occurred in this state, if this is not a leaf. */
   nextBlock?: BranchTreeBlockView;
 }
@@ -621,6 +733,30 @@ export function branchPath(run: BranchRun, lineId: string): string {
   return segments.length > 0 ? segments.join(' → ') : current.label;
 }
 
+/**
+ * Hierarchical address for a universe in the authored game tree.
+ *
+ * The root is implicit. Its first block creates universes 1, 2, 3, and a
+ * later block inside 2 creates 2.1, 2.2, and so on. Deriving the
+ * address from parent child-order keeps the diagram, live strip, and summary
+ * labels in lockstep without storing another identity on the run itself.
+ */
+export function universeNumber(run: BranchRun, lineId: string): string {
+  const segments: number[] = [];
+  let current = run.lines[lineId];
+
+  while (current.parentId) {
+    const parent = run.lines[current.parentId];
+    const childIndex = parent.split?.childIds.indexOf(current.id) ?? -1;
+    if (childIndex >= 0) segments.unshift(childIndex + 1);
+    current = parent;
+  }
+
+  // The root is implicit. Its immediate children are 1, 2, 3; only later
+  // splits add dotted segments such as 1.1 or 2.3.
+  return segments.length > 0 ? segments.join('.') : '1';
+}
+
 function branchOutcomes(run: BranchRun, lineId: string): BranchStripEntry['outcomes'] {
   const outcomes: BranchStripEntry['outcomes'] = [];
   let current = run.lines[lineId];
@@ -661,6 +797,7 @@ export function branchStrip(run: BranchRun): BranchStripEntry[] {
         : 'authoring';
       return {
         id: line.id,
+        number: universeNumber(run, line.id),
         label: line.label,
         path: branchPath(run, line.id),
         outcomes: branchOutcomes(run, line.id),
@@ -668,6 +805,7 @@ export function branchStrip(run: BranchRun): BranchStripEntry[] {
         value: summary?.value ?? 0,
         status,
         isViewed: line.id === run.viewedId,
+        canResetActivation: canResetLineActivation(line),
       };
     });
 }
@@ -707,6 +845,7 @@ export function branchTreeView(run: BranchRun): BranchTreeBlockView | null {
       const nextBlock = buildBlock(child, depth + 1);
       states.push({
         id: child.id,
+        number: universeNumber(run, child.id),
         label: child.label,
         path: branchPath(run, child.id),
         outcomes: branchOutcomes(run, child.id),
@@ -714,6 +853,8 @@ export function branchTreeView(run: BranchRun): BranchTreeBlockView | null {
         value: summary?.value ?? 0,
         status,
         isViewed: viewedPath.has(child.id),
+        canResetActivation: canResetLineActivation(child),
+        canResetBranchPoint: child.state !== child.startState || child.split !== null || child.conceded,
         isSelectable,
         ...(nextBlock ? { nextBlock } : {}),
       });

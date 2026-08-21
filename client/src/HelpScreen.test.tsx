@@ -1,0 +1,38 @@
+import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { HelpScreen } from './HelpScreen';
+
+afterEach(cleanup);
+
+describe('HelpScreen', () => {
+  it('explains the one-turn rules and the shared action confirmation', () => {
+    render(<HelpScreen onBack={() => undefined} />);
+
+    expect(screen.getByRole('heading', { name: 'Build the whole scoring play' })).toBeTruthy();
+    expect(screen.getByRole('img', { name: /plotted movement route/i })).toBeTruthy();
+    expect(screen.getByText(/Movement, passes, and hand-offs wait for the green control/)).toBeTruthy();
+  });
+
+  it('has an illustrated Parallel Universes page covering strips and lockstep', () => {
+    render(<HelpScreen onBack={() => undefined} />);
+
+    fireEvent.click(screen.getByRole('tab', { name: 'Parallel Universes' }));
+
+    expect(screen.getByRole('heading', { name: 'Parallel Universes' })).toBeTruthy();
+    expect(screen.getByRole('heading', { name: 'Branch strips' })).toBeTruthy();
+    expect(screen.getByRole('heading', { name: 'Lockstep' })).toBeTruthy();
+    expect(screen.getByRole('img', { name: /splitting one root play/i })).toBeTruthy();
+    expect(screen.getByRole('img', { name: /three universe cards/i })).toBeTruthy();
+    expect(screen.getByRole('img', { name: /same safe movement copied/i })).toBeTruthy();
+    expect(screen.getAllByText(/1\.1, 1\.2/)).toHaveLength(2);
+  });
+
+  it('returns to the screen that opened it', () => {
+    const onBack = vi.fn();
+    render(<HelpScreen onBack={onBack} />);
+
+    fireEvent.click(screen.getByRole('button', { name: '← Back' }));
+
+    expect(onBack).toHaveBeenCalledOnce();
+  });
+});

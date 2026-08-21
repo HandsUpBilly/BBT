@@ -428,10 +428,13 @@ interface Props {
    * see `ghostPieces` in branchRun.ts.
    */
   branchGhosts?: readonly GhostPiece[];
-  /** Final route decision, anchored beside its endpoint without resizing the pitch. */
+  /** Final action decision, anchored beside its target without resizing the pitch. */
   moveDecision?: {
     position: Position;
     probability: number | null;
+    ariaLabel?: string;
+    cancelLabel?: string;
+    confirmLabel?: string;
     onCancel: () => void;
     onConfirm: () => void;
   };
@@ -1011,7 +1014,7 @@ export function Pitch({
               className={`move-decision move-decision--${decisionSide} move-decision--${decisionVertical}`}
               style={decisionStyle}
               role="group"
-              aria-label="Confirm move"
+              aria-label={moveDecision.ariaLabel ?? 'Confirm move'}
             >
               {moveDecision.probability !== null && (
                 <span className={`move-decision__prob${moveDecision.probability < 50 ? ' move-decision__prob--risky' : ''}`}>
@@ -1022,18 +1025,26 @@ export function Pitch({
                 <button
                   type="button"
                   className="move-decision__button move-decision__button--cancel"
-                  aria-label="Plot Again"
-                  title="Plot Again"
-                  onClick={moveDecision.onCancel}
+                  aria-label={moveDecision.cancelLabel ?? 'Plot Again'}
+                  title={moveDecision.cancelLabel ?? 'Plot Again'}
+                  onPointerDown={event => event.stopPropagation()}
+                  onClick={event => {
+                    event.stopPropagation();
+                    moveDecision.onCancel();
+                  }}
                 >
                   <span aria-hidden="true">×</span>
                 </button>
                 <button
                   type="button"
                   className="move-decision__button move-decision__button--confirm"
-                  aria-label="Confirm Move"
-                  title="Confirm Move"
-                  onClick={moveDecision.onConfirm}
+                  aria-label={moveDecision.confirmLabel ?? 'Confirm Move'}
+                  title={moveDecision.confirmLabel ?? 'Confirm Move'}
+                  onPointerDown={event => event.stopPropagation()}
+                  onClick={event => {
+                    event.stopPropagation();
+                    moveDecision.onConfirm();
+                  }}
                 >
                   <span aria-hidden="true">✓</span>
                 </button>

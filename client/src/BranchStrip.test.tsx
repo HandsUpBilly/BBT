@@ -7,6 +7,7 @@ afterEach(cleanup);
 
 const scoredBranch: BranchStripEntry = {
   id: 'L2',
+  number: '1.1',
   label: 'Pushed + Down',
   path: 'Aldric ⚔ Grukk: Pushed → Sera ⚔ Dorg: Pushed + Down',
   outcomes: [
@@ -27,11 +28,13 @@ const scoredBranch: BranchStripEntry = {
   value: 1,
   status: 'scored',
   isViewed: false,
+  canResetActivation: false,
 };
 
 const attentionBranch: BranchStripEntry = {
   ...scoredBranch,
   id: 'L3',
+  number: '1.2',
   label: 'Pushed',
   path: 'Aldric ⚔ Grukk: Pushed → Sera ⚔ Dorg: Pushed',
   outcomes: [
@@ -40,6 +43,7 @@ const attentionBranch: BranchStripEntry = {
   ],
   status: 'needs-attention',
   isViewed: true,
+  canResetActivation: true,
 };
 
 const tree: BranchTreeBlockView = {
@@ -51,12 +55,14 @@ const tree: BranchTreeBlockView = {
   states: [{
     ...scoredBranch,
     id: 'L1',
+    number: '1',
     label: 'Pushed',
     path: 'Aldric ⚔ Grukk: Pushed',
     outcomes: scoredBranch.outcomes.slice(0, 1),
     status: 'continued',
     isViewed: true,
     isSelectable: false,
+    canResetBranchPoint: true,
     nextBlock: {
       id: 'L1',
       blockNumber: 2,
@@ -64,14 +70,19 @@ const tree: BranchTreeBlockView = {
       diceCount: 2,
       picker: 'attacker',
       states: [
-        { ...scoredBranch, isSelectable: true },
-        { ...attentionBranch, isSelectable: true },
+        { ...scoredBranch, isSelectable: true, canResetBranchPoint: true },
+        { ...attentionBranch, isSelectable: true, canResetBranchPoint: true },
       ],
     },
   }],
 };
 
-function renderTree(onSelect = vi.fn(), onConcede = vi.fn()) {
+function renderTree(
+  onSelect = vi.fn(),
+  onConcede = vi.fn(),
+  onReset = vi.fn(),
+  onResetToBranchPoint = vi.fn(),
+) {
   return {
     ...render(
       <BranchStrip
@@ -80,11 +91,15 @@ function renderTree(onSelect = vi.fn(), onConcede = vi.fn()) {
         deadWeight={0.1}
         score={0.5}
         onSelect={onSelect}
+        onReset={onReset}
+        onResetToBranchPoint={onResetToBranchPoint}
         onConcede={onConcede}
       />,
     ),
     onSelect,
     onConcede,
+    onReset,
+    onResetToBranchPoint,
   };
 }
 
@@ -104,14 +119,89 @@ describe('BranchStrip game tree', () => {
     expect(container.querySelector('[data-branch-id="L1"]')?.getAttribute('data-column-span')).toBe('2');
     expect(container.querySelector('[data-branch-id="L2"]')?.getAttribute('data-column-start')).toBe('0');
     expect(container.querySelector('[data-branch-id="L3"]')?.getAttribute('data-column-start')).toBe('1');
+    expect(screen.getByText('Universe 1.1 — Pushed + Down')).toBeTruthy();
+    expect(screen.getByText('Universe 1.2 — Pushed')).toBeTruthy();
 
     // The first state is structural history. Only the two current leaves can
     // select a board, so the tree cannot be used to rewind authored play.
-    expect(screen.getByLabelText(/Aldric ⚔ Grukk: Pushed;.*Branched/).tagName).toBe('DIV');
+    const unresolvedParent = screen.getByLabelText(/Aldric ⚔ Grukk: Pushed;.*Branched/);
+    expect(unresolvedParent.tagName).toBe('DIV');
+    expect(unresolvedParent.classList.contains('branch-chip--complete')).toBe(false);
     fireEvent.click(screen.getByRole('button', {
       name: /Aldric ⚔ Grukk: Pushed → Sera ⚔ Dorg: Pushed \+ Down/,
     }));
     expect(onSelect).toHaveBeenCalledWith('L2');
+  });
+
+  it('turns a parent green when every ending universe below it scored', () => {
+    const completedAttention: BranchStripEntry = {
+      ...attentionBranch,
+      status: 'scored',
+      canResetActivation: false,
+    };
+    const parent = tree.states[0];
+    const completedTree: BranchTreeBlockView = {
+      ...tree,
+      states: [{
+        ...parent,
+        nextBlock: {
+          ...parent.nextBlock!,
+          states: [
+            { ...scoredBranch, isSelectable: true, canResetBranchPoint: true },
+            { ...completedAttention, isSelectable: true, canResetBranchPoint: true },
+          ],
+        },
+      }],
+    };
+
+    render(
+      <BranchStrip
+        branches={[scoredBranch, completedAttention]}
+        tree={completedTree}
+        deadWeight={0}
+        score={1}
+        onSelect={() => undefined}
+        onReset={() => undefined}
+        onResetToBranchPoint={() => undefined}
+        onConcede={() => undefined}
+      />,
+    );
+
+    const completedParent = screen.getByLabelText(/Aldric ⚔ Grukk: Pushed;.*All branches scored/);
+    expect(completedParent.classList.contains('branch-chip--complete')).toBe(true);
+    expect(completedParent.textContent).toContain('All branches scored');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Collapse completed branches (2)' }));
+    expect(screen.getByText('All completed branches are collapsed.')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Show completed branches (2)' })).toBeTruthy();
+  });
+
+  it('switches to an unfinished universe when the viewed completed branch is collapsed', () => {
+    const onSelect = vi.fn();
+    const viewedScored = { ...scoredBranch, isViewed: true };
+    const waitingBranch = { ...attentionBranch, isViewed: false };
+    render(
+      <BranchStrip
+        branches={[viewedScored, waitingBranch]}
+        tree={tree}
+        deadWeight={0}
+        score={0.25}
+        onSelect={onSelect}
+        onReset={() => undefined}
+        onResetToBranchPoint={() => undefined}
+        onConcede={() => undefined}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Collapse completed branches (1)' }));
+
+    expect(onSelect).toHaveBeenCalledWith(waitingBranch.id);
+    expect(screen.queryByRole('button', {
+      name: /Sera ⚔ Dorg: Pushed \+ Down;.*Scored/,
+    })).toBeNull();
+    expect(screen.getByRole('button', {
+      name: /Sera ⚔ Dorg: Pushed;.*Needs a plan/,
+    })).toBeTruthy();
   });
 
   it('can hide branches needing extra actions without giving them up', () => {
@@ -132,5 +222,48 @@ describe('BranchStrip game tree', () => {
       name: 'Show branches needing extra actions (1)',
     }));
     expect(screen.getByRole('button', { name: /Sera ⚔ Dorg: Pushed;.*Needs a plan/ })).toBeTruthy();
+  });
+
+  it('confirms before giving up a universe', () => {
+    const { onConcede } = renderTree();
+
+    fireEvent.click(screen.getByRole('button', {
+      name: `Give up on ${attentionBranch.path}`,
+    }));
+
+    expect(onConcede).not.toHaveBeenCalled();
+    expect(screen.getByRole('alertdialog', {
+      name: `Give up on Universe ${attentionBranch.number}?`,
+    })).toBeTruthy();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Give Up' }));
+    expect(onConcede).toHaveBeenCalledOnce();
+    expect(onConcede).toHaveBeenCalledWith(attentionBranch.id);
+  });
+
+  it('offers a reset for an inherited partial move', () => {
+    const { onReset } = renderTree();
+
+    fireEvent.click(screen.getByRole('button', {
+      name: `Reset partial move in Universe ${attentionBranch.number}`,
+    }));
+
+    expect(onReset).toHaveBeenCalledWith(attentionBranch.id);
+  });
+
+  it('confirms before resetting a parent and warns that child branches are removed', () => {
+    const onResetToBranchPoint = vi.fn();
+    renderTree(vi.fn(), vi.fn(), vi.fn(), onResetToBranchPoint);
+
+    fireEvent.click(screen.getByRole('button', {
+      name: 'Reset Universe 1 to its branching point',
+    }));
+
+    expect(onResetToBranchPoint).not.toHaveBeenCalled();
+    expect(screen.getByRole('alertdialog', { name: 'Reset Universe 1?' })).toBeTruthy();
+    expect(screen.getByText(/removes 2 child branches/)).toBeTruthy();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Reset Branch' }));
+    expect(onResetToBranchPoint).toHaveBeenCalledWith('L1');
   });
 });

@@ -21,6 +21,8 @@ Current modes:
 - `series-leaderboard`: aggregate series leaderboard and summary.
 - `settings`: display name, avatar, and player token style — see "Settings
   Screen and Player Prefs" below.
+- `help`: illustrated rules pages for getting started, actions, and Parallel
+  Universes.
 
 `freeplay` has been **removed** from the type. It was never assigned anywhere,
 and the multi-turn machinery it needed (End Turn, turn counters, halves, score)
@@ -46,13 +48,20 @@ name or avatar. Google identity is retained only as a stable account key and
 for the server-side admin email allowlist. Signing out clears Google auth if
 signed in, otherwise clears the guest alias.
 
-The account menu also opens **About** beside Settings and Log Out. Its
-focus-trapped dialog is the single player-facing location for the build version
+The account menu opens **Help & rules**, **About**, and **Settings** beside Log
+Out. Help is a full archive-style screen with Getting started, Actions, and
+Parallel Universes tabs. Its code-native diagrams explain confirmation controls,
+hierarchical universe numbers, branch strips, and lockstep replay without
+depending on a particular puzzle screenshot. Like Settings, `App.tsx` records
+`helpReturnMode`, so opening Help from the game HUD preserves the puzzle and
+returns to it unchanged.
+
+About's focus-trapped dialog is the single player-facing location for the build version
 (`__BBT_VERSION__`) and deployment time (`__BBT_DEPLOYED_AT__`), formatted in
 the viewer's local timezone. Vite stamps the deployment time when it builds the
 bundle; `VITE_DEPLOYED_AT` can override it with an ISO timestamp. The home
 masthead carries neither label. Because `UserMenu` is shared, About remains
-available from home, archives, Puzzle Creator, Settings, and the game HUD.
+available from home, archives, Puzzle Creator, Settings, Help, and the game HUD.
 
 ## Settings Screen and Player Prefs
 
@@ -201,6 +210,14 @@ fields the diagram reads. Clicking a ranking row therefore reconstructs the
 same diagram in `ScoreSummary`. Entries saved before `playLog` shipped remain
 valid and show an explicit unavailable message rather than a partial route
 built from the risky-roll list.
+
+Parallel Universes use hierarchical addresses everywhere they are shown: the
+root is implicit, its first split creates 1, 2, 3, and a later split inside 2
+creates 2.1, 2.2, and so on. Summary rows and drill-downs use
+these compact numbers so a long chain of player names and block outcomes cannot
+crowd the action log out of a phone viewport. The complete branch path remains
+the accessible name and title, while visible labels keep the universe number
+and final outcome.
 
 During a series, the touchdown analysis has a **Review Board** action. It hides
 the analysis without submitting or advancing, leaving the scored board exactly
@@ -396,7 +413,8 @@ from the one final decision:
 - clicking or tapping the already-plotted route endpoint marks the whole move
   finished, then a green tick and red × appear beside that square for
   **Confirm Move** or **Plot Again**;
-- **Plot Again** rewinds the activation to its original board state.
+- **Plot Again** rewinds the activation to its original board state while
+  keeping the same player and declared action selected for a new route.
 
 `pathPreviewProb` (in `useGameState.ts`) gives the endpoint decision its odds. It
 mirrors the per-step maths in `handleSquareClick`, including GFI, dodge and

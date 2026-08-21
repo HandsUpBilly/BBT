@@ -76,7 +76,7 @@ export function BranchRunSummary({
     <div className="modal-backdrop">
       <div
         ref={ref}
-        className="modal branch-summary"
+        className={`modal branch-summary${detail ? ' branch-summary--detail' : ''}`}
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
@@ -87,7 +87,15 @@ export function BranchRunSummary({
             <button type="button" className="branch-summary__back" onClick={() => setDetailId(null)}>
               ← Back to summary
             </button>
-            <h2 id={titleId} className="modal__title branch-summary__detail-title">{detail.path}</h2>
+            <h2
+              id={titleId}
+              className="modal__title branch-summary__detail-title"
+              aria-label={`Universe ${detail.number}: ${detail.path}`}
+              title={detail.path}
+            >
+              <span>Universe {detail.number}</span>
+              <span className="branch-summary__detail-outcome" aria-hidden="true">— {detail.label}</span>
+            </h2>
             <ActionLogDetail
               scenario={scenario}
               actionLog={run.lines[detail.id].state.actionLog}
@@ -145,10 +153,13 @@ export function BranchRunSummary({
                   <button
                     type="button"
                     className={`branch-summary__branch branch-summary__branch--${branch.status}`}
-                    aria-label={`View ${branch.path}`}
+                    aria-label={`View Universe ${branch.number}: ${branch.path}`}
                     onClick={() => setDetailId(branch.id)}
                   >
-                    <span className="branch-summary__branch-path">{branch.path}</span>
+                    <span className="branch-summary__branch-path" title={branch.path}>
+                      <span className="branch-summary__branch-number">Universe {branch.number}</span>
+                      <span className="branch-summary__branch-outcome">— {branch.label}</span>
+                    </span>
                     <span className="branch-summary__branch-weight">{pct(branch.weight)}</span>
                     <span className="branch-summary__branch-value">
                       {branch.status === 'conceded' ? 'given up' : `scores ${pct(branch.value)}`}

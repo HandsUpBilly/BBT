@@ -5301,3 +5301,58 @@ start/retention caveat; do not label pre-launch zeroes as inactivity.
   without promotional or conversational filler.
 - No player-facing prose contains an en dash, em dash, typographic ellipsis, or
   decorative middle dot.
+
+---
+
+# Pass / Hand-off Confirmation and Illustrated Help
+
+**Status:** Shipped.
+
+## Requirements
+
+- Selecting a legal Pass or Hand-off receiver stages the target instead of
+  executing immediately. Reuse movement's pitch-anchored red and green
+  decision control with action-specific accessible labels.
+- Red returns to receiver selection without abandoning the activation. Green
+  commits the Pass or Hand-off. Escape dismisses a staged receiver before it
+  cancels the activation.
+- Add Help & rules to the shared player menu and return to the screen that
+  opened it without resetting an active puzzle.
+- Provide separate Getting started, Actions, and Parallel Universes pages.
+  Explain one-turn scoring, action confirmation, hierarchical universe
+  numbers, branch strips, Reset, confirmed Give up, and lockstep replay.
+- Use responsive, accessible code-native diagrams so the explanations remain
+  legible on phones and desktops.
+
+## Success Criteria
+
+- Passes and Hand-offs cannot be committed by a single receiver tap.
+- The Help screen is reachable everywhere `UserMenu` appears and its Back
+  control restores the previous app mode.
+- Parallel Universes has labelled illustrations for its tree, branch strips,
+  and lockstep behavior, including the look-ahead stop before a newly marked
+  square.
+
+---
+
+# Parallel Universe Branch-point Reset
+
+**Status:** Shipped.
+
+## Requirements
+
+- Preserve the exact board snapshot created at the start of every universe.
+- Offer Reset branch on any universe with authored play after that snapshot,
+  including historical parents that later split again.
+- Confirm before resetting and state how many child branches will be removed.
+- Restore the chosen universe to its branch point, remove every descendant
+  line, select the restored universe, and leave sibling universes untouched.
+- Keep the inherited partial-movement Reset move control as a separate,
+  lightweight operation.
+
+## Success Criteria
+
+- Resetting a parent after a second block removes all of that parent's children
+  and turns the parent back into a playable leaf at its original board state.
+- Resetting never rewinds a sibling branch or silently concedes probability.
+- No branch data is discarded before the confirmation step.

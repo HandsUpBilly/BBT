@@ -5,6 +5,7 @@ interface Props {
   name: string;
   /** A `data:image/...` avatar (see prefs.ts). Falls back to initials when absent or when it fails to load. */
   avatar?: string;
+  onHelp?: () => void;
   onSettings?: () => void;
   onAbout?: () => void;
   onSignOut?: () => void;
@@ -31,7 +32,7 @@ function Avatar({ name, avatar, large }: { name: string; avatar?: string; large?
   return <span className={`${className} user-menu__avatar--fallback`}>{initials(name)}</span>;
 }
 
-export function UserMenu({ name, avatar, onSettings, onAbout, onSignOut }: Props) {
+export function UserMenu({ name, avatar, onHelp, onSettings, onAbout, onSignOut }: Props) {
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
@@ -76,6 +77,15 @@ export function UserMenu({ name, avatar, onSettings, onAbout, onSignOut }: Props
             <Avatar name={name} avatar={avatar} large />
             <span className="user-menu__dropdown-name">{name}</span>
           </div>
+          {onHelp && (
+            <button
+              className="user-menu__item"
+              role="menuitem"
+              onClick={() => { close(); onHelp(); }}
+            >
+              Help &amp; rules
+            </button>
+          )}
           {onSettings && (
             <button
               className="user-menu__item"

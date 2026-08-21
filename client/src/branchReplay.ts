@@ -19,7 +19,7 @@
 
 import type { ActionLogEntry, GameState, PlayerPiece, Position } from './types';
 import { applyClick, classifyClick, type ClickIntent } from './useGameState';
-import { key } from './bfs';
+import { key, tacklezoneKeys } from './bfs';
 
 function piecePart(piece: PlayerPiece): string {
   // Position, prone state, and whether the piece has already gone are the only
@@ -142,6 +142,48 @@ export function addedRollCount(before: GameState, after: GameState): number {
   return after.actionLog
     .slice(before.actionLog.length)
     .reduce((total, entry) => total + entryRollCount(entry), 0);
+}
+
+function selectedPiecePosition(state: GameState): Position | null {
+  if (!state.selectedPieceId) return null;
+  return state.committedPath[state.committedPath.length - 1]
+    ?? state.originPos
+    ?? state.pieces.find(piece => piece.id === state.selectedPieceId)?.position
+    ?? null;
+}
+
+/** Whether the active mover would have to dodge when leaving its current square. */
+export function selectedPieceIsMarked(state: GameState): boolean {
+  const selected = state.pieces.find(piece => piece.id === state.selectedPieceId);
+  const position = selectedPiecePosition(state);
+  if (!selected || !position) return false;
+  const opponents = state.pieces
+    .filter(piece => piece.team !== selected.team && !piece.down)
+    .map(piece => piece.position);
+  return tacklezoneKeys(opponents).has(key(position));
+}
+
+/**
+ * Find the square immediately before a sibling replay enters an extra tackle
+ * zone that the authored branch does not enter. Returning that predecessor
+ * lets the sibling keep the safe prefix of a multi-square click, then stop and
+ * ask for its own plan before it becomes committed to a future dodge.
+ */
+export function positionBeforeExtraTackleZone(
+  before: GameState,
+  replayed: GameState,
+  viewedAfter: GameState,
+): Position | null {
+  const beforePosition = selectedPiecePosition(before);
+  const replayedPosition = selectedPiecePosition(replayed);
+  if (!beforePosition || !replayedPosition) return null;
+  if (key(beforePosition) === key(replayedPosition)) return null;
+  if (!selectedPieceIsMarked(replayed) || selectedPieceIsMarked(viewedAfter)) return null;
+
+  const finalMove = replayed.actionLog
+    .slice(before.actionLog.length)
+    .findLast(entry => entry.kind === 'move' && key(entry.to) === key(replayedPosition));
+  return finalMove?.from ?? null;
 }
 
 /**
