@@ -11,7 +11,13 @@ describe('HelpScreen', () => {
     expect(screen.getByRole('heading', { name: 'Find the strongest sequence' })).toBeTruthy();
     expect(screen.getByText(/highest probability of meeting the puzzle's stated objective/i)).toBeTruthy();
     expect(screen.getByText(/successful foul, a crowd surf/i)).toBeTruthy();
-    expect(screen.getByRole('img', { name: /plotted movement route/i })).toBeTruthy();
+    const decisionPicture = screen.getByRole('img', { name: /plotted movement route/i });
+    expect(decisionPicture).toBeTruthy();
+    const routeMarker = decisionPicture.querySelector('#help-route-arrow');
+    expect(routeMarker?.getAttribute('viewBox')).toBe('0 0 8 8');
+    expect(routeMarker?.getAttribute('markerUnits')).toBe('userSpaceOnUse');
+    expect(routeMarker?.getAttribute('markerWidth')).toBe('18');
+    expect(routeMarker?.getAttribute('markerHeight')).toBe('18');
     expect(screen.getByText(/Movement, passes, and hand-offs wait for the green control/)).toBeTruthy();
   });
 

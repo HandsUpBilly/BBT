@@ -26,6 +26,10 @@ const STATUS_LABEL: Record<BranchTreeStateView['status'], string> = {
   'continued': 'Branched',
 };
 
+/** Includes the compact dice card and any reset/give-up control beside it. */
+const BRANCH_TRACK_WIDTH = 190;
+const BRANCH_TRACK_GAP = 8;
+
 function pct(value: number): string {
   if (value > 0 && value < 0.005) return '<1%';
   return `${Math.round(value * 100)}%`;
@@ -82,7 +86,6 @@ function StateCard({
           ))}
         </span>
       )}
-      <span className="branch-chip__outcome">Universe {state.number} — {state.label}</span>
       <span className="branch-chip__weight">{pct(state.weight)}</span>
       <span className="branch-chip__status">{statusLabel}</span>
     </>
@@ -122,7 +125,7 @@ function StateCard({
           aria-label={`Reset Universe ${state.number} to its branching point`}
           onClick={() => onRequestReset(state)}
         >
-          Reset branch
+          <span aria-hidden="true">↺</span>
         </button>
       )}
       {state.isSelectable && state.status !== 'scored' && state.status !== 'conceded' && (
@@ -133,7 +136,7 @@ function StateCard({
           aria-label={`Give up on ${state.path}`}
           onClick={() => onRequestConcede(state)}
         >
-          ✕
+          <span aria-hidden="true">⚐</span>
         </button>
       )}
     </div>
@@ -236,9 +239,11 @@ export function BranchStrip({
         {layout && layout.leafColumns > 0 ? (
           <div className="branch-tree-strips">
             {layout.strips.map(strip => {
+              const gridWidth = layout.leafColumns * BRANCH_TRACK_WIDTH
+                + Math.max(0, layout.leafColumns - 1) * BRANCH_TRACK_GAP;
               const gridStyle: CSSProperties = {
-                gridTemplateColumns: `repeat(${layout.leafColumns}, minmax(150px, 1fr))`,
-                minWidth: `${layout.leafColumns * 158}px`,
+                gridTemplateColumns: `repeat(${layout.leafColumns}, ${BRANCH_TRACK_WIDTH}px)`,
+                width: `${gridWidth}px`,
               };
               return (
                 <section

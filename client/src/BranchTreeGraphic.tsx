@@ -3,9 +3,10 @@ import './BranchTreeGraphic.css';
 
 const NODE_WIDTH = 174;
 const NODE_HEIGHT = 52;
-const COLUMN_GAP = 72;
+const COLUMN_GAP = 48;
 const ROW_GAP = 72;
 const MARGIN = 18;
+const COLUMN_HEADER_HEIGHT = 30;
 
 interface Props {
   tree: BranchTreeBlockView;
@@ -21,7 +22,7 @@ interface LayoutNode {
   title: string;
   detail: string;
   description: string;
-  kind: 'block' | BranchTreeStateView['status'];
+  kind: BranchTreeStateView['status'];
   highlighted: boolean;
   selected: boolean;
 }
@@ -59,6 +60,7 @@ function blockContains(block: BranchTreeBlockView, branchId: string): boolean {
 export function BranchTreeGraphic({ tree, highlightedBranchId, variant = 'summary' }: Props) {
   const nodes: LayoutNode[] = [];
   const edges: LayoutEdge[] = [];
+  const blockNumbersByColumn = new Map<number, Set<number>>();
   let leafIndex = 0;
   let maxColumn = 0;
   let maxBlockNumber = 0;
@@ -72,7 +74,7 @@ export function BranchTreeGraphic({ tree, highlightedBranchId, variant = 'summar
     state: BranchTreeStateView,
     column: number,
     key: string,
-    parent: LayoutNode,
+    parent?: LayoutNode,
   ): LayoutNode => {
     const highlighted = highlightedBranchId !== undefined
       && (state.id === highlightedBranchId
@@ -89,13 +91,15 @@ export function BranchTreeGraphic({ tree, highlightedBranchId, variant = 'summar
       selected: state.id === highlightedBranchId,
     };
     nodes.push(node);
-    edges.push({ from: parent, to: node });
+    if (parent) edges.push({ from: parent, to: node });
 
     if (state.nextBlock) {
-      const child = visitBlock(state.nextBlock, column + 1, `${key}/block`, node);
-      node.y = child.y;
+      const children = visitBlock(state.nextBlock, column + 1, `${key}/block`, node);
+      node.y = children.length > 0
+        ? children.reduce((total, child) => total + child.y, 0) / children.length
+        : MARGIN + COLUMN_HEADER_HEIGHT + NODE_HEIGHT / 2 + leafIndex++ * ROW_GAP;
     } else {
-      node.y = MARGIN + NODE_HEIGHT / 2 + leafIndex++ * ROW_GAP;
+      node.y = MARGIN + COLUMN_HEADER_HEIGHT + NODE_HEIGHT / 2 + leafIndex++ * ROW_GAP;
     }
     return node;
   };
@@ -105,35 +109,21 @@ export function BranchTreeGraphic({ tree, highlightedBranchId, variant = 'summar
     column: number,
     key: string,
     parent?: LayoutNode,
-  ): LayoutNode => {
+  ): LayoutNode[] => {
     maxBlockNumber = Math.max(maxBlockNumber, block.blockNumber);
-    const highlighted = highlightedBranchId !== undefined && blockContains(block, highlightedBranchId);
-    const node: LayoutNode = {
-      key,
-      x: xFor(column),
-      y: 0,
-      title: `Block ${block.blockNumber}`,
-      detail: shorten(block.blockLabel, 29),
-      description: `Block ${block.blockNumber}: ${block.blockLabel}; ${block.diceCount} ${block.diceCount === 1 ? 'die' : 'dice'}`,
-      kind: 'block',
-      highlighted,
-      selected: false,
-    };
-    nodes.push(node);
-    if (parent) edges.push({ from: parent, to: node });
-
-    const children = block.states.map((state, index) =>
-      visitState(state, column + 1, `${key}/state-${index}-${state.id}`, node));
-    node.y = children.length > 0
-      ? children.reduce((total, child) => total + child.y, 0) / children.length
-      : MARGIN + NODE_HEIGHT / 2 + leafIndex++ * ROW_GAP;
-    return node;
+    xFor(column);
+    const blockNumbers = blockNumbersByColumn.get(column) ?? new Set<number>();
+    blockNumbers.add(block.blockNumber);
+    blockNumbersByColumn.set(column, blockNumbers);
+    return block.states.map((state, index) =>
+      visitState(state, column, `${key}/state-${index}-${state.id}`, parent));
   };
 
   visitBlock(tree, 0, `block-${tree.id}`);
 
   const width = MARGIN * 2 + (maxColumn + 1) * NODE_WIDTH + maxColumn * COLUMN_GAP;
-  const height = MARGIN * 2 + NODE_HEIGHT + Math.max(0, leafIndex - 1) * ROW_GAP;
+  const height = MARGIN * 2 + COLUMN_HEADER_HEIGHT + NODE_HEIGHT + Math.max(0, leafIndex - 1) * ROW_GAP;
+  const columns = [...blockNumbersByColumn.entries()].sort(([left], [right]) => left - right);
 
   return (
     <figure className={`branch-tree branch-tree--${variant}`}>
@@ -146,6 +136,30 @@ export function BranchTreeGraphic({ tree, highlightedBranchId, variant = 'summar
           role="img"
           aria-label={`Game branch tree with ${maxBlockNumber} ${maxBlockNumber === 1 ? 'block' : 'blocks'} and ${leafIndex} ending ${leafIndex === 1 ? 'universe' : 'universes'}${highlightedBranchId ? '; reviewed branch highlighted' : ''}`}
         >
+          <g className="branch-tree__columns" aria-hidden="true">
+            {columns.map(([column, blockNumbers]) => {
+              const numbers = [...blockNumbers].sort((left, right) => left - right);
+              const label = `${numbers.length === 1 ? 'Block' : 'Blocks'} ${numbers.join(', ')}`;
+              const x = MARGIN + NODE_WIDTH / 2 + column * (NODE_WIDTH + COLUMN_GAP);
+              const dividerX = x - NODE_WIDTH / 2 - COLUMN_GAP / 2;
+              return (
+                <g key={column}>
+                  {column > 0 && (
+                    <line
+                      className="branch-tree__column-divider"
+                      x1={dividerX}
+                      y1={MARGIN + COLUMN_HEADER_HEIGHT - 5}
+                      x2={dividerX}
+                      y2={height - MARGIN}
+                    />
+                  )}
+                  <text className="branch-tree__column-label" x={x} y={MARGIN + 11} textAnchor="middle">
+                    {label}
+                  </text>
+                </g>
+              );
+            })}
+          </g>
           <g className="branch-tree__edges" aria-hidden="true">
             {edges.map(edge => {
               const startX = edge.from.x + NODE_WIDTH / 2;
@@ -181,7 +195,7 @@ export function BranchTreeGraphic({ tree, highlightedBranchId, variant = 'summar
           </g>
         </svg>
       </div>
-      <figcaption>Blocks progress from left to right; each line follows one resulting universe.</figcaption>
+      <figcaption>Each column is one block; lines follow the resulting universes from left to right.</figcaption>
     </figure>
   );
 }

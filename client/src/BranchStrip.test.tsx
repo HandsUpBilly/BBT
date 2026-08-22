@@ -119,8 +119,11 @@ describe('BranchStrip game tree', () => {
     expect(container.querySelector('[data-branch-id="L1"]')?.getAttribute('data-column-span')).toBe('2');
     expect(container.querySelector('[data-branch-id="L2"]')?.getAttribute('data-column-start')).toBe('0');
     expect(container.querySelector('[data-branch-id="L3"]')?.getAttribute('data-column-start')).toBe('1');
-    expect(screen.getByText('Universe 1.1 — Pushed + Down')).toBeTruthy();
-    expect(screen.getByText('Universe 1.2 — Pushed')).toBeTruthy();
+    expect(screen.queryByText('Universe 1.1 — Pushed + Down')).toBeNull();
+    expect(screen.queryByText('Universe 1.2 — Pushed')).toBeNull();
+    expect(container.querySelector('[data-branch-id="L2"]')?.querySelectorAll('.branch-chip__die')).toHaveLength(2);
+    expect((rows[0].querySelector('.branch-strip-row__states') as HTMLElement).style.gridTemplateColumns)
+      .toBe('repeat(2, 190px)');
 
     // The first state is structural history. Only the two current leaves can
     // select a board, so the tree cannot be used to rewind authored play.
@@ -227,9 +230,11 @@ describe('BranchStrip game tree', () => {
   it('confirms before giving up a universe', () => {
     const { onConcede } = renderTree();
 
-    fireEvent.click(screen.getByRole('button', {
+    const giveUpButton = screen.getByRole('button', {
       name: `Give up on ${attentionBranch.path}`,
-    }));
+    });
+    expect(giveUpButton.textContent).toBe('⚐');
+    fireEvent.click(giveUpButton);
 
     expect(onConcede).not.toHaveBeenCalled();
     expect(screen.getByRole('alertdialog', {
@@ -255,9 +260,11 @@ describe('BranchStrip game tree', () => {
     const onResetToBranchPoint = vi.fn();
     renderTree(vi.fn(), vi.fn(), vi.fn(), onResetToBranchPoint);
 
-    fireEvent.click(screen.getByRole('button', {
+    const resetButton = screen.getByRole('button', {
       name: 'Reset Universe 1 to its branching point',
-    }));
+    });
+    expect(resetButton.textContent).toBe('↺');
+    fireEvent.click(resetButton);
 
     expect(onResetToBranchPoint).not.toHaveBeenCalled();
     expect(screen.getByRole('alertdialog', { name: 'Reset Universe 1?' })).toBeTruthy();

@@ -1466,16 +1466,19 @@
     padding: 24px 18px 22px;
   }
 
-  .app--playbook .submit-modal__moves-scroll,
   .app--playbook .score-summary__moves {
     overflow-x: auto;
   }
 
-  .app--playbook .submit-modal__moves-header,
-  .app--playbook .submit-modal__move-row,
   .app--playbook .score-summary__moves-header,
   .app--playbook .score-summary__move-row {
     min-width: 610px;
+  }
+
+  .app--playbook .submit-modal__moves-header,
+  .app--playbook .submit-modal__move-row {
+    min-width: 0;
+    column-gap: 6px;
   }
 
   .app--archive .leaderboard,

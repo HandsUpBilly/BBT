@@ -1524,7 +1524,7 @@ export default function App() {
   ) : null;
   const statusLine = (
     <div className="hud__status">
-      {compact && seriesCounter && <>{seriesCounter}{': '}</>}
+      {compact && seriesCounter && <>{seriesCounter}{' '}</>}
       {activationStatus}
     </div>
   );
@@ -1540,9 +1540,9 @@ export default function App() {
         {/* Keep account/Settings/About ahead of the game tools on narrow HUDs. */}
         {accountMenu}
 
-        <div className={`hud__prob${compact && !showSuccessChance ? ' hud__prob--empty' : ''}`}>
-          {!compact && seriesCounter && <>{seriesCounter}{': '}</>}
-          <SuccessChanceReadout probability={liveProbPct} visible={showSuccessChance} />
+        <div className={`hud__prob${!showSuccessChance && (compact || !seriesCounter) ? ' hud__prob--empty' : ''}`}>
+          {!compact && seriesCounter}
+          {showSuccessChance && <SuccessChanceReadout probability={liveProbPct} visible />}
         </div>
 
         {!compact && statusLine}

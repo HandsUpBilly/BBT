@@ -33,6 +33,21 @@
   height: auto;
 }
 
+.branch-tree__column-label {
+  fill: var(--color-text-muted);
+  font-family: var(--font-display);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.branch-tree__column-divider {
+  stroke: var(--color-border-subtle);
+  stroke-width: 1;
+  stroke-dasharray: 4 5;
+}
+
 .branch-tree__edges path {
   fill: none;
   stroke: var(--color-border-selected);
@@ -50,11 +65,6 @@
   fill: var(--color-surface-2);
   stroke: var(--color-border);
   stroke-width: 1.5;
-}
-
-.branch-tree__node--block rect {
-  fill: var(--color-surface-3);
-  stroke: var(--color-accent-border);
 }
 
 .branch-tree__node--scored rect {
