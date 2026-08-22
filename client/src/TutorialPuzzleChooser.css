@@ -61,7 +61,10 @@
 
 .tutorial-chooser__card--complete {
   border-left-color: #78a948;
-  opacity: 0.72;
+}
+
+.tutorial-chooser__card--complete .tutorial-chooser__lesson {
+  color: #8fbe61;
 }
 
 .tutorial-chooser__number {

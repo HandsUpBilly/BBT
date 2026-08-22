@@ -5422,11 +5422,12 @@ The following product decisions are fixed:
 ### Entry and progression
 
 - Starting the Tutorial series opens a chooser containing all six drills.
-  Players may select any unfinished drill; completed drills stay visible but
-  disabled. Completing a drill returns to the chooser until all six have been
-  completed once, after which their probabilities combine into the normal
-  series result. The chooser does not reset probability or create an extra
-  turn inside a puzzle.
+  Players may select any unfinished drill or replay a completed drill. A replay
+  replaces that drill's previous result in place rather than adding a duplicate
+  or increasing the completed count. Completing a drill returns to the chooser
+  until all six have been completed once, after which their probabilities
+  combine into the normal series result. The chooser does not reset probability
+  or create an extra turn inside a puzzle.
 - Keep the existing opening `TutorialLessonDialog`. **Begin Puzzle** closes the
   rules briefing and immediately opens the first contextual coach step before
   the player can make an uninstructed first interaction.
@@ -5594,7 +5595,7 @@ the authored next interaction illegal.
 | `client/src/useTutorialGuide.ts` | Thin React integration owning attempt-local visibility, skipped state, current stage/tier, manual reopen, and callbacks into the pure reducer. No gameplay mutations. |
 | `client/src/TutorialGuideDialog.tsx` and scoped CSS | Accessible coach modal with progress, hint-tier copy, mini diagram, More help, Try it, and Skip guide controls. |
 | `client/src/TutorialMiniDiagram.tsx` and scoped CSS | Render a responsive SVG/code-native board or control diagram from current state plus the stage focus descriptor, with tier-aware detail and alternative text. Reuse presentation helpers where safe without mounting the full interactive `Pitch`. |
-| `client/src/TutorialPuzzleChooser.tsx` and scoped CSS | Present canonical drill order, completed/remaining progress, disabled completed cards, and unfinished selection at series start and between drills. |
+| `client/src/TutorialPuzzleChooser.tsx` and scoped CSS | Present canonical drill order, completed/remaining progress, unfinished selection, and completed-drill replay at series start and between drills. |
 | `client/src/tutorialLessons.ts` | Retain opening rules briefings and action gating. Associate only existing guided lessons with the separate guide definitions; do not duplicate scenario names/descriptions. |
 | `client/src/App.tsx` | Start/reset the guide with puzzle attempts, feed normalized selection/action/commit/universe milestones, enforce modal priority, connect Begin Puzzle and Game Tools, and leave all game handlers authoritative. Avoid embedding guide content or stage-specific conditionals here. |
 | `client/src/GameToolsMenu.tsx`, `SettingsScreen.tsx` | Expose Tutorial guide reopening and rename the existing preference label to Tutorial guidance without changing its stored meaning. |
@@ -5657,8 +5658,8 @@ the authored next interaction illegal.
   change pieces, activations, action logs, universes, probability, score, or
   leaderboard submissions.
 - A new series and every non-final completion show the chooser; any unfinished
-  drill can be selected, a completed drill cannot be replayed in the same run,
-  and completing all six still produces exactly one combined series result.
+  or completed drill can be selected, replay replaces the earlier result, and
+  completing all six still produces exactly one combined series result.
 - Dialogs are keyboard/touch accessible, never compete with another modal, and
   keep diagrams, text, and actions reachable at 320 px and 200% zoom.
 - Content/reference validation, unit/integration tests, `npm run verify`, and

@@ -137,10 +137,11 @@ public avatars).
   Parallel Universes enables Block and Blitz as well. Actions from later
   drills stay disabled in earlier drills.
 - **Tutorial runs begin and advance through a drill chooser.** The player may
-  play the six drills in any order. Completed drills remain visible but cannot
-  be selected again during that run; after each completion the chooser returns
-  with updated completed/remaining counts. The six probabilities still combine
-  into one series score after every drill has been completed once. The sixth
+  play the six drills in any order. Completed drills remain selectable for
+  replay; a replay replaces that drill's earlier result without increasing the
+  completed count. After each completion the chooser returns with updated
+  completed/remaining counts. One result per drill combines into the series
+  score after every drill has been completed once. The sixth
   drill keeps the full unrestricted action set while now providing its own
   Blocking, Pickup, and Parallel Universes briefing and contextual coach.
 - **The compact game HUD keeps every control inside the viewport.** Account

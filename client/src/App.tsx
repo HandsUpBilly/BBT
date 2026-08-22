@@ -35,6 +35,7 @@ import { HelpScreen } from './HelpScreen';
 import { TutorialLessonDialog } from './TutorialLessonDialog';
 import { TutorialGuideDialog } from './TutorialGuideDialog';
 import { TutorialPuzzleChooser } from './TutorialPuzzleChooser';
+import { upsertSeriesPuzzleResult } from './seriesResults';
 import { useTutorialGuide } from './useTutorialGuide';
 import { TUTORIAL_LESSON_IDS, tutorialLessonFor } from './tutorialLessons';
 import type { TutorialLesson } from './tutorialLessons';
@@ -1214,7 +1215,7 @@ export default function App() {
   }, [identityName, seriesScenarios.length, scenarioData.series.id, tutorialCoach]);
 
   const chooseSeriesPuzzle = useCallback((scenario: Scenario) => {
-    if (!seriesRun || seriesRun.results.some(result => result.scenarioId === scenario.id)) return;
+    if (!seriesRun) return;
     const puzzleIndex = seriesScenarios.findIndex(item => item.id === scenario.id);
     if (puzzleIndex < 0) return;
     setSeriesRun({ ...seriesRun, puzzleIndex });
@@ -1265,7 +1266,7 @@ export default function App() {
       moves,
       ...(tree ? { tree } : {}),
     };
-    const results = [...seriesRun.results, result];
+    const results = upsertSeriesPuzzleResult(seriesRun.results, result);
     const completionPosition = results.length;
     if (analyticsSeriesRunIdRef.current) {
       trackAnalytics('series-advanced', {
@@ -1666,9 +1667,13 @@ export default function App() {
   // text on touch, where a 310px control row has no 89px to spare for it.
   const seriesCounter = seriesRun ? (
     <span className="hud__prob-label hud__prob-label--series">
-      Series progress {seriesRun.results.length + 1} / {seriesScenarios.length}
+      Series progress {seriesRun.results.length} / {seriesScenarios.length} complete
     </span>
   ) : null;
+  const completedSeriesPuzzlesAfterCurrent = seriesRun
+    ? seriesRun.results.length + (activeScenario
+      && !seriesRun.results.some(result => result.scenarioId === activeScenario.id) ? 1 : 0)
+    : 0;
   const statusLine = (
     <div className="hud__status">
       {compact && seriesCounter && <>{seriesCounter}{' '}</>}
@@ -1863,7 +1868,7 @@ export default function App() {
           onReviewBoard={() => setReviewingCompletedBoard(true)}
           error={submitError}
           continueLabel={
-            seriesRun.results.length + 1 < seriesScenarios.length
+            completedSeriesPuzzlesAfterCurrent < seriesScenarios.length
               ? 'Choose Next Tutorial'
               : 'Finish Series'
           }
@@ -1884,7 +1889,7 @@ export default function App() {
           seriesMode
           onReviewBoard={() => setReviewingCompletedBoard(true)}
           continueLabel={
-            seriesRun.results.length + 1 < seriesScenarios.length
+            completedSeriesPuzzlesAfterCurrent < seriesScenarios.length
               ? 'Choose Next Tutorial'
               : 'Finish Series'
           }

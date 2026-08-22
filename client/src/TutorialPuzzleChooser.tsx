@@ -23,8 +23,9 @@ export function TutorialPuzzleChooser({
         <p className="tutorial-chooser__eyebrow">{seriesName}</p>
         <h1>Choose a Tutorial drill</h1>
         <p>
-          Play the drills in any order. Complete each one once to finish the series;
-          your six probabilities still combine into the final series score.
+          Play the drills in any order. Before finishing the series, you can replay
+          a completed drill and replace its earlier result. One result from each drill
+          combines into the final series score.
         </p>
         <div className="tutorial-chooser__progress" role="status">
           {completed} complete · {remaining} remaining
@@ -51,10 +52,9 @@ export function TutorialPuzzleChooser({
               <button
                 type="button"
                 className={`btn ${isComplete ? 'btn--secondary' : 'btn--primary'}`}
-                disabled={isComplete}
                 onClick={() => onChoose(scenario)}
               >
-                {isComplete ? 'Completed' : 'Play this drill'}
+                {isComplete ? 'Replay this drill' : 'Play this drill'}
               </button>
             </article>
           );

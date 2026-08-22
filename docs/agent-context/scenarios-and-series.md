@@ -73,8 +73,9 @@ labelled as a Tutorial in the challenge screen, and uses this rules order:
 `scenario-005`, `scenario-006` (movement, dodging, handoff, pass, combined
 play, then the unrestricted full-action board). The chooser presents that
 canonical teaching order but permits unfinished drills to be played in any
-order. Completed drills are disabled until the run ends, and the chooser
-returns after every drill. Tutorial briefing copy lives
+order. Completed drills can also be replayed; the new result replaces the
+earlier result in place so the series always contains one result per scenario.
+The chooser returns after every non-final drill. Tutorial briefing copy lives
 separately in `client/src/tutorialLessons.ts`; typed contextual coach stages
 live in `client/src/tutorialGuides.ts`. Neither overrides scenario names or
 descriptions, and neither adds fields to scenario JSON. The guide definitions

@@ -8,20 +8,22 @@ afterEach(cleanup);
 describe('TutorialPuzzleChooser', () => {
   const tutorialScenarios = scenarios.slice(0, 3);
 
-  it('offers every unfinished drill and reports run progress', () => {
+  it('offers unfinished and completed drills and reports run progress', () => {
+    const onChoose = vi.fn();
     render(
       <TutorialPuzzleChooser
         seriesName="Tutorial"
         scenarios={tutorialScenarios}
         completedScenarioIds={new Set([tutorialScenarios[0].id])}
-        onChoose={vi.fn()}
+        onChoose={onChoose}
         onLeave={vi.fn()}
       />,
     );
 
     expect(screen.getByText('1 complete · 2 remaining')).toBeTruthy();
     expect(screen.getAllByRole('button', { name: 'Play this drill' })).toHaveLength(2);
-    expect((screen.getByRole('button', { name: 'Completed' }) as HTMLButtonElement).disabled).toBe(true);
+    fireEvent.click(screen.getByRole('button', { name: 'Replay this drill' }));
+    expect(onChoose).toHaveBeenCalledWith(tutorialScenarios[0]);
   });
 
   it('returns the selected scenario and can leave the run', () => {

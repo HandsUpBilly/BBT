@@ -30,7 +30,7 @@ test('series chooser can start Puzzle 6 with its own guidance', async ({ page },
   const guide = page.getByRole('dialog', { name: 'Open a path to the ball' });
   await expect(guide.getByText('Blocking, Pickups and Parallel Universes: Step 1 of 5')).toBeVisible();
   await expect(guide.getByRole('img', { name: /loose ball, nearby Humans, and the marking Orc/i })).toBeVisible();
-  await expect(page.getByText(/Series progress 1 \/ 6/)).toBeVisible();
+  await expect(page.getByText(/Series progress 0 \/ 6 complete/)).toBeVisible();
 });
 
 test('guided attempt reveals help gradually and advances after the correct interaction', async ({ page }, testInfo) => {
