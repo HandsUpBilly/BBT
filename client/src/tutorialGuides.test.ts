@@ -119,4 +119,14 @@ describe('tutorial guide content', () => {
 
     expect(progress.stageIndex).toBe(2);
   });
+
+  it('finishes the Puzzle 6 guide only when every universe is complete', () => {
+    const guide = tutorialGuideFor('scenario-006')!;
+    const scenario = scenarios.find(item => item.id === guide.scenarioId)!;
+    const state = makeScenarioState(scenario);
+    const milestone = guide.stages.at(-1)!.milestone;
+
+    expect(milestoneReached(milestone, state)).toBe(false);
+    expect(milestoneReached(milestone, state, { allUniversesComplete: true })).toBe(true);
+  });
 });

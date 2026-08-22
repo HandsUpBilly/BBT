@@ -1,5 +1,10 @@
 import type { GameState } from './types';
-import { milestoneReached, type TutorialGuideDefinition, type TutorialHintTier } from './tutorialGuides';
+import {
+  milestoneReached,
+  type TutorialGuideDefinition,
+  type TutorialGuideObservation,
+  type TutorialHintTier,
+} from './tutorialGuides';
 import type { TutorialAction } from './tutorialLessons';
 
 export interface TutorialGuideProgress {
@@ -89,10 +94,12 @@ export function advanceTutorialGuide(
   progress: TutorialGuideProgress,
   guide: TutorialGuideDefinition,
   state: GameState,
+  observation: TutorialGuideObservation = {},
 ): TutorialGuideProgress {
   if (progress.complete || progress.skipped) return progress;
   let stageIndex = progress.stageIndex;
-  while (stageIndex < guide.stages.length && milestoneReached(guide.stages[stageIndex].milestone, state)) {
+  while (stageIndex < guide.stages.length
+    && milestoneReached(guide.stages[stageIndex].milestone, state, observation)) {
     stageIndex += 1;
   }
   if (stageIndex === progress.stageIndex) return progress;

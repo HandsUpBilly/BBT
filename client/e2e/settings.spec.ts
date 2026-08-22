@@ -33,6 +33,7 @@ test('token-style pitch previews stay clear and contained', async ({ page }) => 
 test('game HUD keeps the account menu and Settings reachable', async ({ page }) => {
   await page.getByRole('button', { name: '← Back' }).click();
   await page.getByRole('button', { name: /start series/i }).click();
+  await page.getByRole('button', { name: 'Play this drill' }).first().click();
   await page.locator('.pitch__grid .square').first().waitFor({ state: 'visible' });
   const startPuzzle = page.getByRole('button', { name: 'Begin Puzzle' });
   if (await startPuzzle.isVisible()) await startPuzzle.click();

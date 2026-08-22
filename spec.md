@@ -5411,15 +5411,22 @@ The following product decisions are fixed:
 - The walkthrough starts fresh on **every guided attempt**. It is attempt-local,
   is not stored as completed, and replays after Restart or after leaving and
   starting the drill again whenever automatic Tutorial guidance is enabled.
-- Existing guided-drill scope remains the source of truth: a scenario receives
-  a walkthrough when `tutorialLessonFor(scenario.id)` returns lesson content.
-  The final unrestricted Free Play board remains unguided unless it separately
-  gains lesson content in a future change.
+- Guided-drill scope remains the source of truth: a scenario receives a
+  walkthrough when `tutorialLessonFor(scenario.id)` returns lesson content.
+  All six current Tutorial drills now have lesson and guide content. The sixth
+  drill retains its unrestricted action set while teaching Blocking, Pickup,
+  and Parallel Universes.
 
 ## Player Experience Requirements
 
 ### Entry and progression
 
+- Starting the Tutorial series opens a chooser containing all six drills.
+  Players may select any unfinished drill; completed drills stay visible but
+  disabled. Completing a drill returns to the chooser until all six have been
+  completed once, after which their probabilities combine into the normal
+  series result. The chooser does not reset probability or create an extra
+  turn inside a puzzle.
 - Keep the existing opening `TutorialLessonDialog`. **Begin Puzzle** closes the
   rules briefing and immediately opens the first contextual coach step before
   the player can make an uninstructed first interaction.
@@ -5531,6 +5538,7 @@ prescribe the route; the final tier may reveal one verified intended move.
 | `scenario-002` Hand-off | Identify carrier and receiver; choose Hand-off; move into Hand-off position; select and confirm the receiver; activate the receiver and score. Show the two named tokens, adjacency, Hand-off/Catch line, confirmation controls, and the receiver still available to activate. |
 | `scenario-003` Pass | Identify thrower and receiver; choose Pass; move clear of Tackle Zones; select the receiver and inspect Pass/Catch chances; confirm; activate the receiver and score. Show marking, the thrower's safe throwing area, range line, receiver, confirmation controls, and post-Catch activation availability. |
 | `scenario-005` The Drive | Read the whole objective and plan activation order; begin the carrier's escape/Hand-off sequence; complete the transfer; navigate the receiver's remaining route; score. Show the two-player order, cumulative-risk readout, transfer point, and the next relevant board region. Avoid turning the concept tier into a complete solution diagram. |
+| `scenario-006` Blocking, Pickups and Parallel Universes | Select Cedric and Block Muzgash away from the loose ball; work through the resulting live universes; recover the ball; complete every live branch. Show the relevant formation, Block controls, result branches, Pickup target, and universe strip without prescribing a complete scoring sequence at the concept tier. |
 
 For every scenario, author stable stage ids and at least one recovery message.
 Exact-tier routes must be checked against current rules math and scenario data;
@@ -5586,6 +5594,7 @@ the authored next interaction illegal.
 | `client/src/useTutorialGuide.ts` | Thin React integration owning attempt-local visibility, skipped state, current stage/tier, manual reopen, and callbacks into the pure reducer. No gameplay mutations. |
 | `client/src/TutorialGuideDialog.tsx` and scoped CSS | Accessible coach modal with progress, hint-tier copy, mini diagram, More help, Try it, and Skip guide controls. |
 | `client/src/TutorialMiniDiagram.tsx` and scoped CSS | Render a responsive SVG/code-native board or control diagram from current state plus the stage focus descriptor, with tier-aware detail and alternative text. Reuse presentation helpers where safe without mounting the full interactive `Pitch`. |
+| `client/src/TutorialPuzzleChooser.tsx` and scoped CSS | Present canonical drill order, completed/remaining progress, disabled completed cards, and unfinished selection at series start and between drills. |
 | `client/src/tutorialLessons.ts` | Retain opening rules briefings and action gating. Associate only existing guided lessons with the separate guide definitions; do not duplicate scenario names/descriptions. |
 | `client/src/App.tsx` | Start/reset the guide with puzzle attempts, feed normalized selection/action/commit/universe milestones, enforce modal priority, connect Begin Puzzle and Game Tools, and leave all game handlers authoritative. Avoid embedding guide content or stage-specific conditionals here. |
 | `client/src/GameToolsMenu.tsx`, `SettingsScreen.tsx` | Expose Tutorial guide reopening and rename the existing preference label to Tutorial guidance without changing its stored meaning. |
@@ -5594,7 +5603,7 @@ the authored next interaction illegal.
 
 ## Implementation Steps
 
-1. Add typed guide/focus/milestone/interaction definitions and author the five
+1. Add typed guide/focus/milestone/interaction definitions and author the six
    required guided sequences. Add validation tests proving stable ids are
    unique, every stage has three tiers and alt text, referenced players/squares
    exist, and exact-tier interactions are legal in their fixture state.
@@ -5631,7 +5640,7 @@ the authored next interaction illegal.
 
 ## Success Criteria
 
-- In every existing guided Tutorial drill, Begin Puzzle leads into a complete
+- In every Tutorial drill, Begin Puzzle leads into a complete
   sequence of contextual steps, and each next dialog appears only after its
   preceding semantic milestone or a contradictory guided interaction.
 - Every step includes a legible mini diagram of the relevant current board or
@@ -5647,6 +5656,9 @@ the authored next interaction illegal.
 - Opening, escalating, dismissing, skipping, or completing guidance does not
   change pieces, activations, action logs, universes, probability, score, or
   leaderboard submissions.
+- A new series and every non-final completion show the chooser; any unfinished
+  drill can be selected, a completed drill cannot be replayed in the same run,
+  and completing all six still produces exactly one combined series result.
 - Dialogs are keyboard/touch accessible, never compete with another modal, and
   keep diagrams, text, and actions reachable at 320 px and 200% zoom.
 - Content/reference validation, unit/integration tests, `npm run verify`, and

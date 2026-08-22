@@ -166,6 +166,7 @@ export type AppMode =
   | 'puzzle'
   | 'leaderboard'
   | 'admin'
+  | 'series-select'
   | 'series-puzzle'
   | 'series-leaderboard'
   | 'settings'

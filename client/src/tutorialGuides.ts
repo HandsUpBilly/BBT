@@ -8,8 +8,11 @@ export type TutorialGuideMilestone =
   | { kind: 'action-started'; action: TutorialAction; pieceId: string }
   | { kind: 'targeting'; action: 'handoff' | 'pass' | 'block' }
   | { kind: 'action-logged'; action: 'handoff' | 'pass'; pieceName?: string }
+  | { kind: 'block-logged'; pieceName?: string }
+  | { kind: 'pickup-logged' }
   | { kind: 'movement-logged'; pieceName: string }
-  | { kind: 'touchdown' };
+  | { kind: 'touchdown' }
+  | { kind: 'all-universes-complete' };
 
 export type TutorialExpectedInteraction =
   | { kind: 'piece-selected'; pieceId: string }
@@ -17,7 +20,7 @@ export type TutorialExpectedInteraction =
   | { kind: 'target-selected'; action: 'handoff' | 'pass' | 'block'; pieceId: string };
 
 export interface TutorialGuideFocus {
-  kind: 'pitch' | 'action' | 'confirmation' | 'probability';
+  kind: 'pitch' | 'action' | 'confirmation' | 'probability' | 'universes';
   pieceIds?: readonly string[];
   target?: Position;
   action?: TutorialAction;
@@ -254,6 +257,64 @@ export const TUTORIAL_GUIDES: readonly TutorialGuideDefinition[] = [
       },
     ],
   },
+  {
+    scenarioId: 'scenario-006',
+    stages: [
+      {
+        id: 'universes-select-blocker', title: 'Open a path to the ball',
+        hints: [
+          hint('The loose ball is marked by an Orc. Find a Human who can move that defender without spending the future ball carrier’s activation.', 'The loose ball, nearby Humans, and the marking Orc.', { kind: 'pitch', region: 'tackle-zones' }),
+          hint('Cedric Linebreaker is already beside Muzgash and has Block. Select Cedric.', 'Cedric highlighted beside Muzgash and the loose ball.', { kind: 'pitch', pieceIds: ['cedric', 'muzgash'] }),
+          hint('Select Cedric Linebreaker on 7G.', 'Cedric on 7G highlighted for selection.', { kind: 'pitch', pieceIds: ['cedric'], target: { col: 6, row: 7 } }),
+        ],
+        milestone: { kind: 'piece-selected', pieceId: 'cedric' },
+        expected: { kind: 'piece-selected', pieceId: 'cedric' },
+        recovery: 'Cancel the other activation, then select Cedric beside Muzgash.',
+      },
+      {
+        id: 'universes-declare-block', title: 'Declare the Block',
+        hints: [
+          hint('Choose the action that rolls Block dice without moving Cedric first.', 'Cedric’s action menu with the contact action available.', { kind: 'action', pieceIds: ['cedric'] }),
+          hint('Choose Block, not Blitz. Cedric is already adjacent to the target.', 'The Block action highlighted for Cedric.', { kind: 'action', pieceIds: ['cedric'], action: 'block' }),
+          hint('Select Block and confirm the action.', 'Cedric’s Block control ready to confirm.', { kind: 'action', pieceIds: ['cedric'], action: 'block' }),
+        ],
+        milestone: { kind: 'action-started', action: 'block', pieceId: 'cedric' },
+        expected: { kind: 'action-selected', action: 'block', pieceId: 'cedric' },
+        recovery: 'Cancel the current selection and declare a Block with Cedric.',
+      },
+      {
+        id: 'universes-create-branches', title: 'Create the universes',
+        hints: [
+          hint('Choose the adjacent Orc whose position is blocking access to the ball, then review which dice outcomes can continue.', 'Cedric, the loose ball, and adjacent Block targets.', { kind: 'pitch', pieceIds: ['cedric'], region: 'tackle-zones' }),
+          hint('Muzgash Skullkrak is between Cedric and the ball. Select him as the Block target.', 'Muzgash highlighted as Cedric’s Block target.', { kind: 'pitch', pieceIds: ['cedric', 'muzgash'] }),
+          hint('Select Muzgash on 6G. Accept the viable Block outcomes to create Parallel Universes, then resolve any push squares.', 'Cedric blocking Muzgash beside the loose ball before the board splits.', { kind: 'confirmation', pieceIds: ['cedric', 'muzgash'], target: { col: 6, row: 6 } }),
+        ],
+        milestone: { kind: 'block-logged', pieceName: 'Cedric Linebreaker' },
+        expected: { kind: 'target-selected', action: 'block', pieceId: 'muzgash' },
+        recovery: 'Return to Cedric’s Block target selection, or Restart Puzzle if the Block was cancelled.',
+      },
+      {
+        id: 'universes-recover-ball', title: 'Work through every universe',
+        hints: [
+          hint('The branch strip now represents different valid board states. Visit each live universe and find a safe way to recover the loose ball.', 'A root play split into numbered universe cards, with the loose ball still to recover.', { kind: 'universes', region: 'route' }),
+          hint('Use the numbered branch cards to switch universes. Safe actions may replay in lockstep; once boards differ, solve the selected branch from its actual positions.', 'Numbered universe cards connected to the same root action, with one selected.', { kind: 'universes', pieceIds: ['aldric'], region: 'route' }),
+          hint('In each live universe, move a viable Human onto the ball at 5H. Aldric’s Sure Hands can protect the Pickup roll, but use the positions actually shown in that branch.', 'The universe strip and a route toward the loose ball on 5H.', { kind: 'universes', pieceIds: ['aldric'], target: { col: 7, row: 5 } }),
+        ],
+        milestone: { kind: 'pickup-logged' },
+        recovery: 'Switch to an unfinished universe, Reset branch if its line went wrong, or restart the drill to choose different Block outcomes.',
+      },
+      {
+        id: 'universes-finish-all', title: 'Complete every live branch',
+        hints: [
+          hint('Carry the recovered ball into the Human End Zone in every live universe. The run finishes only when every branch has scored or been conceded.', 'Numbered universes progressing independently toward the Human End Zone.', { kind: 'universes', region: 'end-zone' }),
+          hint('Use the branch strip to find any universe that is not green, then continue its ball carrier toward row 0.', 'One unfinished universe selected beside completed green universe cards.', { kind: 'universes', region: 'end-zone' }),
+          hint('Finish each remaining route on row 0 and confirm it. Green parent branches mean all of their children are complete.', 'All numbered universe cards green after their scoring routes reach row 0.', { kind: 'universes', target: { col: 7, row: 0 } }),
+        ],
+        milestone: { kind: 'all-universes-complete' },
+        recovery: 'Select an unfinished branch in the strip; Reset branch or give it up only after reviewing that branch’s current board.',
+      },
+    ],
+  },
 ] as const;
 
 const GUIDE_BY_SCENARIO = new Map(TUTORIAL_GUIDES.map(guide => [guide.scenarioId, guide]));
@@ -262,7 +323,15 @@ export function tutorialGuideFor(scenarioId: string): TutorialGuideDefinition | 
   return GUIDE_BY_SCENARIO.get(scenarioId);
 }
 
-export function milestoneReached(milestone: TutorialGuideMilestone, state: GameState): boolean {
+export interface TutorialGuideObservation {
+  allUniversesComplete?: boolean;
+}
+
+export function milestoneReached(
+  milestone: TutorialGuideMilestone,
+  state: GameState,
+  observation: TutorialGuideObservation = {},
+): boolean {
   switch (milestone.kind) {
     case 'piece-selected': return state.selectedPieceId === milestone.pieceId;
     case 'action-started': {
@@ -279,8 +348,13 @@ export function milestoneReached(milestone: TutorialGuideMilestone, state: GameS
           : state.isBlockTargeting;
     case 'action-logged': return state.actionLog.some(entry =>
       entry.kind === milestone.action && (!milestone.pieceName || entry.pieceName === milestone.pieceName));
+    case 'block-logged': return state.actionLog.some(entry =>
+      entry.kind === 'block' && (!milestone.pieceName || entry.pieceName === milestone.pieceName));
+    case 'pickup-logged': return state.actionLog.some(entry =>
+      entry.kind === 'move' && entry.pickupTarget !== null && entry.pickupTarget !== undefined);
     case 'movement-logged': return state.actionLog.some(entry =>
       entry.kind === 'move' && entry.pieceName === milestone.pieceName);
     case 'touchdown': return state.phase === 'touchdown';
+    case 'all-universes-complete': return observation.allUniversesComplete === true;
   }
 }

@@ -1,15 +1,37 @@
 import { expect, test } from '@playwright/test';
 import { hasHorizontalOverflow } from './helpers';
 
-async function startFirstGuidedAttempt(page: import('@playwright/test').Page) {
+async function openTutorialChooser(page: import('@playwright/test').Page) {
   await page.goto('/');
   await page.getByRole('button', { name: /play as guest/i }).click();
   await page.locator('.identity-gate__input').fill('Tutorial Coach Tester');
   await page.getByRole('button', { name: /^continue$/i }).click();
   await page.getByRole('button', { name: /start series/i }).click();
+}
+
+async function startFirstGuidedAttempt(page: import('@playwright/test').Page) {
+  await openTutorialChooser(page);
+  await page.getByRole('button', { name: 'Play this drill' }).first().click();
   await expect(page.getByRole('heading', { name: 'Movement' })).toBeVisible();
   await page.getByRole('button', { name: 'Begin Puzzle' }).click();
 }
+
+test('series chooser can start Puzzle 6 with its own guidance', async ({ page }, testInfo) => {
+  test.skip(!['iphone-se', 'desktop'].includes(testInfo.project.name), 'Representative phone and desktop coverage');
+  await openTutorialChooser(page);
+
+  await expect(page.getByRole('heading', { name: 'Choose a Tutorial drill' })).toBeVisible();
+  await expect(page.getByText('0 complete · 6 remaining')).toBeVisible();
+  await page.getByRole('button', { name: 'Play this drill' }).last().click();
+
+  await expect(page.getByRole('dialog', { name: 'Blocking, Pickups and Parallel Universes' })).toBeVisible();
+  await expect(page.getByText('Tutorial Drill 6 / 6')).toBeVisible();
+  await page.getByRole('button', { name: 'Begin Puzzle' }).click();
+  const guide = page.getByRole('dialog', { name: 'Open a path to the ball' });
+  await expect(guide.getByText('Blocking, Pickups and Parallel Universes: Step 1 of 5')).toBeVisible();
+  await expect(guide.getByRole('img', { name: /loose ball, nearby Humans, and the marking Orc/i })).toBeVisible();
+  await expect(page.getByText(/Series progress 1 \/ 6/)).toBeVisible();
+});
 
 test('guided attempt reveals help gradually and advances after the correct interaction', async ({ page }, testInfo) => {
   test.skip(!['iphone-se', 'desktop'].includes(testInfo.project.name), 'Representative phone and desktop coverage');

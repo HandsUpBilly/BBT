@@ -142,6 +142,18 @@ export function TutorialMiniDiagram({ state, hint }: Props) {
             <text x="72" y="34" textAnchor="middle">compare routes</text>
           </g>
         )}
+        {hint.focus.kind === 'universes' && (
+          <g className="tutorial-mini-diagram__universes" transform="translate(300 142)">
+            <path d="M 0 34 C 26 34, 24 10, 48 10 M 0 34 L 48 34 M 0 34 C 26 34, 24 58, 48 58" />
+            {[{ label: '1', y: -4 }, { label: '2', y: 20 }, { label: '3', y: 44 }].map((card, index) => (
+              <g key={card.label} transform={`translate(48 ${card.y})`}>
+                <rect className={index < 2 ? 'tutorial-mini-diagram__universe--done' : ''} width="120" height="28" rx="7" />
+                <text x="14" y="19">{card.label}</text>
+                <text x="36" y="19">{index < 2 ? 'COMPLETE' : 'PLAYING'}</text>
+              </g>
+            ))}
+          </g>
+        )}
       </svg>
       <figcaption>{hint.alt}</figcaption>
     </figure>

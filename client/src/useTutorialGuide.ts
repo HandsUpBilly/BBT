@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useState } from 'react';
 import type { GameState } from './types';
-import { tutorialGuideFor } from './tutorialGuides';
+import { tutorialGuideFor, type TutorialGuideObservation } from './tutorialGuides';
 import {
   advanceTutorialGuide,
   reduceTutorialGuide,
@@ -35,11 +35,11 @@ export function useTutorialGuide() {
     });
   }, []);
 
-  const observe = useCallback((state: GameState) => {
+  const observe = useCallback((state: GameState, observation: TutorialGuideObservation = {}) => {
     setProgress(current => {
       if (!current) return current;
       const currentGuide = tutorialGuideFor(current.scenarioId);
-      return currentGuide ? advanceTutorialGuide(current, currentGuide, state) : current;
+      return currentGuide ? advanceTutorialGuide(current, currentGuide, state, observation) : current;
     });
   }, []);
 

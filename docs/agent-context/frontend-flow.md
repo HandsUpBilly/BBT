@@ -136,6 +136,13 @@ public avatars).
   Hand-off, Pass adds Pass, The Drive keeps those three, and Blocking and
   Parallel Universes enables Block and Blitz as well. Actions from later
   drills stay disabled in earlier drills.
+- **Tutorial runs begin and advance through a drill chooser.** The player may
+  play the six drills in any order. Completed drills remain visible but cannot
+  be selected again during that run; after each completion the chooser returns
+  with updated completed/remaining counts. The six probabilities still combine
+  into one series score after every drill has been completed once. The sixth
+  drill keeps the full unrestricted action set while now providing its own
+  Blocking, Pickup, and Parallel Universes briefing and contextual coach.
 - **The compact game HUD keeps every control inside the viewport.** Account
   remains near the front. Zoom, restart, and reporting share the `GameToolsMenu`
   trigger, while the Key and action log retain their own triggers. Compact
@@ -161,7 +168,8 @@ when they carry rules information rather than joining sentences.
 Puzzle Creator as a third tab for allowlisted admins.
 
 - Series tab shows **Tutorial**, the default series row from
-  `client/src/series/default.json`.
+  `client/src/series/default.json`. Starting it opens the drill chooser rather
+  than forcing a fixed first puzzle.
 - Single Plays tab shows published scenario tiles.
 - Do not reintroduce per-screen scenario title override maps. Scenario
   `name`/`description` JSON is the source of truth.

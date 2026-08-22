@@ -14,12 +14,15 @@ describe('tutorial lessons', () => {
       'scenario-002',
       'scenario-003',
       'scenario-005',
+      'scenario-006',
     ]);
   });
 
-  it('keeps the final series board as unrestricted Free Play', () => {
+  it('keeps the final series board unrestricted while providing guidance', () => {
     expect(FREE_PLAY_SCENARIO_ID).toBe('scenario-006');
-    expect(tutorialLessonFor(FREE_PLAY_SCENARIO_ID)).toBeUndefined();
+    expect(tutorialLessonFor(FREE_PLAY_SCENARIO_ID)?.enabledActions).toEqual([
+      'move', 'handoff', 'pass', 'block', 'blitz',
+    ]);
     expect(tutorialLessonFor('unknown')).toBeUndefined();
   });
 
@@ -30,6 +33,7 @@ describe('tutorial lessons', () => {
       ['move', 'handoff'],
       ['move', 'handoff', 'pass'],
       ['move', 'handoff', 'pass'],
+      ['move', 'handoff', 'pass', 'block', 'blitz'],
     ]);
   });
 
