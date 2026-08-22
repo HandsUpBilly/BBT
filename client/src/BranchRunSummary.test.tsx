@@ -114,18 +114,21 @@ describe('BranchRunSummary branch list', () => {
   });
 
   it('shows the completed game as a branch graphic', () => {
-    render(<BranchRunSummary {...baseProps()} />);
+    const { container } = render(<BranchRunSummary {...baseProps()} />);
 
     expect(screen.getByRole('img', {
       name: 'Game branch tree with 1 block and 3 ending universes',
     })).toBeTruthy();
     expect(screen.getByText('Game branches')).toBeTruthy();
+    expect(screen.getByText('Block 1')).toBeTruthy();
     expect(screen.getByText('3 — Pushed')).toBeTruthy();
+    expect(container.querySelectorAll('.branch-tree__node--block')).toHaveLength(0);
+    expect(container.querySelectorAll('.branch-tree__column-label')).toHaveLength(1);
   });
 
   it('lays out a multi-block run as two block depths and all ending universes', () => {
     const run = twoBlockScoredRun();
-    render(
+    const { container } = render(
       <BranchRunSummary
         {...baseProps()}
         run={run}
@@ -137,6 +140,10 @@ describe('BranchRunSummary branch list', () => {
     expect(screen.getByRole('img', {
       name: 'Game branch tree with 2 blocks and 9 ending universes',
     })).toBeTruthy();
+    expect(container.querySelectorAll('.branch-tree__column-label')).toHaveLength(2);
+    expect([...container.querySelectorAll('.branch-tree__column-label')].map(label => label.textContent))
+      .toEqual(['Block 1', 'Block 2']);
+    expect(container.querySelectorAll('.branch-tree__node--block')).toHaveLength(0);
     expect(screen.getByText('Universe 1.1')).toBeTruthy();
   });
 

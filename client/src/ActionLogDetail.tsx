@@ -94,10 +94,10 @@ export function ActionLogDetail({ scenario, actionLog, diagramAside }: Props) {
             </div>
             {riskyMoves.map((entry, i) => (
               <div key={i} className="submit-modal__move-row">
-                <span className="submit-modal__move-name">{entryPlayerName(entry)}</span>
+                <span className="submit-modal__move-name" title={entryPlayerName(entry)}>{entryPlayerName(entry)}</span>
                 <span className="submit-modal__move-role">{entryRole(entry)}</span>
                 <span className="submit-modal__move-pos">{posLabel(entry.from)} → {posLabel(entry.to)}</span>
-                <span className="submit-modal__move-action">{actionLabel(entry)}</span>
+                <span className="submit-modal__move-action" title={actionLabel(entry)}>{actionLabel(entry)}</span>
                 <span className="submit-modal__move-prob">{pct(entry.actionProb)}</span>
               </div>
             ))}

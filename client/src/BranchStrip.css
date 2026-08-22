@@ -144,10 +144,10 @@
 
 .branch-chip {
   display: grid;
-  grid-template-columns: auto minmax(7ch, 1fr) auto;
+  grid-template-columns: minmax(0, 1fr) auto;
   grid-template-areas:
-    'dice outcome weight'
-    'status status status';
+    'dice weight'
+    'status status';
   gap: 0 8px;
   width: 100%;
   min-width: 0;
@@ -173,15 +173,6 @@ button.branch-chip:hover { background: var(--color-surface-hover); }
 
 .branch-chip__die.block-dice-graphic { flex: 0 0 28px; gap: 0; }
 .branch-chip__die .block-die-icon { width: 100% !important; }
-
-.branch-chip__outcome {
-  grid-area: outcome;
-  overflow: hidden;
-  color: var(--color-text-muted);
-  font-size: 0.7rem;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
 
 .branch-chip__weight {
   grid-area: weight;
@@ -211,6 +202,9 @@ button.branch-chip:hover { background: var(--color-surface-hover); }
 .branch-chip__reset,
 .branch-chip__rewind,
 .branch-chip__concede {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   min-width: 36px;
   padding: 0 8px;
   color: var(--color-text-muted);
@@ -222,6 +216,8 @@ button.branch-chip:hover { background: var(--color-surface-hover); }
 }
 
 .branch-chip__reset {
+  flex: 0 0 58px;
+  width: 58px;
   border-radius: 0;
   color: var(--color-text-muted);
   font-family: var(--font-display);
@@ -231,12 +227,21 @@ button.branch-chip:hover { background: var(--color-surface-hover); }
 }
 
 .branch-chip__rewind {
-  min-width: 54px;
+  flex: 0 0 40px;
+  width: 40px;
+  min-width: 40px;
   border-radius: 0;
   color: var(--color-text-muted);
-  font-family: var(--font-display);
-  font-size: 0.61rem;
-  text-transform: uppercase;
+  font-size: 1.35rem;
+  line-height: 1;
+}
+
+.branch-chip__concede {
+  flex: 0 0 40px;
+  width: 40px;
+  color: var(--color-text-strong);
+  font-size: 1.2rem;
+  line-height: 1;
 }
 
 .branch-chip__reset:last-child { border-radius: 0 6px 6px 0; }

@@ -17,7 +17,7 @@ function DecisionPicture() {
             <rect width="52" height="50" fill="#263d25" />
             <path d="M52 0H0V50" fill="none" stroke="#61705b" strokeWidth="2" opacity=".48" />
           </pattern>
-          <marker id="help-route-arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
+          <marker id="help-route-arrow" viewBox="0 0 8 8" markerWidth="18" markerHeight="18" refX="7" refY="4" markerUnits="userSpaceOnUse" orient="auto">
             <path d="M0 0L8 4L0 8Z" fill="#e7e3d9" />
           </marker>
         </defs>

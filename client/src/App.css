@@ -329,6 +329,9 @@ body,
   flex-direction: column;
   gap: 1px;
 }
+.hud__prob--empty {
+  display: none;
+}
 .hud__success {
   display: flex;
   flex-direction: column;
@@ -687,11 +690,6 @@ body,
     flex-shrink: 1;
   }
 
-  /* Do not charge the 320px HUD for an invisible 100% readout. The live
-     percentage returns as soon as the player commits to a roll. */
-  .hud__prob--empty {
-    display: none;
-  }
 }
 
 /* iPhone Safari can be set to request desktop websites, which makes its CSS
@@ -727,10 +725,6 @@ body,
 .app--compact .hud__prob {
   min-width: 0;
   flex-shrink: 1;
-}
-
-.app--compact .hud__prob--empty {
-  display: none;
 }
 
 /* ── Touch ergonomics ────────────────────────────────────────────────────
