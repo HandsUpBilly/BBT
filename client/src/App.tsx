@@ -358,12 +358,18 @@ export default function App() {
   // Non-blocking notice (e.g. a best-effort individual submit failed mid-series).
   const [submitNotice, setSubmitNotice] = useState<string | undefined>();
 
-  const queueTutorialLesson = useCallback((scenario: Scenario, step: number) => {
+  // A guided attempt is always initialized as one operation. Keeping the coach
+  // reset and briefing queue together prevents a replay path from retaining a
+  // completed/skipped guide or showing only the opening briefing. The stored
+  // preference controls every new attempt, not merely the first visit.
+  const beginTutorialCoachAttempt = tutorialCoach.beginAttempt;
+  const beginTutorialAttempt = useCallback((scenario: Scenario, step: number) => {
+    beginTutorialCoachAttempt(scenario.id);
     const lesson = tutorialLessonFor(scenario.id);
     const guidanceEnabled = prefs.showTutorialGuidance ?? true;
     setTutorialLesson(lesson && guidanceEnabled ? { lesson, step } : null);
     if (lesson && guidanceEnabled) trackAnalytics('interaction', { name: 'tutorial-briefing', outcome: 'shown' });
-  }, [prefs.showTutorialGuidance]);
+  }, [prefs.showTutorialGuidance, beginTutorialCoachAttempt]);
 
   const dismissTutorialLesson = useCallback((disableFutureLessons: boolean) => {
     if (!tutorialLesson) return;
@@ -708,11 +714,10 @@ export default function App() {
     resetBoards(s);
     setZoomBounds(computeStartOfPlayZoom(s.pieces, s.activeTeam));
     const lessonIndex = TUTORIAL_LESSON_IDS.indexOf(scenario.id);
-    tutorialCoach.beginAttempt(scenario.id);
-    queueTutorialLesson(scenario, lessonIndex + 1);
+    beginTutorialAttempt(scenario, lessonIndex + 1);
     beginAnalyticsAttempt(scenario, 'standalone');
     setAppMode('puzzle');
-  }, [resetBoards, computeStartOfPlayZoom, queueTutorialLesson, beginAnalyticsAttempt, tutorialCoach]);
+  }, [resetBoards, computeStartOfPlayZoom, beginTutorialAttempt, beginAnalyticsAttempt]);
 
   const previewPuzzle = useCallback((scenario: Scenario) => {
     setTutorialLesson(null);
@@ -1182,9 +1187,8 @@ export default function App() {
     setReviewingCompletedBoard(false);
     const s = makeScenarioState(activeScenario);
     resetBoards(s);
-    tutorialCoach.beginAttempt(activeScenario.id);
     const lessonIndex = TUTORIAL_LESSON_IDS.indexOf(activeScenario.id);
-    queueTutorialLesson(activeScenario, appMode === 'series-puzzle'
+    beginTutorialAttempt(activeScenario, appMode === 'series-puzzle'
       ? (seriesRun?.puzzleIndex ?? 0) + 1
       : lessonIndex + 1);
     setZoomBounds(computeStartOfPlayZoom(s.pieces, s.activeTeam));
@@ -1192,7 +1196,7 @@ export default function App() {
       appMode === 'series-puzzle' ? (seriesRun?.puzzleIndex ?? 0) + 1 : undefined);
   }, [activeScenario, state.pieces, state.activeTeam, state.actionLog.length, resetBoards,
       computeStartOfPlayZoom, beginAnalyticsAttempt, endAnalyticsAttempt, appMode, seriesRun,
-      tutorialCoach, queueTutorialLesson]);
+      beginTutorialAttempt]);
 
   // ── Series mode handlers ──────────────────────────────────────────────────
   const startSeries = useCallback(() => {
@@ -1220,12 +1224,11 @@ export default function App() {
     const s = makeScenarioState(scenario);
     resetBoards(s);
     setZoomBounds(computeStartOfPlayZoom(s.pieces, s.activeTeam));
-    tutorialCoach.beginAttempt(scenario.id);
-    queueTutorialLesson(scenario, puzzleIndex + 1);
+    beginTutorialAttempt(scenario, puzzleIndex + 1);
     beginAnalyticsAttempt(scenario, 'series', seriesRun.results.length + 1);
     setAppMode('series-puzzle');
   }, [seriesRun, seriesScenarios, resetBoards, computeStartOfPlayZoom,
-      tutorialCoach, queueTutorialLesson, beginAnalyticsAttempt]);
+      beginTutorialAttempt, beginAnalyticsAttempt]);
 
   // Called when the player continues past a touchdown while in a series run.
   // Submits the puzzle's score to its individual leaderboard, records the

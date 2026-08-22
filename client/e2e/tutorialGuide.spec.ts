@@ -77,7 +77,7 @@ test('guide actions remain reachable in a narrow, magnified viewport', async ({ 
   expect(await hasHorizontalOverflow(page)).toBe(false);
 });
 
-test('skip is attempt-local, Game Tools reopens the stage, and Restart replays guidance', async ({ page }, testInfo) => {
+test('enabled guidance replays on every restart while skip remains attempt-local', async ({ page }, testInfo) => {
   test.skip(testInfo.project.name !== 'iphone-se', 'Compact Game Tools coverage');
   await startFirstGuidedAttempt(page);
 
@@ -94,4 +94,27 @@ test('skip is attempt-local, Game Tools reopens the stage, and Restart replays g
   await expect(page.getByRole('heading', { name: 'Movement' })).toBeVisible();
   await page.getByRole('button', { name: 'Begin Puzzle' }).click();
   await expect(page.getByRole('dialog', { name: 'Start with the ball carrier' })).toBeVisible();
+
+  await page.getByRole('button', { name: 'Skip guide' }).click();
+  await page.getByRole('button', { name: /player menu for/i }).click();
+  await page.getByRole('menuitem', { name: 'Settings' }).click();
+  await expect(page.getByRole('checkbox', { name: /Tutorial guidance/ })).toBeChecked();
+  await page.getByRole('button', { name: '← Back' }).click();
+
+  await page.getByRole('button', { name: 'Game tools' }).click();
+  await page.getByRole('menuitem', { name: 'Restart turn' }).click();
+  await expect(page.getByRole('heading', { name: 'Movement' })).toBeVisible();
+  await page.getByRole('button', { name: 'Begin Puzzle' }).click();
+  await expect(page.getByRole('dialog', { name: 'Start with the ball carrier' })).toBeVisible();
+
+  await page.getByRole('button', { name: 'Skip guide' }).click();
+  await page.getByRole('button', { name: /player menu for/i }).click();
+  await page.getByRole('menuitem', { name: 'Settings' }).click();
+  await page.getByRole('checkbox', { name: /Tutorial guidance/ }).uncheck();
+  await page.getByRole('button', { name: '← Back' }).click();
+
+  await page.getByRole('button', { name: 'Game tools' }).click();
+  await page.getByRole('menuitem', { name: 'Restart turn' }).click();
+  await expect(page.getByRole('heading', { name: 'Movement' })).toBeHidden();
+  await expect(page.getByRole('dialog', { name: 'Start with the ball carrier' })).toBeHidden();
 });
