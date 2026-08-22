@@ -31,6 +31,7 @@ carries a **Status** line — read it before treating a section as work to do.
 | Player Config Screen | Phase 1 Shipped, Phase 2 **Planned** |
 | Block Outcomes as Board-State Branches | Shipped as the standard Parallel Universes block model |
 | Tutorial Series and Parallel Universes Onboarding | Shipped |
+| Step-by-step Tutorial Coach | **Planned** |
 | Engagement Analytics and Admin Graphs | Shipped |
 | Full-game Rulebook Copy Audit | Shipped |
 
@@ -5383,3 +5384,270 @@ start/retention caveat; do not label pre-launch zeroes as inactivity.
   title off-screen.
 - The shared objective sentence appears consistently on home, in Help, and in
   every Tutorial briefing.
+
+---
+
+# Step-by-step Tutorial Coach
+
+**Status:** Planned.
+
+## Goal and Fixed Decisions
+
+Extend each existing guided Tutorial drill beyond its opening rules briefing.
+After the player chooses **Begin Puzzle**, a sequence of contextual dialogs
+teaches what to do next, one interaction at a time, using a simplified picture
+of the board or control currently being discussed.
+
+The following product decisions are fixed:
+
+- Guidance uses **graduated hints**. The first prompt teaches the concept and
+  next goal without revealing the solution. A more directed hint names the
+  relevant player or action. The final hint may identify an exact control,
+  target square, receiver, or route.
+- Every step uses a **code-native mini diagram**, not a raster screenshot. It
+  depicts the current game state with simplified tokens, pitch squares,
+  highlights, arrows, and control facsimiles, so the picture remains accurate
+  across viewport sizes, pitch orientations, themes, and later UI refinements.
+- The walkthrough starts fresh on **every guided attempt**. It is attempt-local,
+  is not stored as completed, and replays after Restart or after leaving and
+  starting the drill again whenever automatic Tutorial guidance is enabled.
+- Existing guided-drill scope remains the source of truth: a scenario receives
+  a walkthrough when `tutorialLessonFor(scenario.id)` returns lesson content.
+  The final unrestricted Free Play board remains unguided unless it separately
+  gains lesson content in a future change.
+
+## Player Experience Requirements
+
+### Entry and progression
+
+- Keep the existing opening `TutorialLessonDialog`. **Begin Puzzle** closes the
+  rules briefing and immediately opens the first contextual coach step before
+  the player can make an uninstructed first interaction.
+- Each coach step describes one next goal. Dismissing it with **Try it** returns
+  to the unchanged board. When the player reaches that step's semantic
+  milestone, the next step opens automatically.
+- Progress is driven by authoritative game state and committed action-log
+  events, not timers, DOM text, animation completion, or inferred clicks.
+  Selection/action-mode milestones may use explicit existing handlers because
+  they occur before an action-log entry exists.
+- Stage completion must be semantic rather than tied to one coordinate path
+  whenever the rules permit alternatives. For example, “enter Pass targeting”
+  and “complete a Pass to the intended receiver” are milestones; every square
+  traversed on the way is not necessarily one.
+- A dismissed current step does not repeatedly reopen while the board is idle.
+  It reopens only when the player asks for it, makes a contradictory guided
+  interaction, or completes the milestone and advances to the next step.
+- Reaching the puzzle objective completes the guide silently. The normal score,
+  Parallel Universes, review, and submission flows remain authoritative and
+  unchanged.
+
+### Graduated hint behavior
+
+Every stage owns three disclosure tiers, and its text and diagram reveal only
+what that tier permits:
+
+1. **Concept:** explain the immediate goal and the rule/UI concept. Highlight a
+   general region or type of control, but do not identify an exact solution.
+2. **Directed hint:** name the relevant player, action, receiver, or board area
+   and explain why it matters. The diagram may spotlight that subject.
+3. **Exact hint:** show one verified next interaction, target square, or route
+   that advances an intended high-probability solution. If equivalent best
+   choices exist, it may show one and say that alternatives are valid.
+
+- Each dialog has **More help** until the final tier. Pressing it advances one
+  tier in place and updates both copy and diagram without closing the dialog.
+- A reversible interaction that contradicts the current stage's authored
+  expectations (wrong player, unavailable/wrong action, or wrong receiver or
+  target) reopens the stage at the next tier. Camera controls, Help, menus,
+  branch viewing, and other neutral interactions never count as mistakes.
+- A committed divergent action is never silently undone. The coach advances
+  its hint tier and explains the available recovery using existing controls.
+  If the authored guided sequence is no longer reachable, the recovery prompt
+  may point to **Reset move**, **Reset branch**, or **Restart Puzzle**, but the
+  guide itself must not invoke them or change probability, activation, branch,
+  or action-log state.
+- A mistake can increase the tier by only one level per distinct interaction;
+  React rerenders or repeated observation of the same state cannot escalate it.
+- The final tier is an aid, not an input lock. The player may still dismiss it
+  and use any legal alternative.
+
+### Controls, replay, and preferences
+
+- Coach dialogs provide **Try it**, **More help** when available, and **Skip
+  guide**. Skipping suppresses all remaining automatic coach steps for the
+  current attempt only; it does not alter the global preference or hide the
+  opening briefing on a later attempt.
+- Escape behaves like **Try it**: close the current step without skipping the
+  attempt or changing the global preference.
+- The existing `showTutorialGuidance` preference controls both the opening
+  briefing and automatic coach steps. Do not add per-stage or seen-step local
+  storage. If guidance is disabled from the opening dialog or Settings, no
+  automatic step sequence starts.
+- Rename player-facing **Rules briefings** language to **Tutorial guidance**
+  where necessary so the setting accurately describes both parts of the
+  experience. Preserve the existing identity-keyed preference value and
+  backward-compatible reads.
+- Game Tools exposes **Tutorial guide** during a guided scenario. It opens the
+  current stage manually even when the attempt was skipped or automatic
+  guidance is disabled. Before a step sequence starts, it may reopen the
+  opening briefing; after guide completion, it opens a compact stage index or
+  the last relevant stage rather than restarting the game.
+- Restart creates a new attempt-local guide controller and replays the opening
+  briefing and steps when guidance is enabled. Branch Reset and Reset move are
+  not new attempts and must not duplicate already-completed early stages.
+
+## Mini-diagram Requirements
+
+- Render diagrams from the current `GameState` or selected universe plus an
+  authored focus descriptor. Do not capture the DOM, use canvas screenshots,
+  or store screenshots of a particular device/theme.
+- A pitch diagram may crop to the relevant squares but must retain enough
+  landmarks and coordinate labels for the player to locate the same area on
+  the live board. Use stable piece ids and positions; resolve player names from
+  the current scenario/state rather than duplicating them in visual assets.
+- Diagram primitives must cover: active/opposing tokens, ball carrier or loose
+  ball, movement route/target, Tackle Zone or risk area, Pass/Hand-off line,
+  Block target and dice, red/green confirmation control, and Parallel Universe
+  strip/lockstep where required by a guided lesson.
+- The diagram disclosure follows the hint tier. A concept image cannot leak an
+  exact route that its text intentionally withholds.
+- Every figure has concise descriptive alternative text that conveys the
+  instructional relationship, not a list of decorative details. Information
+  shown only by color also uses shape, label, line style, or iconography.
+- Diagrams scale inside a 320 px-wide modal without horizontal page overflow,
+  remain legible at 200% zoom, and never push dialog actions out of reach;
+  the dialog body scrolls internally on short viewports.
+
+## Required Guided Sequences
+
+Exact copy and coordinates are authored during implementation and verified
+against the scenario fixtures and probability engine. The initial tier must not
+prescribe the route; the final tier may reveal one verified intended move.
+
+| Scenario | Required stage sequence and diagram subjects |
+| --- | --- |
+| `scenario-001` Movement | Find the carrier and objective; open Move; read reachable squares and preview a route; use red/green route confirmation; reach the End Zone. Show carrier/goal landmarks, movement range, route preview, and confirmation controls. |
+| `scenario-004` Tackle Zones and Dodging | Identify marked/risky squares; select Sera and Move; compare route roll markers and cumulative chance; confirm a chosen route; score. Show opponents' adjacent influence, Dodge markers, Sera's Dodge skill/reroll cue, and safer versus riskier route shapes without revealing the exact route at tier one. |
+| `scenario-002` Hand-off | Identify carrier and receiver; choose Hand-off; move into Hand-off position; select and confirm the receiver; activate the receiver and score. Show the two named tokens, adjacency, Hand-off/Catch line, confirmation controls, and the receiver still available to activate. |
+| `scenario-003` Pass | Identify thrower and receiver; choose Pass; move clear of Tackle Zones; select the receiver and inspect Pass/Catch chances; confirm; activate the receiver and score. Show marking, the thrower's safe throwing area, range line, receiver, confirmation controls, and post-Catch activation availability. |
+| `scenario-005` The Drive | Read the whole objective and plan activation order; begin the carrier's escape/Hand-off sequence; complete the transfer; navigate the receiver's remaining route; score. Show the two-player order, cumulative-risk readout, transfer point, and the next relevant board region. Avoid turning the concept tier into a complete solution diagram. |
+
+For every scenario, author stable stage ids and at least one recovery message.
+Exact-tier routes must be checked against current rules math and scenario data;
+tests must fail if a scenario edit removes a referenced player/square or makes
+the authored next interaction illegal.
+
+## Accessibility and Interaction Requirements
+
+- Reuse the focus-trapped modal shell and `useModalFocus`: `role="dialog"`,
+  accessible title, initial focus, trapped Tab order, Escape handling, and
+  restoration to the pitch or control that preceded the dialog.
+- Announce drill and stage progress, for example **Movement: Step 2 of 5**,
+  independently from hint tier. Hint escalation is also announced to screen
+  readers without reading the entire dialog twice.
+- No instruction may depend on hover. Touch, mouse, and keyboard users receive
+  the same stage and can operate every coach action.
+- Automatic dialogs occur only at meaningful boundaries, never while a target
+  confirmation, dice decision, push choice, or another modal is already open.
+  Queue the coach step until the higher-priority interaction closes.
+- Only one modal may own focus at a time. Existing confirmation, block split,
+  push/follow-up, completion, report, and leave-series dialogs take priority.
+
+## Constraints and Non-goals
+
+- A puzzle remains exactly one turn. Do not add End Turn, turns/halves, a match
+  score, banked activations, or any way to reset the probability chain.
+- The guide teaches existing gameplay; it must not change movement, Dodge,
+  Pass, Hand-off, Block, Parallel Universes, completion, or probability rules.
+- Guidance cannot perform moves, restrict otherwise legal controls, select a
+  die result, resolve a universe, or guarantee that the player follows the
+  hinted solution.
+- Do not add tutorial fields to scenario JSON or shared validation. Guidance
+  remains client-owned product content and must not create browser/server/
+  Netlify schema drift.
+- Do not import a package from `shared/`; this feature requires no shared or
+  server dependency.
+- Do not add raster screenshot generation or image-generation assets for these
+  steps. Existing decorative Tutorial artwork may remain in the opening
+  briefing, but the new contextual pictures are code-native.
+- Do not persist guide position, hint tier, mistakes, or completion. Refreshing
+  or restarting begins a new guided attempt; leaderboard and analytics payloads
+  must not contain board state, exact routes, or free-form guide content.
+- Unknown scenarios or lesson definitions without a guide continue to play
+  normally with their opening briefing only. Guidance failure must never make
+  a puzzle unplayable.
+
+## Architecture
+
+| Area | Responsibility |
+| --- | --- |
+| `client/src/tutorialGuides.ts` | React-free, typed guide definitions keyed by existing lesson/scenario id: stable stage ids, three hint tiers, focus descriptors, semantic milestones, expected interactions, and recovery copy. Validate all referenced piece ids and coordinates against loaded scenarios. |
+| `client/src/tutorialGuideProgress.ts` | Pure state machine/reducer that advances stages from previous/current game snapshots and normalized interaction events, deduplicates mistakes, escalates hint tiers, queues prompts behind other dialogs, and resets only for a new attempt. |
+| `client/src/useTutorialGuide.ts` | Thin React integration owning attempt-local visibility, skipped state, current stage/tier, manual reopen, and callbacks into the pure reducer. No gameplay mutations. |
+| `client/src/TutorialGuideDialog.tsx` and scoped CSS | Accessible coach modal with progress, hint-tier copy, mini diagram, More help, Try it, and Skip guide controls. |
+| `client/src/TutorialMiniDiagram.tsx` and scoped CSS | Render a responsive SVG/code-native board or control diagram from current state plus the stage focus descriptor, with tier-aware detail and alternative text. Reuse presentation helpers where safe without mounting the full interactive `Pitch`. |
+| `client/src/tutorialLessons.ts` | Retain opening rules briefings and action gating. Associate only existing guided lessons with the separate guide definitions; do not duplicate scenario names/descriptions. |
+| `client/src/App.tsx` | Start/reset the guide with puzzle attempts, feed normalized selection/action/commit/universe milestones, enforce modal priority, connect Begin Puzzle and Game Tools, and leave all game handlers authoritative. Avoid embedding guide content or stage-specific conditionals here. |
+| `client/src/GameToolsMenu.tsx`, `SettingsScreen.tsx` | Expose Tutorial guide reopening and rename the existing preference label to Tutorial guidance without changing its stored meaning. |
+| Analytics allowlist | Record aggregate guide shown/dismissed, stage reached, hint requested, contradiction, skipped, and completed events using scenario/stage ids only. Never send positions, routes, player identity, or copy. Analytics failure remains non-blocking. |
+| Focused tests and `client/e2e/` | Verify content references, pure progression/escalation, modal accessibility, preference/replay behavior, gameplay non-mutation, modal priority, and real mobile layout/interaction. |
+
+## Implementation Steps
+
+1. Add typed guide/focus/milestone/interaction definitions and author the five
+   required guided sequences. Add validation tests proving stable ids are
+   unique, every stage has three tiers and alt text, referenced players/squares
+   exist, and exact-tier interactions are legal in their fixture state.
+2. Implement the pure attempt-local progression reducer. Cover semantic stage
+   advancement, neutral interactions, one-level contradiction escalation,
+   deduplication across rerenders, skip/manual-reopen behavior, monotonic
+   progress across Reset move/branch, and full reset on a new attempt.
+3. Build `TutorialMiniDiagram` with reusable SVG primitives for pitch crops,
+   tokens, ball, routes, risk regions, action/confirmation controls, and
+   universe strips. Test tier-aware disclosure, orientation-independent
+   coordinates, accessible descriptions, and missing-focus fallbacks.
+4. Build the focus-trapped `TutorialGuideDialog`. Connect More help, Try it,
+   Escape, Skip guide, screen-reader announcements, internal scrolling, and
+   focus restoration; add component tests for all controls and tiers.
+5. Wire Begin Puzzle, restart/new-attempt initialization, semantic gameplay
+   events, objective completion, Game Tools reopening, and modal-priority
+   queuing through `useTutorialGuide`. Keep stage-specific content and matching
+   out of `App.tsx`, and verify the hook never calls a gameplay mutation.
+6. Rename player-facing Rules briefings controls to Tutorial guidance while
+   retaining `showTutorialGuidance` compatibility. Add aggregate allowlisted
+   analytics events and tests that payloads contain no board or route data.
+7. Add integration tests for one complete attempt through each guided scenario,
+   including an alternate valid route, manual hint escalation, contradictory
+   input/recovery, Skip guide, guidance disabled, restart replay, and completion
+   without guide interference.
+8. Add real-browser coverage at 320 px, representative phone/tablet/desktop
+   sizes, touch and keyboard input, 200% zoom, and a queued prompt behind an
+   existing confirmation/block modal. Confirm no page-level overflow and that
+   the live pitch remains unchanged when dialogs open/close.
+9. Update `docs/agent-context/frontend-flow.md` with shipped replay/preference/
+   modal behavior and `scenarios-and-series.md` with guide-content ownership.
+   Run `npm run verify` and the relevant mobile Playwright matrix before marking
+   this section Shipped.
+
+## Success Criteria
+
+- In every existing guided Tutorial drill, Begin Puzzle leads into a complete
+  sequence of contextual steps, and each next dialog appears only after its
+  preceding semantic milestone or a contradictory guided interaction.
+- Every step includes a legible mini diagram of the relevant current board or
+  control. No new step relies on a static screenshot or leaks exact-route detail
+  before the matching hint tier.
+- The first prompt preserves puzzle-solving agency; More help or mistakes
+  progress through directed and exact help one tier at a time.
+- Players can use an alternate legal solution, skip the remaining guide, or
+  disable automatic Tutorial guidance without losing access to normal play.
+- Restarting replays the guide on every guided attempt; Reset move/branch does
+  not duplicate early stages; Game Tools can reopen the current guidance at any
+  time without changing the board.
+- Opening, escalating, dismissing, skipping, or completing guidance does not
+  change pieces, activations, action logs, universes, probability, score, or
+  leaderboard submissions.
+- Dialogs are keyboard/touch accessible, never compete with another modal, and
+  keep diagrams, text, and actions reachable at 320 px and 200% zoom.
+- Content/reference validation, unit/integration tests, `npm run verify`, and
+  the relevant real-browser mobile tests pass.
