@@ -31,7 +31,7 @@ carries a **Status** line — read it before treating a section as work to do.
 | Player Config Screen | Phase 1 Shipped, Phase 2 **Planned** |
 | Block Outcomes as Board-State Branches | Shipped as the standard Parallel Universes block model |
 | Tutorial Series and Parallel Universes Onboarding | Shipped |
-| Step-by-step Tutorial Coach | **Planned** |
+| Step-by-step Tutorial Coach | Shipped |
 | Engagement Analytics and Admin Graphs | Shipped |
 | Full-game Rulebook Copy Audit | Shipped |
 
@@ -5389,7 +5389,7 @@ start/retention caveat; do not label pre-launch zeroes as inactivity.
 
 # Step-by-step Tutorial Coach
 
-**Status:** Planned.
+**Status:** Shipped on `hb/tutorial-step-coach`.
 
 ## Goal and Fixed Decisions
 

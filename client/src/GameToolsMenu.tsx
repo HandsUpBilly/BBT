@@ -3,7 +3,7 @@ import './GameToolsMenu.css';
 
 interface Props {
   zoomEnabled: boolean;
-  onTutorialBriefing?: () => void;
+  onTutorialGuide?: () => void;
   onToggleZoom: () => void;
   onRestart: () => void;
   onReport: () => void;
@@ -11,7 +11,7 @@ interface Props {
 
 export function GameToolsMenu({
   zoomEnabled,
-  onTutorialBriefing,
+  onTutorialGuide,
   onToggleZoom,
   onRestart,
   onReport,
@@ -58,9 +58,9 @@ export function GameToolsMenu({
       </button>
       {open && (
         <div className="game-tools-menu__dropdown" role="menu" aria-label="Game tools">
-          {onTutorialBriefing && (
-            <button type="button" role="menuitem" onClick={() => run(onTutorialBriefing)}>
-              Tutorial briefing
+          {onTutorialGuide && (
+            <button type="button" role="menuitem" onClick={() => run(onTutorialGuide)}>
+              Tutorial guide
             </button>
           )}
           <button type="button" role="menuitem" onClick={() => run(onToggleZoom)}>

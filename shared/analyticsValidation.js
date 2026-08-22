@@ -39,6 +39,7 @@ const INTERACTION_RULES = new Map([
   ['score-submit', { outcomes: new Set(['attempted', 'succeeded', 'failed', 'skipped']) }],
   ['series-score-submit', { outcomes: new Set(['attempted', 'succeeded', 'failed']) }],
   ['tutorial-briefing', { outcomes: new Set(['shown', 'dismissed', 'returned-to-menu']), values: new Set(['continue', 'disable-future']) }],
+  ['tutorial-guide', { outcomes: new Set(['shown', 'dismissed', 'stage-reached', 'hint-requested', 'contradiction', 'skipped', 'completed']), guideContext: true }],
   ['setting-avatar', { outcomes: new Set(['changed']), booleanValue: true }],
   ['setting-token-style', { outcomes: new Set(['changed']), values: new Set(['portrait', 'simple', 'plain']) }],
   ['setting-pitch-surface', { outcomes: new Set(['changed']), values: new Set(['grass', 'slate']) }],
@@ -136,6 +137,15 @@ function cleanInteraction(data) {
   }
   if (name === 'tutorial-briefing' && outcome !== 'dismissed' && value !== null) {
     fail('interaction value is invalid');
+  }
+  if (rule.guideContext) {
+    return {
+      name,
+      outcome,
+      value,
+      scenarioId: shortString(data.scenarioId, 'scenarioId', { lower: true, pattern: SCENARIO_RE }),
+      stageId: shortString(data.stageId, 'tutorial stageId', { lower: true, pattern: SCENARIO_RE }),
+    };
   }
   return { name, outcome, value };
 }
@@ -305,7 +315,9 @@ export function reduceAnalyticsBatch(existing, batch) {
       }
     }
     if (event.type === 'interaction') {
-      const key = [data.name, data.outcome, data.value].filter(value => value !== null && value !== undefined).join(':');
+      const key = data.name === 'tutorial-guide'
+        ? [data.name, data.scenarioId, data.stageId, data.outcome].join(':')
+        : [data.name, data.outcome, data.value].filter(value => value !== null && value !== undefined).join(':');
       summary.interactions[key] = (summary.interactions[key] ?? 0) + 1;
     }
   }

@@ -142,7 +142,7 @@ describe('pitch display', () => {
 describe('tutorial guidance', () => {
   it('is on by default and reports being turned off', () => {
     const props = renderScreen({ showTutorialGuidance: true });
-    const toggle = screen.getByRole('checkbox', { name: /Rules briefings/ });
+    const toggle = screen.getByRole('checkbox', { name: /Tutorial guidance/ });
 
     expect((toggle as HTMLInputElement).checked).toBe(true);
     fireEvent.click(toggle);
@@ -151,7 +151,7 @@ describe('tutorial guidance', () => {
 
   it('reports being turned back on', () => {
     const props = renderScreen({ showTutorialGuidance: false });
-    fireEvent.click(screen.getByRole('checkbox', { name: /Rules briefings/ }));
+    fireEvent.click(screen.getByRole('checkbox', { name: /Tutorial guidance/ }));
     expect(props.onShowTutorialGuidanceChange).toHaveBeenCalledWith(true);
   });
 });

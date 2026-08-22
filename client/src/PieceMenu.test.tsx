@@ -1,4 +1,4 @@
-import { cleanup, render, screen, within } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { PieceMenu, DEFAULT_ACTIONS } from './PieceMenu';
 import { humanBlocker } from './test/gameState';
@@ -46,5 +46,25 @@ describe('PieceMenu', () => {
     for (const action of ['Hand-off', 'Pass', 'Block', 'Blitz']) {
       expect((screen.getByRole('checkbox', { name: action }) as HTMLInputElement).disabled).toBe(true);
     }
+  });
+
+  it('stays open while the player interacts with a higher-priority dialog', () => {
+    const onDismiss = vi.fn();
+    render(
+      <>
+        <PieceMenu
+          piece={humanBlocker()}
+          anchor={{ top: 10, left: 10, right: 110, bottom: 60 }}
+          actions={DEFAULT_ACTIONS}
+          onAction={vi.fn()}
+          onDismiss={onDismiss}
+        />
+        <div role="dialog" aria-label="Coach"><button>Try it</button></div>
+      </>,
+    );
+
+    fireEvent.pointerDown(screen.getByRole('button', { name: 'Try it' }));
+
+    expect(onDismiss).not.toHaveBeenCalled();
   });
 });

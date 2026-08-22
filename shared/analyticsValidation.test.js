@@ -60,6 +60,33 @@ test('accepts Tutorial stage positions while rejecting generic analytics events'
   ]), { receivedAt }), AnalyticsValidationError);
 });
 
+test('accepts privacy-safe Tutorial guide milestones and groups them by stage', () => {
+  const validated = validateAnalyticsBatch(batch([
+    {
+      type: 'interaction', at: '2026-08-19T11:00:00.000Z',
+      data: {
+        name: 'tutorial-guide', outcome: 'hint-requested',
+        scenarioId: 'scenario-001', stageId: 'movement-plot-route',
+      },
+    },
+  ]), { receivedAt });
+  const summary = reduceAnalyticsBatch(null, validated);
+
+  assert.equal(validated.events[0].data.scenarioId, 'scenario-001');
+  assert.equal(validated.events[0].data.stageId, 'movement-plot-route');
+  assert.equal(summary.interactions['tutorial-guide:scenario-001:movement-plot-route:hint-requested'], 1);
+
+  assert.throws(() => validateAnalyticsBatch(batch([
+    {
+      type: 'interaction', at: '2026-08-19T11:00:00.000Z',
+      data: {
+        name: 'tutorial-guide', outcome: 'shown',
+        scenarioId: 'scenario-001', stageId: 'movement-plot-route', route: [{ col: 7, row: 4 }],
+      },
+    },
+  ]), { receivedAt }), AnalyticsValidationError);
+});
+
 test('rejects direct identity and move-log fields', () => {
   assert.throws(() => validateAnalyticsBatch(batch([
     { type: 'interaction', at: '2026-08-19T11:00:00.000Z', data: { name: 'settings', email: 'person@example.com' } },

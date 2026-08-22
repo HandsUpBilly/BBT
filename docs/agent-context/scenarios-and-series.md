@@ -72,11 +72,16 @@ labelled as a Tutorial in the challenge screen, and uses this rules order:
 `scenario-001`, `scenario-004`, `scenario-002`, `scenario-003`,
 `scenario-005`, `scenario-006` (movement, dodging, handoff, pass, combined
 play, then the unrestricted Free Play board). Tutorial briefing copy lives
-separately in `client/src/tutorialLessons.ts`; it does not override scenario
-names or descriptions. The first five Tutorial drills have briefings and
-progressively unlock actions. The final `scenario-006` board remains the sixth
-series puzzle and the only Free Play entry; it has every action available and
-no tutorial briefing, including when launched individually.
+separately in `client/src/tutorialLessons.ts`; typed contextual coach stages
+live in `client/src/tutorialGuides.ts`. Neither overrides scenario names or
+descriptions, and neither adds fields to scenario JSON. The guide definitions
+use stable scenario/piece ids and code-native focus descriptors so their mini
+diagrams can render the current board. Keep their content-reference tests in
+sync with any formation change. The first five Tutorial drills have briefings,
+contextual guides, and progressively unlocked actions. The final `scenario-006`
+board remains the sixth series puzzle and the only Free Play entry; it has every
+action available and no automatic tutorial guidance, including when launched
+individually.
 Series definitions may include a stable `logo` key. The chooser resolves that
 key through its local series-art registry, so each series can have dedicated
 artwork while unknown or omitted keys retain the text-only fallback.

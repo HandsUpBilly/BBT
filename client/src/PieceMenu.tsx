@@ -63,6 +63,11 @@ export function PieceMenu({ piece, anchor, actions, onAction, onDismiss }: Props
   // UserMenu. Capture, so it runs before any other press handler.
   useEffect(() => {
     const handler = (e: PointerEvent) => {
+      // A higher-priority modal may explain the action menu while it remains
+      // open underneath. Interacting with that dialog must not count as an
+      // outside press on the menu; closing the coach should reveal the same
+      // choices the player was just shown.
+      if (e.target instanceof Element && e.target.closest('[role="dialog"]')) return;
       if (ref.current && !ref.current.contains(e.target as Node)) {
         onDismiss();
       }
