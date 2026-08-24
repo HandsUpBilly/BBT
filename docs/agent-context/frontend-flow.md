@@ -116,12 +116,18 @@ public avatars).
   slate/tile can be paired with any of the three token levels. Coordinate
   labels default on and can be hidden without changing square names in DOM,
   action logs, accessibility labels, or written solutions.
-- **Tutorial rules briefings are local and identity-keyed.** Every Tutorial
-  series puzzle and matching Single Play opens with its focus-trapped briefing.
-  Editor previews never open briefings. `showTutorialGuidance` defaults on.
-  Reading or dismissing a briefing never suppresses it on a later run. Only
-  checking its opt-out or turning briefings off in Settings disables automatic
-  briefings; Settings can turn them back on. The Blocking and
+- **Tutorial guidance is local and identity-keyed.** Every guided Tutorial
+  series puzzle and matching Single Play opens with its focus-trapped rules
+  briefing, then **Begin Puzzle** starts an attempt-local contextual coach.
+  Each coach stage has concept, directed, and exact hint tiers plus a responsive
+  SVG mini diagram built from the current game state. Semantic selections and
+  committed actions advance it; a distinct contradictory selection escalates
+  one tier without changing the game. Players can dismiss a stage, ask for more
+  help, or skip the rest of the current attempt. Restart replays the briefing
+  and coach, while Reset move and Reset branch preserve completed coach stages.
+  Editor previews never open guidance. `showTutorialGuidance` defaults on and
+  controls both automatic parts. Only the opening opt-out or Settings changes
+  the stored preference; skipping the coach is attempt-local. The Blocking and
   Parallel Universes briefing alone includes the pointed decision-tree artwork;
   the modal scrolls internally so its rules and controls remain reachable. Each
   briefing can return to the main menu; an active series uses the standard
@@ -130,13 +136,23 @@ public avatars).
   Hand-off, Pass adds Pass, The Drive keeps those three, and Blocking and
   Parallel Universes enables Block and Blitz as well. Actions from later
   drills stay disabled in earlier drills.
+- **Tutorial runs begin and advance through a drill chooser.** The player may
+  play the six drills in any order. Completed drills remain selectable for
+  replay; a replay replaces that drill's earlier result without increasing the
+  completed count. After each completion the chooser returns with updated
+  completed/remaining counts. One result per drill combines into the series
+  score after every drill has been completed once. The sixth
+  drill keeps the full unrestricted action set while now providing its own
+  Blocking, Pickup, and Parallel Universes briefing and contextual coach.
 - **The compact game HUD keeps every control inside the viewport.** Account
   remains near the front. Zoom, restart, and reporting share the `GameToolsMenu`
   trigger, while the Key and action log retain their own triggers. Compact
   dropdowns use viewport-fixed geometry so no parent can clip them. The empty
   100% success readout leaves the row until a roll puts probability at risk.
-  During a Tutorial run, Game Tools also reopens the current rules briefing,
-  even when that lesson was already seen or automatic briefings are disabled.
+  During a guided Tutorial run, Game Tools exposes **Tutorial guide**. It
+  reopens the current coach stage (or the last stage after completion), even
+  after an attempt-local skip or when automatic guidance is disabled; before a
+  coach exists it opens the rules briefing.
   The `?` control is the pitch/skill Key, not Settings.
 - **`UserMenu`'s avatar falls back to initials on load failure**, not just on
   absence — a corrupted or future-format data URL degrades the same way a
@@ -153,7 +169,8 @@ when they carry rules information rather than joining sentences.
 Puzzle Creator as a third tab for allowlisted admins.
 
 - Series tab shows **Tutorial**, the default series row from
-  `client/src/series/default.json`.
+  `client/src/series/default.json`. Starting it opens the drill chooser rather
+  than forcing a fixed first puzzle.
 - Single Plays tab shows published scenario tiles.
 - Do not reintroduce per-screen scenario title override maps. Scenario
   `name`/`description` JSON is the source of truth.
@@ -196,6 +213,12 @@ Editor previews never start an analytics attempt. Active time ticks only while a
 real attempt is active and the document is visible. Google Analytics remains the
 owner of generic traffic and audience reporting; do not add those dimensions to
 the first-party payload.
+
+Tutorial guide analytics use the allowlisted `tutorial-guide` interaction and
+contain only scenario id, stable stage id, and a fixed outcome (shown,
+dismissed, stage reached, hint requested, contradiction, skipped, or
+completed). Never attach player/piece identity, board state, coordinates,
+routes, or authored dialog copy.
 
 ## Touchdown Play Diagram
 

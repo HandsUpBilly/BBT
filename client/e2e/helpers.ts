@@ -65,6 +65,7 @@ export async function startGame(page: Page, playerName = 'E2E Tester'): Promise<
   await page.getByRole('button', { name: /^continue$/i }).click();
 
   await page.getByRole('button', { name: /start series/i }).click();
+  await page.getByRole('button', { name: 'Play this drill' }).first().click();
 
   // The pitch is the signal that the game screen has actually mounted.
   await page.locator('.pitch__grid .square').first().waitFor({ state: 'visible' });
@@ -73,6 +74,8 @@ export async function startGame(page: Page, playerName = 'E2E Tester'): Promise<
   // input. Layout tests exercise the game surface itself, so acknowledge it.
   const startPuzzle = page.getByRole('button', { name: 'Begin Puzzle' });
   if (await startPuzzle.isVisible()) await startPuzzle.click();
+  const skipGuide = page.getByRole('button', { name: 'Skip guide' });
+  if (await skipGuide.isVisible()) await skipGuide.click();
 }
 
 /**
@@ -104,6 +107,8 @@ export async function startScenario(
   // scenario-specific layout specs.
   const beginPuzzle = page.getByRole('button', { name: 'Begin Puzzle' });
   if (await beginPuzzle.isVisible()) await beginPuzzle.click();
+  const skipGuide = page.getByRole('button', { name: 'Skip guide' });
+  if (await skipGuide.isVisible()) await skipGuide.click();
 }
 
 /**

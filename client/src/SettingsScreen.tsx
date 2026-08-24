@@ -266,14 +266,14 @@ export function SettingsScreen({
       <section className="settings-screen__section">
         <h3 className="settings-screen__section-title">Tutorial</h3>
         <p className="settings-screen__section-help">
-          Rules briefings for the six Tutorial drills.
+          Opening briefings and step-by-step coaching for the guided Tutorial drills.
         </p>
         <label className="settings-screen__coordinate-toggle">
           <span>
-            <strong>Rules briefings</strong>
+            <strong>Tutorial guidance</strong>
             <small>
-              Show the briefing before each Tutorial puzzle. Turn this off to
-              skip automatic briefings; turn it back on to show them again.
+              Show the opening briefing and coach steps on every guided attempt.
+              Turn this off to skip automatic guidance.
             </small>
           </span>
           <input

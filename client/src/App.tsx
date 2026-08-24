@@ -33,6 +33,10 @@ import { AboutDialog } from './AboutDialog';
 import { SettingsScreen } from './SettingsScreen';
 import { HelpScreen } from './HelpScreen';
 import { TutorialLessonDialog } from './TutorialLessonDialog';
+import { TutorialGuideDialog } from './TutorialGuideDialog';
+import { TutorialPuzzleChooser } from './TutorialPuzzleChooser';
+import { upsertSeriesPuzzleResult } from './seriesResults';
+import { useTutorialGuide } from './useTutorialGuide';
 import { TUTORIAL_LESSON_IDS, tutorialLessonFor } from './tutorialLessons';
 import type { TutorialLesson } from './tutorialLessons';
 import { UI_COPY } from './uiCopy';
@@ -336,6 +340,17 @@ export default function App() {
   const [confirmLeaveSeries, setConfirmLeaveSeries] = useState(false);
   const [reviewingCompletedBoard, setReviewingCompletedBoard] = useState(false);
   const [tutorialLesson, setTutorialLesson] = useState<{ lesson: TutorialLesson; step: number } | null>(null);
+  const tutorialCoach = useTutorialGuide();
+  const tutorialInteractionIdRef = useRef(0);
+  const tutorialGuideAnalyticsRef = useRef<{
+    scenarioId: string;
+    stageIndex: number;
+    tier: number;
+    visible: boolean;
+    skipped: boolean;
+    complete: boolean;
+    contradictionKey: string | null;
+  } | null>(null);
   const [reportOpen, setReportOpen] = useState(false);
   const [aboutOpen, setAboutOpen] = useState(false);
   // Blocking failure on the touchdown submit — keeps the SubmitModal open so
@@ -344,33 +359,85 @@ export default function App() {
   // Non-blocking notice (e.g. a best-effort individual submit failed mid-series).
   const [submitNotice, setSubmitNotice] = useState<string | undefined>();
 
-  const queueTutorialLesson = useCallback((scenario: Scenario, step: number) => {
+  // A guided attempt is always initialized as one operation. Keeping the coach
+  // reset and briefing queue together prevents a replay path from retaining a
+  // completed/skipped guide or showing only the opening briefing. The stored
+  // preference controls every new attempt, not merely the first visit.
+  const beginTutorialCoachAttempt = tutorialCoach.beginAttempt;
+  const beginTutorialAttempt = useCallback((scenario: Scenario, step: number) => {
+    beginTutorialCoachAttempt(scenario.id);
     const lesson = tutorialLessonFor(scenario.id);
     const guidanceEnabled = prefs.showTutorialGuidance ?? true;
     setTutorialLesson(lesson && guidanceEnabled ? { lesson, step } : null);
     if (lesson && guidanceEnabled) trackAnalytics('interaction', { name: 'tutorial-briefing', outcome: 'shown' });
-  }, [prefs.showTutorialGuidance]);
+  }, [prefs.showTutorialGuidance, beginTutorialCoachAttempt]);
 
   const dismissTutorialLesson = useCallback((disableFutureLessons: boolean) => {
     if (!tutorialLesson) return;
     if (disableFutureLessons) setPrefs({ showTutorialGuidance: false });
+    else tutorialCoach.start();
     trackAnalytics('interaction', {
       name: 'tutorial-briefing', outcome: 'dismissed',
       value: disableFutureLessons ? 'disable-future' : 'continue',
     });
     setTutorialLesson(null);
-  }, [setPrefs, tutorialLesson]);
+  }, [setPrefs, tutorialLesson, tutorialCoach]);
 
-  const showCurrentTutorialLesson = useCallback(() => {
+  const showCurrentTutorialGuidance = useCallback(() => {
     const isPlayablePuzzle = appMode === 'series-puzzle' || appMode === 'puzzle';
     if (!isPlayablePuzzle || !activeScenario || editorPreviewScenario) return;
+    if (tutorialCoach.progress) {
+      tutorialCoach.reopen();
+      return;
+    }
     const lesson = tutorialLessonFor(activeScenario.id);
     const lessonIndex = TUTORIAL_LESSON_IDS.indexOf(activeScenario.id);
     const step = appMode === 'series-puzzle' && seriesRun
       ? seriesRun.puzzleIndex + 1
       : lessonIndex + 1;
     if (lesson && step > 0) setTutorialLesson({ lesson, step });
-  }, [activeScenario, appMode, editorPreviewScenario, seriesRun]);
+  }, [activeScenario, appMode, editorPreviewScenario, seriesRun, tutorialCoach]);
+
+  useEffect(() => {
+    const progress = tutorialCoach.progress;
+    const guide = tutorialCoach.guide;
+    if (!progress || !guide || guide.stages.length === 0) {
+      tutorialGuideAnalyticsRef.current = null;
+      return;
+    }
+    const current = {
+      scenarioId: progress.scenarioId,
+      stageIndex: progress.stageIndex,
+      tier: progress.tier,
+      visible: progress.visible,
+      skipped: progress.skipped,
+      complete: progress.complete,
+      contradictionKey: progress.lastContradictionKey,
+    };
+    const previous = tutorialGuideAnalyticsRef.current;
+    const stage = guide.stages[Math.min(progress.stageIndex, guide.stages.length - 1)];
+    const trackGuide = (outcome: string) => trackAnalytics('interaction', {
+      name: 'tutorial-guide', outcome, scenarioId: progress.scenarioId, stageId: stage.id,
+    });
+
+    if (previous?.scenarioId === current.scenarioId) {
+      if (!previous.visible && current.visible) trackGuide('shown');
+      if (current.stageIndex > previous.stageIndex && !current.complete) trackGuide('stage-reached');
+      if (current.contradictionKey && current.contradictionKey !== previous.contradictionKey) {
+        trackGuide('contradiction');
+      } else if (current.tier > previous.tier) {
+        trackGuide('hint-requested');
+      }
+      if (!previous.skipped && current.skipped) trackGuide('skipped');
+      if (!previous.complete && current.complete) trackGuide('completed');
+      if (previous.visible && !current.visible && !current.skipped && !current.complete) {
+        trackGuide('dismissed');
+      }
+    } else if (current.visible) {
+      trackGuide('shown');
+    }
+    tutorialGuideAnalyticsRef.current = current;
+  }, [tutorialCoach.guide, tutorialCoach.progress]);
 
   // ── Viewport shape ───────────────────────────────────────────────────────
   // Three separate questions — see useMediaQuery.ts for why none of them is a
@@ -428,6 +495,10 @@ export default function App() {
           handleHandoffAction, handleHandoffTarget,
           handlePassAction, handlePassTarget,
           handleBlockAction, handleBlockTarget, handlePushChoice } = game;
+
+  useEffect(() => tutorialCoach.observe(state, {
+    allUniversesComplete: branchedBoards.complete,
+  }), [state, branchedBoards.complete, tutorialCoach]);
 
   const setBranchedState = branchedBoards.setState;
   // `phase: 'touchdown'` marks one branch scoring, not the run finishing, so
@@ -529,7 +600,8 @@ export default function App() {
   // Render 'home' instead of setState-in-effect to avoid an extra render pass.
   const effectiveAppMode = appMode === 'admin' && !isAdmin ? 'home' : appMode;
   useLayoutEffect(() => {
-    if (effectiveAppMode !== 'puzzle' && effectiveAppMode !== 'series-puzzle') return;
+    if (effectiveAppMode !== 'puzzle' && effectiveAppMode !== 'series-puzzle'
+      && effectiveAppMode !== 'series-select') return;
     window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
   }, [effectiveAppMode, activeScenario?.id]);
   const reportScenario = effectiveAppMode === 'puzzle' || effectiveAppMode === 'series-puzzle' || effectiveAppMode === 'leaderboard'
@@ -643,20 +715,21 @@ export default function App() {
     resetBoards(s);
     setZoomBounds(computeStartOfPlayZoom(s.pieces, s.activeTeam));
     const lessonIndex = TUTORIAL_LESSON_IDS.indexOf(scenario.id);
-    queueTutorialLesson(scenario, lessonIndex + 1);
+    beginTutorialAttempt(scenario, lessonIndex + 1);
     beginAnalyticsAttempt(scenario, 'standalone');
     setAppMode('puzzle');
-  }, [resetBoards, computeStartOfPlayZoom, queueTutorialLesson, beginAnalyticsAttempt]);
+  }, [resetBoards, computeStartOfPlayZoom, beginTutorialAttempt, beginAnalyticsAttempt]);
 
   const previewPuzzle = useCallback((scenario: Scenario) => {
     setTutorialLesson(null);
+    tutorialCoach.clear();
     setEditorPreviewScenario(scenario);
     setActiveScenario(scenario);
     const s = makeScenarioState(scenario);
     resetBoards(s);
     setZoomBounds(computeStartOfPlayZoom(s.pieces, s.activeTeam));
     setAppMode('puzzle');
-  }, [resetBoards, computeStartOfPlayZoom]);
+  }, [resetBoards, computeStartOfPlayZoom, tutorialCoach]);
 
   const goLeaderboard = useCallback((scenario: Scenario) => {
     setActiveScenario(scenario);
@@ -829,6 +902,12 @@ export default function App() {
     const piece = state.pieces.find(p => key(p.position) === k);
     if (!piece) return;
 
+    tutorialInteractionIdRef.current += 1;
+    tutorialCoach.recordInteraction({
+      kind: 'piece-selected', pieceId: piece.id,
+      eventKey: `piece-${tutorialInteractionIdRef.current}`,
+    });
+
     // Touch has no hover, so a tap is the only way the player card can learn
     // which player to show — including opponents, whose skills are exactly
     // what you need before deciding whether to block them.
@@ -837,6 +916,11 @@ export default function App() {
 
     // During handoff targeting, clicking a highlighted receiver stages it for confirmation.
     if (state.isHandoffTargeting) {
+      tutorialInteractionIdRef.current += 1;
+      tutorialCoach.recordInteraction({
+        kind: 'target-selected', action: 'handoff', pieceId: piece.id,
+        eventKey: `target-${tutorialInteractionIdRef.current}`,
+      });
       if (state.handoffTargets.has(k)) {
         setPendingTransfer({ kind: 'handoff', position: { col, row } });
       } else {
@@ -848,6 +932,11 @@ export default function App() {
 
     // During pass targeting, clicking a highlighted receiver stages it for confirmation.
     if (state.isPassTargeting) {
+      tutorialInteractionIdRef.current += 1;
+      tutorialCoach.recordInteraction({
+        kind: 'target-selected', action: 'pass', pieceId: piece.id,
+        eventKey: `target-${tutorialInteractionIdRef.current}`,
+      });
       if (state.passReceiverKeys.has(k)) {
         setPendingTransfer({ kind: 'pass', position: { col, row } });
       } else {
@@ -859,6 +948,11 @@ export default function App() {
 
     // During block targeting, clicking a highlighted defender throws the block
     if (state.isBlockTargeting) {
+      tutorialInteractionIdRef.current += 1;
+      tutorialCoach.recordInteraction({
+        kind: 'target-selected', action: 'block', pieceId: piece.id,
+        eventKey: `target-${tutorialInteractionIdRef.current}`,
+      });
       if (state.blockTargets.has(k)) {
         handleBlockTarget(col, row);
       } else {
@@ -913,10 +1007,18 @@ export default function App() {
       state.isBlockTargeting, state.blockTargets, state.pendingBlockIsBlitz, state.blitzTargetId,
       state.committedPath, movementContext,
       hookSquareClick, handleBlockTarget, handleCancelSelection,
-      previewBeforeCommit, finishMove, disarm, hoverCapable, compact]);
+      previewBeforeCommit, finishMove, disarm, hoverCapable, compact, tutorialCoach]);
 
   const handleMenuAction = useCallback((actionKey: string, moveFirst: boolean) => {
     if (!pieceMenu) return;
+    if (actionKey === 'move' || actionKey === 'handoff' || actionKey === 'pass'
+      || actionKey === 'block' || actionKey === 'blitz') {
+      tutorialInteractionIdRef.current += 1;
+      tutorialCoach.recordInteraction({
+        kind: 'action-selected', action: actionKey, pieceId: pieceMenu.piece.id,
+        eventKey: `action-${tutorialInteractionIdRef.current}`,
+      });
+    }
     setPendingTransfer(null);
     engageAnalyticsAttempt();
     if (analyticsAttemptIdRef.current) {
@@ -944,7 +1046,7 @@ export default function App() {
       handleBlockAction(pieceMenu.piece.id, true);
     }
   }, [pieceMenu, hookSquareClick, handleHandoffAction, handlePassAction, handleBlockAction, compact,
-      engageAnalyticsAttempt]);
+      engageAnalyticsAttempt, tutorialCoach]);
 
   const dismissMenu = useCallback(() => {
     setPieceMenu(null);
@@ -1086,32 +1188,48 @@ export default function App() {
     setReviewingCompletedBoard(false);
     const s = makeScenarioState(activeScenario);
     resetBoards(s);
+    const lessonIndex = TUTORIAL_LESSON_IDS.indexOf(activeScenario.id);
+    beginTutorialAttempt(activeScenario, appMode === 'series-puzzle'
+      ? (seriesRun?.puzzleIndex ?? 0) + 1
+      : lessonIndex + 1);
     setZoomBounds(computeStartOfPlayZoom(s.pieces, s.activeTeam));
     beginAnalyticsAttempt(activeScenario, appMode === 'series-puzzle' ? 'series' : 'standalone',
       appMode === 'series-puzzle' ? (seriesRun?.puzzleIndex ?? 0) + 1 : undefined);
   }, [activeScenario, state.pieces, state.activeTeam, state.actionLog.length, resetBoards,
-      computeStartOfPlayZoom, beginAnalyticsAttempt, endAnalyticsAttempt, appMode, seriesRun]);
+      computeStartOfPlayZoom, beginAnalyticsAttempt, endAnalyticsAttempt, appMode, seriesRun,
+      beginTutorialAttempt]);
 
   // ── Series mode handlers ──────────────────────────────────────────────────
   const startSeries = useCallback(() => {
     if (!identityName.trim()) return;
-    const firstScenario = seriesScenarios[0];
-    if (!firstScenario) return;
+    if (seriesScenarios.length === 0) return;
     setSeriesRun({ playerName: identityName, puzzleIndex: 0, results: [] });
     const analyticsRunId = newAnalyticsId();
     analyticsSeriesRunIdRef.current = analyticsRunId;
     trackAnalytics('series-started', { runId: analyticsRunId, seriesId: scenarioData.series.id });
     setReviewingCompletedBoard(false);
-    setActiveScenario(firstScenario);
-    const s = makeScenarioState(firstScenario);
+    setActiveScenario(null);
+    setTutorialLesson(null);
+    tutorialCoach.clear();
+    setAppMode('series-select');
+  }, [identityName, seriesScenarios.length, scenarioData.series.id, tutorialCoach]);
+
+  const chooseSeriesPuzzle = useCallback((scenario: Scenario) => {
+    if (!seriesRun) return;
+    const puzzleIndex = seriesScenarios.findIndex(item => item.id === scenario.id);
+    if (puzzleIndex < 0) return;
+    setSeriesRun({ ...seriesRun, puzzleIndex });
+    setReviewingCompletedBoard(false);
+    setSubmitError(undefined);
+    setActiveScenario(scenario);
+    const s = makeScenarioState(scenario);
     resetBoards(s);
     setZoomBounds(computeStartOfPlayZoom(s.pieces, s.activeTeam));
-    const firstLessonIndex = TUTORIAL_LESSON_IDS.indexOf(firstScenario.id);
-    queueTutorialLesson(firstScenario, firstLessonIndex + 1);
-    beginAnalyticsAttempt(firstScenario, 'series', 1);
+    beginTutorialAttempt(scenario, puzzleIndex + 1);
+    beginAnalyticsAttempt(scenario, 'series', seriesRun.results.length + 1);
     setAppMode('series-puzzle');
-  }, [identityName, seriesScenarios, scenarioData.series.id, resetBoards, computeStartOfPlayZoom,
-      queueTutorialLesson, beginAnalyticsAttempt]);
+  }, [seriesRun, seriesScenarios, resetBoards, computeStartOfPlayZoom,
+      beginTutorialAttempt, beginAnalyticsAttempt]);
 
   // Called when the player continues past a touchdown while in a series run.
   // Submits the puzzle's score to its individual leaderboard, records the
@@ -1148,26 +1266,24 @@ export default function App() {
       moves,
       ...(tree ? { tree } : {}),
     };
-    const results = [...seriesRun.results, result];
-    const nextIndex = seriesRun.puzzleIndex + 1;
+    const results = upsertSeriesPuzzleResult(seriesRun.results, result);
+    const completionPosition = results.length;
     if (analyticsSeriesRunIdRef.current) {
       trackAnalytics('series-advanced', {
         runId: analyticsSeriesRunIdRef.current,
         scenarioId: activeScenario.id,
-        position: seriesRun.puzzleIndex + 1,
+        position: completionPosition,
       });
     }
 
-    if (nextIndex < seriesScenarios.length) {
-      const nextScenario = seriesScenarios[nextIndex];
+    if (results.length < seriesScenarios.length) {
       setReviewingCompletedBoard(false);
-      setSeriesRun({ ...seriesRun, puzzleIndex: nextIndex, results });
-      setActiveScenario(nextScenario);
-      const s = makeScenarioState(nextScenario);
-      resetBoards(s);
-      setZoomBounds(computeStartOfPlayZoom(s.pieces, s.activeTeam));
-      queueTutorialLesson(nextScenario, nextIndex + 1);
-      beginAnalyticsAttempt(nextScenario, 'series', nextIndex + 1);
+      setSeriesRun({ ...seriesRun, results });
+      setActiveScenario(null);
+      setTutorialLesson(null);
+      tutorialCoach.clear();
+      setState(s => ({ ...s, phase: 'playing' }));
+      setAppMode('series-select');
       return;
     }
 
@@ -1200,8 +1316,7 @@ export default function App() {
       setSubmitError(describeSubmitError(error));
     }
   }, [activeScenario, seriesRun, seriesScenarios, state.actionLog, branchedBoards.hasSplit,
-      branchedBoards.run, branchedBoards.summary, resetBoards, setState, idToken,
-      computeStartOfPlayZoom, queueTutorialLesson, beginAnalyticsAttempt]);
+      branchedBoards.run, branchedBoards.summary, setState, idToken, tutorialCoach]);
 
   const requestLeaveSeries = useCallback(() => {
     setConfirmLeaveSeries(true);
@@ -1219,8 +1334,11 @@ export default function App() {
     setConfirmLeaveSeries(false);
     setReviewingCompletedBoard(false);
     setSeriesRun(null);
+    setActiveScenario(null);
+    setTutorialLesson(null);
+    tutorialCoach.clear();
     setAppMode('home');
-  }, [endAnalyticsAttempt, state.pieces, state.activeTeam, state.actionLog.length]);
+  }, [endAnalyticsAttempt, state.pieces, state.activeTeam, state.actionLog.length, tutorialCoach]);
 
   const confirmLeaveSeriesNo = useCallback(() => {
     setConfirmLeaveSeries(false);
@@ -1279,6 +1397,36 @@ export default function App() {
           userMenu={accountMenu}
           reportButton={reportButton('header')}
         />
+        {notice}
+        {reportModal}
+        {aboutModal}
+        <AppFooter />
+      </div>
+    );
+  }
+
+  if (effectiveAppMode === 'series-select' && seriesRun) {
+    const completedScenarioIds = new Set(seriesRun.results.map(result => result.scenarioId));
+    return (
+      <div className="app app--home app--archive app--playbook">
+        {archiveControls}
+        <TutorialPuzzleChooser
+          seriesName={scenarioData.series.name}
+          scenarios={seriesScenarios}
+          completedScenarioIds={completedScenarioIds}
+          onChoose={chooseSeriesPuzzle}
+          onLeave={requestLeaveSeries}
+        />
+        {confirmLeaveSeries && (
+          <ConfirmDialog
+            title="Leave tutorial series?"
+            message="Your completed drills in this series run will be lost."
+            confirmLabel="Leave"
+            cancelLabel="Keep Choosing"
+            onConfirm={confirmLeaveSeriesYes}
+            onCancel={confirmLeaveSeriesNo}
+          />
+        )}
         {notice}
         {reportModal}
         {aboutModal}
@@ -1519,14 +1667,21 @@ export default function App() {
   // text on touch, where a 310px control row has no 89px to spare for it.
   const seriesCounter = seriesRun ? (
     <span className="hud__prob-label hud__prob-label--series">
-      Puzzle {seriesRun.puzzleIndex + 1} / {seriesScenarios.length}
+      Series progress {seriesRun.results.length} / {seriesScenarios.length} complete
     </span>
   ) : null;
+  const completedSeriesPuzzlesAfterCurrent = seriesRun
+    ? seriesRun.results.length + (activeScenario
+      && !seriesRun.results.some(result => result.scenarioId === activeScenario.id) ? 1 : 0)
+    : 0;
   const statusLine = (
     <div className="hud__status">
       {compact && seriesCounter && <>{seriesCounter}{' '}</>}
       {activationStatus}
     </div>
+  );
+  const tutorialGuidanceAvailable = !editorPreviewScenario && Boolean(
+    tutorialCoach.guide || (activeScenario && tutorialLessonFor(activeScenario.id)),
   );
 
   return (
@@ -1550,9 +1705,9 @@ export default function App() {
         {compact ? (
           <GameToolsMenu
             zoomEnabled={zoomEnabled}
-            onTutorialBriefing={
-              (appMode === 'series-puzzle' || (appMode === 'puzzle' && !editorPreviewScenario))
-                ? showCurrentTutorialLesson
+            onTutorialGuide={
+              tutorialGuidanceAvailable
+                ? showCurrentTutorialGuidance
                 : undefined
             }
             onToggleZoom={() => setZoomOverride(!zoomEnabled)}
@@ -1564,6 +1719,17 @@ export default function App() {
           />
         ) : (
           <>
+            {tutorialGuidanceAvailable && (
+              <button
+                className="hud__zoom"
+                onClick={showCurrentTutorialGuidance}
+                title="Tutorial guide"
+                aria-label="Tutorial guide"
+              >
+                <span className="hud__btn-icon" aria-hidden="true">?</span>
+                <span className="hud__btn-text">Guide</span>
+              </button>
+            )}
             <button
               className={`hud__zoom${zoomEnabled ? ' hud__zoom--active' : ''}`}
               onClick={() => setZoomOverride(!zoomEnabled)}
@@ -1702,8 +1868,8 @@ export default function App() {
           onReviewBoard={() => setReviewingCompletedBoard(true)}
           error={submitError}
           continueLabel={
-            seriesRun.puzzleIndex + 1 < seriesScenarios.length
-              ? `Continue to Puzzle ${seriesRun.puzzleIndex + 2}`
+            completedSeriesPuzzlesAfterCurrent < seriesScenarios.length
+              ? 'Choose Next Tutorial'
               : 'Finish Series'
           }
         />
@@ -1723,8 +1889,8 @@ export default function App() {
           seriesMode
           onReviewBoard={() => setReviewingCompletedBoard(true)}
           continueLabel={
-            seriesRun.puzzleIndex + 1 < seriesScenarios.length
-              ? `Continue to Puzzle ${seriesRun.puzzleIndex + 2}`
+            completedSeriesPuzzlesAfterCurrent < seriesScenarios.length
+              ? 'Choose Next Tutorial'
               : 'Finish Series'
           }
         />
@@ -1862,6 +2028,21 @@ export default function App() {
           total={TUTORIAL_LESSON_IDS.length}
           onDismiss={dismissTutorialLesson}
           onReturnToMenu={returnToMenuFromTutorial}
+        />
+      )}
+      {(effectiveAppMode === 'series-puzzle' || effectiveAppMode === 'puzzle')
+        && !tutorialLesson && tutorialCoach.guide && tutorialCoach.progress?.visible
+        && activeScenario && !confirmLeaveSeries && !reportOpen && !aboutOpen
+        && !state.blockChoice && !pendingPushSquare && !activeTransfer && !activeFinishedMove
+        && (!branchedBoards.complete || reviewingCompletedBoard || branchSummaryDismissed) && (
+        <TutorialGuideDialog
+          drillTitle={tutorialLessonFor(activeScenario.id)?.title ?? activeScenario.name}
+          guide={tutorialCoach.guide}
+          progress={tutorialCoach.progress}
+          state={state}
+          onDismiss={tutorialCoach.dismiss}
+          onMoreHelp={tutorialCoach.moreHelp}
+          onSkip={tutorialCoach.skip}
         />
       )}
       {notice}

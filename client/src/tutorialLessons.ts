@@ -72,6 +72,19 @@ export const TUTORIAL_LESSONS: readonly TutorialLesson[] = [
       `SCORE: ${OBJECTIVE_GUIDANCE}`,
     ],
   },
+  {
+    scenarioId: 'scenario-006',
+    title: 'Blocking, Pickups and Parallel Universes',
+    enabledActions: ['move', 'handoff', 'pass', 'block', 'blitz'],
+    artwork: 'parallel-universes',
+    paragraphs: [
+      'BLOCK: Cedric can hit Muzgash away from the loose ball. A Block creates separate board states for every outcome you decide can continue.',
+      'PARALLEL UNIVERSES: Use the branch strip to visit each live universe. Shared safe actions are replayed in lockstep until the boards diverge.',
+      'PICKUP: Move a player onto the loose ball. The required Agility Test and any Sure Hands reroll are included in the route probability.',
+      'FINISH: Complete the objective in every live universe. A conceded branch contributes no scoring probability.',
+      `SCORE: ${OBJECTIVE_GUIDANCE}`,
+    ],
+  },
 ] as const;
 
 export const TUTORIAL_LESSON_IDS = TUTORIAL_LESSONS.map(lesson => lesson.scenarioId);
