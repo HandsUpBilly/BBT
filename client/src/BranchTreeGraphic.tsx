@@ -12,7 +12,6 @@ interface Props {
   tree: BranchTreeBlockView;
   /** Leaf whose full route should be picked out during per-branch review. */
   highlightedBranchId?: string;
-  variant?: 'summary' | 'review';
 }
 
 interface LayoutNode {
@@ -57,7 +56,7 @@ function blockContains(block: BranchTreeBlockView, branchId: string): boolean {
 }
 
 /** The completed run using the same block → state → block model as the live tree. */
-export function BranchTreeGraphic({ tree, highlightedBranchId, variant = 'summary' }: Props) {
+export function BranchTreeGraphic({ tree, highlightedBranchId }: Props) {
   const nodes: LayoutNode[] = [];
   const edges: LayoutEdge[] = [];
   const blockNumbersByColumn = new Map<number, Set<number>>();
@@ -126,7 +125,7 @@ export function BranchTreeGraphic({ tree, highlightedBranchId, variant = 'summar
   const columns = [...blockNumbersByColumn.entries()].sort(([left], [right]) => left - right);
 
   return (
-    <figure className={`branch-tree branch-tree--${variant}`}>
+    <figure className="branch-tree">
       <div className="branch-tree__heading">Game branches</div>
       <div className="branch-tree__scroll">
         <svg
