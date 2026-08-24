@@ -9,6 +9,11 @@ roll you commit to *is* the score, so anything that would let a player bank a
 turn and start fresh would also reset that chain. Free Play was removed for this
 reason — don't reintroduce it.
 
+("Free Play" is also the shipped UI label for the standalone-puzzle tab, e.g.
+`client/src/uiCopy.ts`. That's a different sense of the phrase — the tab label
+picks one puzzle to play a single turn of, it does not reintroduce the removed
+multi-turn mode above.)
+
 ## Repository Layout
 
 ```
@@ -45,6 +50,10 @@ editor accepted drafts the server then rejected).
 | `scoreValidation.js` | both leaderboard implementations |
 | `rateLimit.js` | both `/api/reports` and both leaderboard implementations |
 | `statistics.js` | `server/index.js`, `editor-statistics.js` |
+| `adminManagement.js` | `server/editor.js`, `server/adminStore.js`, `editor-admins.js`, `netlify/functions/adminStore.js` |
+| `analyticsValidation.js` | `server/analytics.js`, both `/api/analytics` implementations |
+| `analyticsStatistics.js` | `server/analytics.js`, `editor-analytics.js`, client `AdminAnalytics.tsx` |
+| `blockWeights.js` | `client/src/blockBranching.ts` |
 
 They are plain ESM `.js` with hand-written `.d.ts` siblings so TypeScript can
 consume them. **Do not fork these into a package-local copy.** Vite is
@@ -169,7 +178,7 @@ Never hand-edit `netlify/functions/scenarioSeed.js`.
 | `VITE_GOOGLE_CLIENT_ID` | `AuthProvider.tsx` | Client-side Google Sign-In |
 | `NETLIFY_SITE_ID` / `SITE_ID` | Netlify functions | Netlify Blobs site ID |
 | `NETLIFY_TOKEN` / `NETLIFY_AUTH_TOKEN` | Netlify functions | Netlify Blobs auth |
-| `ADMIN_EMAILS` | `shared/googleAuth.js` | Comma-separated allowlist gating `/api/editor/*` |
+| `ADMIN_EMAILS` | `shared/googleAuth.js` | Comma-separated allowlist gating `/api/editor/*`. Unioned at runtime with the managed-admin list — see "Editor auth policy" below |
 | `VITE_ADMIN_EMAILS` | `client/src/App.tsx` | Same list, controls Admin Mode tab visibility only — not a security boundary |
 | `EDITOR_ALLOW_UNAUTHENTICATED` | `shared/googleAuth.js` | Set to `false` to fail closed when no allowlist is set. Defaults **true** everywhere |
 | `GITHUB_ISSUES_TOKEN` | `shared/githubIssues.js` | Fine-grained token, `HandsUpBilly/BBT` + Issues:RW. Server-only — never a `VITE_` var |
@@ -178,10 +187,26 @@ Never hand-edit `netlify/functions/scenarioSeed.js`.
 
 ### Editor auth policy
 
-An empty or unset `ADMIN_EMAILS` means Admin Mode is unrestricted in both local
-development and Netlify. A non-empty allowlist requires a verified Google user
-whose email is listed. Set `EDITOR_ALLOW_UNAUTHENTICATED=false` to opt a
-deployment into returning 503 when its allowlist is empty.
+The effective allowlist is `ADMIN_EMAILS` **union** the managed-admin list the
+Admin Console maintains at runtime (`effectiveAllowlist()` in
+`shared/googleAuth.js`, consumed by `requireAdminGoogleUser`) — see "Managed
+administrators" in `docs/agent-context/puzzle-editor.md`. Admin Mode is
+unrestricted only when *both* lists are empty; a deployment with an empty
+`ADMIN_EMAILS` but at least one stored managed admin is restricted, even
+though `ADMIN_EMAILS` itself looks unset. A non-empty effective allowlist
+requires a verified Google user whose email is on it. Set
+`EDITOR_ALLOW_UNAUTHENTICATED=false` to opt a deployment into returning 503
+when the effective allowlist is empty.
+
+On a deployment where the effective allowlist is empty and unauthenticated
+access is allowed (the documented default), any verified Google account can
+add itself as the first managed admin (`server/editor.js`,
+`netlify/functions/editor-admins.js` fall back to `requireVerifiedGoogleUser`
+when `requireAdminGoogleUser` returns no admin). That first write then closes
+open access to everyone else, and the console refuses to remove the last
+managed admin, so it isn't reversible from the browser. This is the shipped
+bootstrap behavior today; whether it should be gated on a deployment that
+never set `ADMIN_EMAILS` is an open decision, not settled by this doc.
 
 `GET /api/editor/scenarios` is admin-gated too — it returns *drafts*, including
 unpublished puzzles. Only `GET /api/scenarios` (published state) is public.

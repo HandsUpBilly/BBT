@@ -63,6 +63,7 @@ All configured in `netlify.toml`, in this order:
 | `/api/analytics` | `analytics` | Public, game-event batches only, rate-limited |
 | `/api/editor/statistics` | `editor-statistics` | **Admin only** |
 | `/api/editor/analytics` | `editor-analytics` | **Admin only** |
+| `/api/editor/admins` | `editor-admins` | **Admin only** (any verified user may add themselves as the first managed admin when the effective allowlist is empty — see AGENTS.md "Editor auth policy") |
 | `/api/editor/scenarios` | `editor-scenarios` | **Admin only, including GET** |
 | `/api/editor/scenarios/*` | `editor-scenarios` | **Admin only** |
 | `/api/editor/series/default` | `editor-series` | **Admin only** |
