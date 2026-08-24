@@ -101,17 +101,17 @@ export function registerEditorRoutes(app) {
     }
   }));
 
-  app.delete('/api/editor/admins/:email', async (req, res) => withAdminManager(req, res, async user => {
+  app.delete('/api/editor/admins', async (req, res) => withAdminManager(req, res, async user => {
     try {
       const current = await readManagedAdmins();
-      const managedAdmins = removeManagedAdmin(current, req.params.email);
+      const managedAdmins = removeManagedAdmin(current, req.query.email);
       if (configuredAdminCount === 0 && managedAdmins.length === 0 && current.length > 0) {
         return jsonResponse(res, 400, { errors: ['Keep at least one managed administrator, or configure ADMIN_EMAILS.'] });
       }
       if (managedAdmins.length === current.length) {
         return jsonResponse(res, 404, { errors: ['That administrator is managed by deployment configuration or does not exist.'] });
       }
-      const saved = await saveManagedAdminsWithAudit(managedAdmins, { action: 'removed', actor: user.email, target: normalizeAdminEmail(req.params.email) });
+      const saved = await saveManagedAdminsWithAudit(managedAdmins, { action: 'removed', actor: user.email, target: normalizeAdminEmail(req.query.email) });
       jsonResponse(res, 200, { ...saved, configuredAdminCount });
     } catch (error) {
       jsonResponse(res, 400, { errors: [error instanceof Error ? error.message : 'Could not remove administrator'] });
