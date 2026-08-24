@@ -90,11 +90,6 @@ test('a configured allowlist requires sign-in, then membership', async () => {
     () => auth.requireAdminGoogleUser(headers({})),
     error => error instanceof AdminAuthError && error.status === 401,
   );
-  assert.equal(auth.isAdminUser({ email: 'ADMIN@x.com' }), true);
-  assert.equal(auth.isAdminUser({ email: 'someone@x.com' }), false);
-  // An unverified Google email arrives as undefined and can never match.
-  assert.equal(auth.isAdminUser({ email: undefined }), false);
-  assert.equal(auth.isAdminUser(null), false);
 });
 
 test('runtime-managed administrators are enforced alongside deployment administrators', async () => {
@@ -152,7 +147,6 @@ test('an unverified Google email is dropped so it can never match the allowlist'
 
   const user = await auth.verifyOptionalGoogleUser(headers({ authorization: 'Bearer t' }));
   assert.equal(user.email, undefined);
-  assert.equal(auth.isAdminUser(user), false);
   await assert.rejects(
     () => auth.requireAdminGoogleUser(headers({ authorization: 'Bearer t' })),
     error => error instanceof AdminAuthError && error.status === 403,

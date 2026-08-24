@@ -42,7 +42,3 @@ export function requireVerifiedGoogleUser(req) {
 }
 
 export const configuredAdminCount = auth.adminEmailCount;
-
-export function isAdminUser(user) {
-  return auth.isAdminUser(user);
-}

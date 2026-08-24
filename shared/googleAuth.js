@@ -107,10 +107,6 @@ export function createGoogleAuth({ verifyIdToken, adminEmails, allowUnauthentica
     };
   }
 
-  function isAdminUser(user) {
-    return Boolean(user?.email && allowlist.has(user.email.toLowerCase()));
-  }
-
   async function effectiveAllowlist() {
     if (!getManagedAdminEmails) return allowlist;
     try {
@@ -148,7 +144,6 @@ export function createGoogleAuth({ verifyIdToken, adminEmails, allowUnauthentica
 
   return {
     verifyOptionalGoogleUser,
-    isAdminUser,
     requireAdminGoogleUser,
     requireVerifiedGoogleUser,
     adminEmailCount: allowlist.size,

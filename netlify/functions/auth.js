@@ -44,10 +44,6 @@ export function requireVerifiedGoogleUser(req) {
 
 export const configuredAdminCount = auth.adminEmailCount;
 
-export function isAdminUser(user) {
-  return auth.isAdminUser(user);
-}
-
 export function authErrorResponse(error) {
   const status = error instanceof AdminAuthError ? error.status : 401;
   return new Response(JSON.stringify({ error: error.message, errors: [error.message] }), {

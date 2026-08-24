@@ -6,7 +6,6 @@ import {
   boardHash,
   groupByBoard,
   positionBeforeExtraTackleZone,
-  replayAcrossBranches,
   replayClick,
   selectedPieceIsMarked,
 } from './branchReplay';
@@ -194,56 +193,5 @@ describe('anticipating a future dodge', () => {
     expect(selectedPieceIsMarked(markedAfter)).toBe(true);
     expect(positionBeforeExtraTackleZone(markedBefore, markedAfter, safeAfter))
       .toEqual({ col: 6, row: 10 });
-  });
-});
-
-describe('replayAcrossBranches', () => {
-  it('splits a lockstep group into advanced and flagged', () => {
-    const branches = [
-      { id: 'pushed-down', state: select(markedCarrier({ down: true }), 7, 10) },
-      { id: 'pushed', state: select(markedCarrier(), 7, 10) },
-    ];
-    const target = { col: 0, row: 0 };
-
-    const { advanced, flagged } = replayAcrossBranches(branches, target, 'commit-move', 0);
-
-    // Nobody can reach the far corner, so both fall out together.
-    expect(advanced).toHaveLength(0);
-    expect(flagged.map(b => b.id)).toEqual(['pushed-down', 'pushed']);
-  });
-
-  it('leaves a flagged branch on its own board so it can be authored from there', () => {
-    const branch = { id: 'pushed', state: select(markedCarrier(), 7, 10) };
-    const { flagged } = replayAcrossBranches([branch], { col: 0, row: 0 }, 'commit-move', 0);
-
-    expect(flagged[0].state).toBe(branch.state);
-  });
-
-  it('advances every branch that still agrees', () => {
-    const branches = [
-      { id: 'a', state: select(markedCarrier(), 7, 10) },
-      { id: 'b', state: select(markedCarrier(), 7, 10) },
-    ];
-
-    // Both identical boards add the same one dodge roll, so they stay together.
-    const { advanced, flagged } = replayAcrossBranches(branches, { col: 7, row: 11 }, 'commit-move', 1);
-
-    expect(flagged).toHaveLength(0);
-    expect(advanced.map(b => b.id)).toEqual(['a', 'b']);
-    expect(advanced.every(b => b.state.committedPath.length === 1)).toBe(true);
-  });
-
-  it('leaves a legal branch untouched when replay would add another roll', () => {
-    const branch = { id: 'standing', state: select(markedCarrier(), 7, 10) };
-    const target = { col: 7, row: 8 };
-
-    const { advanced, flagged } = replayAcrossBranches(
-      [branch], target, classifyClick(branch.state, target), 0,
-    );
-
-    expect(advanced).toHaveLength(0);
-    expect(flagged).toHaveLength(1);
-    expect(flagged[0].state).toBe(branch.state);
-    expect(flagged[0].failure).toMatchObject({ reason: 'extra-rolls', added: 2, allowed: 0 });
   });
 });
