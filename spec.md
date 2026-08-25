@@ -34,6 +34,13 @@ carries a **Status** line — read it before treating a section as work to do.
 | Step-by-step Tutorial Coach | Shipped |
 | Engagement Analytics and Admin Graphs | Shipped |
 | Full-game Rulebook Copy Audit | Shipped |
+| Completed Play Diagram | Shipped |
+| Per-Puzzle Attempt History | Shipped, local-only |
+| Two-Player Card Comparison | Shipped |
+| Review Completed Series Board | Shipped |
+| Pass / Hand-off Confirmation and Illustrated Help | Shipped |
+| Parallel Universe Branch-point Reset | Shipped |
+| Completed-play Review Orientation and Objective Guidance | Shipped |
 
 Durable behavior that has already shipped belongs in `docs/agent-context/`, not
 here. When a plan below ships, move the facts worth keeping into the matching
@@ -4630,7 +4637,7 @@ What is left is cleanup (6).
 
 # Review Completed Series Board
 
-**Status: Shipped.**
+**Status:** Shipped.
 
 The series touchdown analysis includes **Review Board**, which temporarily
 reveals the final pitch without saving the result or advancing to the next
