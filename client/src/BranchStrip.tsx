@@ -26,8 +26,8 @@ const STATUS_LABEL: Record<BranchTreeStateView['status'], string> = {
   'continued': 'Branched',
 };
 
-/** Includes the compact dice card and any reset/give-up control beside it. */
-const BRANCH_TRACK_WIDTH = 190;
+/** A fixed outcome card plus the widest reset/rewind/give-up control rail. */
+const BRANCH_TRACK_WIDTH = 336;
 const BRANCH_TRACK_GAP = 8;
 
 function pct(value: number): string {

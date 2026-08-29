@@ -123,7 +123,7 @@ describe('BranchStrip game tree', () => {
     expect(screen.queryByText('Universe 1.2 — Pushed')).toBeNull();
     expect(container.querySelector('[data-branch-id="L2"]')?.querySelectorAll('.branch-chip__die')).toHaveLength(2);
     expect((rows[0].querySelector('.branch-strip-row__states') as HTMLElement).style.gridTemplateColumns)
-      .toBe('repeat(2, 190px)');
+      .toBe('repeat(2, 336px)');
 
     // The first state is structural history. Only the two current leaves can
     // select a board, so the tree cannot be used to rewind authored play.

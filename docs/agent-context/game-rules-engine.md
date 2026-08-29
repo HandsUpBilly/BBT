@@ -153,7 +153,10 @@ dice tie-break.
   the score. Collapsing a viewed completed leaf switches to an unfinished leaf
   when one remains; the unresolved count stays visible. Those are exactly
   the branches that could not share an authored action because it was illegal
-  there or would add rolls beyond the viewed branch. The completed-run analysis
+  there or would add rolls beyond the viewed branch. Every live outcome card
+  keeps the same width regardless of which controls follow it, and its dice tray
+  permanently reserves room for three fixed-size dice so neither the probability
+  nor status text can collide with a multi-die result. The completed-run analysis
   renders the same tree as a scrollable graphic. Opening a universe from that
   list pairs its board diagram with a simplified playbook-style branch route:
   dotted parent-child lines, block-die results beside each outcome point, and
