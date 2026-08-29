@@ -16,7 +16,7 @@
 /* Fit the board inside the wrapper on whichever axis binds first. The pitch
    takes the available width, while its preferred aspect ratio and max-height
    let CSS transfer a short wrapper's height constraint back to the width.
-   --pitch-aspect comes from <Pitch> and already accounts for zoom cropping. */
+   --pitch-aspect comes from <Pitch>, computed from the visible board shape. */
 .pitch-wrapper .pitch {
   width: 100%;
   height: auto;
@@ -25,8 +25,8 @@
 }
 
 /* ── Label rows (top / bottom) ──────────────────────────────────────── */
-/* Track counts are set inline by <Pitch> — they depend on the orientation and
-   on the zoom crop, so the component is the only honest source for them. */
+/* Track counts are set inline by <Pitch> — they depend on the orientation,
+   so the component is the only honest source for them. */
 .pitch__col-labels {
   display: grid;
 }
@@ -87,8 +87,8 @@
 }
 
 /* One final route decision, kept beside the endpoint where the player's eyes
-   already are. Absolute percentage positioning follows pitch orientation and
-   zoom without contributing intrinsic size to any grid track. */
+   already are. Absolute percentage positioning follows pitch orientation
+   without contributing intrinsic size to any grid track. */
 .move-decision {
   --move-decision-x: 6px;
   --move-decision-y: -50%;
@@ -323,9 +323,6 @@
 .pitch.pitch--surface-slate .square--endzone-human.square--dark { background-color: #2b4658; }
 .pitch.pitch--surface-slate .square--endzone-orc.square--light,
 .pitch.pitch--surface-slate .square--endzone-orc.square--dark { background-color: #58342e; }
-
-/* Zoom mode needs no sizing rules of its own: cropping changes
-   --pitch-aspect, and the fit rule above re-solves from that. */
 
 /* ── Compact: narrow coordinate gutters ──────────────────────────────────
    Keep the grid references visible, but on narrow rails so the playable

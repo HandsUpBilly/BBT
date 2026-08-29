@@ -18,46 +18,6 @@ export function fromKey(k: string): Position {
   return { col, row };
 }
 
-/**
- * Bounding box in *state* coordinates (col 0-14, row 0-25) — the same space
- * GameState and every rules function use. <Pitch> crops the rendered grid to
- * this sub-region and transposes it when drawing the board landscape.
- *
- * This used to be expressed in landscape grid coordinates, which meant the
- * orientation transform lived in two places: here and in <Pitch>. Rendering
- * the board portrait on phones made that a bug waiting to happen, so the
- * transform now belongs to the renderer alone.
- */
-export interface ZoomBounds {
-  minCol: number;
-  maxCol: number;
-  minRow: number;
-  maxRow: number;
-}
-
-/**
- * Computes a state-coordinate bounding box that encloses the given squares,
- * expanded by `padding` squares on each side and clamped to the pitch edges.
- */
-export function computeZoomBounds(positions: Position[], padding: number): ZoomBounds | null {
-  if (positions.length === 0) return null;
-
-  let minCol = Infinity, maxCol = -Infinity, minRow = Infinity, maxRow = -Infinity;
-  for (const p of positions) {
-    if (p.col < minCol) minCol = p.col;
-    if (p.col > maxCol) maxCol = p.col;
-    if (p.row < minRow) minRow = p.row;
-    if (p.row > maxRow) maxRow = p.row;
-  }
-
-  return {
-    minCol: Math.max(0, minCol - padding),
-    maxCol: Math.min(COLS - 1, maxCol + padding),
-    minRow: Math.max(0, minRow - padding),
-    maxRow: Math.min(ROWS - 1, maxRow + padding),
-  };
-}
-
 export function neighbours(pos: Position): Position[] {
   const result: Position[] = [];
   for (const [dc, dr] of DIRS) {

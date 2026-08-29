@@ -304,7 +304,7 @@ body,
 }
 .hud__restart:hover { color: #dfa094; border-color: #7d4437; }
 
-.hud__zoom {
+.hud__guide {
   background: transparent;
   border: 1px solid var(--color-border-strong);
   color: var(--color-text-muted);
@@ -315,13 +315,7 @@ body,
   white-space: nowrap;
   flex-shrink: 0;
 }
-.hud__zoom:hover { color: var(--color-text); border-color: #706e66; }
-.hud__zoom--active {
-  background: #1b1d1b;
-  color: var(--color-text-strong);
-  border-color: var(--color-border-selected);
-}
-.hud__zoom--active:hover { background: #1e2320; border-color: var(--color-border-focus); }
+.hud__guide:hover { color: var(--color-text); border-color: #706e66; }
 
 /* Live probability (puzzle mode) */
 .hud__prob {
@@ -578,6 +572,28 @@ body,
    .pitch or that calculation is overridden and the board clips again. */
 .pitch-wrapper {
   overflow: hidden;
+}
+
+/* Board size (Settings): a visual scale on top of the fit calculated above,
+   never a change to it. Small stays centered with blank space around it —
+   still smaller than the wrapper, so the default overflow: hidden is enough.
+   Large deliberately drops centering for flex-start: a centered flex item
+   that overflows can't be scrolled to on its start side in every browser,
+   so Large anchors the board to the top-left corner instead, where the
+   overflow it creates toward the bottom-right is reliably scrollable. */
+.pitch-wrapper--small .pitch {
+  transform: scale(0.78);
+}
+
+.pitch-wrapper--large {
+  overflow: auto;
+  align-items: flex-start;
+  justify-content: flex-start;
+}
+
+.pitch-wrapper--large .pitch {
+  transform: scale(1.35);
+  transform-origin: top left;
 }
 
 /* ── Status strip ────────────────────────────────────────────────────────

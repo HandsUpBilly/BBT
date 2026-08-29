@@ -2,17 +2,13 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import './GameToolsMenu.css';
 
 interface Props {
-  zoomEnabled: boolean;
   onTutorialGuide?: () => void;
-  onToggleZoom: () => void;
   onRestart: () => void;
   onReport: () => void;
 }
 
 export function GameToolsMenu({
-  zoomEnabled,
   onTutorialGuide,
-  onToggleZoom,
   onRestart,
   onReport,
 }: Props) {
@@ -63,9 +59,6 @@ export function GameToolsMenu({
               Tutorial guide
             </button>
           )}
-          <button type="button" role="menuitem" onClick={() => run(onToggleZoom)}>
-            {zoomEnabled ? 'Show whole pitch' : 'Zoom to legal moves'}
-          </button>
           <button type="button" role="menuitem" onClick={() => run(onRestart)}>
             Restart turn
           </button>

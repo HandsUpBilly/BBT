@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react';
 import { ConfirmDialog } from './ConfirmDialog';
 import { encodeAvatarFile, validateAvatarFile, AVATAR_ALLOWED_TYPES } from './avatarImage';
-import type { PitchSurface, TokenStyle } from './prefs';
+import type { BoardSize, PitchSurface, TokenStyle } from './prefs';
 import detailedPitchPreview from './assets/token-style-previews/detailed.webp';
 import tacticalPitchPreview from './assets/token-style-previews/tactical.webp';
 import plainPitchPreview from './assets/token-style-previews/plain.webp';
@@ -17,6 +17,8 @@ interface Props {
   onTokenStyleChange: (style: TokenStyle) => void;
   pitchSurface: PitchSurface;
   onPitchSurfaceChange: (surface: PitchSurface) => void;
+  boardSize: BoardSize;
+  onBoardSizeChange: (size: BoardSize) => void;
   showCoordinates: boolean;
   onShowCoordinatesChange: (show: boolean) => void;
   showTutorialGuidance: boolean;
@@ -40,6 +42,7 @@ export function SettingsScreen({
   avatar, onAvatarChange,
   tokenStyle, onTokenStyleChange,
   pitchSurface, onPitchSurfaceChange,
+  boardSize, onBoardSizeChange,
   showCoordinates, onShowCoordinatesChange,
   showTutorialGuidance, onShowTutorialGuidanceChange,
   onBack,
@@ -159,6 +162,41 @@ export function SettingsScreen({
             onChange={event => onShowCoordinatesChange(event.target.checked)}
           />
         </label>
+        <p className="settings-screen__section-help">
+          Board size. Large may need scrolling to see the whole pitch.
+        </p>
+        <div className="settings-screen__size-toggle" role="radiogroup" aria-label="Board size">
+          <button
+            type="button"
+            role="radio"
+            aria-checked={boardSize === 'small'}
+            className={`settings-screen__size-option${boardSize === 'small' ? ' settings-screen__size-option--selected' : ''}`}
+            onClick={() => onBoardSizeChange('small')}
+          >
+            <strong>Small</strong>
+            <small>Fits without scrolling</small>
+          </button>
+          <button
+            type="button"
+            role="radio"
+            aria-checked={boardSize === 'medium'}
+            className={`settings-screen__size-option${boardSize === 'medium' ? ' settings-screen__size-option--selected' : ''}`}
+            onClick={() => onBoardSizeChange('medium')}
+          >
+            <strong>Medium</strong>
+            <small>Default size</small>
+          </button>
+          <button
+            type="button"
+            role="radio"
+            aria-checked={boardSize === 'large'}
+            className={`settings-screen__size-option${boardSize === 'large' ? ' settings-screen__size-option--selected' : ''}`}
+            onClick={() => onBoardSizeChange('large')}
+          >
+            <strong>Large</strong>
+            <small>Bigger squares, scrolls</small>
+          </button>
+        </div>
       </section>
 
       <section className="settings-screen__section">

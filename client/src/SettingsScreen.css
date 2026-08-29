@@ -228,6 +228,46 @@
   accent-color: var(--color-accent);
 }
 
+.settings-screen__size-toggle {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.settings-screen__size-option {
+  min-width: 0;
+  min-height: 54px;
+  padding: 8px 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  text-align: center;
+  color: var(--color-text-muted);
+  background: transparent;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-button);
+  cursor: pointer;
+}
+
+.settings-screen__size-option strong {
+  color: var(--color-text-strong);
+  font-size: 0.82rem;
+}
+
+.settings-screen__size-option small {
+  font-size: 0.7rem;
+  line-height: 1.3;
+}
+
+.settings-screen__size-option--selected {
+  background: rgba(199, 150, 61, 0.12);
+  border-color: var(--color-accent-border);
+  box-shadow: inset 0 0 0 1px var(--color-accent-border);
+}
+
 .settings-screen__token-toggle {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -298,6 +338,7 @@
 
 @media (pointer: coarse) {
   .settings-screen__token-option,
+  .settings-screen__size-option,
   .settings-screen__name-row .btn,
   .settings-screen__avatar-actions .btn {
     min-height: 44px;
@@ -306,6 +347,10 @@
 
 @media (max-width: 560px) {
   .settings-screen__surface-toggle {
+    grid-template-columns: 1fr;
+  }
+
+  .settings-screen__size-toggle {
     grid-template-columns: 1fr;
   }
 

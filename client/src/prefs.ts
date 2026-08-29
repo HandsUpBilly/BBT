@@ -26,10 +26,12 @@ const STORAGE_KEY = 'bbt.prefs.v1';
 
 export type TokenStyle = 'portrait' | 'simple' | 'plain';
 export type PitchSurface = 'grass' | 'slate';
+export type BoardSize = 'small' | 'medium' | 'large';
 
 export interface PlayerPrefs {
   tokenStyle?: TokenStyle;
   pitchSurface?: PitchSurface;
+  boardSize?: BoardSize;
   showCoordinates?: boolean;
   /** A `data:image/webp;base64,...` URL produced by avatarImage.ts. */
   avatar?: string;
@@ -46,6 +48,10 @@ function isPitchSurface(value: unknown): value is PitchSurface {
   return value === 'grass' || value === 'slate';
 }
 
+function isBoardSize(value: unknown): value is BoardSize {
+  return value === 'small' || value === 'medium' || value === 'large';
+}
+
 function isAvatarDataUrl(value: unknown): value is string {
   return typeof value === 'string'
     && value.length > 0
@@ -59,6 +65,7 @@ function sanitizePrefs(value: unknown): PlayerPrefs | null {
   const prefs: PlayerPrefs = {};
   if (isTokenStyle(candidate.tokenStyle)) prefs.tokenStyle = candidate.tokenStyle;
   if (isPitchSurface(candidate.pitchSurface)) prefs.pitchSurface = candidate.pitchSurface;
+  if (isBoardSize(candidate.boardSize)) prefs.boardSize = candidate.boardSize;
   if (typeof candidate.showCoordinates === 'boolean') prefs.showCoordinates = candidate.showCoordinates;
   if (typeof candidate.showTutorialGuidance === 'boolean') {
     prefs.showTutorialGuidance = candidate.showTutorialGuidance;

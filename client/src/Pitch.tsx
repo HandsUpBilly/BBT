@@ -2,7 +2,6 @@ import { memo, useCallback, useMemo } from 'react';
 import type { CSSProperties } from 'react';
 import type { GameState, Team, BlockOutcomeFace, BlockLogEntry, Position } from './types';
 import { key, neighbours } from './bfs';
-import type { ZoomBounds } from './bfs';
 import { buildMovementTrailMap, buildMovementStartMarkers, trailPolylinePoints } from './movementTrail';
 import type { PathTrail } from './movementTrail';
 import { passTrajectoryPath } from './passTrajectory';
@@ -409,8 +408,6 @@ interface Props {
   onPieceClick: (col: number, row: number, anchor: MenuAnchor) => void;
   onSquareHover: (col: number, row: number) => void;
   onSquareLeave: () => void;
-  /** When set, only this state-coordinate sub-region of the pitch is rendered. */
-  zoomBounds?: ZoomBounds | null;
   /**
    * Which screen axis the pitch's long side runs along. Portrait puts the end
    * zones top and bottom, which roughly doubles the square size on a phone —
@@ -460,7 +457,7 @@ interface BranchGhostView {
 const NO_BRANCH_GHOSTS: readonly BranchGhostView[] = [];
 
 export function Pitch({
-  state, onSquareClick, onPieceClick, onSquareHover, onSquareLeave, zoomBounds,
+  state, onSquareClick, onPieceClick, onSquareHover, onSquareLeave,
   orientation = 'landscape', tokenStyle = 'portrait', pitchSurface = 'grass', showCoordinates = true,
   branchGhosts, moveDecision,
 }: Props) {
@@ -636,11 +633,11 @@ export function Pitch({
     return counts;
   }, [isSelecting, state.pieces, state.activeTeam]);
 
-  // Visible sub-region, in state coordinates.
-  const stateColStart = zoomBounds ? zoomBounds.minCol : 0;
-  const stateColEnd   = zoomBounds ? zoomBounds.maxCol : STATE_COLS - 1;
-  const stateRowStart = zoomBounds ? zoomBounds.minRow : 0;
-  const stateRowEnd   = zoomBounds ? zoomBounds.maxRow : STATE_ROWS - 1;
+  // The full board is always visible; the pitch shows every state square.
+  const stateColStart = 0;
+  const stateColEnd   = STATE_COLS - 1;
+  const stateRowStart = 0;
+  const stateRowEnd   = STATE_ROWS - 1;
 
   // Screen axes. Portrait draws state cols across and state rows down;
   // landscape transposes, so state rows run across and state cols run down.
@@ -949,7 +946,6 @@ export function Pitch({
     PITCH_DETAIL_CLASS[tokenStyle],
     `pitch--surface-${pitchSurface}`,
     showCoordinates ? '' : 'pitch--coordinates-hidden',
-    zoomBounds ? 'pitch--zoomed' : '',
     tokenStyle !== 'portrait' ? 'pitch--simple' : '',
   ].filter(Boolean).join(' ');
 

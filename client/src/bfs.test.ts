@@ -4,7 +4,6 @@ import {
   fromKey,
   neighbours,
   computeReachable,
-  computeZoomBounds,
   findShortestPath,
   dodgeTargetAt,
   pickupTargetAt,
@@ -263,19 +262,5 @@ describe('push-back candidates', () => {
     // Defender on the top edge: every push square would be off the pitch.
     const offPitch = pushBackCandidates(at(5, 1), at(5, 0), [at(5, 1), at(5, 0)]);
     expect(offPitch).toHaveLength(0);
-  });
-});
-
-describe('computeZoomBounds', () => {
-  it('pads the enclosing box in state coordinates', () => {
-    const bounds = computeZoomBounds([at(7, 10), at(7, 12)], 1);
-    // Stays in state space — <Pitch> owns the orientation transform.
-    expect(bounds).toEqual({ minCol: 6, maxCol: 8, minRow: 9, maxRow: 13 });
-  });
-
-  it('clamps to the pitch and returns null for no input', () => {
-    expect(computeZoomBounds([], 2)).toBeNull();
-    const bounds = computeZoomBounds([at(0, 0), at(14, 25)], 5);
-    expect(bounds).toEqual({ minCol: 0, maxCol: 14, minRow: 0, maxRow: 25 });
   });
 });
