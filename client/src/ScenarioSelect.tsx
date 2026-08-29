@@ -140,7 +140,8 @@ export function ScenarioSelect({
         <div className="scenario-select__brand">
           <span className="scenario-select__eyebrow">{UI_COPY.brand.tagline}</span>
           <h1 className="scenario-select__title">{UI_COPY.brand.name}</h1>
-          <p className="scenario-select__subtitle">{UI_COPY.brand.landingSubtitle}</p>
+          <p className="scenario-select__hero-headline">{UI_COPY.landing.heroHeadline}</p>
+          <p className="scenario-select__subtitle">{UI_COPY.landing.heroBody}</p>
         </div>
         <div className="scenario-select__user">
           <div className="scenario-select__controls">

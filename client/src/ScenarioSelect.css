@@ -592,6 +592,91 @@
   }
 }
 
+/* Premium tactical playbook: briefing at left, framed match plate at right. */
+.scenario-select__hero-headline {
+  color: var(--color-text-strong);
+  font-family: var(--font-display);
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+@media (min-width: 761px) {
+  .scenario-select__header {
+    min-height: min(590px, calc(100dvh - 190px));
+    grid-template-columns: minmax(330px, 0.82fr) minmax(480px, 1.45fr);
+    padding: 46px 48px;
+    background:
+      linear-gradient(90deg, #101211 0%, #101211 39%, rgba(16, 18, 17, 0.96) 43%, rgba(16, 18, 17, 0.08) 63%),
+      linear-gradient(0deg, rgba(10, 11, 10, 0.48), transparent 55%),
+      url('./assets/matchday-clash.webp') 82% 50% / 62% auto no-repeat,
+      #101211;
+    border-color: #514b42;
+  }
+
+  .scenario-select__header::before {
+    inset: 18px 18px 18px 42%;
+    border-color: rgba(213, 199, 174, 0.28);
+    box-shadow: 0 0 0 5px rgba(8, 9, 8, 0.54);
+  }
+
+  .scenario-select__brand {
+    align-self: center;
+    max-width: 430px;
+    gap: 14px;
+    padding: 20px 0;
+  }
+
+  .scenario-select__eyebrow { order: 2; margin-top: 22px; }
+  .scenario-select__title {
+    order: 1;
+    font-size: clamp(2.2rem, 4vw, 3.7rem);
+    line-height: 1;
+  }
+
+  .scenario-select__hero-headline {
+    order: 3;
+    max-width: 9ch;
+    font-size: clamp(2.5rem, 5vw, 4.9rem);
+    line-height: 0.98;
+    letter-spacing: -0.025em;
+  }
+
+  .scenario-select__subtitle { order: 4; max-width: 36ch; }
+  .scenario-select__route {
+    right: calc(58% - 42px);
+    bottom: 34px;
+    width: 90px;
+    opacity: 0.24;
+    transform: rotate(78deg) scale(0.72);
+  }
+
+  .play-switch { width: calc(100% - 72px); margin-top: -52px; }
+  .series-row {
+    grid-template-columns: 128px minmax(0, 1fr) 176px;
+    border-color: #4b463e;
+  }
+
+  .series-row::before {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 14px;
+    width: 3px;
+    content: '';
+    background: var(--color-accent);
+  }
+}
+
+@media (max-width: 760px) {
+  .scenario-select__hero-headline {
+    max-width: 11ch;
+    font-size: clamp(2rem, 10vw, 3.2rem);
+    line-height: 1;
+  }
+
+  .scenario-select__brand { justify-content: flex-end; }
+}
+
 @media (max-width: 480px) {
   .scenario-select {
     padding-inline: 12px;

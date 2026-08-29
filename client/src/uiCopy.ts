@@ -14,6 +14,8 @@ export const UI_COPY = {
     landingSubtitle: 'Playbook simulator',
   },
   landing: {
+    heroHeadline: 'Read the defence. Plot the line.',
+    heroBody: 'Find the safest route through the final turn.',
     objectiveGuidance: OBJECTIVE_GUIDANCE,
     playModeLabel: 'Play mode',
     seriesTab: 'Series',
