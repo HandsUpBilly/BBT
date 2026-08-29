@@ -42,7 +42,8 @@ can't hide the problem locally.
 
 ```bash
 npx playwright install     # once — fetches Chromium and WebKit
-npm --prefix client run test:e2e          # full nine-device matrix
+npm --prefix client run test:e2e          # full eleven-device matrix
+npm --prefix client run test:e2e:graphics # faster layout, panel, and modal gate
 npm --prefix client run test:e2e:mobile   # the four phone profiles
 ```
 
@@ -50,6 +51,11 @@ npm --prefix client run test:e2e:mobile   # the four phone profiles
 budget, no clipping, no horizontal overflow, the plot-confirm contract, and
 that the toolbar panels (`legend.spec.ts`, `actionLog.spec.ts`) fit their
 viewport and do not resize the board when opened.
+
+Use `test:e2e:graphics` for routine visual-layout work. It runs the core board
+geometry, pitch key, action log, compact controls, and block-dialog specs over
+the complete configured device matrix. Use `test:e2e` for the comprehensive
+interaction and layout run.
 
 **Not wired into `npm run verify`, deliberately.** The specs need browser
 binaries that `npm install` does not fetch, so including them would fail a

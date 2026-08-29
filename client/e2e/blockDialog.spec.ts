@@ -1,18 +1,13 @@
 import { test, expect } from '@playwright/test';
-import { boxOf, hasHorizontalOverflow } from './helpers';
+import { boxOf, hasHorizontalOverflow, startScenario } from './helpers';
+
+// This spec drives a complete Puzzle 6 block before it can inspect the modal.
+// The iPhone desktop-website emulation can approach the shared 60s ceiling
+// when the animated playbook is running alongside another browser worker.
+test.setTimeout(90_000);
 
 test.beforeEach(async ({ page }) => {
-  await page.goto('/');
-  await page.getByRole('button', { name: /play as guest/i }).click();
-  await page.locator('.identity-gate__input').fill('Block Dialog Tester');
-  await page.getByRole('button', { name: /^continue$/i }).click();
-
-  await page.getByRole('tab', { name: /free play/i }).click();
-  await page.locator('.challenge-tile', { hasText: 'Loose Ball on the Goal Line' })
-    .getByRole('button', { name: /^play$/i }).click();
-
-  const beginPuzzle = page.getByRole('button', { name: 'Begin Puzzle' });
-  if (await beginPuzzle.isVisible()) await beginPuzzle.click();
+  await startScenario(page, 'Loose Ball on the Goal Line', 'Block Dialog Tester');
 
   // The playbook continuously animates on mobile, so WebKit never considers
   // these otherwise-actionable controls geometrically stable.
