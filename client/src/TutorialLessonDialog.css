@@ -16,8 +16,10 @@
 .tutorial-lesson__artwork {
   display: block;
   width: 100%;
-  height: auto;
   margin-top: 1rem;
+  padding: 0.75rem;
+  box-sizing: border-box;
+  background: #10130f;
   border: 1px solid rgba(211, 168, 74, 0.45);
   border-radius: 0.55rem;
   box-shadow: 0 0.75rem 1.75rem rgba(0, 0, 0, 0.35);
