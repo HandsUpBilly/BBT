@@ -20,10 +20,7 @@
   padding: 34px 36px;
   color: var(--color-text);
   background:
-    linear-gradient(90deg, rgba(13, 15, 15, 0.98) 0%, rgba(13, 15, 15, 0.9) 38%, rgba(13, 15, 15, 0.34) 72%, rgba(13, 15, 15, 0.18) 100%),
-    linear-gradient(0deg, rgba(13, 15, 15, 0.68), transparent 58%),
-    url('./assets/matchday-clash.webp') center 49% / cover no-repeat,
-    var(--color-surface-1);
+    linear-gradient(110deg, #080b09 0%, #101511 48%, #762f22 100%);
   border: 1px solid #242825;
   border-radius: var(--radius-panel);
   box-shadow: none;
@@ -35,25 +32,26 @@
   inset: 7px;
   pointer-events: none;
   border: 1px solid rgba(222, 217, 203, 0.08);
+  z-index: 2;
 }
 
 .scenario-select__header::after {
   content: '';
   position: absolute;
   inset: 0;
-  z-index: 1;
+  z-index: 0;
   pointer-events: none;
-  background:
-    linear-gradient(90deg, rgba(8, 10, 9, 0.42), transparent 62%),
-    rgba(18, 22, 19, 0.14);
-  mix-blend-mode: color;
+  background: url('./assets/matchday-clash.webp') center 49% / cover no-repeat;
+  filter: grayscale(1) contrast(1.18) brightness(0.78);
+  mix-blend-mode: luminosity;
+  opacity: 0.92;
   border-radius: inherit;
 }
 
 .scenario-select__brand,
 .scenario-select__user {
   position: relative;
-  z-index: 2;
+  z-index: 3;
 }
 
 .scenario-select__brand {
@@ -123,6 +121,7 @@
   height: 112px;
   opacity: 0.1;
   pointer-events: none;
+  z-index: 3;
   transform: rotate(-5deg);
 }
 
@@ -275,8 +274,7 @@
   inset: 14px;
   content: '';
   pointer-events: none;
-  border: 1px solid rgba(222, 217, 203, 0.045);
-  border-radius: calc(var(--radius-card) - 3px);
+  display: none;
 }
 
 .series-row__logo {

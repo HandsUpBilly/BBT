@@ -1110,11 +1110,7 @@
    The match-day artwork stays; its frame and every surrounding surface move
    onto the shared dark panel system. */
 .app--landing .scenario-select__header {
-  background:
-    linear-gradient(90deg, rgba(13, 15, 15, 0.97) 0%, rgba(13, 15, 15, 0.88) 38%, rgba(13, 15, 15, 0.4) 74%, rgba(13, 15, 15, 0.22) 100%),
-    linear-gradient(0deg, rgba(13, 15, 15, 0.8), transparent 62%),
-    url('./assets/matchday-clash.webp') center 49% / cover no-repeat,
-    var(--color-surface-1);
+  background: linear-gradient(110deg, #080b09 0%, #101511 48%, #762f22 100%);
   border: 1px solid #242825;
   border-radius: var(--radius-panel);
   box-shadow: none;
@@ -1706,4 +1702,67 @@
 .app--game .pitch-wrapper {
   border-color: var(--color-border-strong);
   box-shadow: 0 16px 42px rgba(0, 0, 0, 0.34);
+}
+
+.app--playbook :is(
+  .modal__title,
+  .leaderboard__title,
+  .score-summary__name,
+  .settings-screen__title,
+  .help-screen__title,
+  .editor__title
+) {
+  color: var(--color-text-strong);
+  font-family: var(--font-display);
+  font-size: clamp(1.45rem, 3vw, 2rem);
+  font-weight: 600;
+  line-height: 1.05;
+  letter-spacing: -0.01em;
+}
+
+.app--playbook :is(
+  .settings-screen__section-title,
+  .attempts__title,
+  .admin-statistics__panel-heading,
+  .play-diagram__heading,
+  .branch-review__heading,
+  .branch-tree__heading
+) {
+  color: var(--color-text);
+  font-family: var(--font-display);
+  font-size: 1rem;
+  font-weight: 600;
+  letter-spacing: 0.025em;
+}
+
+.app--playbook :is(p, .leaderboard__subtitle, .settings-screen__subtitle) {
+  line-height: 1.55;
+}
+
+.app--playbook :is(
+  .series-row,
+  .challenge-tile,
+  .modal,
+  .leaderboard,
+  .score-summary,
+  .settings-screen,
+  .editor__panel,
+  .editor-tool
+):focus-within {
+  border-color: var(--color-border-strong);
+}
+
+.app--playbook :is(
+  .series-row,
+  .challenge-tile,
+  .modal,
+  .leaderboard,
+  .score-summary,
+  .settings-screen,
+  .editor__panel,
+  .editor-tool
+)::selection,
+.app--playbook ::selection {
+  color: var(--color-text-strong);
+  background: var(--color-accent-dark);
 }
