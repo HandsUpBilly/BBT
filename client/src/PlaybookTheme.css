@@ -440,6 +440,17 @@
   padding: 5px;
 }
 
+.app--compact.app--game .hud {
+  /* A real iPhone requesting the desktop website reports a viewport wider
+     than 900px, but it still uses the compact handset layout. Do not reserve
+     the desktop caption band in that mode: it makes the HUD 71px tall. */
+  padding-bottom: 9px;
+}
+
+.app--compact.app--game .hud::after {
+  display: none;
+}
+
 .app--compact.app--game .hud__btn-text {
   display: none;
 }

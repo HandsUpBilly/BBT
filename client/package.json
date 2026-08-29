@@ -11,6 +11,7 @@
     "preview": "vite preview",
     "test": "vitest run",
     "test:e2e": "playwright test",
+    "test:e2e:graphics": "playwright test e2e/layout.spec.ts e2e/legend.spec.ts e2e/actionLog.spec.ts e2e/mobileControls.spec.ts e2e/blockDialog.spec.ts",
     "test:e2e:mobile": "playwright test --project=galaxy-s8 --project=iphone-se --project=iphone-14 --project=iphone-14-landscape"
   },
   "dependencies": {
