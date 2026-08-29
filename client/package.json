@@ -15,6 +15,8 @@
     "test:e2e:mobile": "playwright test --project=galaxy-s8 --project=iphone-se --project=iphone-14 --project=iphone-14-landscape"
   },
   "dependencies": {
+    "@fontsource/barlow-condensed": "^5.2.8",
+    "@fontsource/source-sans-3": "^5.2.8",
     "react": "^19.2.5",
     "react-dom": "^19.2.5"
   },
