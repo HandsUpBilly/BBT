@@ -37,6 +37,19 @@
   border: 1px solid rgba(222, 217, 203, 0.08);
 }
 
+.scenario-select__header::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background:
+    linear-gradient(90deg, rgba(8, 10, 9, 0.42), transparent 62%),
+    rgba(18, 22, 19, 0.14);
+  mix-blend-mode: color;
+  border-radius: inherit;
+}
+
 .scenario-select__brand,
 .scenario-select__user {
   position: relative;
@@ -176,7 +189,7 @@
   color: var(--color-text-muted);
   background: var(--color-surface-1);
   font-family: var(--font-display);
-  font-size: 0.78rem;
+  font-size: 0.84rem;
   font-weight: 600;
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -199,7 +212,7 @@
 .play-switch__tab--active {
   min-height: 54px;
   color: var(--color-text-strong);
-  background: #1b1d1b;
+  background: var(--color-surface-3);
   border-color: var(--color-border);
   border-bottom-color: transparent;
   transform: translateY(-3px);
@@ -223,7 +236,7 @@
   padding: 14px 18px 14px 22px;
   color: var(--color-text);
   background:
-    linear-gradient(90deg, rgba(185, 66, 41, 0.12), transparent 42%),
+    linear-gradient(90deg, rgba(223, 88, 53, 0.14), transparent 48%),
     var(--color-surface-1);
   border: 1px solid var(--color-border-subtle);
   border-left: 4px solid var(--color-accent);
@@ -313,7 +326,7 @@
 
 .series-row:hover {
   background: var(--color-surface-3);
-  border-color: #514a42;
+  border-color: var(--color-border-strong);
   transform: translateY(-2px);
 }
 
@@ -430,7 +443,7 @@
 
 .challenge-tile:hover {
   background: var(--color-surface-3);
-  border-color: #514a42;
+  border-color: var(--color-border-strong);
   transform: translateY(-2px);
 }
 

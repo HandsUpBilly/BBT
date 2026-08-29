@@ -1566,3 +1566,144 @@
     transform: none;
   }
 }
+
+/* ── Visual foundation v2 ─────────────────────────────────────────────
+   Shared finish across every routed surface. Geometry and behavior remain in
+   their owning component styles; this layer controls material and hierarchy. */
+.app--playbook {
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  background:
+    var(--texture-noise),
+    radial-gradient(circle at 50% -28%, #18201a 0%, transparent 52%),
+    var(--color-bg);
+}
+
+.app--playbook :is(h1, h2, h3, h4),
+.app--playbook :is(.hud__prob-value, .stat__value, .lb-table__prob) {
+  text-wrap: balance;
+}
+
+.app--playbook :is(
+  .scenario-select__title,
+  .series-row__title,
+  .challenge-tile__name,
+  .leaderboard__title,
+  .score-summary__name,
+  .settings-screen__title,
+  .help-screen__title,
+  .editor__title
+) {
+  font-weight: 600;
+  letter-spacing: -0.012em;
+}
+
+.app--playbook .btn {
+  min-height: 40px;
+  padding: 9px 18px;
+  border-color: var(--color-border-strong);
+  letter-spacing: 0.035em;
+}
+
+.app--playbook .btn:hover:not(:disabled) {
+  color: var(--color-text-strong);
+  background: var(--color-surface-hover);
+  border-color: #747c74;
+  transform: translateY(-1px);
+}
+
+.app--playbook .btn:active:not(:disabled) {
+  transform: translateY(1px) scale(0.99);
+}
+
+.app--playbook .btn--primary,
+.app--playbook :is(.modal__roll-btn, .confirm-dialog__confirm):not(:disabled) {
+  color: var(--color-text-strong);
+  background: var(--color-accent);
+  border-color: var(--color-accent-border);
+  box-shadow: inset 0 1px rgba(255, 255, 255, 0.14);
+}
+
+.app--playbook .btn--primary:hover:not(:disabled),
+.app--playbook :is(.modal__roll-btn, .confirm-dialog__confirm):hover:not(:disabled) {
+  background: var(--color-accent-hover);
+  border-color: #ff9171;
+}
+
+.app--playbook :is(
+  .hud,
+  .series-row,
+  .challenge-tile,
+  .modal,
+  .block-outcome,
+  .leaderboard,
+  .score-summary,
+  .settings-screen,
+  .help-screen,
+  .editor__header,
+  .editor__panel,
+  .editor__pitch-panel,
+  .editor-tool,
+  .user-menu__dropdown,
+  .game-tools-menu__dropdown,
+  .legend-menu__panel,
+  .action-log-menu__panel
+) {
+  border-color: var(--color-border);
+  box-shadow: var(--shadow-panel);
+}
+
+.app--playbook :is(
+  .series-row,
+  .challenge-tile,
+  .modal,
+  .block-outcome,
+  .leaderboard,
+  .score-summary,
+  .settings-screen,
+  .help-screen,
+  .editor__panel,
+  .editor__pitch-panel,
+  .editor-tool
+) {
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.018), transparent 38%),
+    var(--color-surface-2);
+}
+
+.app--playbook :is(input, select, textarea) {
+  color: var(--color-text-strong);
+  background: var(--color-surface-sunken);
+  border-color: var(--color-border);
+}
+
+.app--playbook :is(input, select, textarea):hover {
+  border-color: var(--color-border-strong);
+}
+
+.app--playbook :is(input, select, textarea)::placeholder {
+  color: var(--color-text-disabled);
+  opacity: 1;
+}
+
+.app--archive .lb-table th {
+  color: var(--color-text);
+  background: var(--color-surface-3);
+}
+
+.app--archive .lb-table__row--clickable:hover td {
+  color: var(--color-text-strong);
+  background: var(--color-surface-hover);
+}
+
+.app--game .hud {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.025), transparent),
+    var(--color-surface-1);
+  border-color: var(--color-border);
+}
+
+.app--game .pitch-wrapper {
+  border-color: var(--color-border-strong);
+  box-shadow: 0 16px 42px rgba(0, 0, 0, 0.34);
+}
