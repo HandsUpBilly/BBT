@@ -144,12 +144,13 @@
 
 .branch-chip {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-columns: 90px minmax(0, 1fr);
   grid-template-areas:
     'dice weight'
     'status status';
   gap: 0 8px;
-  width: 100%;
+  flex: 0 0 190px;
+  width: 190px;
   min-width: 0;
   padding: 6px 10px;
   text-align: left;
@@ -167,12 +168,21 @@ button.branch-chip:hover { background: var(--color-surface-hover); }
   display: flex;
   align-items: center;
   gap: 3px;
-  min-width: 34px;
+  width: 90px;
+  min-width: 90px;
   min-height: 28px;
 }
 
-.branch-chip__die.block-dice-graphic { flex: 0 0 28px; gap: 0; }
-.branch-chip__die .block-die-icon { width: 100% !important; }
+.branch-chip__die.block-dice-graphic {
+  flex: 0 0 28px;
+  width: 28px;
+  height: 28px;
+  gap: 0;
+}
+.branch-chip__die .block-die-icon {
+  width: 28px !important;
+  height: 28px !important;
+}
 
 .branch-chip__weight {
   grid-area: weight;

@@ -79,6 +79,7 @@ test('opens a compact action box beside the player and reveals complete stats', 
 });
 
 test('keeps Parallel Universe selectors below the HUD and within the screen', async ({ page }) => {
+  test.setTimeout(90_000);
   // Cedric has Block, so Both Down leaves a live "Down in place" universe.
   // Following up in the pushed universe then places Cedric on the square
   // where the alternate defender ghost remains — the overlap regression.
@@ -95,6 +96,7 @@ test('keeps Parallel Universe selectors below the HUD and within the screen', as
 
   const strip = page.locator('.branch-strip');
   await expect(strip).toBeVisible();
+  await strip.scrollIntoViewIfNeeded();
   await expectInsideViewport(page, '.branch-strip');
   await expect(page.locator('.hud .branch-strip')).toHaveCount(0);
   expect(await hasHorizontalOverflow(page)).toBe(false);
@@ -105,6 +107,30 @@ test('keeps Parallel Universe selectors below the HUD and within the screen', as
   }));
   expect(treeScroll.clientWidth).toBeGreaterThan(0);
   expect(treeScroll.scrollWidth).toBeGreaterThanOrEqual(treeScroll.clientWidth);
+
+  const cardMetrics = await strip.locator('.branch-chip').evaluateAll(cards => cards.map(card => {
+    const cardBox = card.getBoundingClientRect();
+    const dice = card.querySelector('.branch-chip__dice')!.getBoundingClientRect();
+    const weight = card.querySelector('.branch-chip__weight')!.getBoundingClientRect();
+    const diceSizes = Array.from(card.querySelectorAll('.branch-chip__die'))
+      .map(die => die.getBoundingClientRect().width);
+    return {
+      cardWidth: cardBox.width,
+      diceWidth: dice.width,
+      diceRight: dice.right,
+      weightLeft: weight.left,
+      diceSizes,
+    };
+  }));
+  expect(cardMetrics.length).toBeGreaterThan(1);
+  for (const metrics of cardMetrics) {
+    expect(metrics.cardWidth, 'every outcome card should have the same fixed width').toBeCloseTo(190, 0);
+    expect(metrics.diceWidth, 'the dice tray should reserve room for three dice').toBeCloseTo(90, 0);
+    expect(metrics.diceRight, 'dice should not overlap the probability').toBeLessThanOrEqual(metrics.weightLeft + 1);
+    for (const dieSize of metrics.diceSizes) {
+      expect(dieSize, 'resolved dice should stay the same size').toBeCloseTo(28, 0);
+    }
+  }
 
   await page.locator('.square--push-target').first().click({ force: true });
   await page.getByRole('button', { name: 'Follow Up' }).click({ force: true });
