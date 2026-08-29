@@ -9,35 +9,35 @@
   color-scheme: dark;
 
   /* ── Surfaces ─────────────────────────────────────────────────────── */
-  --color-bg: #0d0f0f;
-  --color-surface-1: #111413;
-  --color-surface-2: #151817;
-  --color-surface-3: #191d1b;
-  --color-surface-hover: #1e2320;
+  --color-bg: #0e1110;
+  --color-surface-1: #141715;
+  --color-surface-2: #191c1a;
+  --color-surface-3: #1f2320;
+  --color-surface-hover: #262b27;
   /* Recessed wells: tables, log entries, stat chips inside a panel. */
-  --color-surface-sunken: #0f1211;
+  --color-surface-sunken: #101311;
 
   /* ── Borders ──────────────────────────────────────────────────────── */
-  --color-border: #303530;
-  --color-border-subtle: #252925;
-  --color-border-strong: #464b46;
-  --color-border-selected: #6e392b;
-  --color-border-focus: #9d442e;
+  --color-border: #383d38;
+  --color-border-subtle: #292e2a;
+  --color-border-strong: #555b55;
+  --color-border-selected: #87412e;
+  --color-border-focus: #d45b3b;
 
   /* ── Text ─────────────────────────────────────────────────────────── */
-  --color-text: #ded9cb;
-  --color-text-strong: #eee8da;
-  --color-text-muted: #979b92;
-  --color-text-disabled: #636861;
+  --color-text: #d9dbd6;
+  --color-text-strong: #f1f0eb;
+  --color-text-muted: #a5aaa3;
+  --color-text-disabled: #6f756f;
 
   /* ── Accent ───────────────────────────────────────────────────────────
      Reserved for active navigation, primary actions, selected/focused
      controls and important warnings. Never applied decoratively. */
-  --color-accent: #c54b2d;
-  --color-accent-hover: #dc5835;
-  --color-accent-dark: #78311f;
-  --color-accent-press: #963923;
-  --color-accent-border: #d05a3b;
+  --color-accent: #d05a3a;
+  --color-accent-hover: #e16a48;
+  --color-accent-dark: #843823;
+  --color-accent-press: #ad452b;
+  --color-accent-border: #df704f;
 
   /* ── Status ───────────────────────────────────────────────────────── */
   --color-success: #7fa84b;
@@ -59,23 +59,22 @@
   --move-danger: rgba(196, 74, 55, 0.55);
 
   /* ── Radii ────────────────────────────────────────────────────────── */
-  --radius-button: 3px;
-  --radius-card: 4px;
-  --radius-panel: 4px;
-  --radius-modal: 6px;
-  --radius-input: 4px;
+  --radius-button: 5px;
+  --radius-card: 7px;
+  --radius-panel: 8px;
+  --radius-modal: 10px;
+  --radius-input: 6px;
 
   /* ── Motion ───────────────────────────────────────────────────────── */
-  --transition-fast: 120ms ease;
-  --transition-standard: 160ms ease;
+  --transition-fast: 140ms cubic-bezier(0.2, 0, 0, 1);
+  --transition-standard: 200ms cubic-bezier(0.2, 0, 0, 1);
 
   /* ── Type ─────────────────────────────────────────────────────────────
      No webfont: the deployed CSP is `font-src 'self'`, so the display stack
      resolves to a condensed face if the reader has one and degrades to the
      system UI face otherwise. */
-  --font-display: 'Oswald', 'Roboto Condensed', 'Archivo Narrow', 'Barlow Condensed',
-    'Bahnschrift Condensed', 'Arial Narrow', system-ui, sans-serif;
-  --font-body: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-display: 'Barlow Condensed', 'Arial Narrow', system-ui, sans-serif;
+  --font-body: 'Source Sans 3', system-ui, -apple-system, 'Segoe UI', sans-serif;
   --font-mono: ui-monospace, 'Cascadia Mono', 'Segoe UI Mono', Menlo, monospace;
 
   /* ── Texture ──────────────────────────────────────────────────────────

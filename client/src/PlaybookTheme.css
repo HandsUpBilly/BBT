@@ -54,9 +54,9 @@
   border-radius: var(--radius-button);
   box-shadow: none;
   font-family: var(--font-display);
-  font-size: 0.78rem;
+  font-size: 0.82rem;
   font-weight: 600;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.045em;
   text-transform: uppercase;
   transition:
     background var(--transition-fast),
@@ -85,14 +85,14 @@
 }
 
 .app--playbook .btn--primary {
-  color: #f4eee3;
-  background: #b94229;
+  color: var(--color-text-strong);
+  background: var(--color-accent);
   border-color: var(--color-accent-border);
 }
 
 .app--playbook .btn--primary:hover:not(:disabled) {
-  color: #f4eee3;
-  background: #ca4d30;
+  color: var(--color-text-strong);
+  background: var(--color-accent-hover);
   border-color: #e06a45;
 }
 
