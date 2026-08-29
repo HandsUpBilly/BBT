@@ -1,0 +1,66 @@
+.pu-diagram {
+  width: 100%;
+  margin: 0;
+}
+
+.pu-diagram__svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: 18rem;
+}
+
+.pu-diagram__screen-frame { fill: #151815; stroke: #777d73; stroke-width: 2; }
+.pu-diagram__screen-strip { fill: #2c3a2f; stroke: #d5a33f; stroke-width: 1.5; }
+.pu-diagram__screen-chip { fill: #20251f; stroke: #78a948; stroke-width: 1.5; }
+.pu-diagram__screen-pitch { fill: #263f27; stroke: #87927c; stroke-width: 1.5; }
+.pu-diagram__screen-label {
+  fill: #f1ede3;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+}
+.pu-diagram__screen-caption {
+  fill: #c9c3b4;
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.pu-diagram__node { stroke-width: 2; }
+.pu-diagram__node--block { fill: #20251f; stroke: #d5a33f; }
+.pu-diagram__node--outcome { fill: #1c2a3a; stroke: #6f92b8; }
+.pu-diagram__node--merged { fill: #1e2d1c; stroke: #78a948; }
+.pu-diagram__node--attention { fill: #2f2418; stroke: #d99a3d; }
+
+.pu-diagram__node-text {
+  fill: #f1ede3;
+  font-size: 11px;
+  font-weight: 800;
+}
+.pu-diagram__node-subtext {
+  fill: #c9c3b4;
+  font-size: 9px;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.pu-diagram__link {
+  fill: none;
+  stroke: #87927c;
+  stroke-width: 2;
+}
+.pu-diagram__link--attention { stroke: #d99a3d; }
+
+.pu-diagram__caption {
+  fill: #c9c3b4;
+  font-size: 10.5px;
+  font-weight: 600;
+}
+
+.pu-diagram figcaption {
+  margin-top: 0.35rem;
+  color: var(--color-text-muted);
+  font-size: 0.72rem;
+  line-height: 1.35;
+  text-align: left;
+}
