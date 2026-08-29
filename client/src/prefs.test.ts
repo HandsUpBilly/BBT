@@ -49,6 +49,11 @@ describe('writing and reading back', () => {
     expect(readPrefs('user-1')).toEqual({ pitchSurface: 'slate', showCoordinates: false });
   });
 
+  it('persists the board size preference', () => {
+    writePrefs('user-1', { boardSize: 'large' });
+    expect(readPrefs('user-1')).toEqual({ boardSize: 'large' });
+  });
+
   it('persists the tutorial guidance choice', () => {
     writePrefs('user-1', { showTutorialGuidance: false });
     expect(readPrefs('user-1')).toEqual({ showTutorialGuidance: false });
@@ -87,6 +92,11 @@ describe('tolerating junk', () => {
 
   it('drops invalid pitch display values', () => {
     storage.setItem(KEY, JSON.stringify({ 'user-1': { pitchSurface: 'mud', showCoordinates: 'no' } }));
+    expect(readPrefs('user-1')).toEqual({});
+  });
+
+  it('drops an invalid board size value', () => {
+    storage.setItem(KEY, JSON.stringify({ 'user-1': { boardSize: 'huge' } }));
     expect(readPrefs('user-1')).toEqual({});
   });
 

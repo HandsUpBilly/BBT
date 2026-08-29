@@ -173,7 +173,7 @@
 
 .app--game .hud__back,
 .app--game .hud__restart,
-.app--game .hud__zoom,
+.app--game .hud__guide,
 .app--game .hud__end-turn {
   /* inline-flex + gap: the icon and label are separate spans so the label can
      be dropped on touch, and they would otherwise sit flush ("←MENU"). */
@@ -199,7 +199,7 @@
 
 .app--game .hud__back:hover,
 .app--game .hud__restart:hover,
-.app--game .hud__zoom:hover,
+.app--game .hud__guide:hover,
 .app--game .hud__end-turn:hover:not(:disabled) {
   color: var(--color-text-strong);
   background: #1b1f1d;
@@ -214,16 +214,6 @@
 .app--game .hud__restart:hover {
   color: #dfa094;
   border-color: #7d4437;
-}
-
-/* Zoom is a persistent mode, so its on-state gets the accent — but as a marker
-   plus surface change, never a full orange fill. */
-.app--game .hud__zoom--active,
-.app--game .hud__zoom--active:hover {
-  color: var(--color-text-strong);
-  background: #1b1d1b;
-  border-color: var(--color-border-selected);
-  box-shadow: inset 3px 0 var(--color-accent);
 }
 
 .app--game .hud__prob {
@@ -1446,7 +1436,7 @@
 @media (pointer: coarse) {
   .app--game .hud__back,
   .app--game .hud__restart,
-  .app--game .hud__zoom {
+  .app--game .hud__guide {
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -1467,7 +1457,7 @@
 @media (max-width: 1024px) and (pointer: coarse) {
   .app--game .hud__back,
   .app--game .hud__restart,
-  .app--game .hud__zoom {
+  .app--game .hud__guide {
     font-size: 1rem;
   }
 }

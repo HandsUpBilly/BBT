@@ -116,6 +116,17 @@ public avatars).
   slate/tile can be paired with any of the three token levels. Coordinate
   labels default on and can be hidden without changing square names in DOM,
   action logs, accessibility labels, or written solutions.
+- **Board size (`prefs.ts`'s `boardSize`, default `'medium'`) is a purely
+  visual scale, never a layout override.** Small and Large add a CSS
+  `transform: scale()` on `.pitch` via a `pitch-wrapper--small`/`--large`
+  modifier class in `App.tsx` — they never touch the `--pitch-aspect`
+  fit-to-container calculation in `Pitch.css` (see "The board rotates").
+  Medium renders with no modifier class, identical to the pre-feature
+  behavior. Large also switches `.pitch-wrapper` from centered to
+  `flex-start` alignment with `overflow: auto`, because a centered flex item
+  that overflows its container cannot be scrolled to on its start side in
+  every browser — anchoring Large to the top-left keeps the whole enlarged
+  board reachable by scrolling down/right.
 - **Tutorial guidance is local and identity-keyed.** Every guided Tutorial
   series puzzle and matching Single Play opens with its focus-trapped rules
   briefing, then **Begin Puzzle** starts an attempt-local contextual coach.
@@ -371,7 +382,7 @@ directions — so keep them apart.
 
 | Question | Query | Hook | Governs |
 |---|---|---|---|
-| Is there room? | `(max-width: 1024px)` | `useCompactLayout()` | Side columns, board rotation, HUD labels, coordinate gutters, default zoom |
+| Is there room? | `(max-width: 1024px)` | `useCompactLayout()` | Side columns, board rotation, HUD labels, coordinate gutters |
 | Can any connected input hover? | `(any-hover: hover)` | `useHoverCapable()` | Hover previews and waypoint interaction |
 | Is the pointer coarse? | `(pointer: coarse)` | *(CSS only)* | Hit-target sizes, nothing else |
 
@@ -427,8 +438,12 @@ instead of 26 — squares go from 11.2px to 23.4px on a 375px phone.
 - Coordinate gutters remain visible on touch in compact, high-contrast rails.
   Portrait boards show A–O across the top and 0–25 down the sides; landscape
   boards transpose those axes while square names remain unchanged.
-- Zoom defaults on for coarse pointers, derived from the media query rather
-  than stored, so the player's own choice still wins once they make one.
+- **There is no automatic crop-to-legal-moves Zoom mode.** An earlier version
+  auto-cropped the visible board to the active player's reachable squares on
+  compact viewports (`computeZoomBounds` in `bfs.ts`, a `zoomBounds` prop on
+  `<Pitch>`, and a HUD/`GameToolsMenu` toggle). It was removed (#228) in favor
+  of the player-controlled Settings **Board size** preference below — don't
+  reintroduce a crop-based zoom.
 
 ### Plot, then confirm
 
@@ -455,7 +470,7 @@ pickup stacking on one square; keep the two together and keep
 
 - HUD is one row of 44px controls, icon-only (`.hud__btn-text` is hidden). The
   status line is mounted below the board in `.status-strip` instead, and the
-  series counter rides with it. `GameToolsMenu` combines zoom, restart, and
+  series counter rides with it. `GameToolsMenu` combines restart and
   reporting so account, tools, Key, and action log all fit at 320px.
 - The action log is a toolbar dropdown (`ActionLogMenu`), following
   `UserMenu`'s pattern so the neighbouring controls behave alike. Its badge

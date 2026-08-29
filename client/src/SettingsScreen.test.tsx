@@ -16,6 +16,8 @@ function renderScreen(overrides: Partial<ComponentProps<typeof SettingsScreen>> 
     onTokenStyleChange: vi.fn(),
     pitchSurface: 'grass' as const,
     onPitchSurfaceChange: vi.fn(),
+    boardSize: 'medium' as const,
+    onBoardSizeChange: vi.fn(),
     showCoordinates: true,
     onShowCoordinatesChange: vi.fn(),
     showTutorialGuidance: true,
@@ -136,6 +138,18 @@ describe('pitch display', () => {
     const props = renderScreen({ showCoordinates: true });
     fireEvent.click(screen.getByRole('checkbox', { name: /Cell numbering/ }));
     expect(props.onShowCoordinatesChange).toHaveBeenCalledWith(false);
+  });
+
+  it('reflects the current board size selection', () => {
+    renderScreen({ boardSize: 'large' });
+    expect(screen.getByRole('radio', { name: /Large/ }).getAttribute('aria-checked')).toBe('true');
+    expect(screen.getByRole('radio', { name: /Medium/ }).getAttribute('aria-checked')).toBe('false');
+  });
+
+  it('reports a board size choice', () => {
+    const props = renderScreen({ boardSize: 'medium' });
+    fireEvent.click(screen.getByRole('radio', { name: /Small/ }));
+    expect(props.onBoardSizeChange).toHaveBeenCalledWith('small');
   });
 });
 

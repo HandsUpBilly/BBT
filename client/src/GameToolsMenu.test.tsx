@@ -8,8 +8,6 @@ describe('GameToolsMenu', () => {
   it('keeps secondary mobile actions behind one toolbar control', () => {
     render(
       <GameToolsMenu
-        zoomEnabled
-        onToggleZoom={vi.fn()}
         onRestart={vi.fn()}
         onReport={vi.fn()}
       />,
@@ -18,7 +16,6 @@ describe('GameToolsMenu', () => {
     expect(screen.queryByRole('menu')).toBeNull();
     fireEvent.click(screen.getByRole('button', { name: 'Game tools' }));
     expect(screen.getByRole('menu', { name: 'Game tools' })).toBeTruthy();
-    expect(screen.getByRole('menuitem', { name: 'Show whole pitch' })).toBeTruthy();
     expect(screen.getByRole('menuitem', { name: 'Restart turn' })).toBeTruthy();
     expect(screen.getByRole('menuitem', { name: 'Report a problem' })).toBeTruthy();
   });
@@ -27,8 +24,6 @@ describe('GameToolsMenu', () => {
     const onReport = vi.fn();
     render(
       <GameToolsMenu
-        zoomEnabled={false}
-        onToggleZoom={vi.fn()}
         onRestart={vi.fn()}
         onReport={onReport}
       />,
@@ -44,9 +39,7 @@ describe('GameToolsMenu', () => {
     const onTutorialGuide = vi.fn();
     render(
       <GameToolsMenu
-        zoomEnabled={false}
         onTutorialGuide={onTutorialGuide}
-        onToggleZoom={vi.fn()}
         onRestart={vi.fn()}
         onReport={vi.fn()}
       />,

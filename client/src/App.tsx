@@ -58,8 +58,7 @@ import type {
   AppMode, GameState, PlayerPiece, Position, Scenario, LeaderboardEntry,
   SeriesLeaderboardEntry, SeriesPuzzleResult,
 } from './types';
-import { key, computeZoomBounds } from './bfs';
-import type { ZoomBounds } from './bfs';
+import { key } from './bfs';
 import { useCompactLayout, useHoverCapable, usePortraitViewport } from './useMediaQuery';
 import {
   initializeAnalytics,
@@ -456,34 +455,6 @@ export default function App() {
   const pitchOrientation: PitchOrientation =
     compact && portraitViewport ? 'portrait' : 'landscape';
 
-  // ── Zoom mode ────────────────────────────────────────────────────────────
-  // Computed once when play starts (not recalculated as moves are made or
-  // pieces are selected). Radius is the largest MA among the player's own
-  // team's pieces, plus 2 for GFI/rush squares.
-  //
-  // On by default on a compact viewport: the full 26×15 board gives 11px
-  // squares on a phone, and the crop is the difference between a tappable
-  // board and one that needs a fingertip the size of a pea. Keyed to size
-  // rather than pointer — a 1280px touchscreen has ample room and should
-  // start with the whole pitch. Derived rather than stored, so the default
-  // still applies if the media query resolves after first paint, until the
-  // player overrides it and their choice sticks.
-  const [zoomOverride, setZoomOverride] = useState<boolean | null>(null);
-  const zoomEnabled = zoomOverride ?? compact;
-  const [zoomBounds, setZoomBounds] = useState<ZoomBounds | null>(null);
-
-  const computeStartOfPlayZoom = useCallback((pieces: PlayerPiece[], activeTeam: string): ZoomBounds | null => {
-    const ownPieces = pieces.filter(p => p.team === activeTeam);
-    if (ownPieces.length === 0) return null;
-    const maxMa = Math.max(...ownPieces.map(p => p.ma));
-    const radius = maxMa + 2; // MA + max GFI (2 rush squares)
-    const positions = ownPieces.flatMap(p => [
-      { col: p.position.col - radius, row: p.position.row - radius },
-      { col: p.position.col + radius, row: p.position.row + radius },
-    ]);
-    return computeZoomBounds(positions, 1);
-  }, []);
-
   // Parallel Universes is the standard game model. Before the first block it
   // contains one line and behaves like the ordinary one-board game.
   const branchedBoards = useBranchRun(makeEmptyState());
@@ -713,12 +684,11 @@ export default function App() {
     setActiveScenario(scenario);
     const s = makeScenarioState(scenario);
     resetBoards(s);
-    setZoomBounds(computeStartOfPlayZoom(s.pieces, s.activeTeam));
     const lessonIndex = TUTORIAL_LESSON_IDS.indexOf(scenario.id);
     beginTutorialAttempt(scenario, lessonIndex + 1);
     beginAnalyticsAttempt(scenario, 'standalone');
     setAppMode('puzzle');
-  }, [resetBoards, computeStartOfPlayZoom, beginTutorialAttempt, beginAnalyticsAttempt]);
+  }, [resetBoards, beginTutorialAttempt, beginAnalyticsAttempt]);
 
   const previewPuzzle = useCallback((scenario: Scenario) => {
     setTutorialLesson(null);
@@ -727,9 +697,8 @@ export default function App() {
     setActiveScenario(scenario);
     const s = makeScenarioState(scenario);
     resetBoards(s);
-    setZoomBounds(computeStartOfPlayZoom(s.pieces, s.activeTeam));
     setAppMode('puzzle');
-  }, [resetBoards, computeStartOfPlayZoom, tutorialCoach]);
+  }, [resetBoards, tutorialCoach]);
 
   const goLeaderboard = useCallback((scenario: Scenario) => {
     setActiveScenario(scenario);
@@ -1192,11 +1161,10 @@ export default function App() {
     beginTutorialAttempt(activeScenario, appMode === 'series-puzzle'
       ? (seriesRun?.puzzleIndex ?? 0) + 1
       : lessonIndex + 1);
-    setZoomBounds(computeStartOfPlayZoom(s.pieces, s.activeTeam));
     beginAnalyticsAttempt(activeScenario, appMode === 'series-puzzle' ? 'series' : 'standalone',
       appMode === 'series-puzzle' ? (seriesRun?.puzzleIndex ?? 0) + 1 : undefined);
   }, [activeScenario, state.pieces, state.activeTeam, state.actionLog.length, resetBoards,
-      computeStartOfPlayZoom, beginAnalyticsAttempt, endAnalyticsAttempt, appMode, seriesRun,
+      beginAnalyticsAttempt, endAnalyticsAttempt, appMode, seriesRun,
       beginTutorialAttempt]);
 
   // ── Series mode handlers ──────────────────────────────────────────────────
@@ -1224,11 +1192,10 @@ export default function App() {
     setActiveScenario(scenario);
     const s = makeScenarioState(scenario);
     resetBoards(s);
-    setZoomBounds(computeStartOfPlayZoom(s.pieces, s.activeTeam));
     beginTutorialAttempt(scenario, puzzleIndex + 1);
     beginAnalyticsAttempt(scenario, 'series', seriesRun.results.length + 1);
     setAppMode('series-puzzle');
-  }, [seriesRun, seriesScenarios, resetBoards, computeStartOfPlayZoom,
+  }, [seriesRun, seriesScenarios, resetBoards,
       beginTutorialAttempt, beginAnalyticsAttempt]);
 
   // Called when the player continues past a touchdown while in a series run.
@@ -1509,6 +1476,11 @@ export default function App() {
             trackAnalytics('interaction', { name: 'setting-pitch-surface', outcome: 'changed', value: pitchSurface });
             setPrefs({ pitchSurface });
           }}
+          boardSize={prefs.boardSize ?? 'medium'}
+          onBoardSizeChange={boardSize => {
+            trackAnalytics('interaction', { name: 'setting-board-size', outcome: 'changed', value: boardSize });
+            setPrefs({ boardSize });
+          }}
           showCoordinates={prefs.showCoordinates ?? true}
           onShowCoordinatesChange={showCoordinates => {
             trackAnalytics('interaction', { name: 'setting-coordinates', outcome: 'changed', value: showCoordinates });
@@ -1704,13 +1676,11 @@ export default function App() {
 
         {compact ? (
           <GameToolsMenu
-            zoomEnabled={zoomEnabled}
             onTutorialGuide={
               tutorialGuidanceAvailable
                 ? showCurrentTutorialGuidance
                 : undefined
             }
-            onToggleZoom={() => setZoomOverride(!zoomEnabled)}
             onRestart={handleRestartTurn}
             onReport={() => {
               trackAnalytics('interaction', { name: 'report-dialog', outcome: 'opened' });
@@ -1721,7 +1691,7 @@ export default function App() {
           <>
             {tutorialGuidanceAvailable && (
               <button
-                className="hud__zoom"
+                className="hud__guide"
                 onClick={showCurrentTutorialGuidance}
                 title="Tutorial guide"
                 aria-label="Tutorial guide"
@@ -1730,16 +1700,6 @@ export default function App() {
                 <span className="hud__btn-text">Guide</span>
               </button>
             )}
-            <button
-              className={`hud__zoom${zoomEnabled ? ' hud__zoom--active' : ''}`}
-              onClick={() => setZoomOverride(!zoomEnabled)}
-              title="Zoom to legal moves"
-              aria-label={zoomEnabled ? 'Zoom on. Show the whole pitch' : 'Zoom to legal moves'}
-              aria-pressed={zoomEnabled}
-            >
-              <span className="hud__btn-icon" aria-hidden="true">🔍</span>
-              <span className="hud__btn-text">{zoomEnabled ? 'Zoom On' : 'Zoom'}</span>
-            </button>
 
             <button className="hud__restart" onClick={handleRestartTurn} aria-label="Restart turn">
               <span className="hud__btn-icon" aria-hidden="true">↺</span>
@@ -1780,14 +1740,13 @@ export default function App() {
       />
 
       <div className="game-area">
-        <main className="pitch-wrapper">
+        <main className={`pitch-wrapper${(prefs.boardSize ?? 'medium') !== 'medium' ? ` pitch-wrapper--${prefs.boardSize}` : ''}`}>
           <Pitch
             state={state}
             onSquareClick={handleSquareClick}
             onPieceClick={handlePieceClick}
             onSquareHover={handleSquareHover}
             onSquareLeave={handleSquareLeave}
-            zoomBounds={zoomEnabled ? zoomBounds : null}
             orientation={pitchOrientation}
             tokenStyle={prefs.tokenStyle ?? 'portrait'}
             pitchSurface={prefs.pitchSurface ?? 'grass'}
