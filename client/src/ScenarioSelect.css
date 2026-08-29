@@ -567,6 +567,83 @@
   }
 }
 
+.scenario-select__plate { display: none; }
+
+@media (min-width: 761px) {
+  .scenario-select__header {
+    grid-template-columns: minmax(300px, 38%) minmax(0, 62%);
+    gap: 30px;
+    background: #101211;
+  }
+
+  .scenario-select__header::before { display: none; }
+
+  .scenario-select__plate {
+    position: relative;
+    align-self: stretch;
+    display: grid;
+    grid-template-columns: 74px minmax(0, 1fr);
+    min-width: 0;
+    overflow: hidden;
+    padding: 8px;
+    background: #0b0d0c;
+    border: 1px solid rgba(213, 199, 174, 0.38);
+    box-shadow: 0 0 0 5px rgba(213, 199, 174, 0.05);
+  }
+
+  .scenario-select__plate img {
+    width: 100%;
+    height: 100%;
+    min-height: 430px;
+    object-fit: cover;
+    object-position: 50% 47%;
+    filter: saturate(0.82) contrast(1.08);
+  }
+
+  .scenario-select__sideline {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-around;
+    gap: 18px;
+    padding: 16px 10px;
+    color: #9b9488;
+    border-right: 1px solid rgba(213, 199, 174, 0.2);
+    font-family: var(--font-display);
+    font-size: 0.58rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .scenario-select__sideline span { color: var(--color-accent); }
+  .scenario-select__sideline b { font-weight: 500; }
+  .scenario-select__route { display: none; }
+
+  .scenario-select__brand {
+    position: relative;
+    z-index: 3;
+    max-width: none;
+  }
+
+  .scenario-select__hero-headline {
+    max-width: 10ch;
+    font-size: clamp(2.7rem, 5.1vw, 4.6rem);
+  }
+}
+
+@media (min-width: 761px) and (max-width: 1050px) {
+  .scenario-select__header {
+    grid-template-columns: minmax(280px, 43%) minmax(0, 57%);
+    min-height: 520px;
+    padding: 30px;
+    gap: 22px;
+  }
+
+  .scenario-select__plate { grid-template-columns: 52px minmax(0, 1fr); }
+  .scenario-select__sideline { padding-inline: 6px; font-size: 0.5rem; }
+  .scenario-select__title { font-size: clamp(2rem, 4vw, 2.8rem); }
+  .scenario-select__hero-headline { font-size: clamp(2.4rem, 5.4vw, 3.6rem); }
+}
+
 @media (prefers-reduced-motion: no-preference) {
   .scenario-select__header,
   .play-switch,
@@ -738,5 +815,33 @@
   .app--landing .btn:hover:not(:disabled),
   .app--landing .btn:active:not(:disabled) {
     transform: none;
+  }
+}
+
+/* Final desktop lock: keep the generated match art inside its own plate rather
+   than letting the legacy full-bleed masthead treatment show through. */
+@media (min-width: 761px) {
+  .scenario-select__header {
+    grid-template-columns: minmax(300px, 38%) minmax(0, 62%);
+    gap: 30px;
+    background: #101211;
+  }
+
+  .scenario-select__header::before { display: none; }
+  .scenario-select__brand { max-width: none; }
+  .scenario-select__route { display: none; }
+}
+
+@media (min-width: 761px) and (max-width: 1050px) {
+  .scenario-select__header {
+    grid-template-columns: minmax(280px, 43%) minmax(0, 57%);
+    min-height: 520px;
+    padding: 30px;
+    gap: 22px;
+  }
+
+  .scenario-select__hero-headline {
+    max-width: 10ch;
+    font-size: clamp(2.4rem, 5.4vw, 3.6rem);
   }
 }

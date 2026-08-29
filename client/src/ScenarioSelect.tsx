@@ -2,6 +2,7 @@ import { useMemo, useState, type ReactNode } from 'react';
 import type { ProgressData } from './api';
 import type { LeaderboardEntry, Scenario, SeriesDefinition, SeriesLeaderboardEntry } from './types';
 import nuffleShuffleLogo from './assets/series/nuffle-shuffle.webp';
+import matchdayClash from './assets/matchday-clash.webp';
 import { FREE_PLAY_SCENARIO_ID } from './tutorialLessons';
 import { UI_COPY } from './uiCopy';
 import './ScenarioSelect.css';
@@ -142,6 +143,15 @@ export function ScenarioSelect({
           <h1 className="scenario-select__title">{UI_COPY.brand.name}</h1>
           <p className="scenario-select__hero-headline">{UI_COPY.landing.heroHeadline}</p>
           <p className="scenario-select__subtitle">{UI_COPY.landing.heroBody}</p>
+        </div>
+        <div className="scenario-select__plate" aria-hidden="true">
+          <div className="scenario-select__sideline">
+            <span>Sideline notes</span>
+            <b>Blitz lane</b>
+            <b>Gap window</b>
+            <b>Safe route</b>
+          </div>
+          <img src={matchdayClash} alt="" />
         </div>
         <div className="scenario-select__user">
           <div className="scenario-select__controls">
