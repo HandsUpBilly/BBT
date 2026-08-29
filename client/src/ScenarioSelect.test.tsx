@@ -64,7 +64,7 @@ describe('ScenarioSelect Free Play', () => {
 
     const utilityNav = within(container).getByRole('navigation', { name: 'Site controls' });
     fireEvent.click(within(utilityNav).getByRole('button', { name: 'Admin' }));
-    fireEvent.click(within(utilityNav).getByRole('button', { name: 'Help & rules' }));
+    fireEvent.click(within(utilityNav).getByRole('button', { name: 'Help' }));
     fireEvent.click(within(utilityNav).getByRole('button', { name: 'Settings' }));
     fireEvent.click(within(utilityNav).getByRole('button', { name: 'About' }));
 

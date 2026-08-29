@@ -1113,7 +1113,7 @@
   background:
     linear-gradient(90deg, rgba(7, 9, 8, 0.74) 0%, rgba(7, 9, 8, 0.13) 46%, rgba(7, 9, 8, 0.08) 70%, rgba(7, 9, 8, 0.3) 100%),
     linear-gradient(0deg, rgba(6, 8, 7, 0.92) 0%, rgba(6, 8, 7, 0.2) 48%, rgba(6, 8, 7, 0.08) 100%),
-    url('./assets/matchday-clash.webp') center 44% / cover no-repeat,
+    url('./assets/matchday-clash.webp') center 34% / cover no-repeat,
     var(--color-surface-1);
   border-color: #343833;
   border-top: 0;
@@ -1138,11 +1138,12 @@
   color: #ede8dd;
 }
 
-.app--landing .scenario-select__hero-cta {
+.app--playbook.app--landing .scenario-select__hero-cta {
   min-width: min(360px, 34vw);
   min-height: 92px;
   padding: 20px 38px;
   border: 2px solid #eee9de;
+  background: #8f261f;
   border-radius: 0;
   outline: 1px solid rgba(0, 0, 0, 0.7);
   outline-offset: -8px;
@@ -1150,17 +1151,17 @@
   letter-spacing: 0.08em;
 }
 
-.app--landing .scenario-select__hero-cta:hover:not(:disabled) {
-  background: var(--color-accent-hover);
+.app--playbook.app--landing .scenario-select__hero-cta:hover:not(:disabled) {
+  background: #a83226;
   border-color: #fffaf0;
   transform: translateY(-2px);
 }
 
 @media (max-width: 760px) {
-  .app--landing .scenario-select__hero-cta {
+  .app--playbook.app--landing .scenario-select__hero-cta {
     width: 100%;
     min-width: 0;
-    min-height: 68px;
+    min-height: 62px;
     padding: 16px 24px;
     font-size: 1rem;
   }

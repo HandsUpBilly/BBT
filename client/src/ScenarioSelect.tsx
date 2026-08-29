@@ -1,7 +1,7 @@
 import { useMemo, useState, type ReactNode } from 'react';
 import type { ProgressData } from './api';
 import type { LeaderboardEntry, Scenario, SeriesDefinition, SeriesLeaderboardEntry } from './types';
-import nuffleShuffleLogo from './assets/series/nuffle-shuffle.webp';
+import nuffleShuffleLogo from './assets/series/nuffle-shuffle-transparent.png';
 import { FREE_PLAY_SCENARIO_ID } from './tutorialLessons';
 import { UI_COPY } from './uiCopy';
 import './ScenarioSelect.css';
@@ -161,10 +161,11 @@ export function ScenarioSelect({
       </header>
 
       <div className="scenario-select__header">
+        <h1 className="scenario-select__title">
+          <span>Turn</span><strong>16</strong>
+        </h1>
+        <div className="scenario-select__foreground" aria-hidden="true" />
         <div className="scenario-select__brand">
-          <h1 className="scenario-select__title">
-            <span>Turn</span><strong>16</strong>
-          </h1>
           <div className="scenario-select__hero-copy">
             <span className="scenario-select__eyebrow">{UI_COPY.brand.tagline}</span>
             <p className="scenario-select__hero-title">{UI_COPY.landing.heroTitle}</p>

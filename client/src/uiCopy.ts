@@ -20,7 +20,7 @@ export const UI_COPY = {
     seriesTab: 'Series',
     singlePlaysTab: 'Free Play',
     puzzleCreatorTab: 'Admin',
-    help: 'Help & rules',
+    help: 'Help',
     settings: 'Settings',
     about: 'About',
     heroTitle: 'The Last Drive',
