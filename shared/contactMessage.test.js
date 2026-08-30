@@ -20,8 +20,14 @@ test('validates a contact message', () => {
 
 test('rejects missing fields', () => {
   assert.throws(() => validateContactPayload({ ...validPayload, name: '' }), ContactValidationError);
-  assert.throws(() => validateContactPayload({ ...validPayload, email: '' }), ContactValidationError);
   assert.throws(() => validateContactPayload({ ...validPayload, message: '' }), ContactValidationError);
+});
+
+test('allows the sender to omit a reply address', () => {
+  const contact = validateContactPayload({ ...validPayload, email: '' });
+  const email = buildContactEmail(contact, '2026-08-01T00:00:00.000Z');
+  assert.equal(contact.email, '');
+  assert.ok(email.text.includes('no reply address supplied'));
 });
 
 test('rejects a malformed email address', () => {
@@ -81,6 +87,23 @@ test('sends via the Resend API with the reply-to set to the sender', async () =>
   assert.equal(body.from, 'contact@turn-16.com');
   assert.equal(body.reply_to, 'coach@example.com');
   assert.equal(sent.id, 'abc123');
+});
+
+test('omits reply-to when the sender does not want a reply', async () => {
+  let request;
+  const contact = validateContactPayload({ ...validPayload, email: '' });
+  const email = buildContactEmail(contact, '2026-08-01T00:00:00.000Z');
+  await sendContactEmail(contact, email, {
+    apiKey: 'test-key',
+    to: 'owner@turn-16.com',
+    from: 'contact@turn-16.com',
+    fetchImpl: async (url, options) => {
+      request = { url, options };
+      return { ok: true, json: async () => ({ id: 'no-reply-123' }) };
+    },
+  });
+  const body = JSON.parse(request.options.body);
+  assert.equal('reply_to' in body, false);
 });
 
 test('requires configured credentials', async () => {

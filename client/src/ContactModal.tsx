@@ -21,6 +21,7 @@ export function ContactModal({ defaultName, onClose, onResult }: Props) {
   const dialogRef = useModalFocus<HTMLElement>(onClose);
   const [name, setName] = useState(defaultName);
   const [email, setEmail] = useState('');
+  const [noReply, setNoReply] = useState(false);
   const [message, setMessage] = useState('');
   const [error, setError] = useState<string>();
   const [submitting, setSubmitting] = useState(false);
@@ -28,16 +29,16 @@ export function ContactModal({ defaultName, onClose, onResult }: Props) {
 
   const input = {
     name: name.trim(),
-    email: email.trim(),
+    email: noReply ? '' : email.trim(),
     message: message.trim(),
   };
 
   function validate(): string | undefined {
     if (!input.name) return 'Enter your name.';
     if (input.name.length > MAX_NAME) return `Name must be ${MAX_NAME} characters or fewer.`;
-    if (!input.email) return 'Enter your email address so we can reply.';
-    if (input.email.length > MAX_EMAIL) return `Email must be ${MAX_EMAIL} characters or fewer.`;
-    if (!EMAIL_PATTERN.test(input.email)) return 'Enter a valid email address.';
+    if (!noReply && !input.email) return 'Enter your email address or choose that you don\'t need a reply.';
+    if (!noReply && input.email.length > MAX_EMAIL) return `Email must be ${MAX_EMAIL} characters or fewer.`;
+    if (!noReply && !EMAIL_PATTERN.test(input.email)) return 'Enter a valid email address.';
     if (!input.message) return 'Enter a message.';
     if (input.message.length > MAX_MESSAGE) return `Message must be ${MAX_MESSAGE} characters or fewer.`;
     return undefined;
@@ -71,7 +72,9 @@ export function ContactModal({ defaultName, onClose, onResult }: Props) {
         <section ref={dialogRef} className="modal report-problem-modal" role="dialog" aria-modal="true" aria-labelledby="contact-modal-title" tabIndex={-1}>
           <span className="report-problem-modal__eyebrow">Message sent</span>
           <h2 id="contact-modal-title" className="modal__title">Thanks for reaching out</h2>
-          <p className="report-problem-modal__copy">We&rsquo;ll get back to you at {input.email}.</p>
+          <p className="report-problem-modal__copy">
+            {input.email ? <>We&rsquo;ll get back to you at {input.email}.</> : 'Your message has been sent.'}
+          </p>
           <div className="report-problem-modal__actions">
             <button className="report-problem-modal__secondary" type="button" onClick={onClose}>Close</button>
           </div>
@@ -96,7 +99,7 @@ export function ContactModal({ defaultName, onClose, onResult }: Props) {
           </label>
 
           <label className="report-problem-form__field" htmlFor="contact-email">
-            Your email
+            Your email <span className="contact-form__optional">(optional)</span>
             <input
               id="contact-email"
               type="email"
@@ -104,7 +107,20 @@ export function ContactModal({ defaultName, onClose, onResult }: Props) {
               value={email}
               onChange={event => setEmail(event.target.value)}
               placeholder="So we can reply"
+              disabled={noReply}
             />
+          </label>
+
+          <label className="contact-form__reply-option">
+            <input
+              type="checkbox"
+              checked={noReply}
+              onChange={event => {
+                setNoReply(event.target.checked);
+                setError(undefined);
+              }}
+            />
+            I don&rsquo;t need a reply
           </label>
 
           <label className="report-problem-form__field" htmlFor="contact-message">

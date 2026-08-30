@@ -6,7 +6,7 @@ import * as api from './api';
 afterEach(cleanup);
 
 function fillValidForm() {
-  fireEvent.change(screen.getByLabelText('Your email'), { target: { value: 'coach@example.com' } });
+  fireEvent.change(screen.getByLabelText('Your email', { exact: false }), { target: { value: 'coach@example.com' } });
   fireEvent.change(screen.getByLabelText('Message', { exact: false }), { target: { value: 'Any plans for a Nurgle team?' } });
 }
 
@@ -21,10 +21,27 @@ describe('ContactModal', () => {
 
   it('rejects a malformed email address', () => {
     render(<ContactModal defaultName="Endzone Expert" onClose={vi.fn()} />);
-    fireEvent.change(screen.getByLabelText('Your email'), { target: { value: 'not-an-email' } });
+    fireEvent.change(screen.getByLabelText('Your email', { exact: false }), { target: { value: 'not-an-email' } });
     fireEvent.change(screen.getByLabelText('Message', { exact: false }), { target: { value: 'Hello' } });
     fireEvent.click(screen.getByRole('button', { name: 'Send message' }));
     expect(screen.getByRole('alert').textContent).toMatch(/valid email/);
+  });
+
+  it('allows the player to send without a reply address', async () => {
+    const submitContact = vi.spyOn(api, 'submitContact').mockResolvedValue({ id: 'no-reply-123' });
+    render(<ContactModal defaultName="Endzone Expert" onClose={vi.fn()} />);
+    fireEvent.click(screen.getByRole('checkbox', { name: /I don.t need a reply/ }));
+    expect((screen.getByLabelText('Your email', { exact: false }) as HTMLInputElement).disabled).toBe(true);
+    fireEvent.change(screen.getByLabelText('Message', { exact: false }), { target: { value: 'Just saying thanks.' } });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Send message' }));
+
+    await waitFor(() => expect(screen.getByText('Your message has been sent.')).toBeTruthy());
+    expect(submitContact).toHaveBeenCalledWith({
+      name: 'Endzone Expert',
+      email: '',
+      message: 'Just saying thanks.',
+    });
   });
 
   it('submits the message and shows a confirmation on success', async () => {

@@ -29,6 +29,16 @@ function requiredSingleLine(value, field, maxLength) {
   return trimmed;
 }
 
+function optionalSingleLine(value, field, maxLength) {
+  if (value === undefined || value === null) return '';
+  if (typeof value !== 'string') throw new ContactValidationError(`${field} must be text`);
+  const trimmed = value.trim();
+  if (!trimmed) return '';
+  if (trimmed.length > maxLength) throw new ContactValidationError(`${field} is too long`);
+  if (/[\r\n]/.test(trimmed)) throw new ContactValidationError(`${field} cannot contain line breaks`);
+  return trimmed;
+}
+
 function requiredText(value, field, maxLength) {
   if (typeof value !== 'string') throw new ContactValidationError(`${field} is required`);
   const trimmed = value.trim();
@@ -43,8 +53,8 @@ export function validateContactPayload(payload) {
   }
 
   const name = requiredSingleLine(payload.name, 'name', CONTACT_LIMITS.name);
-  const email = requiredSingleLine(payload.email, 'email', CONTACT_LIMITS.email);
-  if (!EMAIL_PATTERN.test(email)) throw new ContactValidationError('email is not a valid address');
+  const email = optionalSingleLine(payload.email, 'email', CONTACT_LIMITS.email);
+  if (email && !EMAIL_PATTERN.test(email)) throw new ContactValidationError('email is not a valid address');
   const message = requiredText(payload.message, 'message', CONTACT_LIMITS.message);
 
   return { name, email, message };
@@ -54,7 +64,9 @@ export function buildContactEmail(contact, submittedAt = new Date().toISOString(
   return {
     subject: `Turn 16 contact message from ${contact.name}`,
     text: [
-      `From: ${contact.name} <${contact.email}>`,
+      contact.email
+        ? `From: ${contact.name} <${contact.email}>`
+        : `From: ${contact.name} (no reply address supplied)`,
       `Submitted: ${submittedAt}`,
       '',
       contact.message,

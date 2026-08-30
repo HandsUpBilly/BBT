@@ -30,7 +30,7 @@ export async function sendContactEmail(
       body: JSON.stringify({
         from,
         to: [to],
-        reply_to: contact.email,
+        ...(contact.email ? { reply_to: contact.email } : {}),
         subject: emailContent.subject,
         text: emailContent.text,
       }),
