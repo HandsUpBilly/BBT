@@ -1,0 +1,50 @@
+.tutorial-objective-card {
+  position: fixed;
+  z-index: 120;
+  top: 5.2rem;
+  right: 1rem;
+  width: min(31rem, calc(100vw - 2rem));
+  padding: 0.55rem 2.7rem 0.55rem 0.8rem;
+  color: var(--color-text);
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border-subtle);
+  border-left: 3px solid var(--color-accent);
+  border-radius: 6px;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.25);
+  pointer-events: none;
+}
+
+.tutorial-objective-card > span {
+  color: var(--color-accent);
+  font-family: var(--font-display);
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.tutorial-objective-card > strong { display: block; font-family: var(--font-display); }
+.tutorial-objective-card p { margin: 0.15rem 0 0; line-height: 1.25; }
+.tutorial-objective-card__concept { color: var(--color-text-muted); font-size: 0.88rem; }
+.tutorial-objective-card button {
+  position: absolute;
+  top: 0.55rem;
+  right: 0.65rem;
+  width: 2rem;
+  height: 2rem;
+  color: var(--color-text-muted);
+  background: transparent;
+  border: 0;
+  font-size: 1.25rem;
+  cursor: pointer;
+  pointer-events: auto;
+}
+
+@media (max-width: 700px) {
+  .tutorial-objective-card {
+    top: 4.2rem;
+    right: 0.5rem;
+    width: calc(100vw - 1rem);
+    background: var(--color-surface-2);
+    font-size: 0.82rem;
+  }
+}

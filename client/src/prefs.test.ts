@@ -59,6 +59,13 @@ describe('writing and reading back', () => {
     expect(readPrefs('user-1')).toEqual({ showTutorialGuidance: false });
   });
 
+  it('persists Tutorial concept progress under the identity key', () => {
+    writePrefs('user-1', { tutorialConceptProgress: { movement: 'used', passing: 'introduced' } });
+    expect(readPrefs('user-1')).toEqual({
+      tutorialConceptProgress: { movement: 'used', passing: 'introduced' },
+    });
+  });
+
   it('persists an avatar data URL', () => {
     writePrefs('user-1', { avatar: VALID_AVATAR });
     expect(readPrefs('user-1')).toEqual({ avatar: VALID_AVATAR });
@@ -113,6 +120,13 @@ describe('tolerating junk', () => {
       },
     }));
     expect(readPrefs('user-1')).toEqual({});
+  });
+
+  it('drops invalid Tutorial concept statuses without losing valid progress', () => {
+    storage.setItem(KEY, JSON.stringify({
+      'user-1': { tutorialConceptProgress: { movement: 'used', passing: 'mastered', pickup: 3 } },
+    }));
+    expect(readPrefs('user-1')).toEqual({ tutorialConceptProgress: { movement: 'used' } });
   });
 
   it('ignores an avatar value that is not a data:image URL', () => {

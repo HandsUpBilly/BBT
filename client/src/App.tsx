@@ -34,18 +34,28 @@ import { AboutDialog } from './AboutDialog';
 import { BrandLogo } from './BrandLogo';
 import { SettingsScreen } from './SettingsScreen';
 import { HelpScreen } from './HelpScreen';
-import { TutorialLessonDialog } from './TutorialLessonDialog';
-import { TutorialGuideDialog } from './TutorialGuideDialog';
+import { TutorialObjectiveCard } from './TutorialObjectiveCard';
+import { TutorialContextCaption } from './TutorialContextCaption';
+import { TutorialConceptGuideDialog } from './TutorialConceptGuideDialog';
+import { ParallelUniversesIntroDialog } from './ParallelUniversesIntroDialog';
+import { ReplayGuidanceDialog } from './ReplayGuidanceDialog';
 import { TutorialPuzzleChooser } from './TutorialPuzzleChooser';
 import { upsertSeriesPuzzleResult } from './seriesResults';
-import { useTutorialGuide } from './useTutorialGuide';
 import { TUTORIAL_LESSON_IDS, tutorialLessonFor } from './tutorialLessons';
 import type { TutorialLesson } from './tutorialLessons';
+import { tutorialActionSequence } from './tutorialRecap';
+import type { TutorialDrillRecap } from './tutorialRecap';
+import {
+  tutorialConceptFor,
+  tutorialConceptsForScenario,
+  type TutorialConceptId,
+  type TutorialConceptProgress,
+} from './tutorialConcepts';
 import { submitScore, fetchLeaderboard, submitSeriesScore, fetchSeriesLeaderboard, fetchProgress, ApiError } from './api';
 import type { ProgressData } from './api';
 import { recordAttempt } from './attemptStore';
 import { summarizeActionLog } from './riskyMoves';
-import { readAllPrefs, writePrefs, GUEST_PREFS_KEY } from './prefs';
+import { readAllPrefs, readPrefs, writePrefs, GUEST_PREFS_KEY } from './prefs';
 import type { PlayerPrefs } from './prefs';
 import { playerComparison } from './playerComparison';
 import { resolveSeriesScenarios } from './series';
@@ -291,6 +301,37 @@ export default function App() {
     setAllPrefs(all => ({ ...all, [identityKey]: { ...all[identityKey], ...patch } }));
     writePrefs(identityKey, patch);
   }, [identityKey]);
+  const tutorialConceptProgress = prefs.tutorialConceptProgress as TutorialConceptProgress | undefined;
+  const updateTutorialConcepts = useCallback((conceptIds: readonly TutorialConceptId[], status: 'introduced' | 'used') => {
+    const mergeProgress = (current: Record<string, 'introduced' | 'used'>) => {
+      const next = { ...current };
+      let changed = false;
+      for (const conceptId of conceptIds) {
+        const currentStatus = current[conceptId];
+        if (currentStatus === 'used' || currentStatus === status) continue;
+        next[conceptId] = status;
+        changed = true;
+      }
+      return changed ? next : current;
+    };
+
+    // Persist outside the React state updater: Strict Mode may invoke updater
+    // functions more than once, so they must remain side-effect free.
+    const storedProgress = readPrefs(identityKey).tutorialConceptProgress ?? {};
+    const nextStoredProgress = mergeProgress(storedProgress);
+    if (nextStoredProgress !== storedProgress) {
+      writePrefs(identityKey, { tutorialConceptProgress: nextStoredProgress });
+    }
+
+    setAllPrefs(all => {
+      const currentPrefs = all[identityKey] ?? {};
+      const currentProgress = currentPrefs.tutorialConceptProgress ?? {};
+      const nextProgress = mergeProgress(currentProgress);
+      if (nextProgress === currentProgress) return all;
+      const nextPrefs = { ...currentPrefs, tutorialConceptProgress: nextProgress };
+      return { ...all, [identityKey]: nextPrefs };
+    });
+  }, [identityKey]);
   // Which screen "Back" returns to from Settings — it can be opened from the
   // game HUD, so it must not always land on home, and mid-puzzle game state
   // lives above appMode and survives the round trip untouched.
@@ -336,18 +377,14 @@ export default function App() {
   const [selectedSeriesEntry, setSelectedSeriesEntry] = useState<SeriesLeaderboardEntry | undefined>();
   const [confirmLeaveSeries, setConfirmLeaveSeries] = useState(false);
   const [reviewingCompletedBoard, setReviewingCompletedBoard] = useState(false);
+  const [tutorialRecaps, setTutorialRecaps] = useState<Record<string, TutorialDrillRecap>>({});
+  const [pendingTutorialReplay, setPendingTutorialReplay] = useState<Scenario | null>(null);
+  const [replayLearnedConcepts, setReplayLearnedConcepts] = useState(false);
   const [tutorialLesson, setTutorialLesson] = useState<{ lesson: TutorialLesson; step: number } | null>(null);
-  const tutorialCoach = useTutorialGuide();
-  const tutorialInteractionIdRef = useRef(0);
-  const tutorialGuideAnalyticsRef = useRef<{
-    scenarioId: string;
-    stageIndex: number;
-    tier: number;
-    visible: boolean;
-    skipped: boolean;
-    complete: boolean;
-    contradictionKey: string | null;
-  } | null>(null);
+  const [tutorialConceptGuideOpen, setTutorialConceptGuideOpen] = useState(false);
+  const [dismissedTutorialConcepts, setDismissedTutorialConcepts] = useState<Set<TutorialConceptId>>(() => new Set());
+  const [parallelUniversesIntroOpen, setParallelUniversesIntroOpen] = useState(false);
+  const [parallelUniversesSpotlight, setParallelUniversesSpotlight] = useState(false);
   const [reportOpen, setReportOpen] = useState(false);
   const [aboutOpen, setAboutOpen] = useState(false);
   const [contactOpen, setContactOpen] = useState(false);
@@ -357,85 +394,33 @@ export default function App() {
   // Non-blocking notice (e.g. a best-effort individual submit failed mid-series).
   const [submitNotice, setSubmitNotice] = useState<string | undefined>();
 
-  // A guided attempt is always initialized as one operation. Keeping the coach
-  // reset and briefing queue together prevents a replay path from retaining a
-  // completed/skipped guide or showing only the opening briefing. The stored
-  // preference controls every new attempt, not merely the first visit.
-  const beginTutorialCoachAttempt = tutorialCoach.beginAttempt;
-  const beginTutorialAttempt = useCallback((scenario: Scenario, step: number) => {
-    beginTutorialCoachAttempt(scenario.id);
+  // Tutorial attempts start with orientation rather than a scripted sequence.
+  // The compact objective disappears after play begins; persistent concept
+  // progress decides which contextual captions are genuinely new.
+  const beginTutorialAttempt = useCallback((scenario: Scenario, step: number, showAutomatic = true, replayGuidance = false) => {
     const lesson = tutorialLessonFor(scenario.id);
-    const guidanceEnabled = prefs.showTutorialGuidance ?? true;
+    const guidanceEnabled = (prefs.showTutorialGuidance ?? true) && showAutomatic;
     setTutorialLesson(lesson && guidanceEnabled ? { lesson, step } : null);
-    if (lesson && guidanceEnabled) trackAnalytics('interaction', { name: 'tutorial-briefing', outcome: 'shown' });
-  }, [prefs.showTutorialGuidance, beginTutorialCoachAttempt]);
+    setDismissedTutorialConcepts(new Set());
+    setParallelUniversesIntroOpen(false);
+    setParallelUniversesSpotlight(false);
+    setReplayLearnedConcepts(replayGuidance);
+    setTutorialConceptGuideOpen(false);
+    if (lesson && guidanceEnabled) trackAnalytics('interaction', { name: 'tutorial-guide', outcome: 'objective-shown', scenarioId: scenario.id });
+  }, [prefs.showTutorialGuidance]);
 
-  const dismissTutorialLesson = useCallback((disableFutureLessons: boolean) => {
+  const dismissTutorialLesson = useCallback(() => {
     if (!tutorialLesson) return;
-    if (disableFutureLessons) setPrefs({ showTutorialGuidance: false });
-    else tutorialCoach.start();
-    trackAnalytics('interaction', {
-      name: 'tutorial-briefing', outcome: 'dismissed',
-      value: disableFutureLessons ? 'disable-future' : 'continue',
-    });
+    trackAnalytics('interaction', { name: 'tutorial-guide', outcome: 'objective-dismissed' });
     setTutorialLesson(null);
-  }, [setPrefs, tutorialLesson, tutorialCoach]);
+  }, [tutorialLesson]);
 
   const showCurrentTutorialGuidance = useCallback(() => {
     const isPlayablePuzzle = appMode === 'series-puzzle' || appMode === 'puzzle';
     if (!isPlayablePuzzle || !activeScenario || editorPreviewScenario) return;
-    if (tutorialCoach.progress) {
-      tutorialCoach.reopen();
-      return;
-    }
-    const lesson = tutorialLessonFor(activeScenario.id);
-    const lessonIndex = TUTORIAL_LESSON_IDS.indexOf(activeScenario.id);
-    const step = appMode === 'series-puzzle' && seriesRun
-      ? seriesRun.puzzleIndex + 1
-      : lessonIndex + 1;
-    if (lesson && step > 0) setTutorialLesson({ lesson, step });
-  }, [activeScenario, appMode, editorPreviewScenario, seriesRun, tutorialCoach]);
-
-  useEffect(() => {
-    const progress = tutorialCoach.progress;
-    const guide = tutorialCoach.guide;
-    if (!progress || !guide || guide.stages.length === 0) {
-      tutorialGuideAnalyticsRef.current = null;
-      return;
-    }
-    const current = {
-      scenarioId: progress.scenarioId,
-      stageIndex: progress.stageIndex,
-      tier: progress.tier,
-      visible: progress.visible,
-      skipped: progress.skipped,
-      complete: progress.complete,
-      contradictionKey: progress.lastContradictionKey,
-    };
-    const previous = tutorialGuideAnalyticsRef.current;
-    const stage = guide.stages[Math.min(progress.stageIndex, guide.stages.length - 1)];
-    const trackGuide = (outcome: string) => trackAnalytics('interaction', {
-      name: 'tutorial-guide', outcome, scenarioId: progress.scenarioId, stageId: stage.id,
-    });
-
-    if (previous?.scenarioId === current.scenarioId) {
-      if (!previous.visible && current.visible) trackGuide('shown');
-      if (current.stageIndex > previous.stageIndex && !current.complete) trackGuide('stage-reached');
-      if (current.contradictionKey && current.contradictionKey !== previous.contradictionKey) {
-        trackGuide('contradiction');
-      } else if (current.tier > previous.tier) {
-        trackGuide('hint-requested');
-      }
-      if (!previous.skipped && current.skipped) trackGuide('skipped');
-      if (!previous.complete && current.complete) trackGuide('completed');
-      if (previous.visible && !current.visible && !current.skipped && !current.complete) {
-        trackGuide('dismissed');
-      }
-    } else if (current.visible) {
-      trackGuide('shown');
-    }
-    tutorialGuideAnalyticsRef.current = current;
-  }, [tutorialCoach.guide, tutorialCoach.progress]);
+    setTutorialConceptGuideOpen(true);
+    trackAnalytics('interaction', { name: 'tutorial-guide', outcome: 'opened', scenarioId: activeScenario.id });
+  }, [activeScenario, appMode, editorPreviewScenario]);
 
   // ── Viewport shape ───────────────────────────────────────────────────────
   // Three separate questions — see useMediaQuery.ts for why none of them is a
@@ -465,10 +450,6 @@ export default function App() {
           handleHandoffAction, handleHandoffTarget,
           handlePassAction, handlePassTarget,
           handleBlockAction, handleBlockTarget, handlePushChoice } = game;
-
-  useEffect(() => tutorialCoach.observe(state, {
-    allUniversesComplete: branchedBoards.complete,
-  }), [state, branchedBoards.complete, tutorialCoach]);
 
   const setBranchedState = branchedBoards.setState;
   // `phase: 'touchdown'` marks one branch scoring, not the run finishing, so
@@ -707,13 +688,13 @@ export default function App() {
 
   const previewPuzzle = useCallback((scenario: Scenario) => {
     setTutorialLesson(null);
-    tutorialCoach.clear();
+    setTutorialConceptGuideOpen(false);
     setEditorPreviewScenario(scenario);
     setActiveScenario(scenario);
     const s = makeScenarioState(scenario);
     resetBoards(s);
     setAppMode('puzzle');
-  }, [resetBoards, tutorialCoach]);
+  }, [resetBoards]);
 
   const goLeaderboard = useCallback((scenario: Scenario) => {
     setActiveScenario(scenario);
@@ -886,11 +867,9 @@ export default function App() {
     const piece = state.pieces.find(p => key(p.position) === k);
     if (!piece) return;
 
-    tutorialInteractionIdRef.current += 1;
-    tutorialCoach.recordInteraction({
-      kind: 'piece-selected', pieceId: piece.id,
-      eventKey: `piece-${tutorialInteractionIdRef.current}`,
-    });
+    // The opening card is orientation, not a recurring coach step. Once the
+    // player starts inspecting the board it stays collapsed for this attempt.
+    setTutorialLesson(null);
 
     // Touch has no hover, so a tap is the only way the player card can learn
     // which player to show — including opponents, whose skills are exactly
@@ -900,11 +879,6 @@ export default function App() {
 
     // During handoff targeting, clicking a highlighted receiver stages it for confirmation.
     if (state.isHandoffTargeting) {
-      tutorialInteractionIdRef.current += 1;
-      tutorialCoach.recordInteraction({
-        kind: 'target-selected', action: 'handoff', pieceId: piece.id,
-        eventKey: `target-${tutorialInteractionIdRef.current}`,
-      });
       if (state.handoffTargets.has(k)) {
         setPendingTransfer({ kind: 'handoff', position: { col, row } });
       } else {
@@ -916,11 +890,6 @@ export default function App() {
 
     // During pass targeting, clicking a highlighted receiver stages it for confirmation.
     if (state.isPassTargeting) {
-      tutorialInteractionIdRef.current += 1;
-      tutorialCoach.recordInteraction({
-        kind: 'target-selected', action: 'pass', pieceId: piece.id,
-        eventKey: `target-${tutorialInteractionIdRef.current}`,
-      });
       if (state.passReceiverKeys.has(k)) {
         setPendingTransfer({ kind: 'pass', position: { col, row } });
       } else {
@@ -932,11 +901,6 @@ export default function App() {
 
     // During block targeting, clicking a highlighted defender throws the block
     if (state.isBlockTargeting) {
-      tutorialInteractionIdRef.current += 1;
-      tutorialCoach.recordInteraction({
-        kind: 'target-selected', action: 'block', pieceId: piece.id,
-        eventKey: `target-${tutorialInteractionIdRef.current}`,
-      });
       if (state.blockTargets.has(k)) {
         handleBlockTarget(col, row);
       } else {
@@ -991,17 +955,18 @@ export default function App() {
       state.isBlockTargeting, state.blockTargets, state.pendingBlockIsBlitz, state.blitzTargetId,
       state.committedPath, movementContext,
       hookSquareClick, handleBlockTarget, handleCancelSelection,
-      previewBeforeCommit, finishMove, disarm, hoverCapable, compact, tutorialCoach]);
+      previewBeforeCommit, finishMove, disarm, hoverCapable, compact]);
 
   const handleMenuAction = useCallback((actionKey: string, moveFirst: boolean) => {
     if (!pieceMenu) return;
-    if (actionKey === 'move' || actionKey === 'handoff' || actionKey === 'pass'
-      || actionKey === 'block' || actionKey === 'blitz') {
-      tutorialInteractionIdRef.current += 1;
-      tutorialCoach.recordInteraction({
-        kind: 'action-selected', action: actionKey, pieceId: pieceMenu.piece.id,
-        eventKey: `action-${tutorialInteractionIdRef.current}`,
-      });
+    if (!editorPreviewScenario && activeScenario && tutorialConceptsForScenario(activeScenario.id).length > 0) {
+      const used: TutorialConceptId[] = [];
+      if (actionKey === 'move') used.push('movement');
+      if (actionKey === 'handoff') used.push('handoff');
+      if (actionKey === 'pass') used.push('passing');
+      if (actionKey === 'block' || actionKey === 'blitz') used.push('blocks-blitzes');
+      if (activeScenario.id === 'scenario-005') used.push('activation-order');
+      updateTutorialConcepts(used, 'used');
     }
     setPendingTransfer(null);
     engageAnalyticsAttempt();
@@ -1029,8 +994,8 @@ export default function App() {
     } else if (actionKey === 'blitz') {
       handleBlockAction(pieceMenu.piece.id, true);
     }
-  }, [pieceMenu, hookSquareClick, handleHandoffAction, handlePassAction, handleBlockAction, compact,
-      engageAnalyticsAttempt, tutorialCoach]);
+  }, [activeScenario, compact, editorPreviewScenario, engageAnalyticsAttempt, handleBlockAction,
+      handleHandoffAction, handlePassAction, hookSquareClick, pieceMenu, updateTutorialConcepts]);
 
   const dismissMenu = useCallback(() => {
     setPieceMenu(null);
@@ -1191,13 +1156,15 @@ export default function App() {
     analyticsSeriesRunIdRef.current = analyticsRunId;
     trackAnalytics('series-started', { runId: analyticsRunId, seriesId: scenarioData.series.id });
     setReviewingCompletedBoard(false);
+    setTutorialRecaps({});
+    setPendingTutorialReplay(null);
     setActiveScenario(null);
     setTutorialLesson(null);
-    tutorialCoach.clear();
+    setTutorialConceptGuideOpen(false);
     setAppMode('series-select');
-  }, [identityName, seriesScenarios.length, scenarioData.series.id, tutorialCoach]);
+  }, [identityName, seriesScenarios.length, scenarioData.series.id]);
 
-  const chooseSeriesPuzzle = useCallback((scenario: Scenario) => {
+  const chooseSeriesPuzzle = useCallback((scenario: Scenario, replayGuidance = false) => {
     if (!seriesRun) return;
     const puzzleIndex = seriesScenarios.findIndex(item => item.id === scenario.id);
     if (puzzleIndex < 0) return;
@@ -1207,7 +1174,7 @@ export default function App() {
     setActiveScenario(scenario);
     const s = makeScenarioState(scenario);
     resetBoards(s);
-    beginTutorialAttempt(scenario, puzzleIndex + 1);
+    beginTutorialAttempt(scenario, puzzleIndex + 1, replayGuidance || !seriesRun.results.some(result => result.scenarioId === scenario.id), replayGuidance);
     beginAnalyticsAttempt(scenario, 'series', seriesRun.results.length + 1);
     setAppMode('series-puzzle');
   }, [seriesRun, seriesScenarios, resetBoards,
@@ -1223,6 +1190,13 @@ export default function App() {
     const probability = tree ? branchedBoards.summary.score : flat.cumulativeProb;
     const diceCount = tree ? branchedBoards.summary.expectedDice : flat.diceCount;
     const moves = flat.moves;
+    setTutorialRecaps(current => ({
+      ...current,
+      [activeScenario.id]: {
+        actions: tutorialActionSequence(state.actionLog),
+        probability,
+      },
+    }));
     setSubmitError(undefined);
     trackAnalytics('interaction', { name: 'series-score-submit', outcome: 'attempted' });
 
@@ -1263,7 +1237,7 @@ export default function App() {
       setSeriesRun({ ...seriesRun, results });
       setActiveScenario(null);
       setTutorialLesson(null);
-      tutorialCoach.clear();
+      setTutorialConceptGuideOpen(false);
       setState(s => ({ ...s, phase: 'playing' }));
       setAppMode('series-select');
       return;
@@ -1298,7 +1272,7 @@ export default function App() {
       setSubmitError(describeSubmitError(error));
     }
   }, [activeScenario, seriesRun, seriesScenarios, state.actionLog, branchedBoards.hasSplit,
-      branchedBoards.run, branchedBoards.summary, setState, idToken, tutorialCoach]);
+      branchedBoards.run, branchedBoards.summary, setState, idToken]);
 
   const requestLeaveSeries = useCallback(() => {
     setConfirmLeaveSeries(true);
@@ -1318,9 +1292,9 @@ export default function App() {
     setSeriesRun(null);
     setActiveScenario(null);
     setTutorialLesson(null);
-    tutorialCoach.clear();
+    setTutorialConceptGuideOpen(false);
     setAppMode('home');
-  }, [endAnalyticsAttempt, state.pieces, state.activeTeam, state.actionLog.length, tutorialCoach]);
+  }, [endAnalyticsAttempt, state.pieces, state.activeTeam, state.actionLog.length]);
 
   const confirmLeaveSeriesNo = useCallback(() => {
     setConfirmLeaveSeries(false);
@@ -1340,12 +1314,6 @@ export default function App() {
     }
   }, [appMode, editorPreviewScenario, requestLeaveSeries, endAnalyticsAttempt,
       state.pieces, state.activeTeam, state.actionLog.length]);
-
-  const returnToMenuFromTutorial = useCallback(() => {
-    trackAnalytics('interaction', { name: 'tutorial-briefing', outcome: 'returned-to-menu' });
-    setTutorialLesson(null);
-    handleBackClick();
-  }, [handleBackClick]);
 
   // ── Render: non-game screens ─────────────────────────────────────────────
   if (!identityReady) {
@@ -1403,9 +1371,24 @@ export default function App() {
           seriesName={scenarioData.series.name}
           scenarios={seriesScenarios}
           completedScenarioIds={completedScenarioIds}
-          onChoose={chooseSeriesPuzzle}
+          recaps={tutorialRecaps}
+          onChoose={scenario => {
+            if (completedScenarioIds.has(scenario.id)) setPendingTutorialReplay(scenario);
+            else chooseSeriesPuzzle(scenario);
+          }}
           onLeave={requestLeaveSeries}
         />
+        {pendingTutorialReplay && (
+          <ReplayGuidanceDialog
+            scenario={pendingTutorialReplay}
+            onChoose={showGuidance => {
+              const scenario = pendingTutorialReplay;
+              setPendingTutorialReplay(null);
+              chooseSeriesPuzzle(scenario, showGuidance);
+            }}
+            onCancel={() => setPendingTutorialReplay(null)}
+          />
+        )}
         {confirmLeaveSeries && (
           <ConfirmDialog
             title="Leave tutorial series?"
@@ -1682,9 +1665,36 @@ export default function App() {
       {activationStatus}
     </div>
   );
-  const tutorialGuidanceAvailable = !editorPreviewScenario && Boolean(
-    tutorialCoach.guide || (activeScenario && tutorialLessonFor(activeScenario.id)),
+  const activeTutorialConcepts = activeScenario ? tutorialConceptsForScenario(activeScenario.id) : [];
+  const objectiveVisible = Boolean(
+    tutorialLesson
+    && !pieceMenu
+    && !state.selectedPieceId
+    && state.actionLog.length === 0,
   );
+  const guidanceEnabled = !editorPreviewScenario && (prefs.showTutorialGuidance ?? true);
+  const conceptIsAvailable = (id: TutorialConceptId) => activeTutorialConcepts.some(concept => concept.id === id);
+  const conceptCanIntroduce = (id: TutorialConceptId) => conceptIsAvailable(id)
+    && (replayLearnedConcepts || !tutorialConceptProgress?.[id])
+    && !dismissedTutorialConcepts.has(id);
+  let activeTutorialCaptionId: TutorialConceptId | undefined;
+  if (guidanceEnabled && !objectiveVisible && !tutorialConceptGuideOpen && !parallelUniversesIntroOpen) {
+    if (activeScenario?.id === 'scenario-005' && state.selectedPieceId && conceptCanIntroduce('activation-order')) {
+      activeTutorialCaptionId = 'activation-order';
+    } else if (pieceMenu && activeScenario?.id === 'scenario-003' && conceptCanIntroduce('passing')) {
+      activeTutorialCaptionId = 'passing';
+    } else if (pieceMenu && activeScenario?.id === 'scenario-006' && conceptCanIntroduce('blocks-blitzes')) {
+      activeTutorialCaptionId = 'blocks-blitzes';
+    } else if (pieceMenu && activeScenario?.id === 'scenario-001' && conceptCanIntroduce('movement')) {
+      activeTutorialCaptionId = 'movement';
+    } else if (activeFinishedMove && conceptCanIntroduce('route-confirmation')) {
+      activeTutorialCaptionId = 'route-confirmation';
+    } else if (previewProb < 1 && conceptCanIntroduce('cumulative-probability')) {
+      activeTutorialCaptionId = 'cumulative-probability';
+    }
+  }
+  const activeTutorialCaption = activeTutorialCaptionId ? tutorialConceptFor(activeTutorialCaptionId) : undefined;
+  const tutorialGuidanceAvailable = !editorPreviewScenario && activeTutorialConcepts.length > 0;
 
   return (
     <div className={`app app--game app--playbook${compact ? ' app--compact' : ''}`}>
@@ -1758,7 +1768,12 @@ export default function App() {
         tree={branchedBoards.tree}
         deadWeight={branchedBoards.summary.deadWeight}
         score={branchedBoards.summary.score}
-        onSelect={branchedBoards.handleSelectBranch}
+        spotlight={parallelUniversesSpotlight}
+        onDismissSpotlight={() => setParallelUniversesSpotlight(false)}
+        onSelect={id => {
+          setParallelUniversesSpotlight(false);
+          branchedBoards.handleSelectBranch(id);
+        }}
         onReset={branchedBoards.handleResetBranch}
         onResetToBranchPoint={branchedBoards.handleResetBranchToPoint}
         onConcede={id => {
@@ -1794,6 +1809,7 @@ export default function App() {
               onConfirm: () => {
                 const transfer = activeTransfer;
                 setPendingTransfer(null);
+                updateTutorialConcepts(['route-confirmation'], 'used');
                 if (transfer.kind === 'pass') {
                   handlePassTarget(transfer.position.col, transfer.position.row);
                 } else {
@@ -1809,6 +1825,13 @@ export default function App() {
                 handleResetMovement();
               },
               onConfirm: () => {
+                const usedConcepts: TutorialConceptId[] = ['movement', 'route-confirmation'];
+                if (previewProb < 1) usedConcepts.push('cumulative-probability');
+                if (state.pathPreview.some(step => step.dodgeTarget !== null)) {
+                  usedConcepts.push('tackle-zones', 'dodging');
+                }
+                if (state.pathPreview.some(step => step.pickupTarget !== null)) usedConcepts.push('pickup');
+                updateTutorialConcepts(usedConcepts, 'used');
                 disarm();
                 hookSquareClick(finishedPreview.col, finishedPreview.row);
               },
@@ -1942,10 +1965,9 @@ export default function App() {
       {/* Piece context menu */}
       {pieceMenu && (() => {
         const menuPiece = pieceMenu.piece;
-        const tutorialLesson = !editorPreviewScenario && activeScenario
-          ? tutorialLessonFor(activeScenario.id)
+        const emphasizedActions = !editorPreviewScenario && activeScenario
+          ? tutorialLessonFor(activeScenario.id)?.emphasizedActions
           : undefined;
-        const tutorialActions = tutorialLesson?.enabledActions;
         // A piece can Hand Off / Pass if it already carries the ball, or if the
         // ball is currently loose on the pitch — in the latter case the player
         // is expected to move this piece onto the ball's square first (a pickup
@@ -1954,11 +1976,11 @@ export default function App() {
         const canPass    = passActionAvailability(state, menuPiece);
         const { canBlock, canBlitz } = blockActionAvailability(menuPiece, state);
         const menuActions: PieceMenuAction[] = [
-          { label: 'Move',     key: 'move' },
-          { label: 'Hand-off', key: 'handoff', disabled: !canHandoff || (tutorialActions !== undefined && !tutorialActions.includes('handoff')) },
-          { label: 'Pass',     key: 'pass',    disabled: !canPass || (tutorialActions !== undefined && !tutorialActions.includes('pass')) },
-          { label: 'Block',    key: 'block',   disabled: !canBlock || (tutorialActions !== undefined && !tutorialActions.includes('block')) },
-          { label: 'Blitz',    key: 'blitz',   disabled: !canBlitz || (tutorialActions !== undefined && !tutorialActions.includes('blitz')) },
+          { label: 'Move',     key: 'move', emphasized: emphasizedActions?.includes('move') },
+          { label: 'Hand-off', key: 'handoff', disabled: !canHandoff, emphasized: emphasizedActions?.includes('handoff') },
+          { label: 'Pass',     key: 'pass',    disabled: !canPass, emphasized: emphasizedActions?.includes('pass') },
+          { label: 'Block',    key: 'block',   disabled: !canBlock, emphasized: emphasizedActions?.includes('block') },
+          { label: 'Blitz',    key: 'blitz',   disabled: !canBlitz, emphasized: emphasizedActions?.includes('blitz') },
         ];
         return (
           <PieceMenu
@@ -1989,7 +2011,18 @@ export default function App() {
             diceCount={blockChoice.diceCount}
             picker={blockChoice.picker}
             resolution={blockBoardStates(attacker.skills, defender.skills)}
-            onAccept={branchedBoards.handleResolveBlock}
+            onAccept={() => {
+              const shouldIntroduceUniverses = guidanceEnabled
+                && conceptIsAvailable('parallel-universes')
+                && (replayLearnedConcepts || !tutorialConceptProgress?.['parallel-universes'])
+                && !dismissedTutorialConcepts.has('parallel-universes');
+              updateTutorialConcepts(
+                shouldIntroduceUniverses ? ['blocks-blitzes'] : ['blocks-blitzes', 'parallel-universes'],
+                'used',
+              );
+              if (shouldIntroduceUniverses) setParallelUniversesIntroOpen(true);
+              branchedBoards.handleResolveBlock();
+            }}
             onReject={handleCancelSelection}
           />
         );
@@ -2012,28 +2045,49 @@ export default function App() {
           }}
         />
       )}
-      {(effectiveAppMode === 'series-puzzle' || effectiveAppMode === 'puzzle') && tutorialLesson && (
-        <TutorialLessonDialog
+      {(effectiveAppMode === 'series-puzzle' || effectiveAppMode === 'puzzle') && objectiveVisible && tutorialLesson && (
+        <TutorialObjectiveCard
           lesson={tutorialLesson.lesson}
-          step={tutorialLesson.step}
-          total={TUTORIAL_LESSON_IDS.length}
+          objective={activeScenario?.description ?? 'Complete the stated objective with the strongest probability you can find.'}
           onDismiss={dismissTutorialLesson}
-          onReturnToMenu={returnToMenuFromTutorial}
         />
       )}
-      {(effectiveAppMode === 'series-puzzle' || effectiveAppMode === 'puzzle')
-        && !tutorialLesson && tutorialCoach.guide && tutorialCoach.progress?.visible
-        && activeScenario && !confirmLeaveSeries && !reportOpen && !aboutOpen && !contactOpen
-        && !state.blockChoice && !pendingPushSquare && !activeTransfer && !activeFinishedMove
-        && (!branchedBoards.complete || reviewingCompletedBoard || branchSummaryDismissed) && (
-        <TutorialGuideDialog
+      {activeTutorialCaption && !confirmLeaveSeries && !reportOpen && !aboutOpen && !contactOpen
+        && !parallelUniversesIntroOpen && !tutorialConceptGuideOpen && (
+        <TutorialContextCaption
+          concept={activeTutorialCaption}
+          menuAnchor={pieceMenu?.anchor}
+          onDismiss={() => {
+            setDismissedTutorialConcepts(current => new Set(current).add(activeTutorialCaption.id));
+            updateTutorialConcepts([activeTutorialCaption.id], 'introduced');
+            trackAnalytics('interaction', { name: 'tutorial-guide', outcome: 'concept-dismissed', stageId: activeTutorialCaption.id });
+          }}
+        />
+      )}
+      {tutorialConceptGuideOpen && activeScenario && (
+        <TutorialConceptGuideDialog
           drillTitle={tutorialLessonFor(activeScenario.id)?.title ?? activeScenario.name}
-          guide={tutorialCoach.guide}
-          progress={tutorialCoach.progress}
+          concepts={activeTutorialConcepts}
+          progress={tutorialConceptProgress ?? {}}
           state={state}
-          onDismiss={tutorialCoach.dismiss}
-          onMoreHelp={tutorialCoach.moreHelp}
-          onSkip={tutorialCoach.skip}
+          onIntroduce={conceptId => {
+            updateTutorialConcepts([conceptId], 'introduced');
+            trackAnalytics('interaction', { name: 'tutorial-guide', outcome: 'concept-opened', scenarioId: activeScenario.id, stageId: conceptId });
+          }}
+          onClose={() => setTutorialConceptGuideOpen(false)}
+        />
+      )}
+      {parallelUniversesIntroOpen && activeScenario && !confirmLeaveSeries && !reportOpen && !aboutOpen && !contactOpen && (
+        <ParallelUniversesIntroDialog
+          concept={tutorialConceptFor('parallel-universes')}
+          state={state}
+          onContinue={() => {
+            updateTutorialConcepts(['parallel-universes'], 'used');
+            setDismissedTutorialConcepts(current => new Set(current).add('parallel-universes'));
+            setParallelUniversesIntroOpen(false);
+            setParallelUniversesSpotlight(true);
+            trackAnalytics('interaction', { name: 'tutorial-guide', outcome: 'concept-used', scenarioId: activeScenario.id, stageId: 'parallel-universes' });
+          }}
         />
       )}
       {notice}

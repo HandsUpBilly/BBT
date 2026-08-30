@@ -36,6 +36,7 @@ export interface PlayerPrefs {
   /** A `data:image/webp;base64,...` URL produced by avatarImage.ts. */
   avatar?: string;
   showTutorialGuidance?: boolean;
+  tutorialConceptProgress?: Record<string, 'introduced' | 'used'>;
 }
 
 type PrefsMap = Record<string, PlayerPrefs>;
@@ -59,6 +60,15 @@ function isAvatarDataUrl(value: unknown): value is string {
     && value.startsWith('data:image/');
 }
 
+function sanitizeTutorialConceptProgress(value: unknown): Record<string, 'introduced' | 'used'> | undefined {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return undefined;
+  const progress: Record<string, 'introduced' | 'used'> = {};
+  for (const [conceptId, status] of Object.entries(value)) {
+    if (status === 'introduced' || status === 'used') progress[conceptId] = status;
+  }
+  return Object.keys(progress).length > 0 ? progress : undefined;
+}
+
 function sanitizePrefs(value: unknown): PlayerPrefs | null {
   if (!value || typeof value !== 'object') return null;
   const candidate = value as Partial<PlayerPrefs>;
@@ -70,6 +80,8 @@ function sanitizePrefs(value: unknown): PlayerPrefs | null {
   if (typeof candidate.showTutorialGuidance === 'boolean') {
     prefs.showTutorialGuidance = candidate.showTutorialGuidance;
   }
+  const tutorialConceptProgress = sanitizeTutorialConceptProgress(candidate.tutorialConceptProgress);
+  if (tutorialConceptProgress) prefs.tutorialConceptProgress = tutorialConceptProgress;
   if (isAvatarDataUrl(candidate.avatar)) prefs.avatar = candidate.avatar;
   return prefs;
 }

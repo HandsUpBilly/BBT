@@ -84,6 +84,11 @@
   background: var(--color-surface-hover);
 }
 
+.piece-menu__item--emphasized:not(.piece-menu__item--disabled) {
+  background: rgba(199, 78, 49, 0.12);
+  box-shadow: inset 3px 0 0 var(--color-accent);
+}
+
 .piece-menu__item--disabled {
   color: var(--color-text-disabled);
   cursor: default;

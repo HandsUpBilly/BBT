@@ -45,4 +45,20 @@ describe('TutorialPuzzleChooser', () => {
     expect(onChoose).toHaveBeenCalledWith(tutorialScenarios[1]);
     expect(onLeave).toHaveBeenCalledOnce();
   });
+
+  it('shows a neutral recap for a completed drill', () => {
+    const scenario = tutorialScenarios[0];
+    render(
+      <TutorialPuzzleChooser
+        seriesName="Tutorial"
+        scenarios={[scenario]}
+        completedScenarioIds={new Set([scenario.id])}
+        recaps={{ [scenario.id]: { actions: ['Moved Sera 4 squares'], probability: 0.72 } }}
+        onChoose={vi.fn()}
+        onLeave={vi.fn()}
+      />,
+    );
+    expect(screen.getByText('Moved Sera 4 squares')).toBeTruthy();
+    expect(screen.getByText('Final probability 72%')).toBeTruthy();
+  });
 });

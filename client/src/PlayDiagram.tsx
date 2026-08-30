@@ -21,10 +21,10 @@ interface DiagramLogEntry {
 }
 
 function point(position: Position): { x: number; y: number } {
-  // Game coordinates are portrait. The played pitch is a clockwise landscape
-  // rotation, so row zero belongs at the right-hand end of this diagram.
+  // Match the live landscape pitch: numbered state rows run left-to-right,
+  // while lettered state columns run top-to-bottom.
   return {
-    x: MARGIN + (26 - position.row - 0.5) * CELL,
+    x: MARGIN + (position.row + 0.5) * CELL,
     y: MARGIN + (position.col + 0.5) * CELL,
   };
 }

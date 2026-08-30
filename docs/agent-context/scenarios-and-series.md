@@ -75,18 +75,17 @@ play, then the unrestricted full-action board). The chooser presents that
 canonical teaching order but permits unfinished drills to be played in any
 order. Completed drills can also be replayed; the new result replaces the
 earlier result in place so the series always contains one result per scenario.
-The chooser returns after every non-final drill. Tutorial briefing copy lives
-separately in `client/src/tutorialLessons.ts`; typed contextual coach stages
-live in `client/src/tutorialGuides.ts`. Neither overrides scenario names or
-descriptions, and neither adds fields to scenario JSON. The guide definitions
-use stable scenario/piece ids and code-native focus descriptors so their mini
-diagrams can render the current board. Keep their content-reference tests in
-sync with any formation change. All six Tutorial drills have briefings and
-contextual guides. The first five progressively unlock actions; the final
-`scenario-006` board remains the sixth series puzzle and the only full-action
-entry, teaching Blocking, Pickup, and Parallel Universes while keeping every
-action available. The same guidance is available when it is launched
-individually.
+The chooser returns after every non-final drill and shows a neutral recap of
+the last run's tactical action sequence and probability. Compact objective
+copy remains in `client/src/tutorialLessons.ts`; stable concept definitions,
+automatic/manual modes, diagrams, and per-scenario concept lists live in
+`client/src/tutorialConcepts.ts`. Neither overrides scenario names or
+descriptions, and neither adds fields to scenario JSON. Every Tutorial drill
+exposes all actions that are currently legal under the game rules; lesson order
+does not gate the action menu. Persistent Introduced/Used concept progress
+prevents repeated automatic teaching across drills, while a completed-drill
+replay asks whether guidance should replay. The same concept library and
+contextual guidance are available when a drill is launched individually.
 Series definitions may include a stable `logo` key. The chooser resolves that
 key through its local series-art registry, so each series can have dedicated
 artwork while unknown or omitted keys retain the text-only fallback.

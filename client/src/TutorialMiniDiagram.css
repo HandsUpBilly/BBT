@@ -14,6 +14,7 @@
 .tutorial-mini-diagram__field { fill: #263f27; stroke: #87927c; stroke-width: 2; }
 .tutorial-mini-diagram__grid line { stroke: #73806d; stroke-width: 1; opacity: 0.35; }
 .tutorial-mini-diagram__end-zone { fill: #4873a0; opacity: 0.45; }
+.tutorial-mini-diagram__end-zone--orc { fill: #8a493b; }
 .tutorial-mini-diagram__halfway { stroke: #d9d2c3; stroke-width: 2; opacity: 0.55; }
 .tutorial-mini-diagram__landmarks text { fill: #f1ede3; font-size: 10px; font-weight: 800; opacity: 0.9; }
 .tutorial-mini-diagram__tackle-zone { fill: #b44632; opacity: 0.2; stroke: #e16b51; stroke-width: 2; stroke-dasharray: 5 4; }
@@ -32,10 +33,63 @@
 .tutorial-mini-diagram__control .tutorial-mini-diagram__cancel { fill: #a94232; stroke: none; }
 .tutorial-mini-diagram__control .tutorial-mini-diagram__confirm { fill: #568b35; stroke: none; }
 .tutorial-mini-diagram__probability text { fill: #e7e1d4; font-size: 10px; font-weight: 800; }
-.tutorial-mini-diagram__universes path { fill: none; stroke: #c46a43; stroke-width: 3; }
-.tutorial-mini-diagram__universes rect { fill: #20251f; stroke: #d5a33f; stroke-width: 2; }
-.tutorial-mini-diagram__universes .tutorial-mini-diagram__universe--done { stroke: #78a948; }
-.tutorial-mini-diagram__universes text { fill: #f1ede3; font-size: 10px; font-weight: 800; }
+.tutorial-mini-diagram--universes .tutorial-mini-diagram__svg {
+  min-height: 13rem;
+  padding: 0.35rem;
+  box-sizing: border-box;
+  background: var(--color-surface-sunken);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: 10px;
+}
+
+.tutorial-mini-diagram__universe-split path {
+  fill: none;
+  stroke: var(--color-accent);
+  stroke-width: 4;
+  stroke-linecap: round;
+}
+
+.tutorial-mini-diagram__universe-source {
+  fill: var(--color-surface-3);
+  stroke: var(--color-accent-border);
+  stroke-width: 2;
+}
+
+.tutorial-mini-diagram__universe-kicker,
+.tutorial-mini-diagram__universe-label {
+  fill: var(--color-text-muted);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 1px;
+}
+
+.tutorial-mini-diagram__universe-title {
+  fill: var(--color-text-strong);
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.tutorial-mini-diagram__universe-card rect {
+  fill: var(--color-surface-2);
+  stroke: var(--color-warning);
+  stroke-width: 2;
+}
+
+.tutorial-mini-diagram__universe-card circle {
+  fill: var(--color-accent);
+}
+
+.tutorial-mini-diagram__universe-number {
+  fill: #fff;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.tutorial-mini-diagram__universe-status {
+  fill: var(--color-text-strong);
+  font-size: 12px;
+  font-weight: 800;
+}
 
 .tutorial-mini-diagram figcaption {
   margin-top: 0.35rem;

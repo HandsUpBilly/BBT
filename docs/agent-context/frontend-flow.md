@@ -133,43 +133,48 @@ public avatars).
   that overflows its container cannot be scrolled to on its start side in
   every browser — anchoring Large to the top-left keeps the whole enlarged
   board reachable by scrolling down/right.
-- **Tutorial guidance is local and identity-keyed.** Every guided Tutorial
-  series puzzle and matching Single Play opens with its focus-trapped rules
-  briefing, then **Begin Puzzle** starts an attempt-local contextual coach.
-  Each coach stage has concept, directed, and exact hint tiers plus a responsive
-  SVG mini diagram built from the current game state. Semantic selections and
-  committed actions advance it; a distinct contradictory selection escalates
-  one tier without changing the game. Players can dismiss a stage, ask for more
-  help, or skip the rest of the current attempt. Restart replays the briefing
-  and coach, while Reset move and Reset branch preserve completed coach stages.
-  Editor previews never open guidance. `showTutorialGuidance` defaults on and
-  controls both automatic parts. Only the opening opt-out or Settings changes
-  the stored preference; skipping the coach is attempt-local. The Blocking and
-  Parallel Universes briefing alone includes the pointed decision-tree artwork;
-  the modal scrolls internally so its rules and controls remain reachable. Each
-  briefing can return to the main menu; an active series uses the standard
-  leave-series confirmation before discarding progress. Tutorial action menus
-  also unlock progressively: Movement and Dodging expose Move, Hand-off adds
-  Hand-off, Pass adds Pass, The Drive keeps those three, and Blocking and
-  Parallel Universes enables Block and Blitz as well. Actions from later
-  drills stay disabled in earlier drills.
+- **Tutorial guidance is local, identity-keyed, and concept-based.** A guided
+  Tutorial puzzle starts with a compact non-modal objective card that collapses
+  when the player begins interacting. New automatic concepts use a caption
+  attached to the relevant pitch control or readout; they explain the rule and
+  a broad next objective without prescribing a player, square, or route. A
+  caption leaves when its action is performed or the player dismisses it.
+  Legal alternative play never triggers a warning or hint escalation.
+  Tackle Zones/Dodging, Hand-offs, and Pickups are request-only concepts;
+  Movement/confirmation, Passing, activation order, Blocks/Blitzes, and
+  cumulative probability may introduce themselves non-blockingly. Parallel
+  Universes is the sole first-use blocking explanation: a full split diagram
+  shows one Block becoming several live boards, then hands off to an opaque
+  explanation attached to the real universe strip. That explanation remains
+  until the player selects a universe or dismisses it. Editor previews never
+  show guidance. `showTutorialGuidance` defaults on and suppresses every
+  automatic part when disabled, including the Parallel Universes modal.
+- **Concept progress persists per identity.** `prefs.ts` stores each stable
+  concept id as Introduced or Used; absence means Not encountered. A Used
+  concept does not introduce itself again in another drill. The manual
+  **Tutorial guide** remains available regardless of the automatic preference,
+  opens a progress-labelled concept list for the current drill, and offers a
+  concept explanation followed by an optional broad tactical suggestion—never
+  an exact solution. Mini diagrams remain code-native and use the current game
+  state. Completed-drill replay asks whether to replay automatic guidance.
+  Tutorial action menus expose every action the game rules currently allow;
+  teaching order no longer disables otherwise legal actions.
 - **Tutorial runs begin and advance through a drill chooser.** The player may
   play the six drills in any order. Completed drills remain selectable for
   replay; a replay replaces that drill's earlier result without increasing the
   completed count. After each completion the chooser returns with updated
   completed/remaining counts. One result per drill combines into the series
   score after every drill has been completed once. The sixth
-  drill keeps the full unrestricted action set while now providing its own
-  Blocking, Pickup, and Parallel Universes briefing and contextual coach.
+  drill includes Blocking, Pickup, and Parallel Universes. The chooser also
+  shows the last completed run's neutral action sequence and final probability;
+  it does not compare the line with an optimum.
 - **The compact game HUD keeps every control inside the viewport.** Account
   remains near the front. Zoom, restart, and reporting share the `GameToolsMenu`
   trigger, while the Key and action log retain their own triggers. Compact
   dropdowns use viewport-fixed geometry so no parent can clip them. The empty
   100% success readout leaves the row until a roll puts probability at risk.
-  During a guided Tutorial run, Game Tools exposes **Tutorial guide**. It
-  reopens the current coach stage (or the last stage after completion), even
-  after an attempt-local skip or when automatic guidance is disabled; before a
-  coach exists it opens the rules briefing.
+  During a guided Tutorial run, Game Tools exposes **Tutorial guide**. It opens
+  the current drill's concept library even when automatic guidance is disabled.
   The `?` control is the pitch/skill Key, not Settings.
 - **`UserMenu`'s avatar falls back to initials on load failure**, not just on
   absence — a corrupted or future-format data URL degrades the same way a

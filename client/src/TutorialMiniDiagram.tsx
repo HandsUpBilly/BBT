@@ -1,10 +1,10 @@
 import type { GameState } from './types';
-import type { TutorialHint } from './tutorialGuides';
+import type { TutorialDiagramHint } from './tutorialDiagram';
 import './TutorialMiniDiagram.css';
 
 interface Props {
   state: GameState;
-  hint: TutorialHint;
+  hint: TutorialDiagramHint;
 }
 
 const WIDTH = 520;
@@ -16,7 +16,7 @@ const FIELD_HEIGHT = HEIGHT - MARGIN_Y * 2;
 
 function point(col: number, row: number): { x: number; y: number } {
   return {
-    x: MARGIN_X + ((25 - row) / 25) * FIELD_WIDTH,
+    x: MARGIN_X + (row / 25) * FIELD_WIDTH,
     y: MARGIN_Y + (col / 14) * FIELD_HEIGHT,
   };
 }
@@ -29,7 +29,46 @@ function roleCode(role?: string): string {
   return 'L';
 }
 
+function ParallelUniversesDiagram({ hint }: { hint: TutorialDiagramHint }) {
+  return (
+    <figure className="tutorial-mini-diagram tutorial-mini-diagram--universes">
+      <svg
+        className="tutorial-mini-diagram__svg"
+        viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
+        role="img"
+        aria-label={hint.alt}
+        preserveAspectRatio="xMidYMid meet"
+      >
+        <g className="tutorial-mini-diagram__universe-split">
+          <rect className="tutorial-mini-diagram__universe-source" x="22" y="78" width="145" height="74" rx="10" />
+          <text className="tutorial-mini-diagram__universe-kicker" x="94" y="105" textAnchor="middle">ONE BLOCK</text>
+          <text className="tutorial-mini-diagram__universe-title" x="94" y="130" textAnchor="middle">3 live results</text>
+
+          <path d="M 167 115 C 215 115, 218 42, 270 42" />
+          <path d="M 167 115 L 270 115" />
+          <path d="M 167 115 C 215 115, 218 188, 270 188" />
+
+          {[42, 115, 188].map((y, index) => (
+            <g key={y} className="tutorial-mini-diagram__universe-card" transform={`translate(270 ${y - 27})`}>
+              <rect width="226" height="54" rx="9" />
+              <circle cx="28" cy="27" r="15" />
+              <text className="tutorial-mini-diagram__universe-number" x="28" y="32" textAnchor="middle">{index + 1}</text>
+              <text className="tutorial-mini-diagram__universe-label" x="54" y="23">UNIVERSE {index + 1}</text>
+              <text className="tutorial-mini-diagram__universe-status" x="54" y="40">PLAY THIS BOARD</text>
+            </g>
+          ))}
+        </g>
+      </svg>
+      <figcaption>{hint.alt}</figcaption>
+    </figure>
+  );
+}
+
 export function TutorialMiniDiagram({ state, hint }: Props) {
+  if (hint.focus.kind === 'universes') {
+    return <ParallelUniversesDiagram hint={hint} />;
+  }
+
   const focusIds = new Set(hint.focus.pieceIds ?? []);
   const focused = state.pieces.filter(piece => focusIds.has(piece.id));
   const target = hint.focus.target ? point(hint.focus.target.col, hint.focus.target.row) : null;
@@ -39,6 +78,19 @@ export function TutorialMiniDiagram({ state, hint }: Props) {
     ? point(focused[1].position.col, focused[1].position.row)
     : null;
   const showTackleZones = hint.focus.region === 'tackle-zones';
+  const scoresAtLeft = state.activeTeam === 'human';
+  const endZoneWidth = FIELD_WIDTH / 26;
+  const endZoneX = scoresAtLeft ? MARGIN_X : MARGIN_X + FIELD_WIDTH - endZoneWidth;
+  const endZoneLabelX = scoresAtLeft ? endZoneX + 7 : endZoneX + endZoneWidth - 7;
+  const routeEnd = routeStart && showRoute
+    ? target ?? {
+      x: scoresAtLeft ? MARGIN_X + 26 : MARGIN_X + FIELD_WIDTH - 26,
+      y: routeStart.y,
+    }
+    : null;
+  const routeDirection = routeStart && routeEnd
+    ? Math.sign(routeEnd.x - routeStart.x) || 1
+    : 1;
 
   return (
     <figure className="tutorial-mini-diagram">
@@ -63,16 +115,22 @@ export function TutorialMiniDiagram({ state, hint }: Props) {
             <line key={`y-${index}`} x1={MARGIN_X} y1={MARGIN_Y + index * FIELD_HEIGHT / 15} x2={MARGIN_X + FIELD_WIDTH} y2={MARGIN_Y + index * FIELD_HEIGHT / 15} />
           ))}
         </g>
-        <rect className="tutorial-mini-diagram__end-zone" x={MARGIN_X + FIELD_WIDTH - FIELD_WIDTH / 26} y={MARGIN_Y} width={FIELD_WIDTH / 26} height={FIELD_HEIGHT} />
+        <rect
+          className={`tutorial-mini-diagram__end-zone tutorial-mini-diagram__end-zone--${state.activeTeam}`}
+          x={endZoneX}
+          y={MARGIN_Y}
+          width={endZoneWidth}
+          height={FIELD_HEIGHT}
+        />
         <line className="tutorial-mini-diagram__halfway" x1={MARGIN_X + FIELD_WIDTH / 2} y1={MARGIN_Y} x2={MARGIN_X + FIELD_WIDTH / 2} y2={MARGIN_Y + FIELD_HEIGHT} />
         <g className="tutorial-mini-diagram__landmarks" aria-hidden="true">
-          <text x={MARGIN_X + 5} y={MARGIN_Y + 14}>25</text>
-          <text x={MARGIN_X + FIELD_WIDTH - 6} y={MARGIN_Y + 14} textAnchor="end">0</text>
+          <text x={MARGIN_X + 5} y={MARGIN_Y + 14}>0</text>
+          <text x={MARGIN_X + FIELD_WIDTH - 6} y={MARGIN_Y + 14} textAnchor="end">25</text>
           <text
-            x={MARGIN_X + FIELD_WIDTH - 7}
+            x={endZoneLabelX}
             y={MARGIN_Y + FIELD_HEIGHT / 2}
             textAnchor="middle"
-            transform={`rotate(-90 ${MARGIN_X + FIELD_WIDTH - 7} ${MARGIN_Y + FIELD_HEIGHT / 2})`}
+            transform={`rotate(-90 ${endZoneLabelX} ${MARGIN_Y + FIELD_HEIGHT / 2})`}
           >END ZONE</text>
         </g>
 
@@ -81,10 +139,10 @@ export function TutorialMiniDiagram({ state, hint }: Props) {
           return <circle key={`tz-${piece.id}`} className="tutorial-mini-diagram__tackle-zone" cx={p.x} cy={p.y} r="23" />;
         })}
 
-        {showRoute && routeStart && (
+        {routeStart && routeEnd && (
           <path
             className="tutorial-mini-diagram__route"
-            d={`M ${routeStart.x} ${routeStart.y} C ${routeStart.x + 70} ${routeStart.y - 24}, ${target?.x ?? WIDTH - 95} ${target?.y ?? routeStart.y - 12}, ${target?.x ?? WIDTH - 48} ${target?.y ?? routeStart.y}`}
+            d={`M ${routeStart.x} ${routeStart.y} C ${routeStart.x + routeDirection * 70} ${routeStart.y - 24}, ${routeEnd.x - routeDirection * 45} ${routeEnd.y - 12}, ${routeEnd.x} ${routeEnd.y}`}
           />
         )}
         {routeStart && connectionEnd && (
@@ -140,18 +198,6 @@ export function TutorialMiniDiagram({ state, hint }: Props) {
             <rect width="144" height="42" rx="8" />
             <text x="72" y="17" textAnchor="middle">SUCCESS CHANCE</text>
             <text x="72" y="34" textAnchor="middle">compare routes</text>
-          </g>
-        )}
-        {hint.focus.kind === 'universes' && (
-          <g className="tutorial-mini-diagram__universes" transform="translate(300 142)">
-            <path d="M 0 34 C 26 34, 24 10, 48 10 M 0 34 L 48 34 M 0 34 C 26 34, 24 58, 48 58" />
-            {[{ label: '1', y: -4 }, { label: '2', y: 20 }, { label: '3', y: 44 }].map((card, index) => (
-              <g key={card.label} transform={`translate(48 ${card.y})`}>
-                <rect className={index < 2 ? 'tutorial-mini-diagram__universe--done' : ''} width="120" height="28" rx="7" />
-                <text x="14" y="19">{card.label}</text>
-                <text x="36" y="19">{index < 2 ? 'COMPLETE' : 'PLAYING'}</text>
-              </g>
-            ))}
           </g>
         )}
       </svg>

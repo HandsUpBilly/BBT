@@ -18,22 +18,20 @@ describe('tutorial lessons', () => {
     ]);
   });
 
-  it('keeps the final series board unrestricted while providing guidance', () => {
+  it('emphasizes the final drill concepts without defining action availability', () => {
     expect(FREE_PLAY_SCENARIO_ID).toBe('scenario-006');
-    expect(tutorialLessonFor(FREE_PLAY_SCENARIO_ID)?.enabledActions).toEqual([
-      'move', 'handoff', 'pass', 'block', 'blitz',
-    ]);
+    expect(tutorialLessonFor(FREE_PLAY_SCENARIO_ID)?.emphasizedActions).toEqual(['block', 'blitz']);
     expect(tutorialLessonFor('unknown')).toBeUndefined();
   });
 
-  it('progressively enables actions as the drills introduce them', () => {
-    expect(TUTORIAL_LESSONS.map(lesson => lesson.enabledActions)).toEqual([
+  it('emphasizes each drill subject without hiding other legal actions', () => {
+    expect(TUTORIAL_LESSONS.map(lesson => lesson.emphasizedActions)).toEqual([
       ['move'],
       ['move'],
-      ['move', 'handoff'],
+      ['handoff'],
+      ['pass'],
       ['move', 'handoff', 'pass'],
-      ['move', 'handoff', 'pass'],
-      ['move', 'handoff', 'pass', 'block', 'blitz'],
+      ['block', 'blitz'],
     ]);
   });
 

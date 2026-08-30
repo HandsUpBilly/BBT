@@ -8,6 +8,7 @@ export interface PieceMenuAction {
   label: string;
   key: string;
   disabled?: boolean;
+  emphasized?: boolean;
 }
 
 interface Props {
@@ -67,7 +68,8 @@ export function PieceMenu({ piece, anchor, actions, onAction, onDismiss }: Props
       // open underneath. Interacting with that dialog must not count as an
       // outside press on the menu; closing the coach should reveal the same
       // choices the player was just shown.
-      if (e.target instanceof Element && e.target.closest('[role="dialog"]')) return;
+      if (e.target instanceof Element
+        && e.target.closest('[role="dialog"], [data-piece-menu-companion]')) return;
       if (ref.current && !ref.current.contains(e.target as Node)) {
         onDismiss();
       }
@@ -141,7 +143,11 @@ export function PieceMenu({ piece, anchor, actions, onAction, onDismiss }: Props
           return (
             <label
               key={action.key}
-              className={['piece-menu__item', isDisabled ? 'piece-menu__item--disabled' : ''].filter(Boolean).join(' ')}
+              className={[
+                'piece-menu__item',
+                action.emphasized ? 'piece-menu__item--emphasized' : '',
+                isDisabled ? 'piece-menu__item--disabled' : '',
+              ].filter(Boolean).join(' ')}
             >
               <input
                 type="checkbox"

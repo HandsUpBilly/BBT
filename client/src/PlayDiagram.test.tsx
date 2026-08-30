@@ -103,9 +103,8 @@ describe('PlayDiagram', () => {
     expect(container.querySelectorAll('[data-route-kind="block"]')).toHaveLength(1);
     expect(container.querySelector('.play-diagram__ball')).not.toBeNull();
 
-    // The played board is the clockwise landscape view: increasing portrait
-    // rows travel from right to left, rather than mirroring the pitch.
+    // Match the live landscape board: numbered rows increase left-to-right.
     expect(container.querySelector('[data-route-kind="movement"]')?.getAttribute('points'))
-      .toBe('408,168 388,168 368,168');
+      .toBe('148,168 168,168 188,168');
   });
 });

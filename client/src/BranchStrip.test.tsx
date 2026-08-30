@@ -104,6 +104,29 @@ function renderTree(
 }
 
 describe('BranchStrip game tree', () => {
+  it('introduces the real universe strip and lets the player dismiss the explanation', () => {
+    const onDismissSpotlight = vi.fn();
+    render(
+      <BranchStrip
+        branches={[scoredBranch, attentionBranch]}
+        tree={tree}
+        deadWeight={0}
+        score={0.5}
+        spotlight
+        onDismissSpotlight={onDismissSpotlight}
+        onSelect={() => undefined}
+        onReset={() => undefined}
+        onResetToBranchPoint={() => undefined}
+        onConcede={() => undefined}
+      />,
+    );
+
+    expect(screen.getByText('This is the universe strip')).toBeTruthy();
+    expect(screen.getByText('Each card is a live board created by the Block.')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Dismiss' }));
+    expect(onDismissSpotlight).toHaveBeenCalledOnce();
+  });
+
   it('nests a later block beneath the state where it occurred', () => {
     const { container, onSelect } = renderTree();
 

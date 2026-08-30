@@ -1,17 +1,19 @@
 import type { Scenario } from './types';
 import { tutorialLessonFor } from './tutorialLessons';
+import type { TutorialDrillRecap } from './tutorialRecap';
 import './TutorialPuzzleChooser.css';
 
 interface Props {
   seriesName: string;
   scenarios: readonly Scenario[];
   completedScenarioIds: ReadonlySet<string>;
+  recaps?: Readonly<Record<string, TutorialDrillRecap>>;
   onChoose: (scenario: Scenario) => void;
   onLeave: () => void;
 }
 
 export function TutorialPuzzleChooser({
-  seriesName, scenarios, completedScenarioIds, onChoose, onLeave,
+  seriesName, scenarios, completedScenarioIds, recaps = {}, onChoose, onLeave,
 }: Props) {
   const completed = scenarios.filter(scenario => completedScenarioIds.has(scenario.id)).length;
   const remaining = scenarios.length - completed;
@@ -36,6 +38,7 @@ export function TutorialPuzzleChooser({
         {scenarios.map((scenario, index) => {
           const isComplete = completedScenarioIds.has(scenario.id);
           const lesson = tutorialLessonFor(scenario.id);
+          const recap = recaps[scenario.id];
           return (
             <article
               key={scenario.id}
@@ -48,6 +51,13 @@ export function TutorialPuzzleChooser({
                 <p className="tutorial-chooser__lesson">{lesson?.title ?? 'Open play'}</p>
                 <h2>{scenario.name}</h2>
                 <p>{scenario.description}</p>
+                {recap && (
+                  <section className="tutorial-chooser__recap" aria-label={`${scenario.name} last run recap`}>
+                    <strong>Last run</strong>
+                    <ol>{recap.actions.map((action, actionIndex) => <li key={`${action}-${actionIndex}`}>{action}</li>)}</ol>
+                    <span>Final probability {Math.round(recap.probability * 100)}%</span>
+                  </section>
+                )}
               </div>
               <button
                 type="button"
