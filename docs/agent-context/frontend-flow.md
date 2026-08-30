@@ -559,13 +559,13 @@ launcher above, which is scoped to bug/feature reports filed as GitHub Issues.
 Contact is for anything else (questions, feedback), and is delivered as email
 instead:
 
-- **No personal email is ever exposed to the client.** `ContactModal` posts
-  name/email/message to `/api/contact`; the server-only `shared/resendEmail.js`
+- **No destination email is ever exposed to the client.** `ContactModal` posts
+  name, an optional reply email, and a message to `/api/contact`; the server-only `shared/resendEmail.js`
   sends it via the [Resend](https://resend.com) API to `CONTACT_EMAIL_TO` — a
   destination inbox that lives only in a Netlify environment variable, never
-  in the client bundle or any network response. The player's own email is set
-  as the message's `reply_to`, so replying to the delivered email reaches them
-  directly without the app needing to store or relay anything further.
+  in the client bundle or any network response. Players can explicitly choose
+  that they do not need a reply. When an address is supplied it becomes the
+  message's `reply_to`; otherwise the Resend request omits that field.
 - **Open to guests, unlike Report a Problem.** There is no identity to gate a
   "get in touch" form on, so `/api/contact` skips the Google-auth check
   entirely and rate-limits by IP/edge-connection address alone

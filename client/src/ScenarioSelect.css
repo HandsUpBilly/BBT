@@ -73,7 +73,8 @@
 .scenario-select__header {
   position: relative;
   width: 100%;
-  min-height: clamp(390px, 43vw, 510px);
+  min-height: 510px;
+  aspect-ratio: 1844 / 853;
   display: flex;
   align-items: flex-end;
   justify-content: space-between;
@@ -85,7 +86,7 @@
   background:
     linear-gradient(90deg, rgba(7, 9, 8, 0.48) 0%, rgba(7, 9, 8, 0.04) 44%, rgba(7, 9, 8, 0.04) 72%, rgba(7, 9, 8, 0.28) 100%),
     linear-gradient(0deg, rgba(6, 8, 7, 0.9) 0%, rgba(6, 8, 7, 0.08) 52%, rgba(6, 8, 7, 0.04) 100%),
-    url('./assets/matchday-hero-v2.png') center top / cover no-repeat,
+    url('./assets/matchday-hero-v2.png') center center / cover no-repeat,
     var(--color-surface-1);
   border: 1px solid #343833;
   border-top: 0;
@@ -548,6 +549,7 @@
 
   .scenario-select__header {
     min-height: 440px;
+    aspect-ratio: auto;
     flex-direction: column;
     align-items: stretch;
     justify-content: flex-end;
