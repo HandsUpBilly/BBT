@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useCallback, useMemo, useState, type ReactNode } from 'react';
 import { AuthContext, decodeJwtPayload, isTokenExpired, type AuthContextValue, type AuthUser } from './auth';
 
 const GOOGLE_SCRIPT_SRC = 'https://accounts.google.com/gsi/client';
@@ -122,8 +122,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [currentUser, setCurrentUser] = useState<AuthUser | null>(stored?.user ?? null);
   // Keep the cached user (so the identity gate stays satisfied and the player
   // isn't kicked back to the login screen) but drop an expired token, since
-  // sending it would 401 every write. The silent re-auth below usually
-  // replaces it within a moment.
+  // sending it would 401 every write. sessionExpired then drives the
+  // "sign in again" banner (see App.tsx) for an interactive re-login.
   const [idToken, setIdToken] = useState<string | null>(
     stored && !isTokenExpired(stored.idToken) ? stored.idToken : null,
   );
@@ -162,35 +162,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setCurrentUser(null);
     setIdToken(null);
     clearStoredAuth();
-  }, []);
-
-  // On load, if we have a previously signed-in Google user, try a silent
-  // (no-prompt) re-auth to refresh the id token. If Google can't silently
-  // re-authenticate (e.g. third-party cookies blocked), we keep the cached
-  // user/token from localStorage so the session still persists across a
-  // refresh instead of forcing a fresh login every time.
-  useEffect(() => {
-    if (!GOOGLE_CLIENT_ID || !stored) return;
-    let cancelled = false;
-    void (async () => {
-      try {
-        await loadGoogleScript();
-        if (cancelled) return;
-        const googleId = window.google?.accounts?.id;
-        if (!googleId) return;
-        googleId.initialize({
-          client_id: GOOGLE_CLIENT_ID,
-          auto_select: true,
-          cancel_on_tap_outside: false,
-          callback: response => applyCredential(response.credential),
-        });
-        googleId.prompt();
-      } catch {
-        // Silent re-auth failed — fall back to the cached session.
-      }
-    })();
-    return () => { cancelled = true; };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Re-check on every render rather than caching: a tab can sit open past the
