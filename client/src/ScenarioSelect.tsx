@@ -160,9 +160,7 @@ export function ScenarioSelect({
       </header>
 
       <div className="scenario-select__header">
-        <h1 className="scenario-select__title">
-          <BrandLogo variant="wordmark" className="scenario-select__logo" />
-        </h1>
+        <h1 className="scenario-select__title">Turn 16</h1>
         <div className="scenario-select__brand">
           <div className="scenario-select__hero-copy">
             <p className="scenario-select__hero-title">{UI_COPY.landing.heroTitle}</p>
