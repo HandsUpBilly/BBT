@@ -186,7 +186,10 @@ Puzzle Creator as a third tab for allowlisted admins.
 - Series tab shows **Tutorial**, the default series row from
   `client/src/series/default.json`. Starting it opens the drill chooser rather
   than forcing a fixed first puzzle.
-- Single Plays tab shows published scenario tiles.
+- Free Play explains that its matches can be played individually. Its compact
+  filter separates matches drawn from a series from future one-off specials.
+  Each match card names its source; the current unrestricted board is marked
+  as the final puzzle from the Tutorial.
 - Do not reintroduce per-screen scenario title override maps. Scenario
   `name`/`description` JSON is the source of truth.
 

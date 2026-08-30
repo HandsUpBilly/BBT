@@ -12,6 +12,13 @@ const SERIES_SCORE_KEY = 'series';
 
 type LocalScoreMap = Record<string, string[]>;
 type PlayView = 'series' | 'individual';
+type FreePlayFilter = 'all' | 'series' | 'specials';
+
+const FREE_PLAY_FILTERS: Array<{ value: FreePlayFilter; label: string }> = [
+  { value: 'all', label: UI_COPY.landing.allMatchesFilter },
+  { value: 'series', label: UI_COPY.landing.seriesFilter },
+  { value: 'specials', label: UI_COPY.landing.specialsFilter },
+];
 
 const SERIES_LOGOS: Record<string, string> = {
   'nuffle-shuffle': nuffleShuffleLogo,
@@ -116,6 +123,7 @@ export function ScenarioSelect({
   reportButton,
 }: Props) {
   const [playView, setPlayView] = useState<PlayView>('series');
+  const [freePlayFilter, setFreePlayFilter] = useState<FreePlayFilter>('all');
 
   // Read storage once per mount, not on every render — as a plain call this was
   // a fresh object identity each time, which defeated both memos below.
@@ -140,6 +148,8 @@ export function ScenarioSelect({
     () => scenarios.filter(scenario => scenario.id === FREE_PLAY_SCENARIO_ID),
     [scenarios],
   );
+
+  const visibleFreePlayScenarios = freePlayFilter === 'specials' ? [] : freePlayScenarios;
 
   return (
     <div className="scenario-select">
@@ -225,15 +235,39 @@ export function ScenarioSelect({
             </div>
           </div>
 
+          <div
+            className="challenge-filter"
+            role="group"
+            aria-label={UI_COPY.landing.freePlayFilterLabel}
+          >
+            {FREE_PLAY_FILTERS.map(filter => (
+              <button
+                key={filter.value}
+                type="button"
+                className={`challenge-filter__button${freePlayFilter === filter.value ? ' challenge-filter__button--active' : ''}`}
+                aria-pressed={freePlayFilter === filter.value}
+                onClick={() => setFreePlayFilter(filter.value)}
+              >
+                {filter.label}
+              </button>
+            ))}
+          </div>
+
           <div className="challenge-tile-grid">
-            {freePlayScenarios.map((s, index) => {
+            {visibleFreePlayScenarios.map((s, index) => {
               return (
                 <div key={s.id} className="challenge-tile">
-                  <div className="challenge-tile__index" aria-hidden="true">
-                    {UI_COPY.landing.playPrefix} {String(index + 1).padStart(2, '0')}
+                  <div className="challenge-tile__header">
+                    <div className="challenge-tile__origin">
+                      {UI_COPY.landing.tutorialOrigin}
+                    </div>
+                    <div className="challenge-tile__index" aria-hidden="true">
+                      {UI_COPY.landing.playPrefix} {String(index + 1).padStart(2, '0')}
+                    </div>
                   </div>
                   <div className="challenge-tile__body">
                     <div className="challenge-tile__name">{s.name}</div>
+                    <div className="challenge-tile__context">{UI_COPY.landing.tutorialFinalPuzzle}</div>
                     <div className="challenge-tile__desc">{s.description}</div>
                     <div className="challenge-tile__meta">{formatProgress(scenarioProgress[s.id])}</div>
                   </div>
@@ -248,6 +282,11 @@ export function ScenarioSelect({
                 </div>
               );
             })}
+            {visibleFreePlayScenarios.length === 0 && (
+              <div className="challenge-empty" role="status">
+                {UI_COPY.landing.noSpecials}
+              </div>
+            )}
           </div>
         </section>
       )}

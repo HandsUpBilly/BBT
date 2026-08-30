@@ -34,8 +34,18 @@ describe('ScenarioSelect Free Play', () => {
 
     fireEvent.click(screen.getByRole('tab', { name: 'Free Play' }));
 
+    expect(screen.getByText('These matches can be played individually.')).toBeTruthy();
+    expect(screen.getByText('From the tutorial')).toBeTruthy();
+    expect(screen.getByText('The final puzzle from the tutorial, with every action available.')).toBeTruthy();
     expect(screen.getByText(freePlay!.name)).toBeTruthy();
     expect(screen.queryByText(guidedDrill!.name)).toBeNull();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Specials' }));
+    expect(screen.getByText('No special matches are available yet.')).toBeTruthy();
+    expect(screen.queryByText(freePlay!.name)).toBeNull();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Series' }));
+    expect(screen.getByText(freePlay!.name)).toBeTruthy();
   });
 
   it('keeps utility actions in the top bar and play modes in the bottom bar', () => {
