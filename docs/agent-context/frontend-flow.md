@@ -215,8 +215,8 @@ The identity gate and `home` mode use the tabletop-playbook visual shell:
 - The identity gate uses `client/src/assets/identity-tunnel-logo-v2.png`, with
   the vertical badge baked into the tunnel wall. Generated reusable branding
   lives in `client/src/assets/brand/` and is exposed through `BrandLogo.tsx`:
-  the horizontal wordmark leads the home top bar and desktop game HUD, while
-  the compact badge appears in About and the footer. Repeated marks are
+  the horizontal wordmark leads the home top bar, desktop game HUD, and
+  footer, while the compact badge appears in About. Repeated marks are
   decorative so the page exposes only one accessible Turn 16 heading at a
   time.
 - The shared `.app` shell uses viewport `min-height`, never a fixed viewport
