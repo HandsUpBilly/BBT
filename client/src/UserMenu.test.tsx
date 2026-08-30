@@ -73,6 +73,26 @@ describe('UserMenu', () => {
     );
   });
 
+  it('has no Contact item when onContact is not supplied', () => {
+    render(<UserMenu name="Endzone Expert" />);
+    openMenu();
+    expect(screen.queryByRole('menuitem', { name: 'Contact us' })).toBeNull();
+  });
+
+  it('offers Contact us and restores focus to the trigger when chosen', () => {
+    const onContact = vi.fn();
+    render(<UserMenu name="Endzone Expert" onContact={onContact} />);
+    openMenu();
+
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Contact us' }));
+
+    expect(onContact).toHaveBeenCalledOnce();
+    expect(screen.queryByRole('menu')).toBeNull();
+    expect(document.activeElement).toBe(
+      screen.getByRole('button', { name: 'Player menu for Endzone Expert' }),
+    );
+  });
+
   it('still offers Log Out alongside Settings and About', () => {
     const onSignOut = vi.fn();
     render(

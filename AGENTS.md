@@ -47,8 +47,10 @@ editor accepted drafts the server then rejected).
 | `googleAuth.js` | `server/auth.js`, `netlify/functions/auth.js` |
 | `reporting.js` | client download fallback, both `/api/reports` implementations |
 | `githubIssues.js` | both `/api/reports` implementations (server-only) |
+| `contactMessage.js` | client `ContactModal.tsx`, both `/api/contact` implementations |
+| `resendEmail.js` | both `/api/contact` implementations (server-only) |
 | `scoreValidation.js` | both leaderboard implementations |
-| `rateLimit.js` | both `/api/reports` and both leaderboard implementations |
+| `rateLimit.js` | both `/api/reports`, both `/api/contact`, and both leaderboard implementations |
 | `statistics.js` | `server/index.js`, `editor-statistics.js` |
 | `adminManagement.js` | `server/editor.js`, `server/adminStore.js`, `editor-admins.js`, `netlify/functions/adminStore.js` |
 | `analyticsValidation.js` | `server/analytics.js`, both `/api/analytics` implementations |
@@ -182,6 +184,9 @@ Never hand-edit `netlify/functions/scenarioSeed.js`.
 | `VITE_ADMIN_EMAILS` | `client/src/App.tsx` | Same list, controls Admin Mode tab visibility only — not a security boundary |
 | `EDITOR_ALLOW_UNAUTHENTICATED` | `shared/googleAuth.js` | Set to `false` to fail closed when no allowlist is set. Defaults **true** everywhere |
 | `GITHUB_ISSUES_TOKEN` | `shared/githubIssues.js` | Fine-grained token, `HandsUpBilly/BBT` + Issues:RW. Server-only — never a `VITE_` var |
+| `RESEND_API_KEY` | `shared/resendEmail.js` | Resend API key for the Contact form. Server-only — never a `VITE_` var |
+| `CONTACT_EMAIL_TO` | `shared/resendEmail.js` | Destination inbox for contact messages. Never shown to the client — keeps the real address out of the bundle |
+| `CONTACT_EMAIL_FROM` | `shared/resendEmail.js` | Verified sending address (e.g. `contact@turn-16.com`) — must match a domain verified with Resend |
 | `VITE_APP_VERSION` / `COMMIT_REF` | `vite.config.ts` | Build identifier shown in About and attached to reports |
 | `VITE_DEPLOYED_AT` | `vite.config.ts` | Optional ISO timestamp overriding the About dialog's build-time deployment stamp |
 

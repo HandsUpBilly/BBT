@@ -44,6 +44,13 @@
   to     = "/.netlify/functions/reports"
   status = 200
 
+# Player contact messages — the Resend credential and destination inbox
+# remain server-side.
+[[redirects]]
+  from   = "/api/contact"
+  to     = "/.netlify/functions/contact"
+  status = 200
+
 # Anonymous first-party engagement batches. The admin read remains separately
 # authenticated below.
 [[redirects]]

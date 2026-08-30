@@ -538,6 +538,38 @@ prefilled but editable; the server uses the verified Google name when present.
 If delivery fails, the dialog retains the text and offers a Markdown download
 for manual filing through Ona or GitHub.
 
+## Contact Workflow
+
+A separate, general-purpose "Contact us" entry lives in `UserMenu`'s dropdown
+(`ContactModal.tsx`), alongside Help/Settings/About — not the flag-icon Report
+launcher above, which is scoped to bug/feature reports filed as GitHub Issues.
+Contact is for anything else (questions, feedback), and is delivered as email
+instead:
+
+- **No personal email is ever exposed to the client.** `ContactModal` posts
+  name/email/message to `/api/contact`; the server-only `shared/resendEmail.js`
+  sends it via the [Resend](https://resend.com) API to `CONTACT_EMAIL_TO` — a
+  destination inbox that lives only in a Netlify environment variable, never
+  in the client bundle or any network response. The player's own email is set
+  as the message's `reply_to`, so replying to the delivered email reaches them
+  directly without the app needing to store or relay anything further.
+- **Open to guests, unlike Report a Problem.** There is no identity to gate a
+  "get in touch" form on, so `/api/contact` skips the Google-auth check
+  entirely and rate-limits by IP/edge-connection address alone
+  (`CONTACT_RATE_LIMIT` in `shared/rateLimit.js`, same shape as
+  `REPORT_RATE_LIMIT`).
+- **Validation lives in `shared/contactMessage.js`**, isomorphic like
+  `reporting.js` — the same module the client imports for its field limits and
+  the server imports to validate the payload. Name and email reject embedded
+  line breaks (they become email headers — display name and `reply_to`); the
+  message body allows them freely.
+- Requires three env vars to actually deliver mail: `RESEND_API_KEY`,
+  `CONTACT_EMAIL_TO`, `CONTACT_EMAIL_FROM` (see README/AGENTS.md). Missing
+  configuration surfaces as a 503 with a clear error, same pattern as
+  `GITHUB_ISSUES_TOKEN` missing for reports.
+
+## Issue and Feature Reporting
+
 The report launcher is a subdued flag icon with an accessible label and title;
 it expands to a 44px hit target on coarse pointers without gaining visual
 weight. On the home screen it sits beside a deliberately larger account

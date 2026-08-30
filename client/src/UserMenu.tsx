@@ -8,6 +8,7 @@ interface Props {
   onHelp?: () => void;
   onSettings?: () => void;
   onAbout?: () => void;
+  onContact?: () => void;
   onSignOut?: () => void;
 }
 
@@ -32,7 +33,7 @@ function Avatar({ name, avatar, large }: { name: string; avatar?: string; large?
   return <span className={`${className} user-menu__avatar--fallback`}>{initials(name)}</span>;
 }
 
-export function UserMenu({ name, avatar, onHelp, onSettings, onAbout, onSignOut }: Props) {
+export function UserMenu({ name, avatar, onHelp, onSettings, onAbout, onContact, onSignOut }: Props) {
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
@@ -108,6 +109,21 @@ export function UserMenu({ name, avatar, onHelp, onSettings, onAbout, onSignOut 
               }}
             >
               About
+            </button>
+          )}
+          {onContact && (
+            <button
+              className="user-menu__item"
+              role="menuitem"
+              onClick={() => {
+                close();
+                // Same reasoning as About above: focus the persistent trigger
+                // first so useModalFocus can restore it once the dialog closes.
+                triggerRef.current?.focus();
+                onContact();
+              }}
+            >
+              Contact us
             </button>
           )}
           {onSignOut && (
