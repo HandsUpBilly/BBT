@@ -20,6 +20,18 @@ Google flow:
   button. Do not replace it with a One Tap-only custom button: One Tap may be
   silently suppressed by browser privacy settings or Google's cooldown, which
   leaves a deliberate click looking like a no-op.
+- **Do not add a background One Tap `prompt()` call for "silent" re-auth.**
+  An earlier version tried this on mount for a returning cached user
+  (`auto_select: true`), intending it to be invisible. `auto_select` does not
+  guarantee silence — several browsers (particularly with third-party cookies
+  restricted) fall back to a visible floating One Tap card instead, which
+  is rendered by Google in its own iframe with no CSS hook available to us.
+  It then visually clashed with the identity gate's own bottom-right panel
+  (`.identity-gate__panel`), looking like a misaligned pair of buttons when
+  really they were two unrelated UI surfaces. Removed; a cached user/token
+  from `localStorage` already persists the session across a refresh (see
+  `AuthProvider.tsx`), and an actually-expired token surfaces the existing
+  "sign in again" banner for an explicit, interactive re-login instead.
 - The client keeps only the Google subject ID and verified e-mail (the latter
   only for the server-side admin allowlist). It does not cache/display Google
   profile names or avatars.
