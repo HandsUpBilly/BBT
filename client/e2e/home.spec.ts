@@ -49,6 +49,22 @@ test.describe('home account controls', () => {
     expectFooterAtPageBottom(await footerPlacement(page));
   });
 
+  test('free play filters stay usable without widening the page', async ({ page }) => {
+    await page.getByRole('tab', { name: 'Free Play' }).click();
+
+    await expect(page.getByText('These matches can be played individually.')).toBeVisible();
+    await expect(page.getByText('From the tutorial', { exact: true })).toBeVisible();
+    await expect(page.getByText('The final puzzle from the tutorial, with every action available.')).toBeVisible();
+    expect(await hasHorizontalOverflow(page)).toBe(false);
+
+    await page.getByRole('button', { name: 'Specials' }).click();
+    await expect(page.getByText('No special matches are available yet.')).toBeVisible();
+    await expect(page.locator('.challenge-tile')).toHaveCount(0);
+
+    await page.getByRole('button', { name: 'All matches' }).click();
+    await expect(page.locator('.challenge-tile')).toHaveCount(1);
+  });
+
   test('the wide hero preserves the artwork proportions', async ({ page }) => {
     test.skip((page.viewportSize()?.width ?? 0) < 1100, 'wide-screen composition only');
 
