@@ -75,6 +75,15 @@ test.describe('home account controls', () => {
     expect(ratio, 'hero should not crop back to the former shallow banner').toBeLessThan(2.22);
   });
 
+  test('the hero overlay does not draw an artificial centre seam', async ({ page }) => {
+    const overlayBackground = await page.locator('.scenario-select__header').evaluate((header) => (
+      getComputedStyle(header, '::before').backgroundImage
+    ));
+
+    expect(overlayBackground).toContain('radial-gradient');
+    expect(overlayBackground).not.toContain('linear-gradient');
+  });
+
   test('the archive footer stays at the bottom of the page', async ({ page }) => {
     await page.getByRole('button', { name: 'Rankings' }).click();
     await page.locator('.leaderboard').waitFor({ state: 'visible' });
