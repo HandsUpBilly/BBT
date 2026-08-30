@@ -49,6 +49,16 @@ test.describe('home account controls', () => {
     expectFooterAtPageBottom(await footerPlacement(page));
   });
 
+  test('the wide hero preserves the artwork proportions', async ({ page }) => {
+    test.skip((page.viewportSize()?.width ?? 0) < 1100, 'wide-screen composition only');
+
+    const header = await boxOf(page.locator('.scenario-select__header'));
+    const ratio = header.width / header.height;
+
+    expect(ratio, 'hero should show the full-height character composition').toBeGreaterThan(2.1);
+    expect(ratio, 'hero should not crop back to the former shallow banner').toBeLessThan(2.22);
+  });
+
   test('the archive footer stays at the bottom of the page', async ({ page }) => {
     await page.getByRole('button', { name: 'Rankings' }).click();
     await page.locator('.leaderboard').waitFor({ state: 'visible' });
