@@ -162,7 +162,7 @@ body,
   right: clamp(24px, 4vw, 62px);
   bottom: clamp(24px, 4vw, 58px);
   min-width: 0;
-  width: min(360px, calc(100% - 48px));
+  width: min(300px, calc(100% - 48px));
   color: var(--color-text);
   display: flex;
   flex-direction: column;
@@ -267,7 +267,7 @@ body,
   .identity-gate__panel {
     right: 16px;
     bottom: 16px;
-    width: calc(100% - 32px);
+    width: min(300px, calc(100% - 32px));
   }
 
   .identity-gate__guest-row {
