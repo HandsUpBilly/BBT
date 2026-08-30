@@ -12,7 +12,7 @@
 }
 
 .app-footer__logo {
-  width: 18px;
+  width: 58px;
   margin-right: 0.2rem;
   align-self: center;
   opacity: 0.72;
@@ -31,7 +31,7 @@
   }
 
   .app-footer__logo {
-    width: 24px;
+    width: 72px;
     margin: 0 auto 3px;
   }
 
