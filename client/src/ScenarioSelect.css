@@ -100,9 +100,7 @@
   inset: 0;
   z-index: 1;
   pointer-events: none;
-  background:
-    linear-gradient(90deg, transparent 49.85%, rgba(226, 221, 210, 0.13) 50%, transparent 50.15%),
-    radial-gradient(circle at 50% 50%, transparent 52%, rgba(0, 0, 0, 0.34) 100%);
+  background: radial-gradient(circle at 50% 50%, transparent 52%, rgba(0, 0, 0, 0.34) 100%);
   border: 1px solid rgba(222, 217, 203, 0.09);
 }
 
