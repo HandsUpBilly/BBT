@@ -3,8 +3,8 @@ import { OBJECTIVE_GUIDANCE } from './objectiveCopy';
 export interface TutorialLesson {
   scenarioId: string;
   title: string;
-  /** Actions introduced by this drill. Other menu actions remain disabled. */
-  enabledActions: readonly TutorialAction[];
+  /** Actions emphasized by this drill. Every action that is legal remains available. */
+  emphasizedActions: readonly TutorialAction[];
   paragraphs: readonly string[];
   artwork?: 'parallel-universes';
 }
@@ -18,7 +18,7 @@ export const TUTORIAL_LESSONS: readonly TutorialLesson[] = [
   {
     scenarioId: 'scenario-001',
     title: 'Movement',
-    enabledActions: ['move'],
+    emphasizedActions: ['move'],
     paragraphs: [
       'OBJECTIVE: Carry the ball into the Human End Zone during this turn.',
       'ACTIVATION: Each player may be activated once. Select a player, choose Move, then select a destination. The route is shown before it is committed.',
@@ -29,7 +29,7 @@ export const TUTORIAL_LESSONS: readonly TutorialLesson[] = [
   {
     scenarioId: 'scenario-004',
     title: 'Tackle Zones and Dodging',
-    enabledActions: ['move'],
+    emphasizedActions: ['move'],
     paragraphs: [
       'TACKLE ZONES: A standing opponent marks the adjacent squares. Moving out of a marked square may require an Agility Test. Additional opposing Tackle Zones make the test harder.',
       'DODGE: The route marks every square that requires a roll. Check the chance before committing the move.',
@@ -41,7 +41,7 @@ export const TUTORIAL_LESSONS: readonly TutorialLesson[] = [
   {
     scenarioId: 'scenario-002',
     title: 'Hand-off Action',
-    enabledActions: ['move', 'handoff'],
+    emphasizedActions: ['handoff'],
     paragraphs: [
       'HAND-OFF: Activate the ball carrier and choose Hand-off. The carrier may move before giving the ball to an adjacent teammate.',
       'CATCH: The receiver must make the Catch roll. Receiving the ball does not use that player\'s activation.',
@@ -52,7 +52,7 @@ export const TUTORIAL_LESSONS: readonly TutorialLesson[] = [
   {
     scenarioId: 'scenario-003',
     title: 'Pass Action',
-    enabledActions: ['move', 'handoff', 'pass'],
+    emphasizedActions: ['pass'],
     paragraphs: [
       'PASS: Activate the ball carrier and choose Pass. The thrower may move before selecting a highlighted receiver.',
       'PASS TEST: The throw uses the player\'s PA. The receiver must then make the Catch roll. All modifiers are included in the preview.',
@@ -64,7 +64,7 @@ export const TUTORIAL_LESSONS: readonly TutorialLesson[] = [
   {
     scenarioId: 'scenario-005',
     title: 'The Drive',
-    enabledActions: ['move', 'handoff', 'pass'],
+    emphasizedActions: ['move', 'handoff', 'pass'],
     paragraphs: [
       'ORDER OF PLAY: Each player may be activated once. Plan the carrier\'s escape, the Hand-off, and the receiver\'s route before committing the first action.',
       'RISK: Every committed Dodge, Catch, Rush, Pickup, Pass, Hand-off, and Block roll is multiplied into the score.',
@@ -75,7 +75,7 @@ export const TUTORIAL_LESSONS: readonly TutorialLesson[] = [
   {
     scenarioId: 'scenario-006',
     title: 'Blocking, Pickups and Parallel Universes',
-    enabledActions: ['move', 'handoff', 'pass', 'block', 'blitz'],
+    emphasizedActions: ['block', 'blitz'],
     artwork: 'parallel-universes',
     paragraphs: [
       'DICE SO FAR: Every roll until now has been pass or fail — a Dodge lands or it doesn\'t, a Catch is made or dropped. A Block breaks that rule: several of its results can all still be worth playing on.',

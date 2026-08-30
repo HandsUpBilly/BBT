@@ -12,6 +12,7 @@ interface Props {
   deadWeight: number;
   /** The run's honest expected value so far. */
   score: number;
+  spotlight?: boolean;
   onSelect: (id: string) => void;
   onReset: (id: string) => void;
   onResetToBranchPoint: (id: string) => void;
@@ -149,7 +150,7 @@ function columnStyle(startColumn: number, columnSpan: number): CSSProperties {
 
 /** One block depth per row, with descendants aligned beneath their parent state. */
 export function BranchStrip({
-  branches, tree, deadWeight, score,
+  branches, tree, deadWeight, score, spotlight = false,
   onSelect, onReset, onResetToBranchPoint, onConcede,
 }: Props) {
   const [hideNeedsAttention, setHideNeedsAttention] = useState(false);
@@ -192,7 +193,7 @@ export function BranchStrip({
 
   return (
     <>
-      <section className="branch-strip" aria-label="Parallel Universes">
+      <section className={`branch-strip${spotlight ? ' branch-strip--spotlight' : ''}`} aria-label="Parallel Universes">
       <header className="branch-strip__header">
         <span className="branch-strip__score">
           Scoring chance <strong>{pct(score)}</strong>

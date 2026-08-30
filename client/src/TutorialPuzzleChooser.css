@@ -82,12 +82,23 @@
   text-transform: uppercase;
 }
 
-.tutorial-chooser__card-copy > p:last-child {
+.tutorial-chooser__card-copy > p {
   margin: 0;
   color: var(--color-text-muted);
   font-size: 0.88rem;
   line-height: 1.45;
 }
+
+.tutorial-chooser__recap {
+  margin-top: 0.75rem;
+  padding-top: 0.65rem;
+  color: var(--color-text-muted);
+  border-top: 1px solid var(--color-border-subtle);
+  font-size: 0.8rem;
+}
+.tutorial-chooser__recap strong,
+.tutorial-chooser__recap span { display: block; color: var(--color-text); }
+.tutorial-chooser__recap ol { margin: 0.35rem 0; padding-left: 1.2rem; }
 
 .tutorial-chooser__card > .btn {
   grid-column: 1 / -1;

@@ -5396,7 +5396,7 @@ start/retention caveat; do not label pre-launch zeroes as inactivity.
 
 # Step-by-step Tutorial Coach
 
-**Status:** Shipped on `hb/tutorial-step-coach`.
+**Status:** Superseded by the contextual Tutorial coach redesign below.
 
 ## Goal and Fixed Decisions
 
@@ -5671,3 +5671,67 @@ the authored next interaction illegal.
   keep diagrams, text, and actions reachable at 320 px and 200% zoom.
 - Content/reference validation, unit/integration tests, `npm run verify`, and
   the relevant real-browser mobile tests pass.
+
+---
+
+# Contextual Tutorial Coach Redesign
+
+**Status:** Implemented on `hb/contextual-tutorial-coach`; awaiting review.
+
+## Goal
+
+Replace the shipped step-by-step walkthrough with a restrained concept coach.
+The tutorial should explain a rule when it becomes relevant and suggest the
+next tactical objective without prescribing the player's exact move. Legal
+alternative play is never treated as a mistake and ordinary guidance never
+blocks the pitch.
+
+## Product Decisions
+
+- Each drill opens with a compact, non-modal objective card: one objective, one
+  concept sentence, and no solution. It collapses after the first meaningful
+  action and remains available through the manual guide.
+- Automatic guidance is attached to the relevant control, readout, or board
+  area. It remains until the relevant action is performed or the player
+  dismisses it. Its only control is **Dismiss**.
+- Automatic copy explains the concept and suggests a broad next objective. It
+  never names an exact square or route and never escalates because the player
+  chose a legal alternative.
+- Movement/route confirmation, Passing, Blocks/Blitzes, activation order, and
+  cumulative probability may teach themselves non-blockingly. Tackle Zones and
+  Dodging, Hand-offs, and Pickups are manual-help concepts.
+- Parallel Universes is the sole concept allowed to interrupt automatically.
+  On its first appearance, show one focused diagram modal; after Continue,
+  spotlight the universe strip. Turning Tutorial guidance off suppresses this
+  interruption as well as every automatic caption.
+- Concept progress is stored per identity as **Not encountered**,
+  **Introduced**, or **Used**. Once a concept is Used, later drills do not teach
+  it automatically again. A completed-drill replay asks whether to replay its
+  automatic guidance.
+- **Tutorial guide** opens a concept list for the current drill, with persistent
+  progress. Selecting a concept shows concise rulebook copy and may progress
+  from concept explanation to a broad tactical suggestion, but never to an
+  exact solution.
+- Mini diagrams remain and choose the most useful focus for each concept; they
+  may identify relevant players, controls, or board regions but not an exact
+  route in automatic guidance.
+- Tutorial drills expose every action that is legal under the game rules.
+  Relevant actions may be emphasized, but later actions are not disabled merely
+  because an earlier drill has not taught them.
+- A completed drill recap neutrally reports the tactical action sequence and
+  final probability. It does not compare against an optimum or criticize the
+  route. Restarting or abandoning a drill adds no tutorial interruption.
+- Copy uses a neutral rulebook tone and assumes the player knows Blood Bowl but
+  is learning Turn 16's interface and probability model.
+
+## Constraints
+
+- A puzzle remains exactly one turn. Coaching never mutates game state,
+  performs an action, changes probability, or limits otherwise legal play.
+- Guidance state is local presentation data and must not be added to scenario
+  JSON or the shared validation layer.
+- Editor previews never show Tutorial coaching.
+- The existing `showTutorialGuidance` preference remains backward compatible
+  and controls all automatic teaching. Manual guide access remains available.
+- Analytics may record stable concept ids and fixed outcomes only; never board
+  positions, routes, authored text, player identity, or free-form content.

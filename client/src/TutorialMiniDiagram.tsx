@@ -1,10 +1,10 @@
 import type { GameState } from './types';
-import type { TutorialHint } from './tutorialGuides';
+import type { TutorialDiagramHint } from './tutorialDiagram';
 import './TutorialMiniDiagram.css';
 
 interface Props {
   state: GameState;
-  hint: TutorialHint;
+  hint: TutorialDiagramHint;
 }
 
 const WIDTH = 520;

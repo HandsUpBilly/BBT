@@ -11,6 +11,22 @@
   border-radius: 8px;
 }
 
+.branch-strip--spotlight {
+  position: relative;
+  z-index: 150;
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 4px rgba(199, 78, 49, 0.25), 0 15px 40px rgba(0, 0, 0, 0.45);
+  animation: tutorial-universe-spotlight 1.2s ease-in-out 2;
+}
+
+@keyframes tutorial-universe-spotlight {
+  50% { box-shadow: 0 0 0 8px rgba(199, 78, 49, 0.12), 0 15px 40px rgba(0, 0, 0, 0.45); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .branch-strip--spotlight { animation: none; }
+}
+
 .branch-strip__header,
 .branch-tree-nav__toolbar {
   display: flex;

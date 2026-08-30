@@ -1,0 +1,21 @@
+.tutorial-concept-guide {
+  width: min(44rem, calc(100vw - 2rem));
+  max-height: calc(100dvh - 2rem);
+  overflow-y: auto;
+  text-align: left;
+}
+.tutorial-concept-guide__eyebrow { margin: 0; color: var(--color-accent); font: 700 0.72rem/1 var(--font-display); letter-spacing: 0.08em; text-transform: uppercase; }
+.tutorial-concept-guide__intro { align-self: stretch; margin: 0; color: var(--color-text-muted); }
+.tutorial-concept-guide__list { align-self: stretch; display: grid; gap: 0.45rem; margin: 0; padding: 0; list-style: none; }
+.tutorial-concept-guide__list button { display: flex; align-items: center; justify-content: space-between; gap: 1rem; width: 100%; padding: 0.75rem 0.85rem; color: var(--color-text); text-align: left; background: var(--color-surface); border: 1px solid var(--color-border-subtle); border-radius: 6px; cursor: pointer; }
+.tutorial-concept-guide__list button:hover { border-color: var(--color-accent); }
+.tutorial-concept-guide__status { color: var(--color-text-muted); font-size: 0.75rem; white-space: nowrap; }
+.tutorial-concept-guide__status--used { color: var(--color-success); }
+.tutorial-concept-guide__status--introduced { color: var(--color-warning); }
+.tutorial-concept-guide__detail { align-self: stretch; }
+.tutorial-concept-guide__detail h3 { margin: 0.55rem 0; font-family: var(--font-display); }
+.tutorial-concept-guide__detail > p { line-height: 1.45; }
+.tutorial-concept-guide__back { padding: 0; color: var(--color-text-muted); background: transparent; border: 0; cursor: pointer; }
+.tutorial-concept-guide__suggestion { padding: 0.65rem 0.8rem; background: rgba(199, 78, 49, 0.1); border-left: 3px solid var(--color-accent); }
+.tutorial-concept-guide__actions { align-self: stretch; display: flex; justify-content: flex-end; }
+@media (max-width: 500px) { .tutorial-concept-guide { width: calc(100vw - 1rem); max-height: calc(100dvh - 1rem); } }
