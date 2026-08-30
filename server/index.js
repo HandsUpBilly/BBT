@@ -24,6 +24,16 @@ import {
   createGitHubIssue,
 } from '../shared/githubIssues.js';
 import {
+  ContactValidationError,
+  buildContactEmail,
+  validateContactPayload,
+} from '../shared/contactMessage.js';
+import {
+  ContactConfigurationError,
+  ContactDeliveryError,
+  sendContactEmail,
+} from '../shared/resendEmail.js';
+import {
   ScoreValidationError,
   sortEntries,
   upsertPersonalBest,
@@ -31,6 +41,7 @@ import {
   validateSeriesSubmission,
 } from '../shared/scoreValidation.js';
 import {
+  CONTACT_RATE_LIMIT,
   LEADERBOARD_RATE_LIMIT,
   REPORT_RATE_LIMIT,
   createRateLimiter,
@@ -278,6 +289,36 @@ app.post('/api/reports', async (req, res) => {
     if (error instanceof ReportDeliveryError) {
       return res.status(502).json({ error: error.message, download });
     }
+    throw error;
+  }
+});
+
+// ── Player contact messages ─────────────────────────────────────────────────
+// Open to guests too — there is no identity to gate a "get in touch" form on.
+const takeContactToken = createRateLimiter(CONTACT_RATE_LIMIT);
+
+app.post('/api/contact', async (req, res) => {
+  let contact;
+  try {
+    contact = validateContactPayload(req.body);
+  } catch (error) {
+    if (error instanceof ContactValidationError) return res.status(400).json({ error: error.message });
+    throw error;
+  }
+
+  const { allowed, retryAfterSeconds } = takeContactToken(clientKey(req, null));
+  if (!allowed) {
+    res.set('Retry-After', String(retryAfterSeconds));
+    return res.status(429).json({ error: 'Too many messages from this session. Try again later.' });
+  }
+
+  const emailContent = buildContactEmail(contact);
+  try {
+    const sent = await sendContactEmail(contact, emailContent);
+    return res.status(201).json(sent);
+  } catch (error) {
+    if (error instanceof ContactConfigurationError) return res.status(503).json({ error: error.message });
+    if (error instanceof ContactDeliveryError) return res.status(502).json({ error: error.message });
     throw error;
   }
 });

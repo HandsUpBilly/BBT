@@ -2,6 +2,7 @@ import { useMemo, useState, type ReactNode } from 'react';
 import type { ProgressData } from './api';
 import type { LeaderboardEntry, Scenario, SeriesDefinition, SeriesLeaderboardEntry } from './types';
 import nuffleShuffleLogo from './assets/series/nuffle-shuffle-transparent.png';
+import { BrandLogo } from './BrandLogo';
 import { FREE_PLAY_SCENARIO_ID } from './tutorialLessons';
 import { UI_COPY } from './uiCopy';
 import './ScenarioSelect.css';
@@ -143,9 +144,7 @@ export function ScenarioSelect({
   return (
     <div className="scenario-select">
       <header className="scenario-select__topbar">
-        <div className="scenario-select__wordmark" aria-label={UI_COPY.brand.name}>
-          <span>Turn</span><strong>16</strong>
-        </div>
+        <BrandLogo variant="wordmark" className="scenario-select__wordmark" decorative />
         <nav className="scenario-select__utility-nav" aria-label={UI_COPY.landing.utilityNavLabel}>
           {isAdmin && (
             <button type="button" onClick={onAdmin}>{UI_COPY.landing.puzzleCreatorTab}</button>
@@ -168,9 +167,6 @@ export function ScenarioSelect({
             <p className="scenario-select__subtitle">{UI_COPY.landing.heroPrompt}</p>
           </div>
         </div>
-        <button className="btn btn--primary scenario-select__hero-cta" onClick={onStartSeries}>
-          {UI_COPY.landing.startTutorial}
-        </button>
       </div>
 
       <div className="play-switch" role="tablist" aria-label={UI_COPY.landing.playModeLabel}>

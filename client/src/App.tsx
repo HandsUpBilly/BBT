@@ -29,7 +29,9 @@ import { AppFooter } from './AppFooter';
 import { SuccessChanceReadout } from './SuccessChanceReadout';
 import { ReportProblemButton } from './ReportProblemButton';
 import { ReportProblemModal } from './ReportProblemModal';
+import { ContactModal } from './ContactModal';
 import { AboutDialog } from './AboutDialog';
+import { BrandLogo } from './BrandLogo';
 import { SettingsScreen } from './SettingsScreen';
 import { HelpScreen } from './HelpScreen';
 import { TutorialLessonDialog } from './TutorialLessonDialog';
@@ -39,7 +41,6 @@ import { upsertSeriesPuzzleResult } from './seriesResults';
 import { useTutorialGuide } from './useTutorialGuide';
 import { TUTORIAL_LESSON_IDS, tutorialLessonFor } from './tutorialLessons';
 import type { TutorialLesson } from './tutorialLessons';
-import { UI_COPY } from './uiCopy';
 import { submitScore, fetchLeaderboard, submitSeriesScore, fetchSeriesLeaderboard, fetchProgress, ApiError } from './api';
 import type { ProgressData } from './api';
 import { recordAttempt } from './attemptStore';
@@ -215,46 +216,43 @@ function IdentityGate({ authConfigured, googleSignedIn, mountGoogleSignInButton,
 
   return (
     <div className="identity-gate">
-      <div className="identity-gate__panel">
-        <div className="identity-gate__header">
-          <span className="identity-gate__eyebrow">{UI_COPY.brand.tagline}</span>
-          <h1 className="identity-gate__title">{UI_COPY.brand.name}</h1>
-          <p className="identity-gate__subtitle">{UI_COPY.brand.landingSubtitle}</p>
-        </div>
-
-        {!googleSignedIn && (
-          <div className="identity-gate__actions">
-            {authConfigured && !googleSignInFailed
-              ? <div ref={googleButtonRef} className="identity-gate__google-button" />
-              : <button className="btn btn--primary" disabled>Google Login Unavailable</button>}
-            <button className="btn btn--secondary" onClick={() => setGuestMode(true)}>
-              Play As Guest
-            </button>
-          </div>
-        )}
-
-        {showAliasEntry && (
-          <div className="identity-gate__guest">
-            <label className="identity-gate__label" htmlFor="player-alias">Choose your public alias</label>
-            <p className="identity-gate__alias-help">This is the name shown on leaderboards and reports.</p>
-            <div className="identity-gate__guest-row">
-              <input
-                id="player-alias"
-                className="identity-gate__input"
-                type="text"
-                maxLength={32}
-                placeholder="e.g. Endzone Expert"
-                value={alias}
-                onChange={e => setAlias(e.target.value)}
-                onKeyDown={e => e.key === 'Enter' && submitAlias()}
-                autoFocus
-              />
-              <button className="btn btn--primary" disabled={!alias.trim()} onClick={submitAlias}>
-                Continue
+      <div className="identity-gate__shell">
+        <h1 className="identity-gate__title">Turn 16</h1>
+        <div className="identity-gate__panel">
+          {!googleSignedIn && (
+            <div className="identity-gate__actions">
+              {authConfigured && !googleSignInFailed
+                ? <div ref={googleButtonRef} className="identity-gate__google-button" />
+                : <button className="btn btn--primary" disabled>Google Login Unavailable</button>}
+              <button className="btn btn--secondary" onClick={() => setGuestMode(true)}>
+                Play As Guest
               </button>
             </div>
-          </div>
-        )}
+          )}
+
+          {showAliasEntry && (
+            <div className="identity-gate__guest">
+              <label className="identity-gate__label" htmlFor="player-alias">Choose your public alias</label>
+              <p className="identity-gate__alias-help">This is the name shown on leaderboards and reports.</p>
+              <div className="identity-gate__guest-row">
+                <input
+                  id="player-alias"
+                  className="identity-gate__input"
+                  type="text"
+                  maxLength={32}
+                  placeholder="e.g. Endzone Expert"
+                  value={alias}
+                  onChange={e => setAlias(e.target.value)}
+                  onKeyDown={e => e.key === 'Enter' && submitAlias()}
+                  autoFocus
+                />
+                <button className="btn btn--primary" disabled={!alias.trim()} onClick={submitAlias}>
+                  Continue
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -352,6 +350,7 @@ export default function App() {
   } | null>(null);
   const [reportOpen, setReportOpen] = useState(false);
   const [aboutOpen, setAboutOpen] = useState(false);
+  const [contactOpen, setContactOpen] = useState(false);
   // Blocking failure on the touchdown submit — keeps the SubmitModal open so
   // the player can retry rather than silently losing the run.
   const [submitError, setSubmitError] = useState<string | undefined>();
@@ -635,6 +634,18 @@ export default function App() {
       }}
     />
   );
+  const contactModal = contactOpen && (
+    <ContactModal
+      defaultName={identityName}
+      onClose={() => {
+        trackAnalytics('interaction', { name: 'contact-dialog', outcome: 'closed' });
+        setContactOpen(false);
+      }}
+      onResult={outcome => {
+        trackAnalytics('interaction', { name: 'contact-submit', outcome });
+      }}
+    />
+  );
   const handleSignOut = useCallback(() => {
     if (currentUser) {
       signOut();
@@ -667,6 +678,10 @@ export default function App() {
       onAbout={() => {
         trackAnalytics('interaction', { name: 'about', outcome: 'opened' });
         setAboutOpen(true);
+      }}
+      onContact={() => {
+        trackAnalytics('interaction', { name: 'contact-dialog', outcome: 'opened' });
+        setContactOpen(true);
       }}
       onSignOut={handleSignOut}
     />
@@ -1373,6 +1388,7 @@ export default function App() {
         {notice}
         {reportModal}
         {aboutModal}
+        {contactModal}
         <AppFooter />
       </div>
     );
@@ -1403,6 +1419,7 @@ export default function App() {
         {notice}
         {reportModal}
         {aboutModal}
+        {contactModal}
         <AppFooter />
       </div>
     );
@@ -1420,6 +1437,7 @@ export default function App() {
           {notice}
           {reportModal}
           {aboutModal}
+          {contactModal}
           <AppFooter />
         </div>
       );
@@ -1438,6 +1456,7 @@ export default function App() {
         {notice}
         {reportModal}
         {aboutModal}
+        {contactModal}
         <AppFooter />
       </div>
     );
@@ -1454,6 +1473,7 @@ export default function App() {
           idToken={idToken}
         />
         {aboutModal}
+        {contactModal}
         <AppFooter />
       </div>
     );
@@ -1505,6 +1525,7 @@ export default function App() {
         {notice}
         {reportModal}
         {aboutModal}
+        {contactModal}
         <AppFooter />
       </div>
     );
@@ -1523,6 +1544,7 @@ export default function App() {
         {notice}
         {reportModal}
         {aboutModal}
+        {contactModal}
         <AppFooter />
       </div>
     );
@@ -1541,6 +1563,7 @@ export default function App() {
           {notice}
           {reportModal}
           {aboutModal}
+          {contactModal}
           <AppFooter />
         </div>
       );
@@ -1560,6 +1583,7 @@ export default function App() {
         {notice}
         {reportModal}
         {aboutModal}
+        {contactModal}
         <AppFooter />
       </div>
     );
@@ -1669,6 +1693,8 @@ export default function App() {
           <span className="hud__btn-icon" aria-hidden="true">←</span>
           <span className="hud__btn-text">{backLabel}</span>
         </button>
+
+        {!compact && <BrandLogo variant="wordmark" className="hud__brand" decorative />}
 
         {/* Keep account/Settings/About ahead of the game tools on narrow HUDs. */}
         {accountMenu}
@@ -1997,7 +2023,7 @@ export default function App() {
       )}
       {(effectiveAppMode === 'series-puzzle' || effectiveAppMode === 'puzzle')
         && !tutorialLesson && tutorialCoach.guide && tutorialCoach.progress?.visible
-        && activeScenario && !confirmLeaveSeries && !reportOpen && !aboutOpen
+        && activeScenario && !confirmLeaveSeries && !reportOpen && !aboutOpen && !contactOpen
         && !state.blockChoice && !pendingPushSquare && !activeTransfer && !activeFinishedMove
         && (!branchedBoards.complete || reviewingCompletedBoard || branchSummaryDismissed) && (
         <TutorialGuideDialog
@@ -2013,6 +2039,7 @@ export default function App() {
       {notice}
       {reportModal}
       {aboutModal}
+      {contactModal}
     </div>
   );
 }

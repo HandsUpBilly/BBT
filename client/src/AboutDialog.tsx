@@ -1,6 +1,7 @@
 import { useId } from 'react';
 import { useModalFocus } from './useModalFocus';
 import { UI_COPY } from './uiCopy';
+import { BrandLogo } from './BrandLogo';
 import './SubmitModal.css';
 import './AboutDialog.css';
 
@@ -40,6 +41,7 @@ export function AboutDialog({ version, deployedAt, onClose }: Props) {
         aria-describedby={descriptionId}
         tabIndex={-1}
       >
+        <BrandLogo variant="badge" className="about-dialog__logo" decorative />
         <span className="about-dialog__eyebrow">{UI_COPY.brand.tagline}</span>
         <h2 id={titleId} className="modal__title">About {UI_COPY.brand.name}</h2>
         <p id={descriptionId} className="modal__desc">

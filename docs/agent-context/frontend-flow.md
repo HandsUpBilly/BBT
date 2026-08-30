@@ -90,6 +90,10 @@ public avatars).
   uses the fixed key `GUEST_PREFS_KEY` (`'guest'`) rather than being keyed by
   name, because name is itself editable on this same screen and keying by it
   would strand every existing preference on the next rename.
+- **Settings uses three task-focused groups.** Profile keeps the avatar beside
+  the display-name field; Pitch & players keeps token detail, surface, board
+  size, and coordinates together; Tutorial contains the guidance preference.
+  These are presentation groups only and do not change how preferences persist.
 - **Renaming has a real cost the screen must say out loud.** A signed-in
   player is matched by `userId` and keeps their leaderboard history under any
   name. A guest is matched by `name` (see "Storage Rules" in
@@ -200,9 +204,18 @@ The identity gate and `home` mode use the tabletop-playbook visual shell:
 - Single-play cards derive their displayed `Play 01`, `Play 02`, etc. labels
   from the loaded scenario array order. These labels are decorative; scenario
   names and descriptions remain the source of truth.
-- The home masthead uses `client/src/assets/matchday-clash.webp` behind a
-  responsive contrast overlay. Off-canvas chalk decoration is contained by
-  `app--landing` so 320 px and wider viewports do not scroll horizontally.
+- The home hero uses `client/src/assets/matchday-hero-v2.png`, including its
+  oversized background wordmark, behind a responsive contrast overlay. The
+  live `h1` remains visually hidden for semantics. Off-canvas chalk decoration
+  is contained by `app--landing` so 320 px and wider viewports do not scroll
+  horizontally.
+- The identity gate uses `client/src/assets/identity-tunnel-logo-v2.png`, with
+  the vertical badge baked into the tunnel wall. Generated reusable branding
+  lives in `client/src/assets/brand/` and is exposed through `BrandLogo.tsx`:
+  the horizontal wordmark leads the home top bar and desktop game HUD, while
+  the compact badge appears in About and the footer. Repeated marks are
+  decorative so the page exposes only one accessible Turn 16 heading at a
+  time.
 - The shared `.app` shell uses viewport `min-height`, never a fixed viewport
   height. This lets the flex layout pin `AppFooter` to the bottom on short
   screens while growing normally on long pages instead of leaving the footer
@@ -537,6 +550,38 @@ the identity display name, and optional Google token. The reporter name is
 prefilled but editable; the server uses the verified Google name when present.
 If delivery fails, the dialog retains the text and offers a Markdown download
 for manual filing through Ona or GitHub.
+
+## Contact Workflow
+
+A separate, general-purpose "Contact us" entry lives in `UserMenu`'s dropdown
+(`ContactModal.tsx`), alongside Help/Settings/About — not the flag-icon Report
+launcher above, which is scoped to bug/feature reports filed as GitHub Issues.
+Contact is for anything else (questions, feedback), and is delivered as email
+instead:
+
+- **No personal email is ever exposed to the client.** `ContactModal` posts
+  name/email/message to `/api/contact`; the server-only `shared/resendEmail.js`
+  sends it via the [Resend](https://resend.com) API to `CONTACT_EMAIL_TO` — a
+  destination inbox that lives only in a Netlify environment variable, never
+  in the client bundle or any network response. The player's own email is set
+  as the message's `reply_to`, so replying to the delivered email reaches them
+  directly without the app needing to store or relay anything further.
+- **Open to guests, unlike Report a Problem.** There is no identity to gate a
+  "get in touch" form on, so `/api/contact` skips the Google-auth check
+  entirely and rate-limits by IP/edge-connection address alone
+  (`CONTACT_RATE_LIMIT` in `shared/rateLimit.js`, same shape as
+  `REPORT_RATE_LIMIT`).
+- **Validation lives in `shared/contactMessage.js`**, isomorphic like
+  `reporting.js` — the same module the client imports for its field limits and
+  the server imports to validate the payload. Name and email reject embedded
+  line breaks (they become email headers — display name and `reply_to`); the
+  message body allows them freely.
+- Requires three env vars to actually deliver mail: `RESEND_API_KEY`,
+  `CONTACT_EMAIL_TO`, `CONTACT_EMAIL_FROM` (see README/AGENTS.md). Missing
+  configuration surfaces as a 503 with a clear error, same pattern as
+  `GITHUB_ISSUES_TOKEN` missing for reports.
+
+## Issue and Feature Reporting
 
 The report launcher is a subdued flag icon with an accessible label and title;
 it expands to a 44px hit target on coarse pointers without gaining visual
