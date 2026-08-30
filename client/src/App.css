@@ -65,8 +65,8 @@ body,
   cursor: not-allowed;
 }
 
-.btn--primary { background: #b94229; color: #f4eee3; border-color: var(--color-accent-border); }
-.btn--primary:hover:not(:disabled) { background: #ca4d30; }
+.btn--primary { background: var(--color-accent); color: #f4eee3; border-color: var(--color-accent-border); }
+.btn--primary:hover:not(:disabled) { background: var(--color-accent-hover); }
 .btn--secondary { background: transparent; color: #c5c1b7; border-color: var(--color-border-strong); }
 .btn--secondary:hover:not(:disabled) { background: #1b1f1d; border-color: #706e66; }
 .btn--ghost { background: transparent; color: var(--color-text-muted); border-color: var(--color-border); }

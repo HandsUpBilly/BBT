@@ -146,7 +146,7 @@
   width: calc(100% - 16px);
   margin: 6px 8px 8px;
   padding: 8px 12px;
-  background: #b94229;
+  background: var(--color-accent);
   border: 1px solid var(--color-accent-border);
   border-radius: var(--radius-button);
   color: #f4eee3;
@@ -157,7 +157,7 @@
 }
 
 .piece-menu__confirm:hover:not(:disabled) {
-  background: #ca4d30;
+  background: var(--color-accent-hover);
 }
 
 .piece-menu__confirm:disabled {

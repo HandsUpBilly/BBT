@@ -232,12 +232,12 @@
 
 .report-problem-modal__submit {
   color: #f4eee3;
-  background: #b94229;
+  background: var(--color-accent);
   border-color: var(--color-accent-border);
 }
 
 .report-problem-modal__submit:hover:not(:disabled) {
-  background: #ca4d30;
+  background: var(--color-accent-hover);
 }
 
 .report-problem-modal__secondary,

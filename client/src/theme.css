@@ -9,35 +9,35 @@
   color-scheme: dark;
 
   /* ── Surfaces ─────────────────────────────────────────────────────── */
-  --color-bg: #0e1110;
-  --color-surface-1: #141715;
-  --color-surface-2: #191c1a;
-  --color-surface-3: #1f2320;
-  --color-surface-hover: #262b27;
+  --color-bg: #080a09;
+  --color-surface-1: #101311;
+  --color-surface-2: #171a17;
+  --color-surface-3: #202420;
+  --color-surface-hover: #292e29;
   /* Recessed wells: tables, log entries, stat chips inside a panel. */
-  --color-surface-sunken: #101311;
+  --color-surface-sunken: #0c0f0d;
 
   /* ── Borders ──────────────────────────────────────────────────────── */
-  --color-border: #383d38;
-  --color-border-subtle: #292e2a;
-  --color-border-strong: #555b55;
-  --color-border-selected: #87412e;
-  --color-border-focus: #d45b3b;
+  --color-border: #3d433d;
+  --color-border-subtle: #272c28;
+  --color-border-strong: #606760;
+  --color-border-selected: #9e3026;
+  --color-border-focus: #c75a4d;
 
   /* ── Text ─────────────────────────────────────────────────────────── */
-  --color-text: #d9dbd6;
-  --color-text-strong: #f1f0eb;
-  --color-text-muted: #a5aaa3;
-  --color-text-disabled: #6f756f;
+  --color-text: #dfe1dc;
+  --color-text-strong: #faf8f2;
+  --color-text-muted: #aeb4ac;
+  --color-text-disabled: #727971;
 
   /* ── Accent ───────────────────────────────────────────────────────────
      Reserved for active navigation, primary actions, selected/focused
      controls and important warnings. Never applied decoratively. */
-  --color-accent: #d05a3a;
-  --color-accent-hover: #e16a48;
-  --color-accent-dark: #843823;
-  --color-accent-press: #ad452b;
-  --color-accent-border: #df704f;
+  --color-accent: #9f3024;
+  --color-accent-hover: #b53a2e;
+  --color-accent-dark: #6f1d18;
+  --color-accent-press: #84231c;
+  --color-accent-border: #c75a4d;
 
   /* ── Status ───────────────────────────────────────────────────────── */
   --color-success: #7fa84b;
@@ -81,11 +81,11 @@
      Perceived opacity sits around 2-3%: felt before it is noticed. Applied to
      large chrome only — never behind small text or inside form controls. */
   --texture-noise:
-    radial-gradient(circle at 15% 22%, rgba(255, 255, 255, 0.022) 0 1px, transparent 1.5px) 0 0 / 11px 11px,
-    radial-gradient(circle at 74% 66%, rgba(0, 0, 0, 0.16) 0 1px, transparent 1.5px) 0 0 / 13px 13px;
+    linear-gradient(118deg, rgba(255, 255, 255, 0.018), transparent 32%, rgba(0, 0, 0, 0.08) 68%, transparent),
+    radial-gradient(circle at 18% 24%, rgba(255, 255, 255, 0.018) 0 0.7px, transparent 1px) 0 0 / 17px 19px;
 
   /* ── Elevation ────────────────────────────────────────────────────────
      Depth is used sparingly; there is no soft SaaS card shadow. */
-  --shadow-panel: 0 2px 8px rgba(0, 0, 0, 0.22);
-  --shadow-overlay: 0 12px 32px rgba(0, 0, 0, 0.5);
+  --shadow-panel: 0 1px 0 rgba(255, 255, 255, 0.025), 0 12px 32px rgba(0, 0, 0, 0.2);
+  --shadow-overlay: 0 24px 64px rgba(0, 0, 0, 0.62);
 }

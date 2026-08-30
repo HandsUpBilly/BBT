@@ -1358,6 +1358,12 @@ export default function App() {
           onStartSeries={startSeries}
           onSeriesLeaderboard={() => { setSeriesHighlight(undefined); setSeriesInitialEntries(undefined); setAppMode('series-leaderboard'); }}
           onAdmin={() => setAppMode('admin')}
+          onHelp={openHelp}
+          onSettings={openSettings}
+          onAbout={() => {
+            trackAnalytics('interaction', { name: 'about', outcome: 'opened' });
+            setAboutOpen(true);
+          }}
           progress={progress}
           userId={currentUser?.id}
           isAdmin={isAdmin}
