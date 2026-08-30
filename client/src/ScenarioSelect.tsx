@@ -1,7 +1,7 @@
 import { useMemo, useState, type ReactNode } from 'react';
 import type { ProgressData } from './api';
 import type { LeaderboardEntry, Scenario, SeriesDefinition, SeriesLeaderboardEntry } from './types';
-import nuffleShuffleLogo from './assets/series/nuffle-shuffle.webp';
+import nuffleShuffleLogo from './assets/series/nuffle-shuffle-transparent.png';
 import { FREE_PLAY_SCENARIO_ID } from './tutorialLessons';
 import { UI_COPY } from './uiCopy';
 import './ScenarioSelect.css';
@@ -31,6 +31,9 @@ interface Props {
   onStartSeries: () => void;
   onSeriesLeaderboard: () => void;
   onAdmin: () => void;
+  onHelp: () => void;
+  onSettings: () => void;
+  onAbout: () => void;
   /** Fetched once by App in a single request; undefined while it is in flight. */
   progress?: ProgressData;
   userId?: string;
@@ -102,6 +105,9 @@ export function ScenarioSelect({
   onStartSeries,
   onSeriesLeaderboard,
   onAdmin,
+  onHelp,
+  onSettings,
+  onAbout,
   progress,
   userId,
   isAdmin,
@@ -136,23 +142,39 @@ export function ScenarioSelect({
 
   return (
     <div className="scenario-select">
-      <div className="scenario-select__header">
-        <div className="scenario-select__brand">
-          <span className="scenario-select__eyebrow">{UI_COPY.brand.tagline}</span>
-          <h1 className="scenario-select__title">{UI_COPY.brand.name}</h1>
-          <p className="scenario-select__subtitle">{UI_COPY.brand.landingSubtitle}</p>
+      <header className="scenario-select__topbar">
+        <div className="scenario-select__wordmark" aria-label={UI_COPY.brand.name}>
+          <span>Turn</span><strong>16</strong>
         </div>
-        <div className="scenario-select__user">
-          <div className="scenario-select__controls">
-            {reportButton}
-            {userMenu}
+        <nav className="scenario-select__utility-nav" aria-label={UI_COPY.landing.utilityNavLabel}>
+          {isAdmin && (
+            <button type="button" onClick={onAdmin}>{UI_COPY.landing.puzzleCreatorTab}</button>
+          )}
+          <button type="button" onClick={onHelp}>{UI_COPY.landing.help}</button>
+          <button type="button" onClick={onSettings}>{UI_COPY.landing.settings}</button>
+          <button type="button" onClick={onAbout}>{UI_COPY.landing.about}</button>
+        </nav>
+        <div className="scenario-select__controls">
+          {reportButton}
+          {userMenu}
+        </div>
+      </header>
+
+      <div className="scenario-select__header">
+        <h1 className="scenario-select__title">
+          <span>Turn</span><strong>16</strong>
+        </h1>
+        <div className="scenario-select__foreground" aria-hidden="true" />
+        <div className="scenario-select__brand">
+          <div className="scenario-select__hero-copy">
+            <span className="scenario-select__eyebrow">{UI_COPY.brand.tagline}</span>
+            <p className="scenario-select__hero-title">{UI_COPY.landing.heroTitle}</p>
+            <p className="scenario-select__subtitle">{UI_COPY.landing.heroPrompt}</p>
           </div>
         </div>
-        <div className="scenario-select__route" aria-hidden="true">
-          <span />
-          <span />
-          <span />
-        </div>
+        <button className="btn btn--primary scenario-select__hero-cta" onClick={onStartSeries}>
+          {UI_COPY.landing.startTutorial}
+        </button>
       </div>
 
       <div className="play-switch" role="tablist" aria-label={UI_COPY.landing.playModeLabel}>
@@ -174,22 +196,7 @@ export function ScenarioSelect({
         >
           {UI_COPY.landing.singlePlaysTab}
         </button>
-        {isAdmin && (
-          <button
-            className="play-switch__tab"
-            type="button"
-            role="tab"
-            aria-selected="false"
-            onClick={onAdmin}
-          >
-            {UI_COPY.landing.puzzleCreatorTab}
-          </button>
-        )}
       </div>
-
-      <p className="scenario-select__objective-guide">
-        {UI_COPY.landing.objectiveGuidance}
-      </p>
 
       {playView === 'series' ? (
         <section className="play-section">
