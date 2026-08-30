@@ -124,26 +124,80 @@ body,
 }
 
 .identity-gate {
-  min-height: 100%;
+  width: 100%;
+  min-height: 100dvh;
   display: grid;
   place-items: center;
-  padding: 48px 24px;
+  padding: 24px;
+}
+
+.identity-gate__shell {
+  width: min(1400px, 100%);
+  min-height: min(780px, calc(100dvh - 48px));
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(410px, 0.65fr);
+  overflow: hidden;
+  background: var(--color-surface-1);
+  border: 1px solid var(--color-border);
+  box-shadow: 0 28px 80px rgba(0, 0, 0, 0.46);
+}
+
+.identity-gate__art {
+  position: relative;
+  min-height: 0;
+  overflow: hidden;
+  background:
+    linear-gradient(90deg, rgba(7, 9, 8, 0.08), rgba(7, 9, 8, 0.04) 62%, rgba(7, 9, 8, 0.88)),
+    linear-gradient(0deg, rgba(7, 9, 8, 0.72), transparent 45%),
+    url('./assets/identity-tunnel-v1.png') 44% center / cover no-repeat;
+  border-right: 2px solid var(--color-accent);
+}
+
+.identity-gate__art::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.012) 0, rgba(255, 255, 255, 0.012) 1px, transparent 1px, transparent 3px),
+    radial-gradient(circle at 46% 48%, transparent 48%, rgba(0, 0, 0, 0.36));
+}
+
+.identity-gate__art-wordmark {
+  position: absolute;
+  z-index: 1;
+  left: clamp(28px, 4vw, 64px);
+  bottom: clamp(26px, 4vw, 58px);
+  display: flex;
+  align-items: baseline;
+  color: #ece8df;
+  font-family: var(--font-display);
+  font-size: clamp(5rem, 10vw, 9.5rem);
+  font-weight: 600;
+  line-height: 0.72;
+  letter-spacing: -0.055em;
+  text-transform: uppercase;
+  text-shadow: 0 4px 24px rgba(0, 0, 0, 0.82);
+}
+
+.identity-gate__art-wordmark strong {
+  color: var(--color-accent);
+  font: inherit;
 }
 
 .identity-gate__panel {
   position: relative;
-  width: min(560px, 100%);
+  min-width: 0;
   color: var(--color-text);
   background:
+    linear-gradient(135deg, rgba(159, 48, 36, 0.08), transparent 36%),
     var(--texture-noise),
     var(--color-surface-2);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-panel);
-  padding: 38px 40px 36px;
+  padding: clamp(40px, 5vw, 76px) clamp(32px, 4.5vw, 64px);
   display: flex;
   flex-direction: column;
+  justify-content: center;
   gap: 26px;
-  box-shadow: var(--shadow-panel);
 }
 
 .identity-gate__header {
@@ -167,7 +221,7 @@ body,
 .identity-gate__title {
   color: var(--color-text-strong);
   font-family: var(--font-display);
-  font-size: clamp(2.5rem, 9vw, 4rem);
+  font-size: clamp(3.5rem, 7vw, 6.2rem);
   font-weight: 600;
   line-height: 0.95;
   letter-spacing: -0.005em;
@@ -182,13 +236,12 @@ body,
 }
 
 .identity-gate__actions {
-  display: flex;
+  display: grid;
   gap: 12px;
-  flex-wrap: wrap;
 }
 
 .identity-gate__google-button {
-  min-width: 220px;
+  min-width: 0;
   min-height: 44px;
 }
 
@@ -228,7 +281,7 @@ body,
 }
 
 .identity-gate__input::placeholder {
-  color: #666c65;
+  color: #929890;
 }
 
 .identity-gate__input:hover {
@@ -247,22 +300,63 @@ body,
 
 @media (max-width: 560px) {
   .identity-gate {
-    padding: 42px 20px;
+    padding: 8px;
+  }
+
+  .identity-gate__shell {
+    min-height: calc(100dvh - 16px);
+    grid-template-columns: 1fr;
+    grid-template-rows: minmax(180px, 30dvh) 1fr;
+  }
+
+  .identity-gate__art {
+    background-position: 42% 42%;
+    border-right: 0;
+    border-bottom: 2px solid var(--color-accent);
+  }
+
+  .identity-gate__art-wordmark {
+    left: 18px;
+    bottom: 18px;
+    font-size: clamp(3.8rem, 22vw, 6rem);
   }
 
   .identity-gate__panel {
-    padding: 32px 22px 30px;
+    justify-content: flex-start;
+    padding: 28px 22px 30px;
   }
 
-  .identity-gate__actions,
+  .identity-gate__title {
+    font-size: clamp(3.1rem, 18vw, 4.8rem);
+  }
+
   .identity-gate__guest-row {
     flex-direction: column;
   }
 
-  .identity-gate__actions .btn,
   .identity-gate__guest-row .btn {
     width: 100%;
   }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .identity-gate__art {
+    animation: identity-art-enter 700ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+
+  .identity-gate__panel {
+    animation: identity-panel-enter 560ms 90ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+}
+
+@keyframes identity-art-enter {
+  from { opacity: 0; transform: scale(1.025); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes identity-panel-enter {
+  from { opacity: 0; transform: translateX(18px); }
+  to { opacity: 1; transform: translateX(0); }
 }
 
 /* ── HUD ─────────────────────────────────────────────────────────────── */

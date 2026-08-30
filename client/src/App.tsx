@@ -215,46 +215,52 @@ function IdentityGate({ authConfigured, googleSignedIn, mountGoogleSignInButton,
 
   return (
     <div className="identity-gate">
-      <div className="identity-gate__panel">
-        <div className="identity-gate__header">
-          <span className="identity-gate__eyebrow">{UI_COPY.brand.tagline}</span>
-          <h1 className="identity-gate__title">{UI_COPY.brand.name}</h1>
-          <p className="identity-gate__subtitle">{UI_COPY.brand.landingSubtitle}</p>
+      <div className="identity-gate__shell">
+        <div className="identity-gate__art" aria-hidden="true">
+          <div className="identity-gate__art-wordmark"><span>Turn</span><strong>16</strong></div>
         </div>
 
-        {!googleSignedIn && (
-          <div className="identity-gate__actions">
-            {authConfigured && !googleSignInFailed
-              ? <div ref={googleButtonRef} className="identity-gate__google-button" />
-              : <button className="btn btn--primary" disabled>Google Login Unavailable</button>}
-            <button className="btn btn--secondary" onClick={() => setGuestMode(true)}>
-              Play As Guest
-            </button>
+        <div className="identity-gate__panel">
+          <div className="identity-gate__header">
+            <span className="identity-gate__eyebrow">{UI_COPY.brand.tagline}</span>
+            <h1 className="identity-gate__title">{UI_COPY.brand.name}</h1>
+            <p className="identity-gate__subtitle">{UI_COPY.brand.landingSubtitle}</p>
           </div>
-        )}
 
-        {showAliasEntry && (
-          <div className="identity-gate__guest">
-            <label className="identity-gate__label" htmlFor="player-alias">Choose your public alias</label>
-            <p className="identity-gate__alias-help">This is the name shown on leaderboards and reports.</p>
-            <div className="identity-gate__guest-row">
-              <input
-                id="player-alias"
-                className="identity-gate__input"
-                type="text"
-                maxLength={32}
-                placeholder="e.g. Endzone Expert"
-                value={alias}
-                onChange={e => setAlias(e.target.value)}
-                onKeyDown={e => e.key === 'Enter' && submitAlias()}
-                autoFocus
-              />
-              <button className="btn btn--primary" disabled={!alias.trim()} onClick={submitAlias}>
-                Continue
+          {!googleSignedIn && (
+            <div className="identity-gate__actions">
+              {authConfigured && !googleSignInFailed
+                ? <div ref={googleButtonRef} className="identity-gate__google-button" />
+                : <button className="btn btn--primary" disabled>Google Login Unavailable</button>}
+              <button className="btn btn--secondary" onClick={() => setGuestMode(true)}>
+                Play As Guest
               </button>
             </div>
-          </div>
-        )}
+          )}
+
+          {showAliasEntry && (
+            <div className="identity-gate__guest">
+              <label className="identity-gate__label" htmlFor="player-alias">Choose your public alias</label>
+              <p className="identity-gate__alias-help">This is the name shown on leaderboards and reports.</p>
+              <div className="identity-gate__guest-row">
+                <input
+                  id="player-alias"
+                  className="identity-gate__input"
+                  type="text"
+                  maxLength={32}
+                  placeholder="e.g. Endzone Expert"
+                  value={alias}
+                  onChange={e => setAlias(e.target.value)}
+                  onKeyDown={e => e.key === 'Enter' && submitAlias()}
+                  autoFocus
+                />
+                <button className="btn btn--primary" disabled={!alias.trim()} onClick={submitAlias}>
+                  Continue
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

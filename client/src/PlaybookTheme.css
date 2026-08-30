@@ -1138,35 +1138,6 @@
   color: #ede8dd;
 }
 
-.app--playbook.app--landing .scenario-select__hero-cta {
-  min-width: min(360px, 34vw);
-  min-height: 78px;
-  padding: 18px 38px;
-  border: 2px solid #eee9de;
-  background: #8f261f;
-  border-radius: 0;
-  outline: 1px solid rgba(0, 0, 0, 0.7);
-  outline-offset: -8px;
-  font-size: clamp(1rem, 2vw, 1.55rem);
-  letter-spacing: 0.08em;
-}
-
-.app--playbook.app--landing .scenario-select__hero-cta:hover:not(:disabled) {
-  background: #a83226;
-  border-color: #fffaf0;
-  transform: translateY(-2px);
-}
-
-@media (max-width: 760px) {
-  .app--playbook.app--landing .scenario-select__hero-cta {
-    width: 100%;
-    min-width: 0;
-    min-height: 62px;
-    padding: 16px 24px;
-    font-size: 1rem;
-  }
-}
-
 .app--landing .challenge-section__subtitle {
   color: var(--color-text-muted);
   text-shadow: none;
