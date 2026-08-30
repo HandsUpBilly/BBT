@@ -90,6 +90,10 @@ public avatars).
   uses the fixed key `GUEST_PREFS_KEY` (`'guest'`) rather than being keyed by
   name, because name is itself editable on this same screen and keying by it
   would strand every existing preference on the next rename.
+- **Settings uses three task-focused groups.** Profile keeps the avatar beside
+  the display-name field; Pitch & players keeps token detail, surface, board
+  size, and coordinates together; Tutorial contains the guidance preference.
+  These are presentation groups only and do not change how preferences persist.
 - **Renaming has a real cost the screen must say out loud.** A signed-in
   player is matched by `userId` and keeps their leaderboard history under any
   name. A guest is matched by `name` (see "Storage Rules" in
