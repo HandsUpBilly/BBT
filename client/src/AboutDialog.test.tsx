@@ -8,7 +8,7 @@ const DEPLOYED_AT = '2026-08-15T12:34:56.000Z';
 afterEach(cleanup);
 
 describe('AboutDialog', () => {
-  it('shows the build version and closes from its button', () => {
+  it('shows the release version and closes from its button', () => {
     const onClose = vi.fn();
     const { container } = render(
       <AboutDialog version="abc123" deployedAt={DEPLOYED_AT} onClose={onClose} />,
