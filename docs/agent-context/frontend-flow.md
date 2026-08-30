@@ -207,6 +207,11 @@ The identity gate and `home` mode use the tabletop-playbook visual shell:
 - The home masthead uses `client/src/assets/matchday-clash.webp` behind a
   responsive contrast overlay. Off-canvas chalk decoration is contained by
   `app--landing` so 320 px and wider viewports do not scroll horizontally.
+- Generated Turn 16 branding lives in `client/src/assets/brand/` and is exposed
+  through `BrandLogo.tsx`: the horizontal wordmark leads the identity gate,
+  home masthead, and desktop game HUD; the compact badge appears in About and
+  the footer. Repeated marks are decorative so the page exposes only one
+  accessible Turn 16 heading at a time.
 - The shared `.app` shell uses viewport `min-height`, never a fixed viewport
   height. This lets the flex layout pin `AppFooter` to the bottom on short
   screens while growing normally on long pages instead of leaving the footer

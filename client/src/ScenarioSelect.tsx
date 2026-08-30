@@ -2,6 +2,7 @@ import { useMemo, useState, type ReactNode } from 'react';
 import type { ProgressData } from './api';
 import type { LeaderboardEntry, Scenario, SeriesDefinition, SeriesLeaderboardEntry } from './types';
 import nuffleShuffleLogo from './assets/series/nuffle-shuffle-transparent.png';
+import { BrandLogo } from './BrandLogo';
 import { FREE_PLAY_SCENARIO_ID } from './tutorialLessons';
 import { UI_COPY } from './uiCopy';
 import './ScenarioSelect.css';
@@ -143,9 +144,7 @@ export function ScenarioSelect({
   return (
     <div className="scenario-select">
       <header className="scenario-select__topbar">
-        <div className="scenario-select__wordmark" aria-label={UI_COPY.brand.name}>
-          <span>Turn</span><strong>16</strong>
-        </div>
+        <BrandLogo variant="wordmark" className="scenario-select__wordmark" decorative />
         <nav className="scenario-select__utility-nav" aria-label={UI_COPY.landing.utilityNavLabel}>
           {isAdmin && (
             <button type="button" onClick={onAdmin}>{UI_COPY.landing.puzzleCreatorTab}</button>
@@ -162,7 +161,7 @@ export function ScenarioSelect({
 
       <div className="scenario-select__header">
         <h1 className="scenario-select__title">
-          <span>Turn</span><strong>16</strong>
+          <BrandLogo variant="wordmark" className="scenario-select__logo" />
         </h1>
         <div className="scenario-select__foreground" aria-hidden="true" />
         <div className="scenario-select__brand">
