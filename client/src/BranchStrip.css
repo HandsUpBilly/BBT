@@ -139,6 +139,7 @@
 .branch-strip-state__actions {
   display: flex;
   align-items: stretch;
+  width: 100%;
   height: 100%;
 }
 
@@ -149,9 +150,8 @@
     'dice weight'
     'status status';
   gap: 0 8px;
-  flex: 0 0 190px;
-  width: 190px;
-  min-width: 0;
+  flex: 1 1 190px;
+  min-width: 190px;
   padding: 6px 10px;
   text-align: left;
   color: var(--color-text);

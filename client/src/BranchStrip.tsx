@@ -27,8 +27,8 @@ const STATUS_LABEL: Record<BranchTreeStateView['status'], string> = {
 };
 
 /** A fixed outcome card plus the widest reset/rewind/give-up control rail. */
-const BRANCH_TRACK_WIDTH = 336;
-const BRANCH_TRACK_GAP = 8;
+const BRANCH_TRACK_WIDTH = 328;
+const BRANCH_TRACK_GAP = 6;
 
 function pct(value: number): string {
   if (value > 0 && value < 0.005) return '<1%';
