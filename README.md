@@ -78,6 +78,9 @@ Set these in Netlify's UI under **Site configuration → Environment variables**
 | `ADMIN_EMAILS` | Functions | Comma-separated Google account emails allowed to use `/api/editor/*` (see below). **Unset = unrestricted Admin Mode.** |
 | `VITE_ADMIN_EMAILS` | Build | Same list, baked into the client bundle to control whether the Admin Mode tab is shown. Unset shows it to everyone. Keep in sync with `ADMIN_EMAILS`. |
 | `GITHUB_ISSUES_TOKEN` | Functions | Fine-grained token limited to `HandsUpBilly/BBT` with **Issues: Read and write**, for player-submitted reports. Server-only — never a `VITE_` variable. |
+| `RESEND_API_KEY` | Functions | [Resend](https://resend.com) API key used to send Contact form messages. Server-only — never a `VITE_` variable. |
+| `CONTACT_EMAIL_TO` | Functions | The real inbox a contact message is delivered to. Server-only; never appears in the client bundle. |
+| `CONTACT_EMAIL_FROM` | Functions | The verified sending address (e.g. `contact@turn-16.com`) — the domain must be verified with Resend (SPF/DKIM records added at your DNS host). |
 | `EDITOR_ALLOW_UNAUTHENTICATED` | Functions | Set to `false` to make an empty `ADMIN_EMAILS` fail closed with 503. Defaults to unrestricted. **Production should set this** — see below. |
 
 `EDITOR_ALLOW_UNAUTHENTICATED=false` is worth setting on the production site.

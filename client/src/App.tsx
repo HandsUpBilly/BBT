@@ -29,6 +29,7 @@ import { AppFooter } from './AppFooter';
 import { SuccessChanceReadout } from './SuccessChanceReadout';
 import { ReportProblemButton } from './ReportProblemButton';
 import { ReportProblemModal } from './ReportProblemModal';
+import { ContactModal } from './ContactModal';
 import { AboutDialog } from './AboutDialog';
 import { BrandLogo } from './BrandLogo';
 import { SettingsScreen } from './SettingsScreen';
@@ -355,6 +356,7 @@ export default function App() {
   } | null>(null);
   const [reportOpen, setReportOpen] = useState(false);
   const [aboutOpen, setAboutOpen] = useState(false);
+  const [contactOpen, setContactOpen] = useState(false);
   // Blocking failure on the touchdown submit — keeps the SubmitModal open so
   // the player can retry rather than silently losing the run.
   const [submitError, setSubmitError] = useState<string | undefined>();
@@ -638,6 +640,18 @@ export default function App() {
       }}
     />
   );
+  const contactModal = contactOpen && (
+    <ContactModal
+      defaultName={identityName}
+      onClose={() => {
+        trackAnalytics('interaction', { name: 'contact-dialog', outcome: 'closed' });
+        setContactOpen(false);
+      }}
+      onResult={outcome => {
+        trackAnalytics('interaction', { name: 'contact-submit', outcome });
+      }}
+    />
+  );
   const handleSignOut = useCallback(() => {
     if (currentUser) {
       signOut();
@@ -670,6 +684,10 @@ export default function App() {
       onAbout={() => {
         trackAnalytics('interaction', { name: 'about', outcome: 'opened' });
         setAboutOpen(true);
+      }}
+      onContact={() => {
+        trackAnalytics('interaction', { name: 'contact-dialog', outcome: 'opened' });
+        setContactOpen(true);
       }}
       onSignOut={handleSignOut}
     />
@@ -1376,6 +1394,7 @@ export default function App() {
         {notice}
         {reportModal}
         {aboutModal}
+        {contactModal}
         <AppFooter />
       </div>
     );
@@ -1406,6 +1425,7 @@ export default function App() {
         {notice}
         {reportModal}
         {aboutModal}
+        {contactModal}
         <AppFooter />
       </div>
     );
@@ -1423,6 +1443,7 @@ export default function App() {
           {notice}
           {reportModal}
           {aboutModal}
+          {contactModal}
           <AppFooter />
         </div>
       );
@@ -1441,6 +1462,7 @@ export default function App() {
         {notice}
         {reportModal}
         {aboutModal}
+        {contactModal}
         <AppFooter />
       </div>
     );
@@ -1457,6 +1479,7 @@ export default function App() {
           idToken={idToken}
         />
         {aboutModal}
+        {contactModal}
         <AppFooter />
       </div>
     );
@@ -1508,6 +1531,7 @@ export default function App() {
         {notice}
         {reportModal}
         {aboutModal}
+        {contactModal}
         <AppFooter />
       </div>
     );
@@ -1526,6 +1550,7 @@ export default function App() {
         {notice}
         {reportModal}
         {aboutModal}
+        {contactModal}
         <AppFooter />
       </div>
     );
@@ -1544,6 +1569,7 @@ export default function App() {
           {notice}
           {reportModal}
           {aboutModal}
+          {contactModal}
           <AppFooter />
         </div>
       );
@@ -1563,6 +1589,7 @@ export default function App() {
         {notice}
         {reportModal}
         {aboutModal}
+        {contactModal}
         <AppFooter />
       </div>
     );
@@ -2002,7 +2029,7 @@ export default function App() {
       )}
       {(effectiveAppMode === 'series-puzzle' || effectiveAppMode === 'puzzle')
         && !tutorialLesson && tutorialCoach.guide && tutorialCoach.progress?.visible
-        && activeScenario && !confirmLeaveSeries && !reportOpen && !aboutOpen
+        && activeScenario && !confirmLeaveSeries && !reportOpen && !aboutOpen && !contactOpen
         && !state.blockChoice && !pendingPushSquare && !activeTransfer && !activeFinishedMove
         && (!branchedBoards.complete || reviewingCompletedBoard || branchSummaryDismissed) && (
         <TutorialGuideDialog
@@ -2018,6 +2045,7 @@ export default function App() {
       {notice}
       {reportModal}
       {aboutModal}
+      {contactModal}
     </div>
   );
 }

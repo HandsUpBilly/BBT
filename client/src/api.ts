@@ -2,11 +2,12 @@ import type { ActionLogEntry, LeaderboardEntry, RiskyMove, SeriesLeaderboardEntr
 // Same module the server uses to build GitHub issue bodies, so the offline
 // download fallback is byte-identical to what would have been filed.
 import { createDownload, REPORT_LIMITS } from '../../shared/reporting.js';
+import { CONTACT_LIMITS } from '../../shared/contactMessage.js';
 import type { SubmissionNode } from './branchRun';
 
 const BASE = '/api';
 
-export { REPORT_LIMITS };
+export { REPORT_LIMITS, CONTACT_LIMITS };
 
 export type ReportType = 'issue' | 'feature';
 
@@ -36,6 +37,16 @@ export interface ReportDownload {
   content: string;
 }
 
+export interface ContactInput {
+  name: string;
+  email: string;
+  message: string;
+}
+
+export interface ContactSubmission {
+  id: string;
+}
+
 /** Combined home-screen progress: every scenario board plus the series board. */
 export interface ProgressData {
   scenarios: Record<string, LeaderboardEntry[]>;
@@ -60,6 +71,13 @@ export class ReportSubmissionError extends Error {
     super(message);
     this.name = 'ReportSubmissionError';
     this.download = download;
+  }
+}
+
+export class ContactSubmissionError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'ContactSubmissionError';
   }
 }
 
@@ -195,4 +213,28 @@ export async function submitReport(input: ReportInput, idToken?: string | null):
     // Keep the generic error below when an intermediary returns non-JSON.
   }
   throw new ReportSubmissionError(payload.error ?? 'Could not submit the report', payload.download);
+}
+
+/** No idToken here — the contact form is open to guests too. */
+export async function submitContact(input: ContactInput): Promise<ContactSubmission> {
+  let res: Response;
+  try {
+    res = await fetch(`${BASE}/contact`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(input),
+    });
+  } catch {
+    throw new ContactSubmissionError('Could not reach the contact service');
+  }
+
+  if (res.ok) return res.json();
+
+  let payload: { error?: string } = {};
+  try {
+    payload = await res.json() as { error?: string };
+  } catch {
+    // Keep the generic error below when an intermediary returns non-JSON.
+  }
+  throw new ContactSubmissionError(payload.error ?? 'Could not send the message');
 }

@@ -86,6 +86,10 @@ export function createRateLimiter({ limit, windowMs, now = () => Date.now() }) {
 /** Reports are cheap to file and expensive to clean up — keep this tight. */
 export const REPORT_RATE_LIMIT = { limit: 5, windowMs: 60 * 60 * 1000 };
 
+/** Same reasoning as REPORT_RATE_LIMIT — cheap to send, and every send costs
+ * a transactional-email API credit and lands in a real inbox. */
+export const CONTACT_RATE_LIMIT = { limit: 5, windowMs: 60 * 60 * 1000 };
+
 /**
  * Leaderboard/series submissions are unauthenticated and each one triggers a
  * Blobs read-modify-write; loose enough not to interfere with a player
