@@ -5385,8 +5385,8 @@ start/retention caveat; do not label pre-launch zeroes as inactivity.
 
 ## Success Criteria
 
-- Increasing portrait row coordinates run right-to-left in the completed-play
-  landscape diagram, matching the live board.
+- Increasing portrait row coordinates run left-to-right in the completed-play
+  landscape diagram, matching the live board's numbered axis.
 - A long branch review can scroll through to its action log without moving its
   title off-screen.
 - The shared objective sentence appears consistently on home, in Help, and in

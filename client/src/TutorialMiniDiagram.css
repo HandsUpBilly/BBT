@@ -14,6 +14,7 @@
 .tutorial-mini-diagram__field { fill: #263f27; stroke: #87927c; stroke-width: 2; }
 .tutorial-mini-diagram__grid line { stroke: #73806d; stroke-width: 1; opacity: 0.35; }
 .tutorial-mini-diagram__end-zone { fill: #4873a0; opacity: 0.45; }
+.tutorial-mini-diagram__end-zone--orc { fill: #8a493b; }
 .tutorial-mini-diagram__halfway { stroke: #d9d2c3; stroke-width: 2; opacity: 0.55; }
 .tutorial-mini-diagram__landmarks text { fill: #f1ede3; font-size: 10px; font-weight: 800; opacity: 0.9; }
 .tutorial-mini-diagram__tackle-zone { fill: #b44632; opacity: 0.2; stroke: #e16b51; stroke-width: 2; stroke-dasharray: 5 4; }
