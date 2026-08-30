@@ -130,7 +130,7 @@ export function BranchTreeGraphic({ tree, highlightedBranchId }: Props) {
       <div className="branch-tree__scroll">
         <svg
           className="branch-tree__svg"
-          style={{ minWidth: `${width}px` }}
+          style={{ width: `${width}px`, height: `${height}px` }}
           viewBox={`0 0 ${width} ${height}`}
           role="img"
           aria-label={`Game branch tree with ${maxBlockNumber} ${maxBlockNumber === 1 ? 'block' : 'blocks'} and ${leafIndex} ending ${leafIndex === 1 ? 'universe' : 'universes'}${highlightedBranchId ? '; reviewed branch highlighted' : ''}`}

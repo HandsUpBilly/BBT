@@ -27,10 +27,14 @@
   scrollbar-width: thin;
 }
 
+/* Rendered at its exact natural pixel size (set inline from the same layout
+   math as the viewBox) rather than width: 100% — a small tree (few blocks,
+   few universes) has a small natural size, and stretching it to fill
+   whatever width the surrounding panel happens to have blew every node up
+   far past readable. .branch-tree__scroll above provides the scrollbar for
+   the opposite case: a tree wider than the panel. */
 .branch-tree__svg {
   display: block;
-  width: 100%;
-  height: auto;
 }
 
 .branch-tree__column-label {
