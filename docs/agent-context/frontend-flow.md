@@ -63,10 +63,12 @@ touchdown, but the player-facing rule deliberately does not make touchdown the
 only possible objective; later one-turn puzzles can target outcomes such as a
 successful foul or crowd surf.
 
-About's focus-trapped dialog is the single player-facing location for the build version
+About's focus-trapped dialog is the single player-facing location for the release version
 (`__BBT_VERSION__`) and deployment time (`__BBT_DEPLOYED_AT__`), formatted in
 the viewer's local timezone. Vite stamps the deployment time when it builds the
-bundle; `VITE_DEPLOYED_AT` can override it with an ISO timestamp. The home
+bundle; `VITE_DEPLOYED_AT` can override it with an ISO timestamp. The release
+version is the root package version without a commit-SHA suffix;
+`VITE_APP_VERSION` can replace it explicitly. The home
 masthead carries neither label. Because `UserMenu` is shared, About remains
 available from home, archives, Puzzle Creator, Settings, Help, and the game HUD.
 
@@ -591,10 +593,9 @@ it expands to a 44px hit target on coarse pointers without gaining visual
 weight. On the home screen it sits beside a deliberately larger account
 trigger in a group anchored 10–12px from the masthead's top-right corner.
 Archive screens use the same control group in the fixed top-right position.
-`__BBT_VERSION__` comes from the root package version at build time and appends
-the first seven characters of Netlify's hexadecimal `COMMIT_REF` converted to
-decimal (or uses `VITE_APP_VERSION` unchanged when supplied). It is displayed
-in About.
+`__BBT_VERSION__` comes from the root package version at build time without a
+commit-derived suffix (or uses `VITE_APP_VERSION` unchanged when supplied). It
+is displayed in About.
 
 ### Published roster portraits
 

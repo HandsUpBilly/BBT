@@ -187,7 +187,7 @@ Never hand-edit `netlify/functions/scenarioSeed.js`.
 | `RESEND_API_KEY` | `shared/resendEmail.js` | Resend API key for the Contact form. Server-only — never a `VITE_` var |
 | `CONTACT_EMAIL_TO` | `shared/resendEmail.js` | Destination inbox for contact messages. Never shown to the client — keeps the real address out of the bundle |
 | `CONTACT_EMAIL_FROM` | `shared/resendEmail.js` | Verified sending address (e.g. `contact@turn-16.com`) — must match a domain verified with Resend |
-| `VITE_APP_VERSION` / `COMMIT_REF` | `vite.config.ts` | Build identifier shown in About and attached to reports |
+| `VITE_APP_VERSION` | `vite.config.ts` | Optional release-version override shown in About and attached to reports |
 | `VITE_DEPLOYED_AT` | `vite.config.ts` | Optional ISO timestamp overriding the About dialog's build-time deployment stamp |
 
 ### Editor auth policy

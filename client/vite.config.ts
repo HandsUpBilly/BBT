@@ -35,11 +35,8 @@ const reloadOnRulesUpdate = (): Plugin => ({
 export default defineConfig({
   plugins: [react(), reloadOnRulesUpdate()],
   define: {
-    // Netlify exposes the deploy's hexadecimal git SHA as COMMIT_REF. Convert
-    // its short form to decimal for display, while keeping the package version
-    // as the readable local-build fallback.
     __BBT_VERSION__: JSON.stringify(
-      deploymentVersion(version, process.env.VITE_APP_VERSION, process.env.COMMIT_REF),
+      deploymentVersion(version, process.env.VITE_APP_VERSION),
     ),
     // Netlify does not expose the deployment time as a build variable. Capture
     // the instant this bundle is produced; allow controlled/reproducible builds
