@@ -161,13 +161,9 @@ export function ScenarioSelect({
       </header>
 
       <div className="scenario-select__header">
-        <h1 className="scenario-select__title">
-          <span>Turn</span><strong>16</strong>
-        </h1>
-        <div className="scenario-select__foreground" aria-hidden="true" />
+        <h1 className="scenario-select__title">Turn 16</h1>
         <div className="scenario-select__brand">
           <div className="scenario-select__hero-copy">
-            <span className="scenario-select__eyebrow">{UI_COPY.brand.tagline}</span>
             <p className="scenario-select__hero-title">{UI_COPY.landing.heroTitle}</p>
             <p className="scenario-select__subtitle">{UI_COPY.landing.heroPrompt}</p>
           </div>
