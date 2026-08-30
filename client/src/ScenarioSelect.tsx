@@ -167,9 +167,6 @@ export function ScenarioSelect({
             <p className="scenario-select__subtitle">{UI_COPY.landing.heroPrompt}</p>
           </div>
         </div>
-        <button className="btn btn--primary scenario-select__hero-cta" onClick={onStartSeries}>
-          {UI_COPY.landing.startTutorial}
-        </button>
       </div>
 
       <div className="play-switch" role="tablist" aria-label={UI_COPY.landing.playModeLabel}>

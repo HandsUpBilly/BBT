@@ -209,11 +209,13 @@ The identity gate and `home` mode use the tabletop-playbook visual shell:
   live `h1` remains visually hidden for semantics. Off-canvas chalk decoration
   is contained by `app--landing` so 320 px and wider viewports do not scroll
   horizontally.
-- Generated Turn 16 branding lives in `client/src/assets/brand/` and is exposed
-  through `BrandLogo.tsx`: the horizontal wordmark leads the identity gate,
-  home top bar, and desktop game HUD; the compact badge appears in About and
-  the footer. Repeated marks are decorative so the page exposes only one
-  accessible Turn 16 heading at a time.
+- The identity gate uses `client/src/assets/identity-tunnel-logo-v2.png`, with
+  the vertical badge baked into the tunnel wall. Generated reusable branding
+  lives in `client/src/assets/brand/` and is exposed through `BrandLogo.tsx`:
+  the horizontal wordmark leads the home top bar and desktop game HUD, while
+  the compact badge appears in About and the footer. Repeated marks are
+  decorative so the page exposes only one accessible Turn 16 heading at a
+  time.
 - The shared `.app` shell uses viewport `min-height`, never a fixed viewport
   height. This lets the flex layout pin `AppFooter` to the bottom on short
   screens while growing normally on long pages instead of leaving the footer
