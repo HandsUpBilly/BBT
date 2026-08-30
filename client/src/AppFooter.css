@@ -11,6 +11,13 @@
   text-align: center;
 }
 
+.app-footer__logo {
+  width: 18px;
+  margin-right: 0.2rem;
+  align-self: center;
+  opacity: 0.72;
+}
+
 .app-footer span + span::before {
   content: '·';
   margin-right: 0.45rem;
@@ -21,6 +28,11 @@
     flex-direction: column;
     gap: 3px;
     padding-inline: 24px;
+  }
+
+  .app-footer__logo {
+    width: 24px;
+    margin: 0 auto 3px;
   }
 
   .app-footer span + span::before {

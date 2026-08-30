@@ -27,21 +27,8 @@
 }
 
 .scenario-select__wordmark {
-  display: flex;
-  align-items: baseline;
-  color: var(--color-text-strong);
-  font-family: var(--font-display);
-  font-size: 1.75rem;
-  font-weight: 600;
-  line-height: 0.84;
-  letter-spacing: -0.035em;
-  text-transform: uppercase;
-}
-
-.scenario-select__wordmark strong,
-.scenario-select__title strong {
-  color: var(--color-accent);
-  font: inherit;
+  width: 108px;
+  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.68));
 }
 
 .scenario-select__utility-nav {
@@ -160,20 +147,15 @@
   top: 20px;
   bottom: auto;
   z-index: 2;
-  display: flex;
-  align-items: baseline;
-  gap: 0.03em;
-  width: max-content;
+  width: clamp(680px, 82vw, 1260px);
   margin: 0;
-  color: var(--color-text-strong);
-  font-family: var(--font-display);
-  font-size: clamp(8rem, 17vw, 17rem);
-  font-weight: 600;
-  line-height: 0.72;
-  letter-spacing: -0.055em;
-  text-transform: uppercase;
+  line-height: 0;
   opacity: 0.8;
-  text-shadow: 0 4px 0 rgba(0, 0, 0, 0.16);
+}
+
+.scenario-select__logo {
+  width: 100%;
+  filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.68));
 }
 
 .scenario-select__foreground {
@@ -565,7 +547,7 @@
   }
 
   .scenario-select__wordmark {
-    font-size: 1.45rem;
+    width: 88px;
   }
 
   .scenario-select__utility-nav {
@@ -618,7 +600,7 @@
     left: 16px;
     top: -6px;
     bottom: auto;
-    font-size: clamp(6.2rem, 26vw, 10rem);
+    width: min(92vw, 500px);
   }
 
   .scenario-select__hero-title {
