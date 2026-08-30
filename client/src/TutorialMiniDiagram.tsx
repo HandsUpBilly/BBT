@@ -29,7 +29,46 @@ function roleCode(role?: string): string {
   return 'L';
 }
 
+function ParallelUniversesDiagram({ hint }: { hint: TutorialDiagramHint }) {
+  return (
+    <figure className="tutorial-mini-diagram tutorial-mini-diagram--universes">
+      <svg
+        className="tutorial-mini-diagram__svg"
+        viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
+        role="img"
+        aria-label={hint.alt}
+        preserveAspectRatio="xMidYMid meet"
+      >
+        <g className="tutorial-mini-diagram__universe-split">
+          <rect className="tutorial-mini-diagram__universe-source" x="22" y="78" width="145" height="74" rx="10" />
+          <text className="tutorial-mini-diagram__universe-kicker" x="94" y="105" textAnchor="middle">ONE BLOCK</text>
+          <text className="tutorial-mini-diagram__universe-title" x="94" y="130" textAnchor="middle">3 live results</text>
+
+          <path d="M 167 115 C 215 115, 218 42, 270 42" />
+          <path d="M 167 115 L 270 115" />
+          <path d="M 167 115 C 215 115, 218 188, 270 188" />
+
+          {[42, 115, 188].map((y, index) => (
+            <g key={y} className="tutorial-mini-diagram__universe-card" transform={`translate(270 ${y - 27})`}>
+              <rect width="226" height="54" rx="9" />
+              <circle cx="28" cy="27" r="15" />
+              <text className="tutorial-mini-diagram__universe-number" x="28" y="32" textAnchor="middle">{index + 1}</text>
+              <text className="tutorial-mini-diagram__universe-label" x="54" y="23">UNIVERSE {index + 1}</text>
+              <text className="tutorial-mini-diagram__universe-status" x="54" y="40">PLAY THIS BOARD</text>
+            </g>
+          ))}
+        </g>
+      </svg>
+      <figcaption>{hint.alt}</figcaption>
+    </figure>
+  );
+}
+
 export function TutorialMiniDiagram({ state, hint }: Props) {
+  if (hint.focus.kind === 'universes') {
+    return <ParallelUniversesDiagram hint={hint} />;
+  }
+
   const focusIds = new Set(hint.focus.pieceIds ?? []);
   const focused = state.pieces.filter(piece => focusIds.has(piece.id));
   const target = hint.focus.target ? point(hint.focus.target.col, hint.focus.target.row) : null;
@@ -159,18 +198,6 @@ export function TutorialMiniDiagram({ state, hint }: Props) {
             <rect width="144" height="42" rx="8" />
             <text x="72" y="17" textAnchor="middle">SUCCESS CHANCE</text>
             <text x="72" y="34" textAnchor="middle">compare routes</text>
-          </g>
-        )}
-        {hint.focus.kind === 'universes' && (
-          <g className="tutorial-mini-diagram__universes" transform="translate(300 142)">
-            <path d="M 0 34 C 26 34, 24 10, 48 10 M 0 34 L 48 34 M 0 34 C 26 34, 24 58, 48 58" />
-            {[{ label: '1', y: -4 }, { label: '2', y: 20 }, { label: '3', y: 44 }].map((card, index) => (
-              <g key={card.label} transform={`translate(48 ${card.y})`}>
-                <rect className={index < 2 ? 'tutorial-mini-diagram__universe--done' : ''} width="120" height="28" rx="7" />
-                <text x="14" y="19">{card.label}</text>
-                <text x="36" y="19">{index < 2 ? 'COMPLETE' : 'PLAYING'}</text>
-              </g>
-            ))}
           </g>
         )}
       </svg>

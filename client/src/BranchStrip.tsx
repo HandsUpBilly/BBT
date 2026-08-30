@@ -1,4 +1,4 @@
-import { useState, type CSSProperties } from 'react';
+import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import type { BranchStripEntry, BranchTreeBlockView, BranchTreeStateView } from './branchRun';
 import { branchTreeStripGrid } from './branchTreeStrips';
 import { BlockFaceGraphic } from './BlockDiceGraphic';
@@ -13,6 +13,7 @@ interface Props {
   /** The run's honest expected value so far. */
   score: number;
   spotlight?: boolean;
+  onDismissSpotlight?: () => void;
   onSelect: (id: string) => void;
   onReset: (id: string) => void;
   onResetToBranchPoint: (id: string) => void;
@@ -151,12 +152,18 @@ function columnStyle(startColumn: number, columnSpan: number): CSSProperties {
 /** One block depth per row, with descendants aligned beneath their parent state. */
 export function BranchStrip({
   branches, tree, deadWeight, score, spotlight = false,
+  onDismissSpotlight,
   onSelect, onReset, onResetToBranchPoint, onConcede,
 }: Props) {
+  const sectionRef = useRef<HTMLElement>(null);
   const [hideNeedsAttention, setHideNeedsAttention] = useState(false);
   const [collapseCompleted, setCollapseCompleted] = useState(false);
   const [pendingConcede, setPendingConcede] = useState<BranchTreeStateView | null>(null);
   const [pendingReset, setPendingReset] = useState<BranchTreeStateView | null>(null);
+
+  useEffect(() => {
+    if (spotlight) sectionRef.current?.scrollIntoView?.({ block: 'nearest' });
+  }, [spotlight]);
 
   if (branches.length <= 1) return null;
 
@@ -193,7 +200,19 @@ export function BranchStrip({
 
   return (
     <>
-      <section className={`branch-strip${spotlight ? ' branch-strip--spotlight' : ''}`} aria-label="Parallel Universes">
+      <section ref={sectionRef} className={`branch-strip${spotlight ? ' branch-strip--spotlight' : ''}`} aria-label="Parallel Universes">
+      {spotlight && (
+        <aside className="branch-strip__introduction" aria-labelledby="universe-strip-introduction-title">
+          <div>
+            <span className="branch-strip__introduction-kicker">This is the universe strip</span>
+            <strong id="universe-strip-introduction-title">Each card is a live board created by the Block.</strong>
+            <p>Select every unfinished universe and complete the objective there. Each card keeps its share of the total scoring chance.</p>
+          </div>
+          {onDismissSpotlight && (
+            <button type="button" onClick={onDismissSpotlight}>Dismiss</button>
+          )}
+        </aside>
+      )}
       <header className="branch-strip__header">
         <span className="branch-strip__score">
           Scoring chance <strong>{pct(score)}</strong>

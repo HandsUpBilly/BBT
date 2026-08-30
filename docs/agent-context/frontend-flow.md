@@ -141,9 +141,11 @@ public avatars).
   Tackle Zones/Dodging, Hand-offs, and Pickups are request-only concepts;
   Movement/confirmation, Passing, activation order, Blocks/Blitzes, and
   cumulative probability may introduce themselves non-blockingly. Parallel
-  Universes is the sole first-use blocking explanation: a focused diagram modal
-  continues into a temporary spotlight on the branch strip. Editor previews
-  never show guidance. `showTutorialGuidance` defaults on and suppresses every
+  Universes is the sole first-use blocking explanation: a full split diagram
+  shows one Block becoming several live boards, then hands off to an opaque
+  explanation attached to the real universe strip. That explanation remains
+  until the player selects a universe or dismisses it. Editor previews never
+  show guidance. `showTutorialGuidance` defaults on and suppresses every
   automatic part when disabled, including the Parallel Universes modal.
 - **Concept progress persists per identity.** `prefs.ts` stores each stable
   concept id as Introduced or Used; absence means Not encountered. A Used

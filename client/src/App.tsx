@@ -1769,6 +1769,7 @@ export default function App() {
         deadWeight={branchedBoards.summary.deadWeight}
         score={branchedBoards.summary.score}
         spotlight={parallelUniversesSpotlight}
+        onDismissSpotlight={() => setParallelUniversesSpotlight(false)}
         onSelect={id => {
           setParallelUniversesSpotlight(false);
           branchedBoards.handleSelectBranch(id);

@@ -94,8 +94,8 @@ export const TUTORIAL_CONCEPTS: readonly TutorialConcept[] = [
   },
   {
     id: 'parallel-universes', title: 'Parallel Universes', mode: 'interrupt', anchor: 'pitch',
-    explanation: 'A Block can leave several outcomes worth continuing. Each accepted outcome becomes a live board state with its own share of the total score.',
-    suggestion: 'Use the universe strip to visit every live branch and complete the objective in each board state.',
+    explanation: 'A Block can produce several useful outcomes. Instead of choosing only one, the game keeps every accepted outcome as a separate live board — a Parallel Universe. Each universe carries its share of the Block probability into your score.',
+    suggestion: 'The universe strip will appear next. Each card opens one live board. Visit every unfinished card and complete the objective in that board state.',
     hint: hint('Accepted Block outcomes become separate live boards.', 'A root Block splitting into three numbered universe cards, with unfinished branches visible.', { kind: 'universes', region: 'route' }),
   },
 ] as const;

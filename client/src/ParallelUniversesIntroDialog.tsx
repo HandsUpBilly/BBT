@@ -20,9 +20,9 @@ export function ParallelUniversesIntroDialog({ concept, state, onContinue }: Pro
         <h2 id="parallel-universes-intro-title" className="modal__title">{concept.title}</h2>
         <TutorialMiniDiagram state={state} hint={concept.hint} />
         <p className="tutorial-guide__copy">{concept.explanation}</p>
-        <p className="tutorial-guide__copy"><strong>What next:</strong> {concept.suggestion}</p>
+        <p className="tutorial-guide__copy"><strong>What happens now:</strong> {concept.suggestion}</p>
         <div className="tutorial-guide__actions">
-          <button type="button" className="modal__roll-btn" onClick={onContinue}>Continue</button>
+          <button type="button" className="modal__roll-btn" onClick={onContinue}>Show the universe strip</button>
         </div>
       </section>
     </div>
