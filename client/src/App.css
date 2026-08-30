@@ -168,21 +168,12 @@ body,
   z-index: 1;
   left: clamp(28px, 4vw, 64px);
   bottom: clamp(26px, 4vw, 58px);
-  display: flex;
-  align-items: baseline;
-  color: #ece8df;
-  font-family: var(--font-display);
-  font-size: clamp(5rem, 10vw, 9.5rem);
-  font-weight: 600;
-  line-height: 0.72;
-  letter-spacing: -0.055em;
-  text-transform: uppercase;
-  text-shadow: 0 4px 24px rgba(0, 0, 0, 0.82);
+  width: clamp(260px, 31vw, 510px);
 }
 
-.identity-gate__art-wordmark strong {
-  color: var(--color-accent);
-  font: inherit;
+.identity-gate__art-logo {
+  width: 100%;
+  filter: drop-shadow(0 4px 24px rgba(0, 0, 0, 0.82));
 }
 
 .identity-gate__panel {
@@ -217,15 +208,15 @@ body,
   text-transform: uppercase;
 }
 
-/* The Turn 16 wordmark: the one place the display face runs large. */
 .identity-gate__title {
-  color: var(--color-text-strong);
-  font-family: var(--font-display);
-  font-size: clamp(3.5rem, 7vw, 6.2rem);
-  font-weight: 600;
-  line-height: 0.95;
-  letter-spacing: -0.005em;
-  text-transform: uppercase;
+  width: min(310px, 100%);
+  margin: 0;
+  line-height: 0;
+}
+
+.identity-gate__logo {
+  width: 100%;
+  filter: drop-shadow(0 5px 12px rgba(0, 0, 0, 0.36));
 }
 
 .identity-gate__subtitle {
@@ -384,6 +375,12 @@ body,
   flex-shrink: 0;
 }
 .hud__back:hover { color: var(--color-text); border-color: #706e66; }
+
+.hud__brand {
+  width: 78px;
+  flex: 0 0 78px;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.45));
+}
 
 .hud__restart {
   background: transparent;

@@ -3,6 +3,12 @@
   max-width: 520px;
 }
 
+.about-dialog__logo {
+  width: 58px;
+  margin: -4px auto 2px;
+  filter: drop-shadow(0 6px 12px rgba(0, 0, 0, 0.38));
+}
+
 .about-dialog__eyebrow,
 .about-dialog__version {
   font-family: var(--font-display);

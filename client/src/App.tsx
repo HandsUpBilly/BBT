@@ -30,6 +30,7 @@ import { SuccessChanceReadout } from './SuccessChanceReadout';
 import { ReportProblemButton } from './ReportProblemButton';
 import { ReportProblemModal } from './ReportProblemModal';
 import { AboutDialog } from './AboutDialog';
+import { BrandLogo } from './BrandLogo';
 import { SettingsScreen } from './SettingsScreen';
 import { HelpScreen } from './HelpScreen';
 import { TutorialLessonDialog } from './TutorialLessonDialog';
@@ -217,13 +218,17 @@ function IdentityGate({ authConfigured, googleSignedIn, mountGoogleSignInButton,
     <div className="identity-gate">
       <div className="identity-gate__shell">
         <div className="identity-gate__art" aria-hidden="true">
-          <div className="identity-gate__art-wordmark"><span>Turn</span><strong>16</strong></div>
+          <div className="identity-gate__art-wordmark">
+            <BrandLogo variant="wordmark" className="identity-gate__art-logo" decorative />
+          </div>
         </div>
 
         <div className="identity-gate__panel">
           <div className="identity-gate__header">
             <span className="identity-gate__eyebrow">{UI_COPY.brand.tagline}</span>
-            <h1 className="identity-gate__title">{UI_COPY.brand.name}</h1>
+            <h1 className="identity-gate__title">
+              <BrandLogo variant="wordmark" className="identity-gate__logo" />
+            </h1>
             <p className="identity-gate__subtitle">{UI_COPY.brand.landingSubtitle}</p>
           </div>
 
@@ -1675,6 +1680,8 @@ export default function App() {
           <span className="hud__btn-icon" aria-hidden="true">←</span>
           <span className="hud__btn-text">{backLabel}</span>
         </button>
+
+        {!compact && <BrandLogo variant="wordmark" className="hud__brand" decorative />}
 
         {/* Keep account/Settings/About ahead of the game tools on narrow HUDs. */}
         {accountMenu}

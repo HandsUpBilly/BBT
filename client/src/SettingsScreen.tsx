@@ -102,156 +102,92 @@ export function SettingsScreen({
         </div>
       </div>
 
-      <section className="settings-screen__section">
-        <h3 className="settings-screen__section-title">Display name</h3>
-        <p className="settings-screen__section-help">
-          This is the name shown on leaderboards and reports.
-          {isGuest && ' Changing it starts a new personal best. The current best stays under the old name.'}
-        </p>
-        <div className="settings-screen__name-row">
-          <input
-            className="settings-screen__name-input"
-            type="text"
-            maxLength={32}
-            value={name}
-            onChange={e => setName(e.target.value)}
-            onKeyDown={e => e.key === 'Enter' && handleSaveName()}
-            aria-label="Display name"
-          />
-          <button className="btn btn--primary" disabled={!nameChanged} onClick={handleSaveName}>
-            Save
-          </button>
+      <section className="settings-screen__section settings-screen__section--profile">
+        <div className="settings-screen__section-heading">
+          <div>
+            <h3 className="settings-screen__section-title">Profile</h3>
+            <p className="settings-screen__section-help">Your identity across leaderboards and reports.</p>
+          </div>
         </div>
-      </section>
-
-      <section className="settings-screen__section">
-        <h3 className="settings-screen__section-title">Pitch</h3>
-        <p className="settings-screen__section-help">
-          Set the playing surface and coordinate labels.
-        </p>
-        <div className="settings-screen__surface-toggle" role="radiogroup" aria-label="Pitch surface">
-          <button
-            type="button"
-            role="radio"
-            aria-checked={pitchSurface === 'grass'}
-            className={`settings-screen__surface-option${pitchSurface === 'grass' ? ' settings-screen__surface-option--selected' : ''}`}
-            onClick={() => onPitchSurfaceChange('grass')}
-          >
-            <span className="settings-screen__surface-swatch settings-screen__surface-swatch--grass" aria-hidden="true" />
-            <span><strong>Grass</strong><small>Worn match-day turf</small></span>
-          </button>
-          <button
-            type="button"
-            role="radio"
-            aria-checked={pitchSurface === 'slate'}
-            className={`settings-screen__surface-option${pitchSurface === 'slate' ? ' settings-screen__surface-option--selected' : ''}`}
-            onClick={() => onPitchSurfaceChange('slate')}
-          >
-            <span className="settings-screen__surface-swatch settings-screen__surface-swatch--slate" aria-hidden="true" />
-            <span><strong>Slate / tile</strong><small>Dark dungeon slabs</small></span>
-          </button>
-        </div>
-        <label className="settings-screen__coordinate-toggle">
-          <span>
-            <strong>Cell numbering</strong>
-            <small>Show letters and numbers around the pitch</small>
-          </span>
-          <input
-            type="checkbox"
-            checked={showCoordinates}
-            onChange={event => onShowCoordinatesChange(event.target.checked)}
-          />
-        </label>
-        <p className="settings-screen__section-help">
-          Board size. Large may need scrolling to see the whole pitch.
-        </p>
-        <div className="settings-screen__size-toggle" role="radiogroup" aria-label="Board size">
-          <button
-            type="button"
-            role="radio"
-            aria-checked={boardSize === 'small'}
-            className={`settings-screen__size-option${boardSize === 'small' ? ' settings-screen__size-option--selected' : ''}`}
-            onClick={() => onBoardSizeChange('small')}
-          >
-            <strong>Small</strong>
-            <small>Fits without scrolling</small>
-          </button>
-          <button
-            type="button"
-            role="radio"
-            aria-checked={boardSize === 'medium'}
-            className={`settings-screen__size-option${boardSize === 'medium' ? ' settings-screen__size-option--selected' : ''}`}
-            onClick={() => onBoardSizeChange('medium')}
-          >
-            <strong>Medium</strong>
-            <small>Default size</small>
-          </button>
-          <button
-            type="button"
-            role="radio"
-            aria-checked={boardSize === 'large'}
-            className={`settings-screen__size-option${boardSize === 'large' ? ' settings-screen__size-option--selected' : ''}`}
-            onClick={() => onBoardSizeChange('large')}
-          >
-            <strong>Large</strong>
-            <small>Bigger squares, scrolls</small>
-          </button>
-        </div>
-      </section>
-
-      <section className="settings-screen__section">
-        <h3 className="settings-screen__section-title">Avatar</h3>
-        {isGuest ? (
-          <p className="settings-screen__section-help">Sign in with Google to set an avatar.</p>
-        ) : (
-          <>
-            <p className="settings-screen__section-help">
-              LOCAL ONLY: This image is stored on this device and is not shown on leaderboards.
-            </p>
-            <div className="settings-screen__avatar-row">
-              <span className="settings-screen__avatar-preview">
-                {avatar ? (
-                  <img src={avatar} alt="" />
-                ) : (
-                  <span className="settings-screen__avatar-fallback">{initials(identityName)}</span>
-                )}
-              </span>
-              <div className="settings-screen__avatar-actions">
-                <input
-                  ref={fileInputRef}
-                  className="settings-screen__file-input"
-                  type="file"
-                  accept={AVATAR_ACCEPT}
-                  onChange={e => {
-                    const file = e.target.files?.[0];
-                    e.target.value = '';
-                    if (file) void handleAvatarFile(file);
-                  }}
-                />
-                <button
-                  className="btn btn--secondary"
-                  disabled={avatarBusy}
-                  onClick={() => fileInputRef.current?.click()}
-                >
-                  {avatarBusy ? 'Processing...' : avatar ? 'Change avatar' : 'Upload avatar'}
-                </button>
-                {avatar && (
-                  <button className="btn btn--ghost" onClick={() => onAvatarChange(undefined)}>
-                    Remove
+        <div className="settings-screen__profile-layout">
+          <div className="settings-screen__avatar-column">
+            <span className="settings-screen__avatar-preview" aria-hidden="true">
+              {avatar ? (
+                <img src={avatar} alt="" />
+              ) : (
+                <span className="settings-screen__avatar-fallback">{initials(identityName)}</span>
+              )}
+            </span>
+            {isGuest ? (
+              <p className="settings-screen__avatar-note">Sign in with Google to set an avatar.</p>
+            ) : (
+              <>
+                <div className="settings-screen__avatar-actions">
+                  <input
+                    ref={fileInputRef}
+                    className="settings-screen__file-input"
+                    type="file"
+                    accept={AVATAR_ACCEPT}
+                    onChange={e => {
+                      const file = e.target.files?.[0];
+                      e.target.value = '';
+                      if (file) void handleAvatarFile(file);
+                    }}
+                  />
+                  <button
+                    className="btn btn--secondary"
+                    disabled={avatarBusy}
+                    onClick={() => fileInputRef.current?.click()}
+                  >
+                    {avatarBusy ? 'Processing...' : avatar ? 'Change avatar' : 'Upload avatar'}
                   </button>
-                )}
-              </div>
+                  {avatar && (
+                    <button className="btn btn--ghost" onClick={() => onAvatarChange(undefined)}>
+                      Remove
+                    </button>
+                  )}
+                </div>
+                <p className="settings-screen__avatar-note">Stored on this device only.</p>
+                {avatarError && <p className="settings-screen__error" role="alert">{avatarError}</p>}
+              </>
+            )}
+          </div>
+          <div className="settings-screen__identity-column">
+            <label className="settings-screen__field-label" htmlFor="settings-display-name">Display name</label>
+            <p className="settings-screen__section-help">
+              This is the name shown on leaderboards and reports.
+              {isGuest && ' Changing it starts a new personal best. The current best stays under the old name.'}
+            </p>
+            <div className="settings-screen__name-row">
+              <input
+                id="settings-display-name"
+                className="settings-screen__name-input"
+                type="text"
+                maxLength={32}
+                value={name}
+                onChange={e => setName(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && handleSaveName()}
+                aria-label="Display name"
+              />
+              <button className="btn btn--primary" disabled={!nameChanged} onClick={handleSaveName}>
+                Save
+              </button>
             </div>
-            {avatarError && <p className="settings-screen__error" role="alert">{avatarError}</p>}
-          </>
-        )}
+          </div>
+        </div>
       </section>
 
       <section className="settings-screen__section">
-        <h3 className="settings-screen__section-title">Player tokens</h3>
-        <p className="settings-screen__section-help">
-          Choose how much detail the players and pitch show.
-        </p>
+        <div className="settings-screen__section-heading">
+          <div>
+            <h3 className="settings-screen__section-title">Pitch &amp; players</h3>
+            <p className="settings-screen__section-help">Tune the board and how players appear on it.</p>
+          </div>
+        </div>
+        <div className="settings-screen__control-group">
+          <h4 className="settings-screen__group-title">Player tokens</h4>
+          <p className="settings-screen__section-help">Choose the amount of detail shown during play.</p>
+        </div>
         <div className="settings-screen__token-toggle" role="radiogroup" aria-label="Player token style">
           <button
             type="button"
@@ -299,13 +235,90 @@ export function SettingsScreen({
             </span>
           </button>
         </div>
+        <div className="settings-screen__divider" />
+        <div className="settings-screen__pitch-grid">
+          <div className="settings-screen__control-group">
+            <h4 className="settings-screen__group-title">Playing surface</h4>
+            <div className="settings-screen__surface-toggle" role="radiogroup" aria-label="Pitch surface">
+              <button
+                type="button"
+                role="radio"
+                aria-checked={pitchSurface === 'grass'}
+                className={`settings-screen__surface-option${pitchSurface === 'grass' ? ' settings-screen__surface-option--selected' : ''}`}
+                onClick={() => onPitchSurfaceChange('grass')}
+              >
+                <span className="settings-screen__surface-swatch settings-screen__surface-swatch--grass" aria-hidden="true" />
+                <span><strong>Grass</strong><small>Worn match-day turf</small></span>
+              </button>
+              <button
+                type="button"
+                role="radio"
+                aria-checked={pitchSurface === 'slate'}
+                className={`settings-screen__surface-option${pitchSurface === 'slate' ? ' settings-screen__surface-option--selected' : ''}`}
+                onClick={() => onPitchSurfaceChange('slate')}
+              >
+                <span className="settings-screen__surface-swatch settings-screen__surface-swatch--slate" aria-hidden="true" />
+                <span><strong>Slate / tile</strong><small>Dark dungeon slabs</small></span>
+              </button>
+            </div>
+          </div>
+          <div className="settings-screen__control-group">
+            <h4 className="settings-screen__group-title">Board size</h4>
+            <p className="settings-screen__section-help">Large may need scrolling during play.</p>
+            <div className="settings-screen__size-toggle" role="radiogroup" aria-label="Board size">
+              <button
+                type="button"
+                role="radio"
+                aria-checked={boardSize === 'small'}
+                className={`settings-screen__size-option${boardSize === 'small' ? ' settings-screen__size-option--selected' : ''}`}
+                onClick={() => onBoardSizeChange('small')}
+              >
+                <strong>Small</strong>
+                <small>Compact</small>
+              </button>
+              <button
+                type="button"
+                role="radio"
+                aria-checked={boardSize === 'medium'}
+                className={`settings-screen__size-option${boardSize === 'medium' ? ' settings-screen__size-option--selected' : ''}`}
+                onClick={() => onBoardSizeChange('medium')}
+              >
+                <strong>Medium</strong>
+                <small>Default</small>
+              </button>
+              <button
+                type="button"
+                role="radio"
+                aria-checked={boardSize === 'large'}
+                className={`settings-screen__size-option${boardSize === 'large' ? ' settings-screen__size-option--selected' : ''}`}
+                onClick={() => onBoardSizeChange('large')}
+              >
+                <strong>Large</strong>
+                <small>Scrollable</small>
+              </button>
+            </div>
+          </div>
+        </div>
+        <label className="settings-screen__coordinate-toggle">
+          <span>
+            <strong>Cell numbering</strong>
+            <small>Show letters and numbers around the pitch</small>
+          </span>
+          <input
+            type="checkbox"
+            checked={showCoordinates}
+            onChange={event => onShowCoordinatesChange(event.target.checked)}
+          />
+        </label>
       </section>
 
       <section className="settings-screen__section">
-        <h3 className="settings-screen__section-title">Tutorial</h3>
-        <p className="settings-screen__section-help">
-          Opening briefings and step-by-step coaching for the guided Tutorial drills.
-        </p>
+        <div className="settings-screen__section-heading">
+          <div>
+            <h3 className="settings-screen__section-title">Tutorial</h3>
+            <p className="settings-screen__section-help">Control help for the guided drills.</p>
+          </div>
+        </div>
         <label className="settings-screen__coordinate-toggle">
           <span>
             <strong>Tutorial guidance</strong>

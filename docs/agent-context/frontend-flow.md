@@ -90,6 +90,10 @@ public avatars).
   uses the fixed key `GUEST_PREFS_KEY` (`'guest'`) rather than being keyed by
   name, because name is itself editable on this same screen and keying by it
   would strand every existing preference on the next rename.
+- **Settings uses three task-focused groups.** Profile keeps the avatar beside
+  the display-name field; Pitch & players keeps token detail, surface, board
+  size, and coordinates together; Tutorial contains the guidance preference.
+  These are presentation groups only and do not change how preferences persist.
 - **Renaming has a real cost the screen must say out loud.** A signed-in
   player is matched by `userId` and keeps their leaderboard history under any
   name. A guest is matched by `name` (see "Storage Rules" in
@@ -203,6 +207,11 @@ The identity gate and `home` mode use the tabletop-playbook visual shell:
 - The home masthead uses `client/src/assets/matchday-clash.webp` behind a
   responsive contrast overlay. Off-canvas chalk decoration is contained by
   `app--landing` so 320 px and wider viewports do not scroll horizontally.
+- Generated Turn 16 branding lives in `client/src/assets/brand/` and is exposed
+  through `BrandLogo.tsx`: the horizontal wordmark leads the identity gate,
+  home masthead, and desktop game HUD; the compact badge appears in About and
+  the footer. Repeated marks are decorative so the page exposes only one
+  accessible Turn 16 heading at a time.
 - The shared `.app` shell uses viewport `min-height`, never a fixed viewport
   height. This lets the flex layout pin `AppFooter` to the bottom on short
   screens while growing normally on long pages instead of leaving the footer
