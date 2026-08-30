@@ -279,9 +279,13 @@ Parallel Universes use hierarchical addresses everywhere they are shown: the
 root is implicit, its first split creates 1, 2, 3, and a later split inside 2
 creates 2.1, 2.2, and so on. Summary rows and drill-downs use
 these compact numbers so a long chain of player names and block outcomes cannot
-crowd the action log out of a phone viewport. The complete branch path remains
-the accessible name and title, while visible labels keep the universe number
-and final outcome.
+crowd the action log out of a phone viewport. The drill-down is a wide tactical
+review surface: its header keeps the compact universe number and final outcome,
+then shows the complete branch path as visible context. The play diagram and
+branch playbook sit in an asymmetric pair on wide screens and stack below 920px.
+The numbered decision log follows them, with cumulative probability promoted as
+the review's conclusion; its rows collapse to a readable two-column treatment
+on narrow screens.
 
 During a series, the touchdown analysis has a **Review Board** action. It hides
 the analysis without submitting or advancing, leaving the scored board exactly

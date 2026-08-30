@@ -133,6 +133,16 @@
   text-align: left;
 }
 
+.action-log-detail--review .play-diagram {
+  padding: 14px 16px 12px;
+  border-color: var(--color-border);
+  border-top: 2px solid rgba(162, 52, 38, 0.72);
+}
+
+.action-log-detail--review .play-diagram__svg {
+  max-height: 280px;
+}
+
 @media (max-width: 480px) {
   .play-diagram {
     padding-inline: 8px;

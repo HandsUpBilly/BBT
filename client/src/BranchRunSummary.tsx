@@ -84,22 +84,28 @@ export function BranchRunSummary({
       >
         {detail ? (
           <>
-            <button type="button" className="branch-summary__back" onClick={() => setDetailId(null)}>
-              ← Back to summary
-            </button>
-            <h2
-              id={titleId}
-              className="modal__title branch-summary__detail-title"
-              aria-label={`Universe ${detail.number}: ${detail.path}`}
-              title={detail.path}
-            >
-              <span>Universe {detail.number}</span>
-              <span className="branch-summary__detail-outcome" aria-hidden="true">— {detail.label}</span>
-            </h2>
+            <header className="branch-summary__detail-header">
+              <button type="button" className="branch-summary__back" onClick={() => setDetailId(null)}>
+                <span aria-hidden="true">←</span>
+                <span>Back to summary</span>
+              </button>
+              <p className="branch-summary__detail-kicker">Universe review</p>
+              <h2
+                id={titleId}
+                className="modal__title branch-summary__detail-title"
+                aria-label={`Universe ${detail.number}: ${detail.path}`}
+              >
+                <span>Universe {detail.number}</span>
+                {' '}
+                <span className="branch-summary__detail-outcome" aria-hidden="true">{detail.label}</span>
+              </h2>
+              <p className="branch-summary__detail-path" title={detail.path}>{detail.path}</p>
+            </header>
             <div className="branch-summary__detail-scroll" data-testid="branch-detail-scroll">
               <ActionLogDetail
                 scenario={scenario}
                 actionLog={run.lines[detail.id].state.actionLog}
+                variant="review"
                 diagramAside={tree && (
                   <BranchReviewGraphic tree={tree} highlightedBranchId={detail.id} />
                 )}
@@ -160,7 +166,7 @@ export function BranchRunSummary({
                   >
                     <span className="branch-summary__branch-path" title={branch.path}>
                       <span className="branch-summary__branch-number">Universe {branch.number}</span>
-                      <span className="branch-summary__branch-outcome">— {branch.label}</span>
+                      <span className="branch-summary__branch-outcome">{branch.label}</span>
                     </span>
                     <span className="branch-summary__branch-weight">{pct(branch.weight)}</span>
                     <span className="branch-summary__branch-value">
