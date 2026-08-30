@@ -21,8 +21,8 @@
   --color-border: #3d433d;
   --color-border-subtle: #272c28;
   --color-border-strong: #606760;
-  --color-border-selected: #a5462e;
-  --color-border-focus: #f06a45;
+  --color-border-selected: #9e3026;
+  --color-border-focus: #c75a4d;
 
   /* ── Text ─────────────────────────────────────────────────────────── */
   --color-text: #dfe1dc;
@@ -33,11 +33,11 @@
   /* ── Accent ───────────────────────────────────────────────────────────
      Reserved for active navigation, primary actions, selected/focused
      controls and important warnings. Never applied decoratively. */
-  --color-accent: #df5835;
-  --color-accent-hover: #ef6b47;
-  --color-accent-dark: #8d321f;
-  --color-accent-press: #bd4328;
-  --color-accent-border: #f07a56;
+  --color-accent: #9f3024;
+  --color-accent-hover: #b53a2e;
+  --color-accent-dark: #6f1d18;
+  --color-accent-press: #84231c;
+  --color-accent-border: #c75a4d;
 
   /* ── Status ───────────────────────────────────────────────────────── */
   --color-success: #7fa84b;

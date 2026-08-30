@@ -93,7 +93,7 @@
 .app--playbook .btn--primary:hover:not(:disabled) {
   color: var(--color-text-strong);
   background: var(--color-accent-hover);
-  border-color: #e06a45;
+  border-color: var(--color-accent-border);
 }
 
 .app--playbook .btn--primary:active:not(:disabled) {
@@ -639,7 +639,7 @@
 
 .app--playbook .piece-menu__confirm {
   color: #f4eee3;
-  background: #b94229;
+  background: var(--color-accent);
   border: 1px solid var(--color-accent-border);
   border-radius: var(--radius-button);
   font-family: var(--font-display);
@@ -649,7 +649,7 @@
 }
 
 .app--playbook .piece-menu__confirm:hover:not(:disabled) {
-  background: #ca4d30;
+  background: var(--color-accent-hover);
 }
 
 .app--playbook .piece-menu__confirm:disabled {
@@ -721,12 +721,12 @@
 
 .app--playbook .modal__roll-btn {
   color: #f4eee3;
-  background: #b94229;
+  background: var(--color-accent);
   border-color: var(--color-accent-border);
 }
 
 .app--playbook .modal__roll-btn:hover:not(:disabled) {
-  background: #ca4d30;
+  background: var(--color-accent-hover);
 }
 
 .app--playbook .modal__roll-btn:active:not(:disabled) {
@@ -1111,9 +1111,9 @@
    onto the shared dark panel system. */
 .app--landing .scenario-select__header {
   background:
-    linear-gradient(90deg, rgba(7, 9, 8, 0.74) 0%, rgba(7, 9, 8, 0.13) 46%, rgba(7, 9, 8, 0.08) 70%, rgba(7, 9, 8, 0.3) 100%),
-    linear-gradient(0deg, rgba(6, 8, 7, 0.92) 0%, rgba(6, 8, 7, 0.2) 48%, rgba(6, 8, 7, 0.08) 100%),
-    url('./assets/matchday-clash.webp') center 34% / cover no-repeat,
+    linear-gradient(90deg, rgba(7, 9, 8, 0.48) 0%, rgba(7, 9, 8, 0.04) 44%, rgba(7, 9, 8, 0.04) 72%, rgba(7, 9, 8, 0.28) 100%),
+    linear-gradient(0deg, rgba(6, 8, 7, 0.9) 0%, rgba(6, 8, 7, 0.08) 52%, rgba(6, 8, 7, 0.04) 100%),
+    url('./assets/matchday-hero-v2.png') center center / cover no-repeat,
     var(--color-surface-1);
   border-color: #343833;
   border-top: 0;
@@ -1140,8 +1140,8 @@
 
 .app--playbook.app--landing .scenario-select__hero-cta {
   min-width: min(360px, 34vw);
-  min-height: 92px;
-  padding: 20px 38px;
+  min-height: 78px;
+  padding: 18px 38px;
   border: 2px solid #eee9de;
   background: #8f261f;
   border-radius: 0;
@@ -1660,7 +1660,7 @@
 .app--playbook .btn--primary:hover:not(:disabled),
 .app--playbook :is(.modal__roll-btn, .confirm-dialog__confirm):hover:not(:disabled) {
   background: var(--color-accent-hover);
-  border-color: #ff9171;
+  border-color: var(--color-accent-border);
 }
 
 .app--playbook :is(
