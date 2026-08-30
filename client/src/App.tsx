@@ -40,7 +40,6 @@ import { upsertSeriesPuzzleResult } from './seriesResults';
 import { useTutorialGuide } from './useTutorialGuide';
 import { TUTORIAL_LESSON_IDS, tutorialLessonFor } from './tutorialLessons';
 import type { TutorialLesson } from './tutorialLessons';
-import { UI_COPY } from './uiCopy';
 import { submitScore, fetchLeaderboard, submitSeriesScore, fetchSeriesLeaderboard, fetchProgress, ApiError } from './api';
 import type { ProgressData } from './api';
 import { recordAttempt } from './attemptStore';
@@ -217,21 +216,8 @@ function IdentityGate({ authConfigured, googleSignedIn, mountGoogleSignInButton,
   return (
     <div className="identity-gate">
       <div className="identity-gate__shell">
-        <div className="identity-gate__art" aria-hidden="true">
-          <div className="identity-gate__art-wordmark">
-            <BrandLogo variant="wordmark" className="identity-gate__art-logo" decorative />
-          </div>
-        </div>
-
+        <h1 className="identity-gate__title">Turn 16</h1>
         <div className="identity-gate__panel">
-          <div className="identity-gate__header">
-            <span className="identity-gate__eyebrow">{UI_COPY.brand.tagline}</span>
-            <h1 className="identity-gate__title">
-              <BrandLogo variant="wordmark" className="identity-gate__logo" />
-            </h1>
-            <p className="identity-gate__subtitle">{UI_COPY.brand.landingSubtitle}</p>
-          </div>
-
           {!googleSignedIn && (
             <div className="identity-gate__actions">
               {authConfigured && !googleSignInFailed
