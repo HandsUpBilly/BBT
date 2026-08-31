@@ -43,11 +43,13 @@ import {
 import {
   CONTACT_RATE_LIMIT,
   LEADERBOARD_RATE_LIMIT,
+  LOGIN_RATE_LIMIT,
   REPORT_RATE_LIMIT,
   createRateLimiter,
   rateLimitKey,
 } from '../shared/rateLimit.js';
 import { buildPlayerStatistics } from '../shared/statistics.js';
+import { LoginValidationError, recordLogin, sortLogins, validateLoginPayload } from '../shared/loginTracking.js';
 import { registerAnalyticsRoutes } from './analytics.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -199,6 +201,48 @@ app.post('/api/series-leaderboard', async (req, res) => {
     user ? e.userId === user.providerUserId : !e.userId && e.name === entry.name,
   );
   res.status(201).json(persisted ?? entry);
+});
+
+// ── Player login tracking ───────────────────────────────────────────────────
+// Unlike the leaderboards above, this deliberately keeps each player's handle
+// — see shared/loginTracking.js. The client posts here once per app session,
+// right after an identity (Google or guest) becomes ready.
+let loginEntries = [];
+const takeLoginToken = createRateLimiter(LOGIN_RATE_LIMIT);
+
+app.post('/api/logins', async (req, res) => {
+  const { user, failed } = await identify(req, res);
+  if (failed) return;
+
+  let login;
+  try {
+    login = validateLoginPayload(req.body);
+  } catch (error) {
+    if (error instanceof LoginValidationError) return res.status(400).json({ error: error.message });
+    throw error;
+  }
+
+  const loginLimit = takeLoginToken(clientKey(req, user));
+  if (!loginLimit.allowed) {
+    res.set('Retry-After', String(loginLimit.retryAfterSeconds));
+    return res.status(429).json({ error: 'Too many login attempts. Please wait a moment.' });
+  }
+
+  const { entries, entry } = recordLogin(loginEntries, { name: login.name, user }, new Date().toISOString());
+  loginEntries = entries;
+  res.status(201).json(entry);
+});
+
+app.get('/api/editor/logins', async (req, res) => {
+  try {
+    await requireAdminGoogleUser(req);
+  } catch (error) {
+    if (error instanceof AdminAuthError) {
+      return res.status(error.status).json({ error: error.message, errors: [error.message] });
+    }
+    throw error;
+  }
+  res.json(sortLogins(loginEntries));
 });
 
 // ── Admin player-performance statistics ────────────────────────────────────
