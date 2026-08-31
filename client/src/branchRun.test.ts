@@ -7,6 +7,7 @@ import { validateScoreSubmission } from '../../shared/scoreValidation.js';
 import looseBallScenario from './scenarios/scenario-006.json';
 import {
   branchPath,
+  branchSummaryGroups,
   branchStrip,
   branchTreeView,
   cancelActivation,
@@ -467,6 +468,24 @@ describe('a second block', () => {
     // multi-block puzzles stay playable.
     expect(branchStrip(run).every(e => e.status === 'scored')).toBe(true);
     expect(isRunComplete(run)).toBe(true);
+  });
+
+  it('summarizes a lockstep run as one weighted distinct universe', () => {
+    let run = twoBlocks();
+    run = clickSquare(run, { col: 5, row: 1 });
+    run = clickSquare(run, { col: 5, row: 0 });
+
+    expect(branchSummaryGroups(run)).toEqual([
+      expect.objectContaining({
+        outcomes: expect.arrayContaining([
+          expect.objectContaining({ faces: expect.arrayContaining(['both-down', 'push', 'defender-stumbles', 'defender-down']) }),
+        ]),
+        merged: true,
+        status: 'scored',
+        weight: expect.closeTo((5 / 6) ** 2, 12),
+        value: 1,
+      }),
+    ]);
   });
 
   it('compounds the two blocks into one honest number', () => {

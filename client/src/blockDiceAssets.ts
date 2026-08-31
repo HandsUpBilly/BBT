@@ -12,6 +12,14 @@ import redDefenderDownDie from './assets/block-dice/red/defender-down.png';
 
 export type BlockDiceFavor = 'attacker' | 'defender';
 
+export const BLOCK_FACE_LABELS: Record<BlockOutcomeFace, string> = {
+  'attacker-down': 'Attacker Down',
+  'both-down': 'Both Down',
+  push: 'Push Back',
+  'defender-stumbles': 'Defender Stumbles',
+  'defender-down': 'Defender Down',
+};
+
 export const BLOCK_FACE_IMAGES: Record<BlockDiceFavor, Record<BlockOutcomeFace, string>> = {
   attacker: {
     'attacker-down': whiteAttackerDownDie,

@@ -26,7 +26,7 @@ export const SKILL_GROUPS: readonly SkillGroupDefinition[] = [
   { id: 'strength', label: 'Strength' },
 ];
 
-const SKILLS_BY_GROUP: Readonly<Record<SkillGroup, readonly string[]>> = {
+export const SKILLS_BY_GROUP: Readonly<Record<SkillGroup, readonly string[]>> = {
   agility: [
     'Catch', 'Defensive', 'Diving Catch', 'Diving Tackle', 'Dodge',
     'Hit and Run', 'Jump Up', 'Leap', 'Safe Hands', 'Sidestep', 'Sprint',

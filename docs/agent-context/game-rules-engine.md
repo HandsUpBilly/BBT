@@ -159,10 +159,13 @@ dice tie-break.
   spans exactly the combined width of its outcome tracks. The dice tray permanently
   reserves room for three fixed-size dice so neither the probability nor status
   text can collide with a multi-die result. The completed-run analysis
-  renders the same tree as a scrollable graphic. Opening a universe from that
-  list pairs its board diagram with a simplified playbook-style branch route:
+  collapses outcomes that remained in the same lockstep group into one merged,
+  clickable card, naming the block-die faces it represents and showing their
+  combined weight and weighted scoring chance;
+  only plans that actually diverged remain separate. Opening a card pairs a
+  representative universe's board diagram with a simplified playbook-style branch route:
   dotted parent-child lines, block-die results beside each outcome point, and
-  the reviewed leaf's ancestry highlighted alongside that branch's action log.
+  every represented route highlighted alongside that branch's action log.
 - Block dice use 1–3 dice from the effective-Strength comparison. The player
   chooses acceptable faces; probability is combined according to whether the
   attacker or defender picks the result.
