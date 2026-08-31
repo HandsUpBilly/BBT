@@ -297,8 +297,10 @@ so a failed submission looked exactly like a success with a missing score. The
   "sign in again" banner, and the cached user is kept so the identity gate
   doesn't kick the player back to the login screen.
 - Only `email_verified` addresses are trusted for the admin allowlist.
-- Login persists via `localStorage` (`bbt.auth.v1`), with a silent Google
-  re-auth attempt on mount.
+- Login persists via `localStorage` (`bbt.auth.v1`). There is no background
+  re-auth: an expired token surfaces the "sign in again" banner for an explicit
+  interactive re-login. Do not add a One Tap `prompt()` call — see
+  `docs/agent-context/leaderboard-and-auth.md`.
 - Guest names persist via `bbt.guestName.v1`.
 - `IdentityGate` (in `App.tsx`) gates all UI behind `identityReady`.
 
