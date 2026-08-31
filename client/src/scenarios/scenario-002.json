@@ -3,6 +3,8 @@
   "name": "The Reikland Hand-off",
   "description": "OBJECTIVE: Score with Quickhand. Swiftfoot carries the ball and must complete a Hand-off before Quickhand runs for the End Zone.",
   "activeTeam": "human",
+  "objective": "touchdown",
+  "freePlay": false,
   "published": true,
   "pieces": [
     {

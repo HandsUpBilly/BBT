@@ -4,36 +4,18 @@ import type { Scenario, ScenarioPieceDef, SeriesDefinition, Team } from '../type
 import { ConfirmDialog } from '../ConfirmDialog';
 import { AdminStatistics } from './AdminStatistics';
 import { AdminConsole } from './AdminConsole';
-import { createScenario, deleteScenario, fetchEditorData, publishEditorData, updateDefaultSeries, updateScenario } from './editorApi';
-import { missingSeriesScenarioIds, nextScenarioId, validateScenarioDraft } from './editorValidation';
+import { assignScenarioToSeries, createScenario, deleteScenario, fetchEditorData, publishEditorData, updateScenario } from './editorApi';
+import { nextScenarioId, validateScenarioDraft } from './editorValidation';
 import { PLAYER_TEMPLATES, generatedPlayerName, templateToPiece } from './playerTemplates';
 import { careerSkillGroupsFor, IMPLEMENTED_CAREER_SKILLS } from './careerSkills';
 import { PLAYER_ROLES, playerPortraitFor } from '../playerPortraits';
-import { FEATURED_SERIES_NAME } from '../series';
+import { SeriesCreator } from './SeriesCreator';
 import { STAT_KEYS, STAT_RANGE, PITCH } from '../../../shared/scenarioValidation.js';
 import './PuzzleEditor.css';
 
 const COLS = PITCH.maxCol + 1;
 const ROWS = PITCH.maxRow + 1;
-const EMPTY_SERIES: SeriesDefinition = {
-  id: 'default',
-  name: FEATURED_SERIES_NAME,
-  description: '',
-  scenarioIds: [],
-};
-
-type SeriesDetails = Pick<SeriesDefinition, 'name' | 'description' | 'logo'>;
-type InspectorSection = 'roster' | 'player' | 'series' | 'review';
-
-function seriesDetailsFor(series: SeriesDefinition): SeriesDetails {
-  return { name: series.name, description: series.description, logo: series.logo };
-}
-
-function sameSeriesDetails(left: SeriesDetails, right: SeriesDetails): boolean {
-  return left.name === right.name
-    && left.description === right.description
-    && left.logo === right.logo;
-}
+type InspectorSection = 'roster' | 'player' | 'review';
 
 const STAT_LABELS: Record<string, string> = {
   ma: 'MA', st: 'ST', ag: 'AG', pa: 'PA', av: 'AV',
@@ -49,6 +31,8 @@ function emptyScenario(existingIds: string[]): Scenario {
     name: 'New Puzzle',
     description: 'Describe the scoring puzzle.',
     activeTeam: 'human',
+    objective: 'touchdown',
+    freePlay: false,
     published: false,
     ballPosition: null,
     pieces: [],
@@ -89,8 +73,7 @@ interface Props {
 
 export function PuzzleEditor({ onBack, onPlay, previewScenario, idToken }: Props) {
   const [scenarios, setScenarios] = useState<Scenario[]>([]);
-  const [series, setSeries] = useState<SeriesDefinition>(EMPTY_SERIES);
-  const [seriesDetails, setSeriesDetails] = useState<SeriesDetails>(() => seriesDetailsFor(EMPTY_SERIES));
+  const [series, setSeries] = useState<SeriesDefinition[]>([]);
   const [draft, setDraft] = useState<Scenario>(() => emptyScenario([]));
   // The last-saved shape of the current draft, so we can tell whether the
   // editor holds unsaved work before discarding it.
@@ -108,14 +91,13 @@ export function PuzzleEditor({ onBack, onPlay, previewScenario, idToken }: Props
   const [confirm, setConfirm] = useState<{
     title: string; message: string; confirmLabel: string; destructive?: boolean; run: () => void;
   } | null>(null);
-  const [adminSection, setAdminSection] = useState<'editor' | 'statistics' | 'console'>('editor');
+  const [adminSection, setAdminSection] = useState<'editor' | 'series' | 'statistics' | 'console'>('editor');
 
   const load = useCallback(async () => {
     try {
       const data = await fetchEditorData(idToken);
       setScenarios(data.scenarios);
-      setSeries(data.series);
-      setSeriesDetails(seriesDetailsFor(data.series));
+      setSeries(Array.isArray(data.series) ? data.series : [data.series]);
       const first = previewScenario ?? data.scenarios[0] ?? emptyScenario([]);
       const clone = cloneScenario(first);
       setDraft(clone);
@@ -142,15 +124,10 @@ export function PuzzleEditor({ onBack, onPlay, previewScenario, idToken }: Props
   );
   // Series entries pointing at scenarios that no longer exist would silently
   // shorten a series run, so surface them here rather than dropping them.
-  const missingSeriesIds = useMemo(
-    () => missingSeriesScenarioIds(series, scenarios),
-    [series, scenarios],
-  );
   const hasUnsavedChanges = savedDraft === null
     ? draft.pieces.length > 0 || draft.name !== 'New Puzzle'
     : !sameScenario(draft, savedDraft);
-  const hasUnsavedSeriesDetails = !sameSeriesDetails(seriesDetails, seriesDetailsFor(series));
-  const hasUnsavedEditorChanges = hasUnsavedChanges || hasUnsavedSeriesDetails;
+  const hasUnsavedEditorChanges = hasUnsavedChanges;
   const filteredScenarios = useMemo(() => {
     const query = puzzleQuery.trim().toLocaleLowerCase();
     return scenarios.filter(scenario => {
@@ -158,10 +135,10 @@ export function PuzzleEditor({ onBack, onPlay, previewScenario, idToken }: Props
       const matchesFilter = puzzleFilter === 'all'
         || (puzzleFilter === 'enabled' && scenario.published !== false)
         || (puzzleFilter === 'disabled' && scenario.published === false)
-        || (puzzleFilter === 'series' && series.scenarioIds.includes(scenario.id));
+        || (puzzleFilter === 'series' && series.some(item => item.scenarioIds.includes(scenario.id)));
       return matchesQuery && matchesFilter;
     });
-  }, [puzzleFilter, puzzleQuery, scenarios, series.scenarioIds]);
+  }, [puzzleFilter, puzzleQuery, scenarios, series]);
 
   // Warn on tab close/reload while edits are pending. Re-registering the
   // listener when the flag flips keeps it out of a ref written during render.
@@ -178,8 +155,7 @@ export function PuzzleEditor({ onBack, onPlay, previewScenario, idToken }: Props
   const selectedPieceCareerSkills = selectedPiece
     ? careerSkillGroupsFor(selectedPiece.team, selectedPiece.role)
     : null;
-  const seriesIndex = series.scenarioIds.indexOf(draft.id);
-  const inSeries = seriesIndex >= 0;
+  const assignedSeries = series.find(item => item.scenarioIds.includes(draft.id));
 
   function discardUnsavedWork() {
     if (hasUnsavedChanges) {
@@ -189,7 +165,6 @@ export function PuzzleEditor({ onBack, onPlay, previewScenario, idToken }: Props
       setSelectedPieceId(null);
       setBallTool(false);
     }
-    if (hasUnsavedSeriesDetails) setSeriesDetails(seriesDetailsFor(series));
   }
 
   /** Runs `action`, first asking to confirm if the editor has unsaved edits. */
@@ -200,7 +175,7 @@ export function PuzzleEditor({ onBack, onPlay, previewScenario, idToken }: Props
     }
     setConfirm({
       title: 'Discard unsaved changes?',
-      message: `${what} will lose your unsaved puzzle or series details.`,
+      message: `${what} will lose your unsaved puzzle changes.`,
       confirmLabel: 'Discard',
       destructive: true,
       run: () => { discardUnsavedWork(); action(); },
@@ -253,9 +228,7 @@ export function PuzzleEditor({ onBack, onPlay, previewScenario, idToken }: Props
     const discardingNewPuzzle = hasUnsavedChanges && savedDraft === null;
     setConfirm({
       title: 'Discard unsaved changes?',
-      message: hasUnsavedSeriesDetails
-        ? 'Restore the puzzle and series details to their last saved drafts?'
-        : savedDraft
+      message: savedDraft
           ? `Restore "${savedDraft.name}" to its last saved draft?`
           : `Clear the unsaved puzzle "${draft.name}" and start with a blank draft?`,
       confirmLabel: 'Discard Changes',
@@ -397,24 +370,6 @@ export function PuzzleEditor({ onBack, onPlay, previewScenario, idToken }: Props
     }
   }
 
-  async function saveSeries(nextSeries: SeriesDefinition, savedMessage = 'Saved series assignment.') {
-    setSaving(true);
-    try {
-      const saved = await updateDefaultSeries(nextSeries, idToken);
-      setSeries(saved);
-      setSeriesDetails(seriesDetailsFor(saved));
-      setStatus(savedMessage);
-    } catch (error) {
-      setStatus(error instanceof Error ? error.message : 'Failed to save series.');
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  function saveSeriesDetails() {
-    void saveSeries({ ...series, ...seriesDetails }, 'Saved series details.');
-  }
-
   function requestPublish() {
     setConfirm({
       title: 'Publish drafts to players?',
@@ -456,7 +411,7 @@ export function PuzzleEditor({ onBack, onPlay, previewScenario, idToken }: Props
     try {
       const data = await deleteScenario(originalId, idToken);
       setScenarios(data.scenarios);
-      setSeries(data.series);
+      setSeries(Array.isArray(data.series) ? data.series : [data.series]);
       const nextDraft = data.scenarios[0] ?? emptyScenario([]);
       const isSaved = data.scenarios.some(scenario => scenario.id === nextDraft.id);
       setDraft(cloneScenario(nextDraft));
@@ -472,27 +427,18 @@ export function PuzzleEditor({ onBack, onPlay, previewScenario, idToken }: Props
     }
   }
 
-  function toggleSeriesAssignment() {
-    const scenarioIds = inSeries
-      ? series.scenarioIds.filter(id => id !== draft.id)
-      : [...series.scenarioIds, draft.id];
-    void saveSeries({ ...series, scenarioIds });
-  }
-
-  function moveSeries(offset: -1 | 1) {
-    if (!inSeries) return;
-    const next = [...series.scenarioIds];
-    const target = seriesIndex + offset;
-    if (target < 0 || target >= next.length) return;
-    [next[seriesIndex], next[target]] = [next[target], next[seriesIndex]];
-    void saveSeries({ ...series, scenarioIds: next });
-  }
-
-  function removeMissingSeriesIds() {
-    void saveSeries({
-      ...series,
-      scenarioIds: series.scenarioIds.filter(id => !missingSeriesIds.includes(id)),
-    });
+  async function assignToSeries(seriesId: string) {
+    if (!originalId) return;
+    setSaving(true);
+    try {
+      const saved = await assignScenarioToSeries(originalId, seriesId, idToken);
+      setSeries(saved);
+      setStatus(seriesId ? 'Saved puzzle series assignment.' : 'Puzzle is no longer assigned to a series.');
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : 'Failed to save series assignment.');
+    } finally {
+      setSaving(false);
+    }
   }
 
   function openStatistics() {
@@ -512,6 +458,15 @@ export function PuzzleEditor({ onBack, onPlay, previewScenario, idToken }: Props
           onClick={() => setAdminSection('editor')}
         >
           Puzzle Creator
+        </button>
+        <button
+          className={`editor__section-tab${adminSection === 'series' ? ' editor__section-tab--active' : ''}`}
+          type="button"
+          role="tab"
+          aria-selected={adminSection === 'series'}
+          onClick={() => guardUnsaved(() => setAdminSection('series'), 'Opening the Series Creator')}
+        >
+          Series Creator
         </button>
         <button
           className={`editor__section-tab${adminSection === 'statistics' ? ' editor__section-tab--active' : ''}`}
@@ -537,6 +492,15 @@ export function PuzzleEditor({ onBack, onPlay, previewScenario, idToken }: Props
         <AdminConsole idToken={idToken} onBack={onBack} />
       ) : adminSection === 'statistics' ? (
         <AdminStatistics idToken={idToken} onBack={onBack} />
+      ) : adminSection === 'series' ? (
+        <>
+          <header className="editor__header">
+            <div className="editor__heading"><span className="editor__kicker">Campaign workshop</span><h1 className="editor__title">Series Creator</h1><p className="editor__subtitle">Create a series, set its identity and list position, then arrange its puzzle steps.</p></div>
+            <div className="editor__header-actions"><button className="btn btn--secondary" onClick={onBack}>Back</button><button className="btn btn--primary" disabled={publishing} onClick={requestPublish}>{publishing ? 'Publishing…' : 'Publish Drafts'}</button></div>
+          </header>
+          <SeriesCreator scenarios={scenarios} series={series} idToken={idToken} onChange={setSeries} onStatus={setStatus} />
+          <div className="editor__status" role="status">{status}</div>
+        </>
       ) : (
         <>
       <header className="editor__header">
@@ -609,7 +573,8 @@ export function PuzzleEditor({ onBack, onPlay, previewScenario, idToken }: Props
           </div>
           <div className="editor__puzzle-list">
             {filteredScenarios.map(scenario => {
-              const position = series.scenarioIds.indexOf(scenario.id);
+              const membership = series.find(item => item.scenarioIds.includes(scenario.id));
+              const position = membership?.scenarioIds.indexOf(scenario.id) ?? -1;
               return (
                 <button
                   key={scenario.id}
@@ -625,7 +590,7 @@ export function PuzzleEditor({ onBack, onPlay, previewScenario, idToken }: Props
                     {scenario.published === false ? 'Disabled' : 'Enabled'}
                   </span>
                   <span className={position >= 0 ? 'editor__puzzle-series' : 'editor__puzzle-series editor__puzzle-series--out'}>
-                    {position >= 0 ? `Series #${position + 1}` : 'Not in series'}
+                    {position >= 0 ? `${membership?.name} · step ${position + 1}` : 'Not in series'}
                   </span>
                 </button>
               );
@@ -659,6 +624,20 @@ export function PuzzleEditor({ onBack, onPlay, previewScenario, idToken }: Props
                 <option value="orc">Orc</option>
               </select>
             </label>
+            <label>
+              Objective
+              <select value={draft.objective ?? 'touchdown'} onChange={() => undefined}>
+                <option value="touchdown">Touchdown</option>
+              </select>
+            </label>
+            <label>
+              Series
+              <select value={assignedSeries?.id ?? ''} disabled={!originalId || saving} onChange={event => { void assignToSeries(event.target.value); }}>
+                <option value="">Not assigned</option>
+                {series.map(item => <option key={item.id} value={item.id}>{item.name}</option>)}
+              </select>
+              {!originalId && <small>Save the puzzle before assigning it.</small>}
+            </label>
             <label className="editor__checkbox">
               <input
                 type="checkbox"
@@ -666,6 +645,14 @@ export function PuzzleEditor({ onBack, onPlay, previewScenario, idToken }: Props
                 onChange={event => setMetadata('published', event.target.checked)}
               />
               Enabled for players
+            </label>
+            <label className="editor__checkbox">
+              <input
+                type="checkbox"
+                checked={draft.freePlay === true}
+                onChange={event => setMetadata('freePlay', event.target.checked)}
+              />
+              Also enabled for Free Play
             </label>
             <label className="editor__metadata-desc">
               Description
@@ -729,7 +716,6 @@ export function PuzzleEditor({ onBack, onPlay, previewScenario, idToken }: Props
             {([
               ['roster', 'Roster'],
               ['player', 'Player'],
-              ['series', 'Series'],
               ['review', validationErrors.length > 0 ? `Review ${validationErrors.length}` : 'Review'],
             ] as [InspectorSection, string][]).map(([section, label]) => (
               <button
@@ -906,47 +892,6 @@ export function PuzzleEditor({ onBack, onPlay, previewScenario, idToken }: Props
             ) : (
               <p className="editor__hint">Select a placed player to edit its stats, skills, and role, assign the ball, or delete it. Drag a player to move it.</p>
             )}
-          </section>
-          )}
-
-          {inspectorSection === 'series' && (
-          <section className="editor-tool" aria-labelledby="series-heading">
-            <h2 id="series-heading">Series</h2>
-            <label>
-              Series name
-              <input value={seriesDetails.name} onChange={event => setSeriesDetails(details => ({ ...details, name: event.target.value }))} />
-            </label>
-            <label>
-              Series description
-              <textarea value={seriesDetails.description} onChange={event => setSeriesDetails(details => ({ ...details, description: event.target.value }))} />
-            </label>
-            <label>
-              Chooser logo key
-              <input value={seriesDetails.logo ?? ''} placeholder="nuffle-shuffle" onChange={event => setSeriesDetails(details => ({ ...details, logo: event.target.value || undefined }))} />
-            </label>
-            <p className="editor__hint">Logo keys map to bundled chooser artwork. Unknown keys use the text-only fallback.</p>
-            <button className="btn btn--primary" disabled={saving || !hasUnsavedSeriesDetails} onClick={saveSeriesDetails}>Save Series Details</button>
-            {missingSeriesIds.length > 0 && (
-              <div className="editor__errors" role="alert">
-                <p>Series references missing puzzles: {missingSeriesIds.join(', ')}</p>
-                <button className="btn btn--secondary" onClick={removeMissingSeriesIds} disabled={hasUnsavedSeriesDetails}>
-                  Remove Missing Entries
-                </button>
-              </div>
-            )}
-            <button className="btn btn--secondary" onClick={toggleSeriesAssignment} disabled={!originalId || hasUnsavedSeriesDetails}>
-              {inSeries ? 'Remove From Series' : 'Add To Series'}
-            </button>
-            {!originalId && <p className="editor__hint">Save the puzzle before adding it to the series.</p>}
-            <div className="editor__series-actions">
-              <button className="btn btn--secondary" disabled={hasUnsavedSeriesDetails || !inSeries || seriesIndex === 0} onClick={() => moveSeries(-1)}>Move Up</button>
-              <button className="btn btn--secondary" disabled={hasUnsavedSeriesDetails || !inSeries || seriesIndex === series.scenarioIds.length - 1} onClick={() => moveSeries(1)}>Move Down</button>
-            </div>
-            <ol className="editor__series-list">
-              {series.scenarioIds.map(id => (
-                <li key={id} className={id === draft.id ? 'editor__series-item--active' : ''}>{id}</li>
-              ))}
-            </ol>
           </section>
           )}
 

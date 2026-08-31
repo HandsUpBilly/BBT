@@ -1,5 +1,5 @@
-import { normalizeSeries } from '../../shared/scenarioValidation.js';
-import { editorStore, readDraftScenarios, writeDraftSeries } from './editorStore.js';
+import { SCENARIO_ID_RE, normalizeSeries } from '../../shared/scenarioValidation.js';
+import { editorStore, readDraftScenarios, readDraftSeries, writeDraftSeries } from './editorStore.js';
 import { AdminAuthError, authErrorResponse, requireAdminGoogleUser } from './auth.js';
 
 function jsonResponse(status, body) {
@@ -10,7 +10,7 @@ function jsonResponse(status, body) {
 }
 
 export default async function handler(req) {
-  if (req.method !== 'PUT') {
+  if (!['POST', 'PUT', 'DELETE'].includes(req.method)) {
     return jsonResponse(405, { errors: ['Method not allowed'] });
   }
 
@@ -21,6 +21,44 @@ export default async function handler(req) {
     throw error;
   }
 
+  const url = new URL(req.url);
+  const segments = url.pathname.split('/').filter(Boolean);
+  const pathId = segments.at(-1);
+  const seriesId = pathId && !['editor-series', 'series'].includes(pathId) ? pathId : null;
+  const store = editorStore();
+  const existing = await readDraftSeries(store);
+
+  if (seriesId === 'assignment' && req.method === 'PUT') {
+    let assignment;
+    try {
+      assignment = await req.json();
+    } catch {
+      return jsonResponse(400, { errors: ['Invalid JSON'] });
+    }
+    const scenarioId = String(assignment?.scenarioId ?? '');
+    const targetSeriesId = String(assignment?.seriesId ?? '');
+    if (!SCENARIO_ID_RE.test(scenarioId) || (targetSeriesId && !SCENARIO_ID_RE.test(targetSeriesId))) {
+      return jsonResponse(400, { errors: ['Invalid assignment'] });
+    }
+    const scenarios = await readDraftScenarios(store);
+    if (!scenarios.some(item => item.id === scenarioId)) return jsonResponse(404, { errors: ['Scenario not found'] });
+    if (targetSeriesId && !existing.some(item => item.id === targetSeriesId)) return jsonResponse(404, { errors: ['Series not found'] });
+    const saved = existing.map(item => {
+      const without = item.scenarioIds.filter(id => id !== scenarioId);
+      return item.id === targetSeriesId ? { ...item, scenarioIds: [...without, scenarioId] } : { ...item, scenarioIds: without };
+    });
+    await writeDraftSeries(store, saved);
+    return jsonResponse(200, saved);
+  }
+
+  if (req.method === 'DELETE') {
+    if (!seriesId || !SCENARIO_ID_RE.test(seriesId)) return jsonResponse(400, { errors: ['Invalid series id'] });
+    if (!existing.some(item => item.id === seriesId)) return jsonResponse(404, { errors: ['Series not found'] });
+    const saved = existing.filter(item => item.id !== seriesId);
+    await writeDraftSeries(store, saved);
+    return jsonResponse(200, saved);
+  }
+
   let body;
   try {
     body = await req.json();
@@ -28,15 +66,21 @@ export default async function handler(req) {
     return jsonResponse(400, { errors: ['Invalid JSON'] });
   }
 
-  const store = editorStore();
   const scenarios = await readDraftScenarios(store);
   const scenarioIds = new Set(scenarios.map(s => s.id));
-  const series = normalizeSeries(body);
+  const series = normalizeSeries({ ...body, id: seriesId ?? body?.id });
+  if (!SCENARIO_ID_RE.test(series.id)) return jsonResponse(400, { errors: ['Invalid series id'] });
+  if (req.method === 'POST' && existing.some(item => item.id === series.id)) {
+    return jsonResponse(409, { errors: ['Series id already exists'] });
+  }
   const missing = series.scenarioIds.filter(id => !scenarioIds.has(id));
   if (missing.length) {
     return jsonResponse(400, { errors: missing.map(id => `Missing scenario: ${id}`) });
   }
 
-  await writeDraftSeries(store, series);
-  return jsonResponse(200, series);
+  const saved = existing.some(item => item.id === series.id)
+    ? existing.map(item => item.id === series.id ? series : item)
+    : [...existing, series];
+  await writeDraftSeries(store, saved);
+  return jsonResponse(req.method === 'POST' ? 201 : 200, series);
 }

@@ -1,7 +1,7 @@
 // GENERATED FILE — do not edit.
 // Produced by scripts/generate-scenario-seed.mjs from:
 //   client/src/scenarios/*.json  (6 files)
-//   client/src/series/default.json
+//   client/src/series/*.json  (1 file)
 // Regenerate with: npm run generate:seed
 
 export const STATIC_SCENARIOS = [
@@ -10,6 +10,8 @@ export const STATIC_SCENARIOS = [
     "name": "Reikland's Opening Drive",
     "description": "OBJECTIVE: Carry the ball into the Human End Zone. Two Orc Linemen block the direct route. Choose the safest path.",
     "activeTeam": "human",
+    "objective": "touchdown",
+    "freePlay": false,
     "published": true,
     "pieces": [
       {
@@ -73,6 +75,8 @@ export const STATIC_SCENARIOS = [
     "name": "The Reikland Hand-off",
     "description": "OBJECTIVE: Score with Quickhand. Swiftfoot carries the ball and must complete a Hand-off before Quickhand runs for the End Zone.",
     "activeTeam": "human",
+    "objective": "touchdown",
+    "freePlay": false,
     "published": true,
     "pieces": [
       {
@@ -213,6 +217,8 @@ export const STATIC_SCENARIOS = [
     "name": "Swiftfoot's Long Bomb",
     "description": "OBJECTIVE: Score with Quickhand. Move Swiftfoot clear of the Tackle Zones, then complete the Pass and Catch.",
     "activeTeam": "human",
+    "objective": "touchdown",
+    "freePlay": false,
     "published": true,
     "ballPosition": null,
     "pieces": [
@@ -385,6 +391,8 @@ export const STATIC_SCENARIOS = [
     "name": "Ironjaw's Gauntlet",
     "description": "OBJECTIVE: Carry the ball through Ironjaw's defensive line. Every failed Dodge ends the drive.",
     "activeTeam": "human",
+    "objective": "touchdown",
+    "freePlay": false,
     "published": true,
     "pieces": [
       {
@@ -525,6 +533,8 @@ export const STATIC_SCENARIOS = [
     "name": "Reikland's Last Stand",
     "description": "OBJECTIVE: Score this turn. Swiftfoot must escape, complete a Hand-off to Quickhand, and clear the remaining defenders.",
     "activeTeam": "human",
+    "objective": "touchdown",
+    "freePlay": false,
     "published": true,
     "pieces": [
       {
@@ -682,6 +692,8 @@ export const STATIC_SCENARIOS = [
     "name": "Loose Ball on the Goal Line",
     "description": "OBJECTIVE: Recover the loose ball and score. Block Skullkrak away from the ball, complete the Pickup, then choose the scoring route.",
     "activeTeam": "human",
+    "objective": "touchdown",
+    "freePlay": true,
     "published": true,
     "ballPosition": {
       "col": 7,
@@ -992,17 +1004,25 @@ export const STATIC_SCENARIOS = [
   }
 ];
 
-export const STATIC_SERIES = {
-  "id": "default",
-  "name": "Humans vs Orcs: The Nuffle Shuffle",
-  "logo": "nuffle-shuffle",
-  "description": "Six drills cover Movement, Dodging, Hand-offs, Passing, Blocking, Pickups, and Parallel Universes. Score a touchdown in each drill.",
-  "scenarioIds": [
-    "scenario-001",
-    "scenario-004",
-    "scenario-002",
-    "scenario-003",
-    "scenario-005",
-    "scenario-006"
-  ]
-};
+export const STATIC_SERIES = [
+  {
+    "id": "default",
+    "name": "Humans vs Orcs: The Nuffle Shuffle",
+    "logo": "nuffle-shuffle",
+    "description": "Six drills cover Movement, Dodging, Hand-offs, Passing, Blocking, Pickups, and Parallel Universes. Score a touchdown in each drill.",
+    "teams": [
+      "human",
+      "orc"
+    ],
+    "objective": "touchdown",
+    "order": 0,
+    "scenarioIds": [
+      "scenario-001",
+      "scenario-004",
+      "scenario-002",
+      "scenario-003",
+      "scenario-005",
+      "scenario-006"
+    ]
+  }
+];

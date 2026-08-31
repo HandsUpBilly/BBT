@@ -97,10 +97,10 @@ export default async function handler(req) {
     if (!existing.some(s => s.id === id)) return jsonResponse(404, { errors: ['Scenario not found'] });
 
     const scenarios = existing.filter(s => s.id !== id);
-    const series = {
-      ...currentSeries,
-      scenarioIds: (currentSeries?.scenarioIds ?? []).filter(scenarioId => scenarioId !== id),
-    };
+    const series = currentSeries.map(item => ({
+      ...item,
+      scenarioIds: item.scenarioIds.filter(scenarioId => scenarioId !== id),
+    }));
     await Promise.all([writeDraftScenarios(store, scenarios), writeDraftSeries(store, series)]);
     return jsonResponse(200, { scenarios, series });
   }

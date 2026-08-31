@@ -5776,3 +5776,13 @@ blocks the pitch.
   and controls all automatic teaching. Manual guide access remains available.
 - Analytics may record stable concept ids and fixed outcomes only; never board
   positions, routes, authored text, player identity, or free-form content.
+# Multi-Series Creator Workflows
+
+**Status: Shipped**
+
+Puzzle and series authoring are separate admin workflows. Puzzles carry an
+extensible objective and an independent Free Play flag, and can be assigned to
+one series through an atomic assignment action. Series are ordered records with
+two teams, a logo, title/description, objective, list position, and ordered
+puzzle steps. The runtime and draft/published stores accept the legacy single
+series object and migrate it to the multi-series collection on read.

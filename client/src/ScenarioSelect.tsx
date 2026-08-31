@@ -3,7 +3,6 @@ import type { ProgressData } from './api';
 import type { LeaderboardEntry, Scenario, SeriesDefinition, SeriesLeaderboardEntry } from './types';
 import nuffleShuffleLogo from './assets/series/nuffle-shuffle-transparent.webp';
 import { BrandLogo } from './BrandLogo';
-import { FREE_PLAY_SCENARIO_ID } from './tutorialLessons';
 import { UI_COPY } from './uiCopy';
 import './ScenarioSelect.css';
 
@@ -33,11 +32,11 @@ interface ScenarioProgress {
 
 interface Props {
   scenarios: Scenario[];
-  series: SeriesDefinition;
+  series: SeriesDefinition[] | SeriesDefinition;
   onPlay: (scenario: Scenario) => void;
   onLeaderboard: (scenario: Scenario) => void;
-  onStartSeries: () => void;
-  onSeriesLeaderboard: () => void;
+  onStartSeries: (series: SeriesDefinition) => void;
+  onSeriesLeaderboard: (series: SeriesDefinition) => void;
   onAdmin: () => void;
   onHelp: () => void;
   onSettings: () => void;
@@ -124,6 +123,7 @@ export function ScenarioSelect({
 }: Props) {
   const [playView, setPlayView] = useState<PlayView>('series');
   const [freePlayFilter, setFreePlayFilter] = useState<FreePlayFilter>('all');
+  const seriesList = useMemo(() => Array.isArray(series) ? series : [series], [series]);
 
   // Read storage once per mount, not on every render — as a plain call this was
   // a fresh object identity each time, which defeated both memos below.
@@ -145,11 +145,14 @@ export function ScenarioSelect({
   }, [progress, localScores, userId]);
 
   const freePlayScenarios = useMemo(
-    () => scenarios.filter(scenario => scenario.id === FREE_PLAY_SCENARIO_ID),
+    () => scenarios.filter(scenario => scenario.freePlay),
     [scenarios],
   );
 
-  const visibleFreePlayScenarios = freePlayFilter === 'specials' ? [] : freePlayScenarios;
+  const seriesScenarioIds = useMemo(() => new Set(seriesList.flatMap(item => item.scenarioIds)), [seriesList]);
+  const visibleFreePlayScenarios = freePlayScenarios.filter(scenario => freePlayFilter === 'all'
+    || (freePlayFilter === 'series' && seriesScenarioIds.has(scenario.id))
+    || (freePlayFilter === 'specials' && !seriesScenarioIds.has(scenario.id)));
 
   return (
     <div className="scenario-select">
@@ -202,29 +205,30 @@ export function ScenarioSelect({
 
       {playView === 'series' ? (
         <section className="play-section">
-          <div className="series-row">
+          {seriesList.map(item => <div className="series-row" key={item.id}>
             <div className="series-row__logo">
-              {series.logo && SERIES_LOGOS[series.logo] ? (
+              {item.logo && SERIES_LOGOS[item.logo] ? (
                 <span className="series-row__crest">
-                  <img src={SERIES_LOGOS[series.logo]} alt={`${series.name} logo`} />
+                  <img src={SERIES_LOGOS[item.logo]} alt={`${item.name} logo`} />
                 </span>
               ) : null}
             </div>
             <div className="series-row__body">
               <span className="series-row__eyebrow">{UI_COPY.landing.seriesEyebrow}</span>
-              <h2 className="series-row__title">{series.name}</h2>
-              <p className="series-row__desc">{series.description}</p>
+              <h2 className="series-row__title">{item.name}</h2>
+              <p className="series-row__desc">{item.description}</p>
+              <div className="series-row__meta">{(item.teams ?? ['human', 'orc']).map(team => team === 'human' ? 'Humans' : 'Orcs').join(' vs ')} · Touchdown · {item.scenarioIds.length} steps</div>
               <div className="series-row__meta">{formatProgress(seriesProgress)}</div>
             </div>
             <div className="series-row__actions">
-              <button className="btn btn--primary" onClick={onStartSeries}>
+              <button className="btn btn--primary" onClick={() => onStartSeries(item)}>
                 {UI_COPY.landing.startSeries}
               </button>
-              <button className="btn btn--secondary" onClick={onSeriesLeaderboard}>
+              <button className="btn btn--secondary" onClick={() => onSeriesLeaderboard(item)}>
                 {UI_COPY.landing.rankings}
               </button>
             </div>
-          </div>
+          </div>)}
         </section>
       ) : (
         <section className="play-section">

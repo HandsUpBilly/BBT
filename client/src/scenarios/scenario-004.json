@@ -3,6 +3,8 @@
   "name": "Ironjaw's Gauntlet",
   "description": "OBJECTIVE: Carry the ball through Ironjaw's defensive line. Every failed Dodge ends the drive.",
   "activeTeam": "human",
+  "objective": "touchdown",
+  "freePlay": false,
   "published": true,
   "pieces": [
     {

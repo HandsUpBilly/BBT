@@ -12,8 +12,8 @@ Primary files:
 
 ## What Works Now
 
-Puzzle Creator renders `PuzzleEditor` with **Puzzle Editor**, **Statistics**,
-and **Admin Console** sections. Switching away from an unsaved puzzle is covered by the same
+Puzzle Creator renders `PuzzleEditor` with distinct **Puzzle Creator** and
+**Series Creator** workflows, plus **Statistics** and **Admin Console** sections. Switching away from an unsaved puzzle is covered by the same
 discard confirmation as other editor navigation.
 
 Editor features:
@@ -28,10 +28,13 @@ Editor features:
 - move players by drag,
 - place ball on a player or loose on the ground,
 - save over existing / save as new,
-- enable/disable puzzles for players,
+- select the puzzle objective (Touchdown is the only current value),
+- assign a saved puzzle to one series from a dropdown,
+- independently enable/disable puzzles globally and opt them into Free Play,
 - publish draft changes (behind a confirmation),
-- add/remove/reorder puzzle in default series, with a warning + one-click fix
-  for series entries pointing at deleted puzzles,
+- create, edit, and delete multiple series in the separate Series Creator,
+- set each series title, description, two teams, logo, objective, and list position,
+- add, remove, and reorder its puzzle steps,
 - play draft and return to designer.
 
 The Statistics section shows anonymous player-performance aggregates from the
@@ -50,9 +53,9 @@ The two admin surfaces also include their own client-side workbench tools:
 
 - Puzzle Creator can search by puzzle id, name, or description and filter the
   list to enabled, disabled, or in-series puzzles without changing drafts.
-- Series name, description, and chooser-logo key are separately saved draft
-  details; a pending edit blocks publishing and other series changes until it
-  is saved or discarded.
+- Series drafts are edited independently from the open puzzle. Puzzle-series
+  reassignment is a single server operation, preventing half-applied moves in
+  eventually consistent Blob storage.
 - Statistics can search its per-puzzle table, sort every displayed metric, and
   download the anonymous per-puzzle summary as CSV. The export contains the
   same aggregate data already visible on-screen—never names, ids, or move logs.
@@ -125,7 +128,9 @@ analytics, editor drafts, and browser-local attempt history untouched.
 - `POST /api/editor/scenarios`
 - `PUT /api/editor/scenarios/:scenarioId`
 - `DELETE /api/editor/scenarios/:scenarioId`
-- `PUT /api/editor/series/default`
+- `POST /api/editor/series`
+- `PUT` / `DELETE /api/editor/series/:seriesId`
+- `PUT /api/editor/series-assignment`
 - `POST /api/editor/publish`
 - `GET /api/editor/statistics`
 - `GET /api/editor/analytics`
@@ -135,16 +140,16 @@ analytics, editor drafts, and browser-local attempt history untouched.
 These write local JSON files under:
 
 - `client/src/scenarios/`
-- `client/src/series/default.json`
+- `client/src/series/*.json`
 
-Deleting a scenario also removes its id from `client/src/series/default.json`.
+Deleting a scenario also removes its id from every series JSON file.
 
 ## Production Editor
 
 Netlify production persists editor drafts in Netlify Blobs:
 
 - `netlify/functions/editor-scenarios.js` handles scenario draft create/update/delete.
-- `netlify/functions/editor-series.js` handles the default draft series.
+- `netlify/functions/editor-series.js` handles the draft series collection and atomic puzzle assignment.
 - `netlify/functions/editor-publish.js` copies draft scenarios/series to the published keys.
 - `netlify/functions/editor-statistics.js` reads the full leaderboard Blobs and
   returns anonymous aggregates built by `shared/statistics.js`.
@@ -158,7 +163,7 @@ Netlify production persists editor drafts in Netlify Blobs:
 - `netlify/functions/scenarios.js` serves published scenarios/series to players.
 
 Draft saves are not player-visible until an admin clicks Publish Drafts.
-Deleting a draft scenario also removes it from the draft series; publishing is
+Deleting a draft scenario also removes it from every draft series; publishing is
 still required before players see that deletion.
 
 ## Creator Workbench Layout
@@ -168,10 +173,15 @@ stack of editor cards:
 
 - **Puzzle Library** on the left owns search, filtering, selection, creation,
   and duplication.
-- **Board Setup** in the centre owns puzzle metadata and the pitch. The pitch is
+- **Board Setup** in the centre owns puzzle metadata, objective, series
+  assignment, Free Play availability, and the pitch. The pitch is
   the primary working surface and keeps its native 15-by-26 orientation.
-- **Creator Tools** on the right switches between Roster, Player, Series, and
-  Review. Selecting a player on the pitch opens the Player tool automatically.
+- **Creator Tools** on the right switches between Roster, Player, and Review.
+  Selecting a player on the pitch opens the Player tool automatically.
+
+The separate **Series Creator** has a series library and a focused form for
+identity/list metadata plus an ordered step editor. It does not require a
+puzzle to remain open while campaign structure is edited.
 
 Save Puzzle is kept in the persistent creator header. Publishing remains a
 separate action and is still disabled while any puzzle or series edits are

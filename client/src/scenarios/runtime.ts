@@ -1,10 +1,11 @@
 import type { Scenario, SeriesDefinition } from '../types';
 import { scenarios as staticScenarios } from './index';
-import { defaultSeries as staticSeries, normalizeSeriesDefinition } from '../series';
+import { allSeries as staticSeries, normalizeSeriesDefinition } from '../series';
+import { normalizeSeriesCollection } from '../../../shared/scenarioValidation.js';
 
 export interface ScenarioData {
   scenarios: Scenario[];
-  series: SeriesDefinition;
+  series: SeriesDefinition[];
 }
 
 const staticData: ScenarioData = { scenarios: staticScenarios, series: staticSeries };
@@ -25,7 +26,7 @@ export async function loadScenarioData(): Promise<ScenarioData> {
     if (!response.ok) return staticData;
     const data = (await response.json()) as Partial<ScenarioData>;
     if (!Array.isArray(data.scenarios) || !data.series) return staticData;
-    return { scenarios: data.scenarios, series: normalizeSeriesDefinition(data.series) };
+    return { scenarios: data.scenarios, series: normalizeSeriesCollection(data.series).map(normalizeSeriesDefinition) };
   } catch {
     return staticData;
   }

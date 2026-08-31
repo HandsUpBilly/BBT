@@ -7,13 +7,13 @@ import {
   SCENARIO_ID_RE,
   normalizeScenario,
   normalizeSeries,
+  normalizeSeriesCollection,
   validateScenario,
 } from '../shared/scenarioValidation.js';
 
 const ROOT = join(process.cwd(), '..');
 const SCENARIO_DIR = join(ROOT, 'client/src/scenarios');
 const SERIES_DIR = join(ROOT, 'client/src/series');
-const DEFAULT_SERIES_PATH = join(SERIES_DIR, 'default.json');
 
 function jsonResponse(res, status, body) {
   res.status(status).json(body);
@@ -60,12 +60,20 @@ async function readScenarios() {
   }));
 }
 
-async function readDefaultSeries() {
+async function readSeries() {
   try {
-    return normalizeSeries(JSON.parse(await readFile(DEFAULT_SERIES_PATH, 'utf8')));
+    const files = (await readdir(SERIES_DIR)).filter(file => file.endsWith('.json')).sort();
+    return normalizeSeriesCollection(await Promise.all(files.map(async file =>
+      JSON.parse(await readFile(join(SERIES_DIR, file), 'utf8')),
+    )));
   } catch {
-    return { id: 'default', name: 'Default Series', description: '', scenarioIds: [] };
+    return [];
   }
+}
+
+async function writeSeries(series) {
+  await mkdir(SERIES_DIR, { recursive: true });
+  await writeFile(join(SERIES_DIR, `${series.id}.json`), `${JSON.stringify(series, null, 2)}\n`);
 }
 
 /**
@@ -76,12 +84,12 @@ async function readDefaultSeries() {
  * puzzle mid-run). Exported so /api/progress can reuse it.
  */
 export async function readPublicScenarios() {
-  const [allScenarios, series] = await Promise.all([readScenarios(), readDefaultSeries()]);
+  const [allScenarios, series] = await Promise.all([readScenarios(), readSeries()]);
   const scenarios = allScenarios.filter(scenario => scenario.published !== false);
   const publishedIds = new Set(scenarios.map(scenario => scenario.id));
   return {
     scenarios,
-    series: { ...series, scenarioIds: series.scenarioIds.filter(id => publishedIds.has(id)) },
+    series: series.map(item => ({ ...item, scenarioIds: item.scenarioIds.filter(id => publishedIds.has(id)) })),
   };
 }
 
@@ -128,7 +136,7 @@ export function registerEditorRoutes(app) {
   // Drafts include unpublished puzzles, so this needs the same admin gate as
   // the write routes — an open read here would leak work in progress.
   app.get('/api/editor/scenarios', async (req, res) => withAdmin(req, res, async () => {
-    const [scenarios, series] = await Promise.all([readScenarios(), readDefaultSeries()]);
+    const [scenarios, series] = await Promise.all([readScenarios(), readSeries()]);
     jsonResponse(res, 200, { scenarios, series });
   }));
 
@@ -168,25 +176,52 @@ export function registerEditorRoutes(app) {
 
     await unlink(scenarioPath(id));
     const remainingScenarios = scenarios.filter(scenario => scenario.id !== id);
-    const currentSeries = await readDefaultSeries();
-    const savedSeries = {
-      ...currentSeries,
-      scenarioIds: currentSeries.scenarioIds.filter(scenarioId => scenarioId !== id),
-    };
-    await mkdir(SERIES_DIR, { recursive: true });
-    await writeFile(DEFAULT_SERIES_PATH, `${JSON.stringify(savedSeries, null, 2)}\n`);
+    const currentSeries = await readSeries();
+    const savedSeries = currentSeries.map(item => ({
+      ...item,
+      scenarioIds: item.scenarioIds.filter(scenarioId => scenarioId !== id),
+    }));
+    await Promise.all(savedSeries.map(writeSeries));
     jsonResponse(res, 200, { scenarios: remainingScenarios, series: savedSeries });
   }));
 
-  app.put('/api/editor/series/default', async (req, res) => withAdmin(req, res, async () => {
+  async function saveSeriesRequest(req, res, creating) {
     const scenarios = await readScenarios();
     const scenarioIds = new Set(scenarios.map(scenario => scenario.id));
-    const series = normalizeSeries(req.body);
+    const series = normalizeSeries({ ...req.body, id: req.params.seriesId ?? req.body?.id });
+    if (!safeScenarioId(series.id)) return jsonResponse(res, 400, { errors: ['Invalid series id'] });
+    const existing = await readSeries();
+    if (creating && existing.some(item => item.id === series.id)) return jsonResponse(res, 409, { errors: ['Series id already exists'] });
     const missing = series.scenarioIds.filter(id => !scenarioIds.has(id));
     if (missing.length) return jsonResponse(res, 400, { errors: missing.map(id => `Missing scenario: ${id}`) });
-    await mkdir(SERIES_DIR, { recursive: true });
-    await writeFile(DEFAULT_SERIES_PATH, `${JSON.stringify(series, null, 2)}\n`);
-    jsonResponse(res, 200, series);
+    await writeSeries(series);
+    jsonResponse(res, creating ? 201 : 200, series);
+  }
+
+  app.post('/api/editor/series', async (req, res) => withAdmin(req, res, () => saveSeriesRequest(req, res, true)));
+  app.put('/api/editor/series/:seriesId', async (req, res) => withAdmin(req, res, () => saveSeriesRequest(req, res, false)));
+  app.delete('/api/editor/series/:seriesId', async (req, res) => withAdmin(req, res, async () => {
+    const id = safeScenarioId(req.params.seriesId);
+    if (!id) return jsonResponse(res, 400, { errors: ['Invalid series id'] });
+    const existing = await readSeries();
+    if (!existing.some(item => item.id === id)) return jsonResponse(res, 404, { errors: ['Series not found'] });
+    await unlink(join(SERIES_DIR, `${id}.json`));
+    jsonResponse(res, 200, existing.filter(item => item.id !== id));
+  }));
+
+  app.put('/api/editor/series-assignment', async (req, res) => withAdmin(req, res, async () => {
+    const scenarioId = safeScenarioId(req.body?.scenarioId);
+    const seriesId = req.body?.seriesId ? safeScenarioId(req.body.seriesId) : '';
+    if (!scenarioId || (req.body?.seriesId && !seriesId)) return jsonResponse(res, 400, { errors: ['Invalid assignment'] });
+    const [scenarios, existing] = await Promise.all([readScenarios(), readSeries()]);
+    if (!scenarios.some(item => item.id === scenarioId)) return jsonResponse(res, 404, { errors: ['Scenario not found'] });
+    if (seriesId && !existing.some(item => item.id === seriesId)) return jsonResponse(res, 404, { errors: ['Series not found'] });
+    const saved = existing.map(item => {
+      const without = item.scenarioIds.filter(id => id !== scenarioId);
+      return item.id === seriesId ? { ...item, scenarioIds: [...without, scenarioId] } : { ...item, scenarioIds: without };
+    });
+    await Promise.all(saved.map(writeSeries));
+    jsonResponse(res, 200, saved);
   }));
 
   // Local dev writes straight to the scenario/series JSON files players read,
@@ -195,7 +230,7 @@ export function registerEditorRoutes(app) {
   // environments. See netlify/functions/editor-publish.js for the Netlify
   // equivalent, which actually copies Blobs draft state to a published key.
   app.post('/api/editor/publish', async (req, res) => withAdmin(req, res, async () => {
-    const [scenarios, series] = await Promise.all([readScenarios(), readDefaultSeries()]);
+    const [scenarios, series] = await Promise.all([readScenarios(), readSeries()]);
     jsonResponse(res, 200, { scenarios, series });
   }));
 }
