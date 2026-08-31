@@ -151,20 +151,26 @@
 
 .branch-strip-row__content { min-width: 0; }
 
-.branch-strip-row__groups,
-.branch-strip-row__states {
-  display: grid;
-  gap: 8px;
+.branch-strip-row__blocks {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  width: max-content;
 }
 
-/* Left-aligned, not space-between: on a narrow viewport this box is often
-   wider than the screen (it spans every outcome column below it), so
-   anything pinned to its far right scrolls off-screen. The dice count sits
-   right after the label instead, where it's visible without scrolling. */
+.branch-strip-row__block {
+  flex: 0 0 auto;
+  min-width: 0;
+}
+
+/* Left-aligned, not space-between: a many-outcome Block can still be wider
+   than a narrow viewport, so the dice count stays beside the matchup label
+   instead of being pinned to an off-screen far edge. */
 .branch-strip-row__block-group {
   position: relative;
   display: flex;
   gap: 8px;
+  width: 100%;
   min-width: 0;
   padding: 4px 8px;
   color: var(--color-text-muted);
@@ -192,22 +198,26 @@
 .branch-strip-row__block-group small { flex: 0 0 auto; color: var(--color-text-disabled); }
 
 .branch-strip-row__states {
+  display: grid;
+  gap: 6px;
   margin: 4px 0 0;
   padding: 0;
   list-style: none;
 }
 
-.branch-strip-state,
-.branch-strip-state__actions { min-width: 0; }
+.branch-strip-state {
+  width: 100%;
+  min-width: 0;
+}
 
-/* inline-flex, not flex: a state's grid cell is sized for the widest
-   possible card (3 dice plus every control button — see BRANCH_TRACK_WIDTH
-   in BranchStrip.tsx), but most cards need far less than that. Shrinking to
-   fit here keeps the card itself compact instead of stretching its
-   background across space its own content doesn't use. */
+/* Each outcome fills one fixed track. Immediate outcomes from the same Block
+   therefore sit edge-to-edge with only the six-pixel track gutter, and their
+   shared header inherits the exact combined width of those tracks. */
 .branch-strip-state__actions {
-  display: inline-flex;
+  display: flex;
   align-items: stretch;
+  width: 100%;
+  min-width: 0;
   height: 100%;
 }
 
@@ -226,6 +236,10 @@
   background: var(--color-surface-2);
   border: 1px solid var(--color-border);
   border-radius: 6px 0 0 6px;
+}
+
+.branch-strip-state__actions > .branch-chip {
+  flex: 1 1 auto;
 }
 
 button.branch-chip { cursor: pointer; }

@@ -124,11 +124,36 @@ test('keeps Parallel Universe selectors below the HUD and within the screen', as
   }));
   expect(cardMetrics.length).toBeGreaterThan(1);
   for (const metrics of cardMetrics) {
-    expect(metrics.cardWidth, 'every outcome card should have the same fixed width').toBeCloseTo(190, 0);
+    expect(metrics.cardWidth, 'the outcome content must fill its available fixed-width track').toBeGreaterThanOrEqual(190);
+    expect(metrics.cardWidth, 'controls and outcome content together must stay within one track').toBeLessThanOrEqual(328);
     expect(metrics.diceWidth, 'the dice tray should reserve room for three dice').toBeCloseTo(90, 0);
     expect(metrics.diceRight, 'dice should not overlap the probability').toBeLessThanOrEqual(metrics.weightLeft + 1);
     for (const dieSize of metrics.diceSizes) {
       expect(dieSize, 'resolved dice should stay the same size').toBeCloseTo(28, 0);
+    }
+  }
+
+  const blockGroups = await strip.locator('.branch-strip-row__block').evaluateAll(groups => groups.map(group => {
+    const header = group.querySelector('.branch-strip-row__block-group')!.getBoundingClientRect();
+    const cards = Array.from(group.querySelectorAll('.branch-strip-state__actions'))
+      .map(card => card.getBoundingClientRect());
+    return {
+      header: { left: header.left, right: header.right, width: header.width },
+      cards: cards.map(card => ({ left: card.left, right: card.right, width: card.width })),
+    };
+  }));
+  for (const group of blockGroups) {
+    expect(group.cards.length).toBeGreaterThan(0);
+    expect(group.header.left, 'the Block header starts with its first outcome').toBeCloseTo(group.cards[0].left, 0);
+    expect(group.header.right, 'the Block header ends with its last outcome').toBeCloseTo(group.cards.at(-1)!.right, 0);
+    for (const card of group.cards) {
+      expect(card.width, 'each outcome and its controls fill one fixed track').toBeCloseTo(328, 0);
+    }
+    for (let index = 1; index < group.cards.length; index += 1) {
+      expect(
+        group.cards[index].left - group.cards[index - 1].right,
+        'sibling outcome tracks keep only the compact gutter',
+      ).toBeCloseTo(6, 0);
     }
   }
 
