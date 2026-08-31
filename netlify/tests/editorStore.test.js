@@ -44,3 +44,11 @@ test('toPublicView narrows every series in the new collection shape', () => {
   ]);
   assert.deepEqual(result.series.map(item => item.scenarioIds), [['scenario-001'], ['scenario-002']]);
 });
+
+test('toPublicView hides disabled series while leaving enabled series available', () => {
+  const result = toPublicView(scenarios, [
+    { id: 'enabled', published: true, scenarioIds: ['scenario-001'] },
+    { id: 'disabled', published: false, scenarioIds: ['scenario-002'] },
+  ]);
+  assert.deepEqual(result.series.map(item => item.id), ['enabled']);
+});

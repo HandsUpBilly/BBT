@@ -67,6 +67,8 @@ export interface SeriesDefinition {
   name: string;
   description: string;
   scenarioIds: string[];
+  /** Whether the series appears to players after drafts are published. */
+  published?: boolean;
   teams?: [Team, Team];
   objective?: Objective;
   /** Zero-based display order on the series selection screen. */

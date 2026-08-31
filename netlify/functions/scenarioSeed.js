@@ -1010,6 +1010,7 @@ export const STATIC_SERIES = [
     "name": "Humans vs Orcs: The Nuffle Shuffle",
     "logo": "nuffle-shuffle",
     "description": "Six drills cover Movement, Dodging, Hand-offs, Passing, Blocking, Pickups, and Parallel Universes. Score a touchdown in each drill.",
+    "published": true,
     "teams": [
       "human",
       "orc"

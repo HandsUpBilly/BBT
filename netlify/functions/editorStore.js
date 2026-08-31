@@ -69,10 +69,12 @@ export function toPublicView(scenarios, series) {
   const published = scenarios.filter(scenario => scenario.published !== false);
   const publishedIds = new Set(published.map(scenario => scenario.id));
   const collection = normalizeSeriesCollection(series);
-  const narrowed = collection.map(item => ({
-    ...item,
-    scenarioIds: item.scenarioIds.filter(id => publishedIds.has(id)),
-  }));
+  const narrowed = collection
+    .filter(item => item.published !== false)
+    .map(item => ({
+      ...item,
+      scenarioIds: item.scenarioIds.filter(id => publishedIds.has(id)),
+    }));
   return {
     scenarios: published,
     // Keep the old helper contract for legacy callers/tests while every stored

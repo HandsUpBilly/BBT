@@ -80,6 +80,7 @@ export function normalizeSeries(input) {
     scenarioIds: Array.isArray(source.scenarioIds)
       ? source.scenarioIds.map(String).filter(Boolean)
       : [],
+    published: source.published !== false,
     teams: [teams[0] ?? 'human', teams[1] ?? (teams[0] === 'orc' ? 'human' : 'orc')],
     objective: OBJECTIVES.includes(source.objective) ? source.objective : 'touchdown',
     order: Number.isInteger(source.order) && source.order >= 0 ? source.order : 0,
