@@ -4226,6 +4226,38 @@ immediately.
 
 ---
 
+# Administrative Ranking Resets
+
+**Status:** Shipped. Requested directly: clear every ranking, one series, or
+one individual puzzle from Admin Mode.
+
+## What ships
+
+- Admin Console shows full retained entry counts separately for the current
+  series and every individual puzzle. Stored boards whose puzzle has since
+  been deleted remain visible by id so they can still be cleared.
+- Each row has a scoped reset. **Clear all rankings** covers every stored
+  puzzle and series key, including deleted/legacy boards, making it a genuine
+  clean slate rather than only clearing currently published content.
+- Every reset is admin-only and requires a destructive confirmation naming the
+  scope and number of retained personal-best entries that will be removed.
+- Express resets its in-memory boards. Netlify writes empty arrays through the
+  leaderboard store's etag-aware retry path so it composes safely with a score
+  submission arriving at the same time.
+
+## Boundaries
+
+- A reset removes leaderboard personal bests only. It does not delete public
+  profiles or avatars, player login history, product analytics, puzzle/editor
+  data, or browser-local attempt history.
+- Public ranking/progress responses keep their existing short cache and may
+  show the old rows for up to 15 seconds; the admin result and counts update
+  immediately.
+- New submissions after a reset are accepted normally and start the board
+  again from empty.
+
+---
+
 # Block Outcomes as Board-State Branches
 
 **Status:** Shipped. The resolution engine (`blockBranching.ts`), tree

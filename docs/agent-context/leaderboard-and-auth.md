@@ -228,6 +228,28 @@ Two things to keep true:
   under the old name. See "Settings Screen and Player Prefs" in
   `frontend-flow.md`.
 
+## Admin Ranking Resets
+
+Admin Console reads the full retained counts from `GET /api/editor/rankings`
+and can clear them with admin-only `DELETE /api/editor/rankings` requests. The
+destructive target is one of:
+
+- every stored puzzle and series board, including keys for deleted/legacy
+  puzzles;
+- one series board;
+- one individual puzzle board.
+
+Every action has a scope/count-specific confirmation. Production clears each
+Blob through the same etag-aware `updateEntries` retry path as submissions, so
+a concurrent submission is re-read instead of being silently overwritten.
+Express mirrors the contract against its in-memory boards. Public leaderboard
+and progress responses may remain cached for up to 15 seconds after a reset.
+
+A ranking reset deletes retained personal-best entries only. It deliberately
+does not clear public player profiles, login history, aggregate analytics,
+editor data, or `bbt.attempts.v1` local attempt history. New submissions start
+fresh immediately.
+
 ## Public Player Profiles and Local Prefs
 
 `GET`/`PUT /api/profile` is verified-Google-only. It stores an optional public

@@ -50,6 +50,10 @@ import {
 } from '../shared/rateLimit.js';
 import { buildPlayerStatistics } from '../shared/statistics.js';
 import { LoginValidationError, recordLogin, sortLogins, validateLoginPayload } from '../shared/loginTracking.js';
+import {
+  RankingResetValidationError,
+  parseRankingResetTarget,
+} from '../shared/rankingReset.js';
 import { registerAnalyticsRoutes } from './analytics.js';
 import { registerPlayerProfileRoutes } from './profiles.js';
 import { enrichEntriesWithProfiles } from './profileStore.js';
@@ -206,6 +210,74 @@ app.post('/api/series-leaderboard', async (req, res) => {
     user ? e.userId === user.providerUserId : !e.userId && e.name === entry.name,
   );
   res.status(201).json(persisted ?? entry);
+});
+
+async function rankingResetSummary() {
+  const { scenarios, series } = await readPublicScenarios();
+  const names = new Map(scenarios.map(scenario => [scenario.id, scenario.name]));
+  const puzzleIds = [...new Set([...names.keys(), ...store.keys()])].sort();
+  const puzzles = puzzleIds.map(id => ({
+    id,
+    name: names.get(id) ?? id,
+    count: getBoard(id).length,
+  }));
+  const seriesBoards = [{ id: series.id, name: series.name, count: seriesBoard.length }];
+  return {
+    totalEntries: [...puzzles, ...seriesBoards].reduce((total, board) => total + board.count, 0),
+    series: seriesBoards,
+    puzzles,
+  };
+}
+
+async function requireRankingAdmin(req, res) {
+  try {
+    await requireAdminGoogleUser(req);
+    return true;
+  } catch (error) {
+    if (error instanceof AdminAuthError) {
+      res.status(error.status).json({ error: error.message, errors: [error.message] });
+      return false;
+    }
+    throw error;
+  }
+}
+
+app.get('/api/editor/rankings', async (req, res) => {
+  if (!await requireRankingAdmin(req, res)) return;
+  res.set({ 'Cache-Control': 'private, no-store', Vary: 'Authorization' });
+  res.json(await rankingResetSummary());
+});
+
+app.delete('/api/editor/rankings', async (req, res) => {
+  if (!await requireRankingAdmin(req, res)) return;
+  let target;
+  try {
+    target = parseRankingResetTarget(req.query.scope, req.query.id);
+  } catch (error) {
+    if (error instanceof RankingResetValidationError) return res.status(400).json({ error: error.message });
+    throw error;
+  }
+
+  const before = await rankingResetSummary();
+  let removed;
+  if (target.scope === 'all') {
+    removed = before.totalEntries;
+    store.clear();
+    seriesBoard = [];
+  } else if (target.scope === 'puzzle') {
+    const board = before.puzzles.find(item => item.id === target.id);
+    if (!board) return res.status(404).json({ error: 'Ranking board not found' });
+    removed = board.count;
+    store.set(target.id, []);
+  } else {
+    const board = before.series.find(item => item.id === target.id);
+    if (!board) return res.status(404).json({ error: 'Ranking board not found' });
+    removed = board.count;
+    seriesBoard = [];
+  }
+
+  res.set({ 'Cache-Control': 'private, no-store', Vary: 'Authorization' });
+  return res.json({ removed, summary: await rankingResetSummary() });
 });
 
 // ── Player login tracking ───────────────────────────────────────────────────
