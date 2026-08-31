@@ -617,7 +617,7 @@ is displayed in About.
 
 ### Published roster portraits
 
-The six roles used by the five published scenarios use generated gritty
+The six roles used by the six published scenarios use generated gritty
 medallion portraits in `client/public/*-gritty.webp`:
 
 - Human: thrower, catcher, lineman (blue/ivory armor, bronze frame).
