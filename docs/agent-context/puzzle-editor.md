@@ -71,13 +71,14 @@ by GA4.
 
 ### Managed administrators
 
-The Admin Console stores an additional runtime allowlist. Administrators in
-`ADMIN_EMAILS` remain deployment configuration and cannot be removed from the
-browser; they can add/remove the managed Google email addresses. With no
-deployment list, adding the first managed address closes the legacy open-admin
-mode, and the console refuses to remove the final managed address. Local dev
-persists this runtime list at `.bbt-managed-admins.json`; Netlify stores it in
-the `admin-access` Blobs store. Every editor endpoint checks the combined list.
+The Admin Console stores an additional runtime allowlist. The permanent project
+owner and administrators in `ADMIN_EMAILS` remain code/deployment configuration
+and cannot be removed from the browser; they can add/remove the managed Google
+email addresses. Local dev persists this runtime list at
+`.bbt-managed-admins.json`; Netlify stores it in the `admin-access` Blobs store.
+Every editor endpoint checks the combined list. `/api/editor/access` exposes
+only the current caller's boolean capability so the client can hide Puzzle
+Creator from everyone else without receiving the list.
 The last 100 managed additions/removals are retained with actor, target, and
 timestamp and shown in the console; removal has an explicit confirmation.
 An unreadable managed-admin store is an access-check failure (503), not an
@@ -244,9 +245,11 @@ designer could see a clean list and still get a 400 on save.
 
 ## Auth
 
-Every `/api/editor/*` route is admin-gated, **including both GET endpoints** —
+Every `/api/editor/*` route is admin-gated, **including GET endpoints** —
 drafts contain unpublished puzzles and statistics summarize the full untrimmed
 leaderboards. Editor API reads therefore send the `Authorization` header too.
-When `ADMIN_EMAILS` is empty, access is unrestricted in both local development
-and Netlify. A configured allowlist requires a verified matching Google user.
-Set `EDITOR_ALLOW_UNAUTHENTICATED=false` to make an empty allowlist return 503.
+The effective allowlist combines the permanent owner, `ADMIN_EMAILS`, and
+Managed Administrators; access requires a verified matching Google user.
+Unauthenticated local development can remain open when Google verification is
+not configured. Set `EDITOR_ALLOW_UNAUTHENTICATED=false` to make an empty
+effective allowlist return 503.

@@ -8,6 +8,8 @@ import {
   entryAuthFields,
   makeGoogleTokenVerifier,
   parseAdminEmails,
+  PERMANENT_ADMIN_EMAILS,
+  withPermanentAdminEmails,
 } from './googleAuth.js';
 
 const headers = map => name => map[name.toLowerCase()] ?? null;
@@ -26,6 +28,14 @@ test('parseAdminEmails normalizes case and whitespace', () => {
     ['a@x.com', 'b@y.com'],
   );
   assert.equal(parseAdminEmails(undefined).size, 0);
+});
+
+test('the project owner is always included in configured administrator emails', () => {
+  assert.deepEqual(PERMANENT_ADMIN_EMAILS, ['oliver.whitehead@gmail.com']);
+  assert.deepEqual(
+    [...parseAdminEmails(withPermanentAdminEmails('coach@example.com, OLIVER.WHITEHEAD@gmail.com'))],
+    ['coach@example.com', 'oliver.whitehead@gmail.com'],
+  );
 });
 
 test('an explicit strict configuration fails closed when no allowlist is configured', async () => {
