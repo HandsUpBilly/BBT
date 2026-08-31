@@ -1,6 +1,6 @@
 import type { CSSProperties } from 'react';
 
-/** Gritty leather-ball SVG shared by the pitch marker and the touchdown dialog. */
+/** Compact leather-ball SVG used by the live pitch marker. */
 export function BallIcon({ className, style }: { className?: string; style?: CSSProperties }) {
   return (
     <svg
