@@ -1,7 +1,7 @@
 import { useMemo, useState, type ReactNode } from 'react';
 import type { ProgressData } from './api';
 import type { LeaderboardEntry, Scenario, SeriesDefinition, SeriesLeaderboardEntry } from './types';
-import nuffleShuffleLogo from './assets/series/nuffle-shuffle-transparent.png';
+import nuffleShuffleLogo from './assets/series/nuffle-shuffle-transparent.webp';
 import { BrandLogo } from './BrandLogo';
 import { FREE_PLAY_SCENARIO_ID } from './tutorialLessons';
 import { UI_COPY } from './uiCopy';
