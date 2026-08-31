@@ -9,12 +9,13 @@ const NOTES: ReleaseNote[] = [
   {
     date: '2026-08-31',
     title: 'Release Notes — August 31, 2026',
-    summary: 'A quiet week.',
+    summaryParagraphs: ['A quiet week.'],
     categories: [{ name: 'New', items: ['Added release notes.'] }],
   },
   {
     date: '2026-08-24',
     title: 'Release Notes — August 24, 2026',
+    summaryParagraphs: [],
     categories: [{ name: 'Fixed', items: ['Squashed a bug.'] }],
   },
 ];
@@ -40,6 +41,21 @@ describe('ReleaseNotesDialog', () => {
 
     fireEvent.click(screen.getByRole('button', { name: '← Newer' }));
     expect(screen.getByText('Release Notes — August 31, 2026')).toBeTruthy();
+  });
+
+  it('renders bold text and links inside items and summary paragraphs', () => {
+    const notes: ReleaseNote[] = [{
+      date: '2026-08-31',
+      title: 'Release Notes — August 31, 2026',
+      summaryParagraphs: ['**3** PRs merged.'],
+      categories: [{ name: 'New', items: ['**Bold lead-in.** See [#264](https://example.com/264).'] }],
+    }];
+    render(<ReleaseNotesDialog notes={notes} onClose={vi.fn()} />);
+
+    expect(screen.getByText('3', { selector: 'strong' })).toBeTruthy();
+    expect(screen.getByText('Bold lead-in.', { selector: 'strong' })).toBeTruthy();
+    const link = screen.getByRole('link', { name: '#264' }) as HTMLAnchorElement;
+    expect(link.href).toBe('https://example.com/264');
   });
 
   it('shows an empty state when there are no notes yet', () => {

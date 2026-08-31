@@ -19,7 +19,7 @@ A quiet week.
 
     expect(note.date).toBe('2026-08-31');
     expect(note.title).toBe('Release Notes — August 31, 2026');
-    expect(note.summary).toBe('A quiet week.');
+    expect(note.summaryParagraphs).toEqual(['A quiet week.']);
     expect(note.categories.map(category => category.name)).toEqual(['New', 'Fixed']);
     expect(note.categories[0].items).toEqual(['Added a thing.', 'Added another thing.']);
     expect(note.categories[1].items).toEqual(['Squashed a bug.']);
@@ -57,9 +57,26 @@ A quiet week.
     ]);
   });
 
-  it('has no summary when there is nothing before the first heading', () => {
+  it('has no summary paragraphs when there is nothing before the first heading', () => {
     const note = parseReleaseNote('2026-08-31', '## New\n- Added a thing.\n');
-    expect(note.summary).toBeUndefined();
+    expect(note.summaryParagraphs).toEqual([]);
+  });
+
+  it('keeps multiple summary paragraphs separate and stops at a trailing divider', () => {
+    const note = parseReleaseNote('2026-08-31', `First paragraph.
+
+Second paragraph.
+
+## New
+
+- Added a thing.
+
+---
+
+Footer prose that should not become part of New.
+`);
+    expect(note.summaryParagraphs).toEqual(['First paragraph.', 'Second paragraph.']);
+    expect(note.categories[0].items).toEqual(['Added a thing.']);
   });
 });
 

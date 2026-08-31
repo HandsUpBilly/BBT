@@ -1,6 +1,7 @@
 import { useId, useState } from 'react';
 import { useModalFocus } from './useModalFocus';
 import { formatReleaseNoteDate, type ReleaseNote } from './releaseNotes';
+import { renderInlineMarkdown } from './inlineMarkdown';
 import './SubmitModal.css';
 import './ReleaseNotesDialog.css';
 
@@ -56,7 +57,9 @@ export function ReleaseNotesDialog({ notes, onClose }: Props) {
 
             <div className="release-notes-dialog__body">
               <h3 className="release-notes-dialog__note-title">{note.title}</h3>
-              {note.summary && <p className="modal__desc">{note.summary}</p>}
+              {note.summaryParagraphs.map((paragraph, paragraphIndex) => (
+                <p key={paragraphIndex} className="modal__desc">{renderInlineMarkdown(paragraph)}</p>
+              ))}
               {note.categories.length === 0 ? (
                 <p className="modal__desc">No changes were recorded for this week.</p>
               ) : (
@@ -65,7 +68,7 @@ export function ReleaseNotesDialog({ notes, onClose }: Props) {
                     <h4>{category.name}</h4>
                     <ul>
                       {category.items.map((item, itemIndex) => (
-                        <li key={itemIndex}>{item}</li>
+                        <li key={itemIndex}>{renderInlineMarkdown(item)}</li>
                       ))}
                     </ul>
                   </section>

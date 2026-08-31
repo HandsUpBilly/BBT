@@ -19,7 +19,7 @@ export interface ReleaseNote {
   /** YYYY-MM-DD, taken from the file name rather than parsed from content. */
   date: string;
   title: string;
-  summary?: string;
+  summaryParagraphs: string[];
   categories: ReleaseNoteCategory[];
 }
 
@@ -45,16 +45,25 @@ export function parseReleaseNote(date: string, markdown: string): ReleaseNote {
     index = 1;
   }
 
-  const summaryLines: string[] = [];
+  const summaryBlockLines: string[] = [];
   while (index < lines.length && !lines[index].startsWith('## ')) {
-    if (lines[index].trim()) summaryLines.push(lines[index].trim());
+    summaryBlockLines.push(lines[index]);
     index += 1;
   }
+  const summaryParagraphs = summaryBlockLines
+    .join('\n')
+    .split(/\n\s*\n/)
+    .map(paragraph => paragraph.replace(/\s+/g, ' ').trim())
+    .filter(Boolean);
 
   const categories: ReleaseNoteCategory[] = [];
   let current: ReleaseNoteCategory | null = null;
   for (; index < lines.length; index += 1) {
     const line = lines[index];
+    // A "---" divider marks the end of the categorized section — anything
+    // after it (e.g. a closing "also this week" aside) is footer prose, not
+    // structured data this view renders.
+    if (/^-{3,}\s*$/.test(line.trim())) break;
     if (line.startsWith('## ')) {
       current = { name: line.slice(3).trim(), items: [] };
       categories.push(current);
@@ -74,7 +83,7 @@ export function parseReleaseNote(date: string, markdown: string): ReleaseNote {
   return {
     date,
     title,
-    summary: summaryLines.join(' ') || undefined,
+    summaryParagraphs,
     categories: categories
       .filter(category => category.items.length > 0)
       .sort((a, b) => categoryRank(a.name) - categoryRank(b.name)),
