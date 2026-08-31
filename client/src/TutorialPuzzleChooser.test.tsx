@@ -21,8 +21,8 @@ describe('TutorialPuzzleChooser', () => {
     );
 
     expect(screen.getByText('1 complete · 2 remaining')).toBeTruthy();
-    expect(screen.getAllByRole('button', { name: 'Play this drill' })).toHaveLength(2);
-    fireEvent.click(screen.getByRole('button', { name: 'Replay this drill' }));
+    expect(screen.getAllByRole('button', { name: 'Play' })).toHaveLength(2);
+    fireEvent.click(screen.getByRole('button', { name: 'Replay' }));
     expect(onChoose).toHaveBeenCalledWith(tutorialScenarios[0]);
   });
 
@@ -39,7 +39,7 @@ describe('TutorialPuzzleChooser', () => {
       />,
     );
 
-    fireEvent.click(screen.getAllByRole('button', { name: 'Play this drill' })[1]);
+    fireEvent.click(screen.getAllByRole('button', { name: 'Play' })[1]);
     fireEvent.click(screen.getByRole('button', { name: '← Main menu' }));
 
     expect(onChoose).toHaveBeenCalledWith(tutorialScenarios[1]);

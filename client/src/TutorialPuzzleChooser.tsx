@@ -44,27 +44,29 @@ export function TutorialPuzzleChooser({
               key={scenario.id}
               className={`tutorial-chooser__card${isComplete ? ' tutorial-chooser__card--complete' : ''}`}
             >
-              <div className="tutorial-chooser__number" aria-hidden="true">
-                {String(index + 1).padStart(2, '0')}
-              </div>
-              <div className="tutorial-chooser__card-copy">
-                <p className="tutorial-chooser__lesson">{lesson?.title ?? 'Open play'}</p>
-                <h2>{scenario.name}</h2>
-                <p>{scenario.description}</p>
-                {recap && (
-                  <section className="tutorial-chooser__recap" aria-label={`${scenario.name} last run recap`}>
-                    <strong>Last run</strong>
-                    <ol>{recap.actions.map((action, actionIndex) => <li key={`${action}-${actionIndex}`}>{action}</li>)}</ol>
-                    <span>Final probability {Math.round(recap.probability * 100)}%</span>
-                  </section>
-                )}
+              <div className="tutorial-chooser__top">
+                <div className="tutorial-chooser__number" aria-hidden="true">
+                  {String(index + 1).padStart(2, '0')}
+                </div>
+                <div className="tutorial-chooser__card-copy">
+                  <p className="tutorial-chooser__lesson">{lesson?.title ?? 'Open play'}</p>
+                  <h2>{scenario.name}</h2>
+                  <p>{scenario.description}</p>
+                  {recap && (
+                    <section className="tutorial-chooser__recap" aria-label={`${scenario.name} last run recap`}>
+                      <strong>Last run</strong>
+                      <ol>{recap.actions.map((action, actionIndex) => <li key={`${action}-${actionIndex}`}>{action}</li>)}</ol>
+                      <span>Final probability {Math.round(recap.probability * 100)}%</span>
+                    </section>
+                  )}
+                </div>
               </div>
               <button
                 type="button"
                 className={`btn ${isComplete ? 'btn--secondary' : 'btn--primary'}`}
                 onClick={() => onChoose(scenario)}
               >
-                {isComplete ? 'Replay this drill' : 'Play this drill'}
+                {isComplete ? 'Replay' : 'Play'}
               </button>
             </article>
           );
