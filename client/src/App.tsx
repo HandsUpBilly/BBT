@@ -200,11 +200,38 @@ function IdentityGate({ authConfigured, googleSignedIn, mountGoogleSignInButton,
     const container = googleButtonRef.current;
     if (!authConfigured || !container || googleSignedIn) return;
     let cancelled = false;
-    void mountGoogleSignInButton(container).catch(() => {
-      if (!cancelled) setGoogleSignInFailed(true);
-    });
+    let resizeObserver: ResizeObserver | null = null;
+    const actions = container.parentElement;
+
+    void mountGoogleSignInButton(container)
+      .then(() => {
+        if (cancelled) return;
+        const iframe = container.querySelector('iframe');
+        if (!iframe) return;
+
+        const syncActionWidth = () => {
+          const style = window.getComputedStyle(iframe);
+          const horizontalMargins = (Number.parseFloat(style.marginLeft) || 0)
+            + (Number.parseFloat(style.marginRight) || 0);
+          const googleVisibleWidth = iframe.getBoundingClientRect().width + horizontalMargins;
+          const containerWidth = container.getBoundingClientRect().width;
+          actions?.style.setProperty(
+            '--identity-action-width',
+            `${Math.round(Math.max(containerWidth, googleVisibleWidth))}px`,
+          );
+        };
+
+        syncActionWidth();
+        resizeObserver = new ResizeObserver(syncActionWidth);
+        resizeObserver.observe(iframe);
+      })
+      .catch(() => {
+        if (!cancelled) setGoogleSignInFailed(true);
+      });
     return () => {
       cancelled = true;
+      resizeObserver?.disconnect();
+      actions?.style.removeProperty('--identity-action-width');
       container.replaceChildren();
     };
   }, [authConfigured, googleSignedIn, mountGoogleSignInButton]);
