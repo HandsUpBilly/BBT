@@ -1,5 +1,5 @@
 import type { ComponentProps } from 'react';
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { SettingsScreen } from './SettingsScreen';
 
@@ -11,7 +11,13 @@ function renderScreen(overrides: Partial<ComponentProps<typeof SettingsScreen>> 
     isGuest: false,
     onRename: vi.fn(),
     avatar: undefined,
-    onAvatarChange: vi.fn(),
+    avatarIsLocalOnly: false,
+    googleAvatarAvailable: false,
+    onAvatarUpload: vi.fn().mockResolvedValue(undefined),
+    onUseGoogleAvatar: vi.fn().mockResolvedValue(undefined),
+    onRemoveAvatar: vi.fn().mockResolvedValue(undefined),
+    country: '',
+    onCountryChange: vi.fn().mockResolvedValue(undefined),
     tokenStyle: 'portrait' as const,
     onTokenStyleChange: vi.fn(),
     pitchSurface: 'grass' as const,
@@ -32,13 +38,13 @@ function renderScreen(overrides: Partial<ComponentProps<typeof SettingsScreen>> 
 describe('display name', () => {
   it('disables Save until the name actually changes', () => {
     renderScreen();
-    expect((screen.getByRole('button', { name: 'Save' }) as HTMLButtonElement).disabled).toBe(true);
+    expect((screen.getByRole('button', { name: 'Save name' }) as HTMLButtonElement).disabled).toBe(true);
   });
 
   it('renames a signed-in player immediately, with no confirmation', () => {
     const props = renderScreen({ isGuest: false });
     fireEvent.change(screen.getByLabelText('Display name'), { target: { value: 'New Name' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Save name' }));
 
     expect(props.onRename).toHaveBeenCalledWith('New Name');
     expect(screen.queryByText(/starts fresh/)).toBeNull();
@@ -47,7 +53,7 @@ describe('display name', () => {
   it('warns a guest that renaming strands their personal best, and waits for confirmation', () => {
     const props = renderScreen({ isGuest: true, identityName: 'Old Name' });
     fireEvent.change(screen.getByLabelText('Display name'), { target: { value: 'New Name' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Save name' }));
 
     expect(props.onRename).not.toHaveBeenCalled();
     expect(screen.getByText(/starts a new record/)).toBeTruthy();
@@ -59,7 +65,7 @@ describe('display name', () => {
   it('lets the guest back out of a rename without calling onRename', () => {
     const props = renderScreen({ isGuest: true, identityName: 'Old Name' });
     fireEvent.change(screen.getByLabelText('Display name'), { target: { value: 'New Name' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Save name' }));
     fireEvent.click(screen.getByRole('button', { name: 'Keep Current Name' }));
 
     expect(props.onRename).not.toHaveBeenCalled();
@@ -70,24 +76,38 @@ describe('avatar', () => {
   it('is unavailable for guests', () => {
     renderScreen({ isGuest: true });
     expect(screen.getByText(/Sign in with Google to set an avatar/)).toBeTruthy();
-    expect(screen.queryByRole('button', { name: 'Upload avatar' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Upload photo' })).toBeNull();
   });
 
   it('offers upload for a signed-in player with no avatar yet', () => {
     renderScreen({ isGuest: false, avatar: undefined });
-    expect(screen.getByRole('button', { name: 'Upload avatar' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Upload photo' })).toBeTruthy();
     expect(screen.queryByRole('button', { name: 'Remove' })).toBeNull();
   });
 
-  it('offers change and remove once an avatar is set', () => {
+  it('offers removal once a public avatar is set', async () => {
     const props = renderScreen({ isGuest: false, avatar: 'data:image/webp;base64,AAAA' });
-    expect(screen.getByRole('button', { name: 'Change avatar' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Upload photo' })).toBeTruthy();
 
     fireEvent.click(screen.getByRole('button', { name: 'Remove' }));
-    expect(props.onAvatarChange).toHaveBeenCalledWith(undefined);
+    await waitFor(() => expect(props.onRemoveAvatar).toHaveBeenCalledOnce());
   });
 
-  it('shows a validation error for an unsupported file type without touching onAvatarChange', async () => {
+  it('offers the verified Google photo when one is available', async () => {
+    const props = renderScreen({ googleAvatarAvailable: true });
+    fireEvent.click(screen.getByRole('button', { name: 'Use Google photo' }));
+    await waitFor(() => expect(props.onUseGoogleAvatar).toHaveBeenCalledOnce());
+  });
+
+  it('offers to publish an existing local-only avatar', async () => {
+    const props = renderScreen({
+      avatar: 'data:image/webp;base64,AAAA', avatarIsLocalOnly: true,
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Publish current' }));
+    await waitFor(() => expect(props.onAvatarUpload).toHaveBeenCalledWith('data:image/webp;base64,AAAA'));
+  });
+
+  it('shows a validation error for an unsupported file type without uploading it', async () => {
     const props = renderScreen({ isGuest: false });
     const input = document.querySelector('input[type="file"]') as HTMLInputElement;
     const file = new File(['x'], 'avatar.gif', { type: 'image/gif' });
@@ -95,7 +115,21 @@ describe('avatar', () => {
     fireEvent.change(input, { target: { files: [file] } });
 
     expect((await screen.findByRole('alert')).textContent).toMatch(/PNG, JPEG, or WebP/);
-    expect(props.onAvatarChange).not.toHaveBeenCalled();
+    expect(props.onAvatarUpload).not.toHaveBeenCalled();
+  });
+});
+
+describe('country or nationality', () => {
+  it('saves optional public profile text for a signed-in player', async () => {
+    const props = renderScreen();
+    fireEvent.change(screen.getByLabelText('Country / nationality'), { target: { value: ' Scotland ' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Save country' }));
+    await waitFor(() => expect(props.onCountryChange).toHaveBeenCalledWith('Scotland'));
+  });
+
+  it('does not offer a profile field to guests', () => {
+    renderScreen({ isGuest: true });
+    expect(screen.queryByLabelText('Country / nationality')).toBeNull();
   });
 });
 

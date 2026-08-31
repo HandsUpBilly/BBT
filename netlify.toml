@@ -38,6 +38,17 @@
   to     = "/.netlify/functions/progress"
   status = 200
 
+# Authenticated public-player profile writes and public avatar reads.
+[[redirects]]
+  from   = "/api/profile"
+  to     = "/.netlify/functions/profile"
+  status = 200
+
+[[redirects]]
+  from   = "/api/avatar/*"
+  to     = "/.netlify/functions/avatar/:splat"
+  status = 200
+
 # Player issue and feature reports — GitHub credential remains server-side.
 [[redirects]]
   from   = "/api/reports"
@@ -91,6 +102,11 @@
 [[redirects]]
   from   = "/api/editor/admins"
   to     = "/.netlify/functions/editor-admins"
+  status = 200
+
+[[redirects]]
+  from   = "/api/editor/profiles"
+  to     = "/.netlify/functions/editor-profiles"
   status = 200
 
 [[redirects]]

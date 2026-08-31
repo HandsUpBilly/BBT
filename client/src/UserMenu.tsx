@@ -1,10 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { PlayerAvatar } from './PlayerAvatar';
 import './UserMenu.css';
 
 interface Props {
   name: string;
-  /** A `data:image/...` avatar (see prefs.ts). Falls back to initials when absent or when it fails to load. */
+  /** Public avatar URL, with a legacy local data URL used only until migrated. */
   avatar?: string;
+  country?: string;
   onHelp?: () => void;
   onSettings?: () => void;
   onAbout?: () => void;
@@ -12,28 +14,13 @@ interface Props {
   onSignOut?: () => void;
 }
 
-function initials(name: string): string {
-  const trimmed = name.trim();
-  if (!trimmed) return '?';
-  const parts = trimmed.split(/\s+/);
-  const first = parts[0]?.[0] ?? '';
-  const last = parts.length > 1 ? parts[parts.length - 1]?.[0] ?? '' : '';
-  return (first + last).toUpperCase();
-}
-
 /** Renders the avatar image when one is set, falling back to initials on a load error. */
 function Avatar({ name, avatar, large }: { name: string; avatar?: string; large?: boolean }) {
-  const [failed, setFailed] = useState(false);
   const className = `user-menu__avatar${large ? ' user-menu__avatar--lg' : ''}`;
-  if (avatar && !failed) {
-    // Keyed by the avatar URL so a new upload gets a fresh error state instead
-    // of staying stuck showing the previous failure's fallback.
-    return <img key={avatar} className={className} src={avatar} alt="" onError={() => setFailed(true)} />;
-  }
-  return <span className={`${className} user-menu__avatar--fallback`}>{initials(name)}</span>;
+  return <PlayerAvatar name={name} src={avatar} className={className} fallbackClassName="user-menu__avatar--fallback" />;
 }
 
-export function UserMenu({ name, avatar, onHelp, onSettings, onAbout, onContact, onSignOut }: Props) {
+export function UserMenu({ name, avatar, country, onHelp, onSettings, onAbout, onContact, onSignOut }: Props) {
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
@@ -76,7 +63,10 @@ export function UserMenu({ name, avatar, onHelp, onSettings, onAbout, onContact,
         <div className="user-menu__dropdown" role="menu">
           <div className="user-menu__dropdown-header">
             <Avatar name={name} avatar={avatar} large />
-            <span className="user-menu__dropdown-name">{name}</span>
+            <span>
+              <span className="user-menu__dropdown-name">{name}</span>
+              {country && <span className="user-menu__dropdown-country">{country}</span>}
+            </span>
           </div>
           {onHelp && (
             <button

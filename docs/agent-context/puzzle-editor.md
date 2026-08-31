@@ -84,6 +84,12 @@ timestamp and shown in the console; removal has an explicit confirmation.
 An unreadable managed-admin store is an access-check failure (503), not an
 empty allowlist, so storage trouble cannot broaden administrator access.
 
+Admin Console also lists the public player profiles stored outside leaderboard
+records. It shows the public country/nationality label and current avatar and
+can remove an unsuitable avatar immediately. This action does not delete the
+player's rankings or other profile fields; the player falls back to initials
+and may choose a new image later.
+
 ### Guards
 
 - **Unsaved-changes guard.** Opening another puzzle, starting a new one,

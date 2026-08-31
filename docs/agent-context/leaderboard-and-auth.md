@@ -32,9 +32,9 @@ Google flow:
   from `localStorage` already persists the session across a refresh (see
   `AuthProvider.tsx`), and an actually-expired token surfaces the existing
   "sign in again" banner for an explicit, interactive re-login instead.
-- The client keeps only the Google subject ID and verified e-mail (the latter
-  only for the server-side admin allowlist). It does not cache/display Google
-  profile names or avatars.
+- The client keeps the Google subject ID, verified e-mail, and optional picture
+  claim. It never displays the Google profile name and never publishes the
+  picture claim automatically; Settings offers it as an explicit avatar choice.
 - Server verifies ID tokens with `google-auth-library` via
   `shared/googleAuth.js`, and only trusts `email_verified` addresses.
 - Cached auth session uses localStorage key `bbt.auth.v1`.
@@ -218,18 +218,29 @@ Two things to keep true:
   under the old name. See "Settings Screen and Player Prefs" in
   `frontend-flow.md`.
 
-## Player Prefs (Avatar, Token Style)
+## Public Player Profiles and Local Prefs
 
-`client/src/prefs.ts` stores avatar and player-token-style preferences in
-`bbt.prefs.v1`, keyed by identity the same way `bbt.googleAliases.v1` is.
-Unlike everything else on this page, it is **entirely local and Phase 1
-only** — no server component, no endpoint, nothing sent anywhere. The avatar
-is visible only in the browser that uploaded it, never on a leaderboard. A
-server-backed, publicly-visible version is spec.md "Player Config Screen"'s
-Phase 2 and would need its own verified-identity and rate-limiting story akin
-to the report/leaderboard endpoints above — do not assume the local avatar
-data URL can simply be forwarded as-is; it is deliberately never sent over the
-network today.
+`GET`/`PUT /api/profile` is verified-Google-only. It stores an optional public
+country/nationality label and either a validated uploaded WebP or the picture
+URL from that same verified token. `shared/playerProfile.js` is the common
+Express/Netlify trust boundary. Uploads must be genuine 256×256 WebP files and
+fit the byte cap; Google URLs must be HTTPS under `googleusercontent.com`.
+
+Leaderboard storage is unchanged. On read, the server decorates signed-in rows
+with a small `profile` object containing only `userId`, `country`, and an avatar
+version. Image data and upstream Google URLs never enter the ranking JSON. The
+client uses the versioned public `/api/avatar/:userId` URL and falls back to
+initials when it is absent or fails.
+
+Production profiles live in the `player-profiles` Netlify Blobs store. Local
+Express development uses `.bbt-player-profiles.json`. Admin Console can list
+public profiles and remove an avatar. Profile writes are rate-limited by the
+verified subject id.
+
+`client/src/prefs.ts` still owns token style, surface, board size, coordinates,
+and Tutorial preferences. Its old local avatar field is retained only for a
+safe migration: Settings calls it private and requires **Publish current**;
+nothing chosen under the old local-only promise is uploaded automatically.
 
 ## Player Login Tracking
 

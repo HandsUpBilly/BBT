@@ -163,6 +163,16 @@ test('an unverified Google email is dropped so it can never match the allowlist'
   );
 });
 
+test('a verified Google picture is available for explicit profile selection', async () => {
+  const verifyIdToken = async () => ({
+    sub: '123', email_verified: true, email: 'coach@example.com',
+    picture: 'https://lh3.googleusercontent.com/a/photo',
+  });
+  const auth = createGoogleAuth({ verifyIdToken, adminEmails: '' });
+  const user = await auth.verifyOptionalGoogleUser(headers({ authorization: 'Bearer t' }));
+  assert.equal(user.picture, 'https://lh3.googleusercontent.com/a/photo');
+});
+
 test('a rejected verification surfaces as an AuthError, not the raw failure', async () => {
   const verifyIdToken = async () => { throw new Error('jwt malformed'); };
   const auth = createGoogleAuth({ verifyIdToken, adminEmails: '', allowUnauthenticated: true });

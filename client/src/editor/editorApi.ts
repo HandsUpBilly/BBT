@@ -19,6 +19,14 @@ export interface AdminAccess {
   audit: Array<{ action: 'added' | 'removed'; actor: string; target: string; at: string }>;
 }
 
+export interface ModeratedPlayerProfile {
+  userId: string;
+  country?: string;
+  avatarVersion?: string;
+  hasAvatar: boolean;
+  updatedAt: string;
+}
+
 async function parseJsonResponse<T>(response: Response): Promise<T> {
   let body: { errors?: unknown; error?: unknown };
   try {
@@ -100,6 +108,22 @@ export async function addAdmin(email: string, idToken: string | null): Promise<A
 export async function removeAdmin(email: string, idToken: string | null): Promise<AdminAccess> {
   const response = await fetch(`/api/editor/admins?email=${encodeURIComponent(email)}`, { method: 'DELETE', headers: authHeaders(idToken) });
   return parseJsonResponse<AdminAccess>(response);
+}
+
+export async function fetchModeratedPlayerProfiles(idToken: string | null): Promise<ModeratedPlayerProfile[]> {
+  const response = await fetch('/api/editor/profiles', { headers: authHeaders(idToken) });
+  return parseJsonResponse<ModeratedPlayerProfile[]>(response);
+}
+
+export async function removeModeratedAvatar(
+  userId: string,
+  idToken: string | null,
+): Promise<ModeratedPlayerProfile> {
+  const response = await fetch(`/api/editor/profiles?userId=${encodeURIComponent(userId)}`, {
+    method: 'DELETE',
+    headers: authHeaders(idToken),
+  });
+  return parseJsonResponse<ModeratedPlayerProfile>(response);
 }
 
 export async function createScenario(scenario: Scenario, idToken: string | null): Promise<Scenario> {
