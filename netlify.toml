@@ -120,8 +120,18 @@
   status = 200
 
 [[redirects]]
-  from   = "/api/editor/series/default"
+  from   = "/api/editor/series-assignment"
+  to     = "/.netlify/functions/editor-series/assignment"
+  status = 200
+
+[[redirects]]
+  from   = "/api/editor/series"
   to     = "/.netlify/functions/editor-series"
+  status = 200
+
+[[redirects]]
+  from   = "/api/editor/series/*"
+  to     = "/.netlify/functions/editor-series/:splat"
   status = 200
 
 [[redirects]]

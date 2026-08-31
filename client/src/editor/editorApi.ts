@@ -5,12 +5,12 @@ import type { LoginEntry } from '../../../shared/loginTracking.js';
 
 interface EditorLoadResponse {
   scenarios: Scenario[];
-  series: SeriesDefinition;
+  series: SeriesDefinition[];
 }
 
 interface PublishResponse {
   scenarios: Scenario[];
-  series: SeriesDefinition;
+  series: SeriesDefinition[];
 }
 
 export interface AdminAccess {
@@ -152,8 +152,34 @@ export async function deleteScenario(scenarioId: string, idToken: string | null)
   return parseJsonResponse<EditorLoadResponse>(response);
 }
 
+export async function saveSeries(series: SeriesDefinition, creating: boolean, idToken: string | null): Promise<SeriesDefinition> {
+  const response = await fetch(creating ? '/api/editor/series' : `/api/editor/series/${encodeURIComponent(series.id)}`, {
+    method: creating ? 'POST' : 'PUT',
+    headers: { 'Content-Type': 'application/json', ...authHeaders(idToken) },
+    body: JSON.stringify(series),
+  });
+  return parseJsonResponse<SeriesDefinition>(response);
+}
+
+export async function deleteSeries(seriesId: string, idToken: string | null): Promise<SeriesDefinition[]> {
+  const response = await fetch(`/api/editor/series/${encodeURIComponent(seriesId)}`, {
+    method: 'DELETE',
+    headers: authHeaders(idToken),
+  });
+  return parseJsonResponse<SeriesDefinition[]>(response);
+}
+
+export async function assignScenarioToSeries(scenarioId: string, seriesId: string, idToken: string | null): Promise<SeriesDefinition[]> {
+  const response = await fetch('/api/editor/series-assignment', {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...authHeaders(idToken) },
+    body: JSON.stringify({ scenarioId, seriesId }),
+  });
+  return parseJsonResponse<SeriesDefinition[]>(response);
+}
+
 export async function updateDefaultSeries(series: SeriesDefinition, idToken: string | null): Promise<SeriesDefinition> {
-  const response = await fetch('/api/editor/series/default', {
+  const response = await fetch(`/api/editor/series/${encodeURIComponent(series.id)}`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json', ...authHeaders(idToken) },
     body: JSON.stringify(series),

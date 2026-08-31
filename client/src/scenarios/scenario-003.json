@@ -3,6 +3,8 @@
   "name": "Swiftfoot's Long Bomb",
   "description": "OBJECTIVE: Score with Quickhand. Move Swiftfoot clear of the Tackle Zones, then complete the Pass and Catch.",
   "activeTeam": "human",
+  "objective": "touchdown",
+  "freePlay": false,
   "published": true,
   "ballPosition": null,
   "pieces": [

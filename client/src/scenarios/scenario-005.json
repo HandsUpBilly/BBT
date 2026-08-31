@@ -3,6 +3,8 @@
   "name": "Reikland's Last Stand",
   "description": "OBJECTIVE: Score this turn. Swiftfoot must escape, complete a Hand-off to Quickhand, and clear the remaining defenders.",
   "activeTeam": "human",
+  "objective": "touchdown",
+  "freePlay": false,
   "published": true,
   "pieces": [
     {

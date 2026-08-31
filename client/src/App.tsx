@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useLayoutEffect, useRef } from 'react';
+import { useState, useCallback, useEffect, useLayoutEffect, useMemo, useRef } from 'react';
 import { makeEmptyState, makeScenarioState, pathPreviewProb, passActionAvailability } from './useGameState';
 import { useBranchRun } from './useBranchRun';
 import { BranchStrip } from './BranchStrip';
@@ -66,13 +66,13 @@ import { resolveSeriesScenarios } from './series';
 import { loadScenarioData } from './scenarios/runtime';
 import type { ScenarioData } from './scenarios/runtime';
 import { scenarios as staticScenarios } from './scenarios';
-import { defaultSeries as staticSeries } from './series';
+import { allSeries as staticSeries } from './series';
 import { PuzzleEditor } from './editor/PuzzleEditor';
 import { useAuth } from './auth';
 import { useAdminAccess } from './useAdminAccess';
 import type {
   AppMode, GameState, PlayerPiece, Position, Scenario, LeaderboardEntry,
-  PublicPlayerProfile, SeriesLeaderboardEntry, SeriesPuzzleResult,
+  PublicPlayerProfile, SeriesDefinition, SeriesLeaderboardEntry, SeriesPuzzleResult,
 } from './types';
 import { key } from './bfs';
 import { useCompactLayout, useHoverCapable, usePortraitViewport } from './useMediaQuery';
@@ -177,6 +177,7 @@ function describeSubmitError(error: unknown): string {
 }
 
 interface SeriesRunState {
+  seriesId: string;
   playerName: string;
   puzzleIndex: number;           // 0-based index into the active series
   results: SeriesPuzzleResult[]; // one entry per completed puzzle so far
@@ -276,7 +277,6 @@ export default function App() {
     scenarios: staticScenarios,
     series: staticSeries,
   }));
-  const seriesScenarios = resolveSeriesScenarios(scenarioData.series, scenarioData.scenarios);
   const [guestAlias, setGuestAliasState] = useState(readGuestName);
   const setGuestAlias = useCallback((alias: string) => {
     setGuestAliasState(alias);
@@ -399,6 +399,14 @@ export default function App() {
 
   // ── Series mode state ──────────────────────────────────────────────────
   const [seriesRun, setSeriesRun] = useState<SeriesRunState | null>(null);
+  const activeSeries = useMemo(
+    () => scenarioData.series.find(item => item.id === seriesRun?.seriesId) ?? scenarioData.series[0],
+    [scenarioData.series, seriesRun?.seriesId],
+  );
+  const seriesScenarios = useMemo(
+    () => activeSeries ? resolveSeriesScenarios(activeSeries, scenarioData.scenarios) : [],
+    [activeSeries, scenarioData.scenarios],
+  );
   const [seriesHighlight, setSeriesHighlight] = useState<string | undefined>();
   const [seriesRefreshKey, setSeriesRefreshKey] = useState(0);
   const [seriesInitialEntries, setSeriesInitialEntries] = useState<SeriesLeaderboardEntry[] | undefined>();
@@ -1195,13 +1203,13 @@ export default function App() {
       beginTutorialAttempt]);
 
   // ── Series mode handlers ──────────────────────────────────────────────────
-  const startSeries = useCallback(() => {
+  const startSeries = useCallback((selectedSeries: SeriesDefinition) => {
     if (!identityName.trim()) return;
-    if (seriesScenarios.length === 0) return;
-    setSeriesRun({ playerName: identityName, puzzleIndex: 0, results: [] });
+    if (resolveSeriesScenarios(selectedSeries, scenarioData.scenarios).length === 0) return;
+    setSeriesRun({ seriesId: selectedSeries.id, playerName: identityName, puzzleIndex: 0, results: [] });
     const analyticsRunId = newAnalyticsId();
     analyticsSeriesRunIdRef.current = analyticsRunId;
-    trackAnalytics('series-started', { runId: analyticsRunId, seriesId: scenarioData.series.id });
+    trackAnalytics('series-started', { runId: analyticsRunId, seriesId: selectedSeries.id });
     setReviewingCompletedBoard(false);
     setTutorialRecaps({});
     setPendingTutorialReplay(null);
@@ -1209,7 +1217,7 @@ export default function App() {
     setTutorialLesson(null);
     setTutorialConceptGuideOpen(false);
     setAppMode('series-select');
-  }, [identityName, seriesScenarios.length, scenarioData.series.id]);
+  }, [identityName, scenarioData.scenarios]);
 
   const chooseSeriesPuzzle = useCallback((scenario: Scenario, replayGuidance = false) => {
     if (!seriesRun) return;
@@ -1416,7 +1424,7 @@ export default function App() {
       <div className="app app--home app--archive app--playbook">
         {archiveControls}
         <TutorialPuzzleChooser
-          seriesName={scenarioData.series.name}
+          seriesName={activeSeries?.name ?? 'Series'}
           scenarios={seriesScenarios}
           completedScenarioIds={completedScenarioIds}
           recaps={tutorialRecaps}

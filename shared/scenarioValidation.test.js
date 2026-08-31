@@ -5,6 +5,7 @@ import {
   missingSeriesScenarioIds,
   normalizeScenario,
   normalizeSeries,
+  normalizeSeriesCollection,
   validateScenario,
 } from './scenarioValidation.js';
 
@@ -116,23 +117,32 @@ test('normalizeScenario coerces hostile input rather than throwing', () => {
   assert.ok(validateScenario(scenario).length > 0);
 });
 
-test('normalizeSeries always produces the default id and an array of ids', () => {
+test('normalizeSeries supplies future-ready defaults and preserves a valid id', () => {
   assert.deepEqual(normalizeSeries(null), {
     id: 'default', name: 'Default Series', description: '', scenarioIds: [],
+    teams: ['human', 'orc'], objective: 'touchdown', order: 0,
   });
   assert.deepEqual(
     normalizeSeries({ id: 'hacked', name: '  Cup  ', scenarioIds: ['a', '', 'b'] }),
-    { id: 'default', name: 'Cup', description: '', scenarioIds: ['a', 'b'] },
+    { id: 'hacked', name: 'Cup', description: '', scenarioIds: ['a', 'b'], teams: ['human', 'orc'], objective: 'touchdown', order: 0 },
   );
 });
 
 test('normalizeSeries preserves a bounded series logo key', () => {
   assert.deepEqual(normalizeSeries({ logo: '  nuffle-shuffle  ', scenarioIds: [] }), {
-    id: 'default', name: 'Default Series', description: '', scenarioIds: [], logo: 'nuffle-shuffle',
+    id: 'default', name: 'Default Series', description: '', scenarioIds: [], teams: ['human', 'orc'], objective: 'touchdown', order: 0, logo: 'nuffle-shuffle',
   });
   assert.deepEqual(normalizeSeries({ logo: 42, scenarioIds: [] }), {
-    id: 'default', name: 'Default Series', description: '', scenarioIds: [],
+    id: 'default', name: 'Default Series', description: '', scenarioIds: [], teams: ['human', 'orc'], objective: 'touchdown', order: 0,
   });
+});
+
+test('normalizeSeriesCollection migrates a legacy object and sorts multiple series', () => {
+  assert.deepEqual(normalizeSeriesCollection({ id: 'legacy', scenarioIds: [] }).map(item => item.id), ['legacy']);
+  assert.deepEqual(normalizeSeriesCollection([
+    { id: 'later', order: 2, scenarioIds: [] },
+    { id: 'first', order: 0, scenarioIds: [] },
+  ]).map(item => item.id), ['first', 'later']);
 });
 
 test('missingSeriesScenarioIds reports dangling references', () => {

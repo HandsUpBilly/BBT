@@ -3,6 +3,7 @@ import type { PathStep, BlockOutcomeFace } from './bfs';
 export type { BlockOutcomeFace };
 
 export type Team = 'human' | 'orc';
+export type Objective = 'touchdown';
 
 /**
  * Portrait pitch coordinates — the orientation scenario JSON and the rules
@@ -53,6 +54,9 @@ export interface Scenario {
   name: string;
   description: string;
   activeTeam: Team;
+  objective?: Objective;
+  /** Whether this puzzle is also listed as a standalone Free Play puzzle. */
+  freePlay?: boolean;
   published?: boolean;
   ballPosition?: Position | null;
   pieces: ScenarioPieceDef[];
@@ -63,6 +67,10 @@ export interface SeriesDefinition {
   name: string;
   description: string;
   scenarioIds: string[];
+  teams?: [Team, Team];
+  objective?: Objective;
+  /** Zero-based display order on the series selection screen. */
+  order?: number;
   /** Stable key for the chooser artwork; omitted for series without artwork. */
   logo?: string;
 }
