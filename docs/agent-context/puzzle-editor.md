@@ -90,6 +90,12 @@ can remove an unsuitable avatar immediately. This action does not delete the
 player's rankings or other profile fields; the player falls back to initials
 and may choose a new image later.
 
+Admin Console's Ranking data panel shows full retained counts for every series
+and puzzle board. An administrator can clear one puzzle, one series, or all
+ranking boards after an explicit destructive confirmation. The complete reset
+includes legacy/deleted puzzle keys, while leaving profiles, login history,
+analytics, editor drafts, and browser-local attempt history untouched.
+
 ### Guards
 
 - **Unsaved-changes guard.** Opening another puzzle, starting a new one,
@@ -124,6 +130,7 @@ and may choose a new image later.
 - `GET /api/editor/statistics`
 - `GET /api/editor/analytics`
 - `GET` / `POST` / `DELETE /api/editor/admins`
+- `GET` / `DELETE /api/editor/rankings`
 
 These write local JSON files under:
 
@@ -146,6 +153,8 @@ Netlify production persists editor drafts in Netlify Blobs:
   `shared/analyticsStatistics.js`; it is independent of leaderboard statistics.
 - `netlify/functions/editor-admins.js` stores runtime-managed administrator
   emails in a separate protected Blobs store.
+- `netlify/functions/editor-rankings.js` counts and clears retained puzzle and
+  series ranking boards; all operations are admin-gated.
 - `netlify/functions/scenarios.js` serves published scenarios/series to players.
 
 Draft saves are not player-visible until an admin clicks Publish Drafts.

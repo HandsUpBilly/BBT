@@ -27,6 +27,22 @@ export interface ModeratedPlayerProfile {
   updatedAt: string;
 }
 
+export interface RankingResetBoard {
+  id: string;
+  name: string;
+  count: number;
+}
+
+export interface RankingResetSummary {
+  totalEntries: number;
+  series: RankingResetBoard[];
+  puzzles: RankingResetBoard[];
+}
+
+export type RankingResetTarget =
+  | { scope: 'all' }
+  | { scope: 'series' | 'puzzle'; id: string };
+
 async function parseJsonResponse<T>(response: Response): Promise<T> {
   let body: { errors?: unknown; error?: unknown };
   try {
@@ -124,6 +140,24 @@ export async function removeModeratedAvatar(
     headers: authHeaders(idToken),
   });
   return parseJsonResponse<ModeratedPlayerProfile>(response);
+}
+
+export async function fetchRankingResetSummary(idToken: string | null): Promise<RankingResetSummary> {
+  const response = await fetch('/api/editor/rankings', { headers: authHeaders(idToken) });
+  return parseJsonResponse<RankingResetSummary>(response);
+}
+
+export async function resetRankings(
+  target: RankingResetTarget,
+  idToken: string | null,
+): Promise<{ removed: number; summary: RankingResetSummary }> {
+  const params = new URLSearchParams({ scope: target.scope });
+  if ('id' in target) params.set('id', target.id);
+  const response = await fetch(`/api/editor/rankings?${params}`, {
+    method: 'DELETE',
+    headers: authHeaders(idToken),
+  });
+  return parseJsonResponse<{ removed: number; summary: RankingResetSummary }>(response);
 }
 
 export async function createScenario(scenario: Scenario, idToken: string | null): Promise<Scenario> {

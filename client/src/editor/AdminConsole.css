@@ -9,10 +9,24 @@
 .admin-console__panel ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 7px; }
 .admin-console__panel li { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 10px; background: var(--color-surface-sunken); }
 .admin-console__count { font-size: .85rem; }
+.admin-console__success { padding: 10px 12px; color: var(--color-success); border-left: 3px solid var(--color-success); background: var(--color-surface-sunken); }
+.admin-console__panel-heading { display: flex; align-items: start; justify-content: space-between; gap: 20px; }
+.admin-console__panel-heading > div { display: grid; gap: 6px; }
+.admin-console__ranking-groups { display: grid; grid-template-columns: minmax(0, .8fr) minmax(0, 1.2fr); gap: 16px; }
+.admin-console__ranking-groups > div { display: grid; align-content: start; gap: 8px; }
+.admin-console__ranking-groups h3 { color: var(--color-text); font: 600 .78rem var(--font-display); letter-spacing: .08em; text-transform: uppercase; }
+.admin-console__ranking-groups li > span { display: grid; min-width: 0; gap: 2px; }
+.admin-console__ranking-groups li strong { overflow: hidden; color: var(--color-text); font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
+.admin-console__ranking-groups li small { color: var(--color-text-muted); }
 .admin-console__profile { display: flex; min-width: 0; align-items: center; gap: 10px; }
 .admin-console__profile > span { display: grid; min-width: 0; gap: 2px; }
 .admin-console__profile strong { color: var(--color-text); font-weight: 600; }
 .admin-console__profile small { overflow: hidden; color: var(--color-text-muted); text-overflow: ellipsis; }
 .admin-console__profile-avatar { width: 34px; height: 34px; flex: 0 0 34px; border-radius: 50%; object-fit: cover; }
 .admin-console__profile-avatar--fallback { display: grid; place-items: center; color: var(--color-text); background: var(--color-surface-3); font-size: .68rem; font-weight: 700; }
+@media (max-width: 720px) {
+  .admin-console__panel-heading { align-items: stretch; flex-direction: column; }
+  .admin-console__panel-heading .btn { width: 100%; }
+  .admin-console__ranking-groups { grid-template-columns: 1fr; }
+}
 @media (max-width: 560px) { .admin-console__panel form { align-items: stretch; flex-direction: column; } }

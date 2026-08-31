@@ -73,3 +73,13 @@ export async function updateEntries(store, key, mutate) {
 
   throw lastError ?? new Error('Could not update the leaderboard');
 }
+
+/** Clears one board through the same etag retry path as score submissions. */
+export async function clearEntries(store, key) {
+  let removed = 0;
+  await updateEntries(store, key, entries => {
+    removed = entries.length;
+    return [];
+  });
+  return removed;
+}

@@ -147,6 +147,11 @@ The dashboard reports personal-best counts and probability/dice summaries, not
 attempt counts or completion rates; leaderboard storage keeps only one personal
 best per player. Player names, ids, and move histories are not returned.
 
+**Ranking resets**: Admin Console can clear all retained rankings, one series,
+or one individual puzzle. Each action is confirmed and affects leaderboard
+personal bests only—profiles, logins, analytics, drafts, and players' local
+attempt history remain intact.
+
 If you'd rather commit puzzles to the repo (e.g. to keep the static
 fallback current, or avoid depending on Blobs), fetch the published JSON
 directly and copy it into the scenario files by hand:
