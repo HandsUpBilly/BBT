@@ -9,6 +9,7 @@ interface Props {
   actionLog: ActionLogEntry[];
   /** Optional companion graphic used by the branch-review screen. */
   diagramAside?: ReactNode;
+  variant?: 'default' | 'review';
 }
 
 function pct(p: number) { return `${(p * 100).toFixed(1)}%`; }
@@ -66,7 +67,7 @@ function capitalize(s: string): string {
  * conceded branch of a policy run), so this is the one place that knows how
  * to read an `ActionLogEntry[]` back into a human account of the play.
  */
-export function ActionLogDetail({ scenario, actionLog, diagramAside }: Props) {
+export function ActionLogDetail({ scenario, actionLog, diagramAside, variant = 'default' }: Props) {
   const riskyMoves = actionLog.filter(e =>
     e.kind === 'handoff' || e.kind === 'pass' || e.kind === 'pass-catch' || e.kind === 'block' ||
     e.isGfi || e.dodgeTarget !== null || (e.kind === 'move' && !!e.pickupTarget)
@@ -76,14 +77,20 @@ export function ActionLogDetail({ scenario, actionLog, diagramAside }: Props) {
     : 1;
 
   return (
-    <>
+    <div className={`action-log-detail action-log-detail--${variant}`}>
       <div className={`action-log-detail__diagrams${diagramAside ? ' action-log-detail__diagrams--paired' : ''}`}>
         <PlayDiagram scenario={scenario} actionLog={actionLog} />
         {diagramAside}
       </div>
 
       {riskyMoves.length > 0 ? (
-        <div className="submit-modal__moves">
+        <section className="submit-modal__moves">
+          {variant === 'review' && (
+            <div className="action-log-detail__ledger-heading">
+              <h3>Decision log</h3>
+              <span>{riskyMoves.length} {riskyMoves.length === 1 ? 'test' : 'tests'}</span>
+            </div>
+          )}
           <div className="submit-modal__moves-scroll">
             <div className="submit-modal__moves-header">
               <span>Player</span>
@@ -108,10 +115,10 @@ export function ActionLogDetail({ scenario, actionLog, diagramAside }: Props) {
               {pct(cumulativeProb)}
             </span>
           </div>
-        </div>
+        </section>
       ) : (
         <p className="submit-modal__no-risk">CLEAN PLAY: No rolls required.</p>
       )}
-    </>
+    </div>
   );
 }

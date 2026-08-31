@@ -157,10 +157,13 @@
   gap: 8px;
 }
 
+/* Left-aligned, not space-between: on a narrow viewport this box is often
+   wider than the screen (it spans every outcome column below it), so
+   anything pinned to its far right scrolls off-screen. The dice count sits
+   right after the label instead, where it's visible without scrolling. */
 .branch-strip-row__block-group {
   position: relative;
   display: flex;
-  justify-content: space-between;
   gap: 8px;
   min-width: 0;
   padding: 4px 8px;
