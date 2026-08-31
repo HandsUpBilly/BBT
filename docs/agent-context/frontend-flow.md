@@ -270,7 +270,15 @@ routes, or authored dialog copy.
 
 ## Touchdown Play Diagram
 
-The touchdown summary includes a chalkboard-style SVG generated from the
+The touchdown summary opens as a wide, focus-trapped tactical review. Its
+generated `touchdown-lockup.webp` masthead replaces the former inline ball
+glyph and remains decorative beside a live accessible dialog title. The
+layout uses the same numbered decision-log treatment as branch review, then
+anchors series or leaderboard actions in a separate footer. On narrow screens
+the review rows collapse to two columns and the footer actions stack without
+introducing horizontal page overflow.
+
+The summary includes a chalkboard-style SVG generated from the
 completed puzzle session. `PlayDiagram.tsx` receives the active scenario and
 the full `actionLog`, so it can show the starting formation as well as every
 committed movement route, pass, handoff, and block. It is not a generic or
@@ -732,9 +740,11 @@ prevents the HUD and pitch from resizing when a risky move is confirmed.
   its occupant, and any pending rolls, and respond to Enter/Space. Only
   *actionable* squares are in the tab order.
 - All modals use `useModalFocus` (`client/src/useModalFocus.ts`), which traps
-  Tab, wires Escape, and restores focus to whatever opened the dialog. Because
-  dialogs stop Escape propagation, `App.tsx`'s global Escape handler only ever
-  cancels the current activation.
+  Tab and restores focus to whatever opened the dialog. Dismissible dialogs
+  pass a close callback so Escape closes them; required-choice dialogs such as
+  the touchdown review omit it. Because dialogs stop handled Escape events from
+  propagating, `App.tsx`'s global Escape handler only ever cancels the current
+  activation.
 
 ## Common Change Checks
 

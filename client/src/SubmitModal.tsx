@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useId, useState } from 'react';
 import { ActionLogDetail } from './ActionLogDetail';
-import { BallIcon } from './BallIcon';
+import touchdownLockup from './assets/touchdown-lockup.webp';
 import type { ActionLogEntry, Scenario } from './types';
+import { useModalFocus } from './useModalFocus';
 import './SubmitModal.css';
 
 interface Props {
@@ -26,6 +27,10 @@ interface Props {
 export function SubmitModal({ scenario, actionLog, onSubmit, onDismiss, seriesMode, continueLabel, onReviewBoard, defaultName = '', signedInName, error }: Props) {
   const [name, setName] = useState(defaultName);
   const [submitting, setSubmitting] = useState(false);
+  const titleId = useId();
+  // A scored run needs an explicit Submit, Continue or Skip choice, so Escape
+  // does not dismiss it. The hook still traps focus and restores the launcher.
+  const dialogRef = useModalFocus<HTMLDivElement>();
 
   // onSubmit may be async (it hits the network). Track it so the button can't
   // be double-fired, and clear the flag when a failure comes back so the
@@ -37,62 +42,80 @@ export function SubmitModal({ scenario, actionLog, onSubmit, onDismiss, seriesMo
 
   return (
     <div className="modal-backdrop">
-      <div className="modal submit-modal">
-        <div className="submit-modal__td">
-          <BallIcon className="submit-modal__td-ball" />
-          TOUCHDOWN!
+      <div
+        ref={dialogRef}
+        className="modal submit-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+        tabIndex={-1}
+      >
+        <header className="submit-modal__masthead">
+          <h2 id={titleId} className="submit-modal__visually-hidden">Touchdown!</h2>
+          <img
+            className="submit-modal__masthead-art"
+            src={touchdownLockup}
+            alt=""
+            decoding="async"
+          />
+        </header>
+
+        <div className="submit-modal__content">
+          <ActionLogDetail scenario={scenario} actionLog={actionLog} variant="review" />
+
+          {error && (
+            <p className="submit-modal__error" role="alert">{error}</p>
+          )}
+
+          {seriesMode ? (
+            <footer className="submit-modal__footer submit-modal__footer--actions-only">
+              <div className="submit-modal__actions">
+                {onReviewBoard && (
+                  <button className="modal__continue-btn" disabled={submitting} onClick={onReviewBoard}>
+                    Review Board
+                  </button>
+                )}
+                <button className="modal__roll-btn" disabled={submitting} onClick={() => runSubmit('')}>
+                  {submitting ? 'Saving...' : error ? 'Try Again' : continueLabel ?? 'Continue'}
+                </button>
+              </div>
+            </footer>
+          ) : (
+            <footer className="submit-modal__footer">
+              <div className="submit-modal__identity">
+                {signedInName ? (
+                  <p className="submit-modal__prompt">Submit as <strong>{signedInName}</strong></p>
+                ) : (
+                  <label className="submit-modal__alias-field">
+                    <span>Leaderboard alias</span>
+                    <input
+                      className="submit-modal__input"
+                      type="text"
+                      maxLength={32}
+                      placeholder="Your public alias"
+                      value={name}
+                      onChange={e => setName(e.target.value)}
+                      onKeyDown={e => e.key === 'Enter' && name.trim() && !submitting && runSubmit(name.trim())}
+                      autoFocus
+                    />
+                  </label>
+                )}
+              </div>
+              <div className="submit-modal__actions">
+                <button className="modal__continue-btn" disabled={submitting} onClick={onDismiss}>
+                  Skip
+                </button>
+                <button
+                  className="modal__roll-btn"
+                  disabled={!name.trim() || submitting}
+                  onClick={() => runSubmit(name.trim())}
+                >
+                  {submitting ? 'Saving...' : error ? 'Try Again' : 'Submit Score'}
+                </button>
+              </div>
+            </footer>
+          )}
         </div>
-
-        <ActionLogDetail scenario={scenario} actionLog={actionLog} />
-
-        {error && (
-          <p className="submit-modal__error" role="alert">{error}</p>
-        )}
-
-        {seriesMode ? (
-          <div className="submit-modal__actions">
-            <button className="modal__roll-btn" disabled={submitting} onClick={() => runSubmit('')}>
-              {submitting ? 'Saving...' : error ? 'Try Again' : continueLabel ?? 'Continue'}
-            </button>
-            {onReviewBoard && (
-              <button className="modal__continue-btn" disabled={submitting} onClick={onReviewBoard}>
-                Review Board
-              </button>
-            )}
-          </div>
-        ) : (
-          <>
-            {signedInName ? (
-              <p className="submit-modal__prompt">Submit as {signedInName}</p>
-            ) : (
-              <>
-                <p className="submit-modal__prompt">Enter a public alias for the leaderboard:</p>
-                <input
-                  className="submit-modal__input"
-                  type="text"
-                  maxLength={32}
-                  placeholder="Your public alias"
-                  value={name}
-                  onChange={e => setName(e.target.value)}
-                  onKeyDown={e => e.key === 'Enter' && name.trim() && !submitting && runSubmit(name.trim())}
-                  autoFocus
-                />
-              </>
-            )}
-            <div className="submit-modal__actions">
-              <button
-                className="modal__roll-btn"
-                disabled={!name.trim() || submitting}
-                onClick={() => runSubmit(name.trim())}
-              >
-                {submitting ? 'Saving...' : error ? 'Try Again' : 'Submit Score'}
-              </button>
-              <button className="modal__continue-btn" disabled={submitting} onClick={onDismiss}>
-                Skip
-              </button>
-            </div>
-          </>
-        )}
       </div>
     </div>
   );
