@@ -48,9 +48,11 @@ guest buttons, then expands when the public-alias form appears so the name
 field has useful writing room. On phone widths the field and Continue button
 stack within the existing landing-page gutters.
 
-`UserMenu` and leaderboards display the public alias, never a Google profile
-name or avatar. Google identity is retained only as a stable account key and
-for the server-side admin email allowlist. Signing out clears Google auth if
+`UserMenu` and leaderboards display the player-chosen public alias, never a
+Google profile name. A signed-in player may explicitly choose their verified
+Google picture as the public avatar; it is not selected automatically. Google
+identity is otherwise retained as a stable account key and for the server-side
+admin email allowlist. Signing out clears Google auth if
 signed in, otherwise clears the guest alias.
 
 The account menu opens **Help & rules**, **About**, and **Settings** beside Log
@@ -95,7 +97,7 @@ public avatars).
   the puzzle in progress — safe because `useGameState` is instantiated once at
   the top of `App.tsx`, independent of `appMode`, so switching to `'settings'`
   and back does not unmount or reset it.
-- **`prefs.ts` stores avatar and pitch display preferences**, one JSON object at
+- **`prefs.ts` stores legacy avatar and pitch display preferences**, one JSON object at
   `bbt.prefs.v1` keyed by identity — the same keyed-map shape as
   `bbt.googleAliases.v1`. A Google user is keyed by their subject id; a guest
   uses the fixed key `GUEST_PREFS_KEY` (`'guest'`) rather than being keyed by
@@ -111,15 +113,16 @@ public avatars).
   `leaderboard-and-auth.md`), so renaming orphans their personal best under the
   old name — `SettingsScreen` shows a `ConfirmDialog` before committing a guest
   rename, and commits a signed-in rename immediately with no confirmation.
-- **The avatar is local-only in Phase 1.** `avatarImage.ts` decodes a chosen
+- **Signed-in profiles are public and cross-device.** `avatarImage.ts` decodes a chosen
   file, center-crops it to a square, and downsamples to a fixed 256×256 WebP
-  data URL before it ever reaches `prefs.ts` — bounding the bytes (this store
-  shares its quota with auth, guest name, and local scores) and stripping EXIF
-  as a side effect of redrawing through a canvas. It is visible only in this
-  browser's `UserMenu` and the Settings screen itself, never on a leaderboard,
-  and is therefore gated on `currentUser` — a guest has no verified identity to
-  attach it to for the server-side Phase 2 version, so the local version stays
-  consistent with that gate from the start rather than reworking it later.
+  data URL before upload, bounding the payload and stripping EXIF as a side
+  effect of redrawing through a canvas. The server independently validates the
+  WebP bytes and dimensions. A player may instead explicitly use the picture
+  URL from their verified Google token. Their optional country/nationality and
+  avatar are public on puzzle and series rankings. Existing `prefs.ts` avatars
+  from the local-only release remain private until **Publish current** is used;
+  a successful public avatar write removes that legacy copy. Guests have no
+  public profile because there is no verified identity to attach it to.
 - **Token-style choices are whole-pitch detail levels.** Detailed, Tactical,
   and Plain keep the same six-token formation and team colours while stepping
   down both token and field density: worn textured turf, restrained tactical

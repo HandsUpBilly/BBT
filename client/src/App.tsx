@@ -59,6 +59,8 @@ import { recordAttempt } from './attemptStore';
 import { summarizeActionLog } from './riskyMoves';
 import { readAllPrefs, readPrefs, writePrefs, GUEST_PREFS_KEY } from './prefs';
 import type { PlayerPrefs } from './prefs';
+import { fetchOwnProfile, playerAvatarUrl, saveOwnProfile } from './playerProfile';
+import type { PlayerProfilePatch } from './playerProfile';
 import { playerComparison } from './playerComparison';
 import { resolveSeriesScenarios } from './series';
 import { loadScenarioData } from './scenarios/runtime';
@@ -70,7 +72,7 @@ import { useAuth } from './auth';
 import { useAdminAccess } from './useAdminAccess';
 import type {
   AppMode, GameState, PlayerPiece, Position, Scenario, LeaderboardEntry,
-  SeriesLeaderboardEntry, SeriesPuzzleResult,
+  PublicPlayerProfile, SeriesLeaderboardEntry, SeriesPuzzleResult,
 } from './types';
 import { key } from './bfs';
 import { useCompactLayout, useHoverCapable, usePortraitViewport } from './useMediaQuery';
@@ -292,6 +294,35 @@ export default function App() {
     setAllPrefs(all => ({ ...all, [identityKey]: { ...all[identityKey], ...patch } }));
     writePrefs(identityKey, patch);
   }, [identityKey]);
+  const [profileState, setProfileState] = useState<{
+    userId: string;
+    profile: PublicPlayerProfile;
+  } | null>(null);
+  useEffect(() => {
+    if (!currentUser || !idToken) return;
+    let cancelled = false;
+    void fetchOwnProfile(idToken).then(profile => {
+      if (!cancelled) setProfileState({ userId: currentUser.id, profile });
+    }).catch(() => {
+      // Public profile decoration is optional. A failed read must not block
+      // gameplay or erase the existing local-avatar migration fallback.
+    });
+    return () => { cancelled = true; };
+  }, [currentUser, idToken]);
+  const publicProfile = currentUser && profileState?.userId === currentUser.id
+    ? profileState.profile
+    : undefined;
+  const publicAvatar = currentUser && publicProfile?.avatarVersion
+    ? playerAvatarUrl(currentUser.id, publicProfile.avatarVersion)
+    : undefined;
+  const avatar = publicAvatar ?? prefs.avatar;
+  const avatarIsLocalOnly = Boolean(currentUser && !publicAvatar && prefs.avatar);
+  const updatePublicProfile = useCallback(async (patch: PlayerProfilePatch) => {
+    if (!currentUser || !idToken) throw new Error('Sign in with Google to update your public profile.');
+    const profile = await saveOwnProfile(patch, idToken);
+    setProfileState({ userId: currentUser.id, profile });
+    if (Object.hasOwn(patch, 'avatar')) setPrefs({ avatar: undefined });
+  }, [currentUser, idToken, setPrefs]);
   const tutorialConceptProgress = prefs.tutorialConceptProgress as TutorialConceptProgress | undefined;
   const updateTutorialConcepts = useCallback((conceptIds: readonly TutorialConceptId[], status: 'introduced' | 'used') => {
     const mergeProgress = (current: Record<string, 'introduced' | 'used'>) => {
@@ -661,7 +692,8 @@ export default function App() {
   const accountMenu = (
     <UserMenu
       name={identityName}
-      avatar={prefs.avatar}
+      avatar={avatar}
+      country={publicProfile?.country}
       onHelp={openHelp}
       onSettings={openSettings}
       onAbout={() => {
@@ -1486,10 +1518,25 @@ export default function App() {
           identityName={identityName}
           isGuest={!currentUser}
           onRename={currentUser ? setGoogleAlias : setGuestAlias}
-          avatar={prefs.avatar}
-          onAvatarChange={avatar => {
-            trackAnalytics('interaction', { name: 'setting-avatar', outcome: 'changed', value: Boolean(avatar) });
-            setPrefs({ avatar });
+          avatar={avatar}
+          avatarIsLocalOnly={avatarIsLocalOnly}
+          googleAvatarAvailable={Boolean(currentUser?.picture)}
+          onAvatarUpload={async dataUrl => {
+            await updatePublicProfile({ avatar: { source: 'upload', dataUrl } });
+            trackAnalytics('interaction', { name: 'setting-avatar', outcome: 'changed', value: 'upload' });
+          }}
+          onUseGoogleAvatar={async () => {
+            await updatePublicProfile({ avatar: { source: 'google' } });
+            trackAnalytics('interaction', { name: 'setting-avatar', outcome: 'changed', value: 'google' });
+          }}
+          onRemoveAvatar={async () => {
+            await updatePublicProfile({ avatar: null });
+            trackAnalytics('interaction', { name: 'setting-avatar', outcome: 'changed', value: false });
+          }}
+          country={publicProfile?.country ?? ''}
+          onCountryChange={async country => {
+            await updatePublicProfile({ country });
+            trackAnalytics('interaction', { name: 'setting-country', outcome: 'changed', value: Boolean(country) });
           }}
           tokenStyle={prefs.tokenStyle ?? 'portrait'}
           onTokenStyleChange={tokenStyle => {

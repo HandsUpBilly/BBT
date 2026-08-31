@@ -51,6 +51,8 @@ import {
 import { buildPlayerStatistics } from '../shared/statistics.js';
 import { LoginValidationError, recordLogin, sortLogins, validateLoginPayload } from '../shared/loginTracking.js';
 import { registerAnalyticsRoutes } from './analytics.js';
+import { registerPlayerProfileRoutes } from './profiles.js';
+import { enrichEntriesWithProfiles } from './profileStore.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const app = express();
@@ -71,6 +73,7 @@ function statisticsWindow(value) {
 app.use(express.json({ limit: '256kb' }));
 registerAnalyticsRoutes(app);
 registerEditorRoutes(app);
+registerPlayerProfileRoutes(app);
 
 // Serve built client in production only
 if (isProd) {
@@ -108,8 +111,9 @@ function getBoard(scenarioId) {
   return store.get(scenarioId);
 }
 
-app.get('/api/leaderboard/:scenarioId', (req, res) => {
-  res.json(sortEntries(getBoard(req.params.scenarioId)).slice(0, TOP_N));
+app.get('/api/leaderboard/:scenarioId', async (req, res) => {
+  const visible = sortEntries(getBoard(req.params.scenarioId)).slice(0, TOP_N);
+  res.json(await enrichEntriesWithProfiles(visible));
 });
 
 app.post('/api/leaderboard/:scenarioId', async (req, res) => {
@@ -160,8 +164,9 @@ app.post('/api/leaderboard/:scenarioId', async (req, res) => {
 // ── In-memory series leaderboard ────────────────────────────────────────────
 let seriesBoard = [];
 
-app.get('/api/series-leaderboard', (_req, res) => {
-  res.json(sortEntries(seriesBoard).slice(0, TOP_N));
+app.get('/api/series-leaderboard', async (_req, res) => {
+  const visible = sortEntries(seriesBoard).slice(0, TOP_N);
+  res.json(await enrichEntriesWithProfiles(visible));
 });
 
 app.post('/api/series-leaderboard', async (req, res) => {

@@ -8,6 +8,7 @@ import {
   validateSeriesSubmission,
 } from '../../shared/scoreValidation.js';
 import { LEADERBOARD_RATE_LIMIT, createRateLimiter, rateLimitKey } from '../../shared/rateLimit.js';
+import { enrichEntriesWithProfiles } from './profileStore.js';
 
 // See leaderboard.js — read-truncated only, the store keeps every entry.
 const TOP_N = 10;
@@ -32,7 +33,8 @@ export default async function handler(req) {
   // ── GET ──────────────────────────────────────────────────────────────────
   if (req.method === 'GET') {
     const { entries } = await readEntries(store, KEY);
-    return json(sortEntries(entries).slice(0, TOP_N), 200, {
+    const visible = sortEntries(entries).slice(0, TOP_N);
+    return json(await enrichEntriesWithProfiles(visible), 200, {
       'Cache-Control': 'public, max-age=15',
     });
   }

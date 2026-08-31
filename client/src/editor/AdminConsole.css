@@ -9,4 +9,10 @@
 .admin-console__panel ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 7px; }
 .admin-console__panel li { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 10px; background: var(--color-surface-sunken); }
 .admin-console__count { font-size: .85rem; }
+.admin-console__profile { display: flex; min-width: 0; align-items: center; gap: 10px; }
+.admin-console__profile > span { display: grid; min-width: 0; gap: 2px; }
+.admin-console__profile strong { color: var(--color-text); font-weight: 600; }
+.admin-console__profile small { overflow: hidden; color: var(--color-text-muted); text-overflow: ellipsis; }
+.admin-console__profile-avatar { width: 34px; height: 34px; flex: 0 0 34px; border-radius: 50%; object-fit: cover; }
+.admin-console__profile-avatar--fallback { display: grid; place-items: center; color: var(--color-text); background: var(--color-surface-3); font-size: .68rem; font-weight: 700; }
 @media (max-width: 560px) { .admin-console__panel form { align-items: stretch; flex-direction: column; } }

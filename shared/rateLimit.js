@@ -104,3 +104,7 @@ export const ANALYTICS_RATE_LIMIT = { limit: 120, windowMs: 60 * 60 * 1000 };
 /** One login is recorded per app session, so this is a flood guard, not a
  * realistic ceiling for a genuine player. */
 export const LOGIN_RATE_LIMIT = { limit: 10, windowMs: 60 * 1000 };
+
+/** Profile writes can replace public user-generated images, so keep retries
+ * practical while preventing a verified account from hammering Blobs. */
+export const PROFILE_RATE_LIMIT = { limit: 10, windowMs: 10 * 60 * 1000 };

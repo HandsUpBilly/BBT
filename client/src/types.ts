@@ -315,6 +315,15 @@ export interface LeaderboardEntry {
   playLog?: PlayLogEntry[];
   userId?: string;
   authProvider?: 'google';
+  /** Public decoration resolved at read time; never persisted in the score. */
+  profile?: PublicPlayerProfile;
+}
+
+export interface PublicPlayerProfile {
+  userId: string;
+  country?: string;
+  /** Cache-busting version for the public /api/avatar/:userId resource. */
+  avatarVersion?: string;
 }
 
 // ── Series ──────────────────────────────────────────────────────────────────
@@ -339,4 +348,5 @@ export interface SeriesLeaderboardEntry {
   puzzles: SeriesPuzzleResult[];
   userId?: string;
   authProvider?: 'google';
+  profile?: PublicPlayerProfile;
 }
