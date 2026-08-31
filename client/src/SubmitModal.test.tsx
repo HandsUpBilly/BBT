@@ -18,6 +18,23 @@ const scenario: Scenario = {
 afterEach(cleanup);
 
 describe('SubmitModal series board review', () => {
+  it('presents the generated victory masthead as an accessible dialog', () => {
+    const { container } = render(
+      <SubmitModal
+        scenario={scenario}
+        actionLog={[]}
+        onSubmit={vi.fn()}
+        onDismiss={vi.fn()}
+        seriesMode
+      />,
+    );
+
+    expect(screen.getByRole('dialog', { name: 'Touchdown!' })).toBeTruthy();
+    expect(container.querySelector('.submit-modal__masthead-art')).toBeTruthy();
+    expect(container.querySelector('.submit-modal__td-ball')).toBeNull();
+    expect(container.querySelector('.action-log-detail--review')).toBeTruthy();
+  });
+
   it('offers board review without submitting or dismissing the result', () => {
     const onSubmit = vi.fn();
     const onDismiss = vi.fn();

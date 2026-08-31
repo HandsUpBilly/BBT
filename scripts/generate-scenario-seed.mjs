@@ -15,7 +15,7 @@ import { fileURLToPath } from 'node:url';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const scenarioDir = join(root, 'client/src/scenarios');
-const seriesPath = join(root, 'client/src/series/default.json');
+const seriesDir = join(root, 'client/src/series');
 const outputPath = join(root, 'netlify/functions/scenarioSeed.js');
 
 const files = (await readdir(scenarioDir))
@@ -25,12 +25,15 @@ const files = (await readdir(scenarioDir))
 const scenarios = await Promise.all(
   files.map(async file => JSON.parse(await readFile(join(scenarioDir, file), 'utf8'))),
 );
-const series = JSON.parse(await readFile(seriesPath, 'utf8'));
+const seriesFiles = (await readdir(seriesDir)).filter(file => file.endsWith('.json')).sort();
+const series = await Promise.all(
+  seriesFiles.map(async file => JSON.parse(await readFile(join(seriesDir, file), 'utf8'))),
+);
 
 const banner = `// GENERATED FILE — do not edit.
 // Produced by scripts/generate-scenario-seed.mjs from:
 //   client/src/scenarios/*.json  (${files.length} file${files.length === 1 ? '' : 's'})
-//   client/src/series/default.json
+//   client/src/series/*.json  (${seriesFiles.length} file${seriesFiles.length === 1 ? '' : 's'})
 // Regenerate with: npm run generate:seed
 `;
 
@@ -41,4 +44,4 @@ export const STATIC_SERIES = ${JSON.stringify(series, null, 2)};
 `;
 
 await writeFile(outputPath, contents);
-console.log(`Wrote ${outputPath} (${scenarios.length} scenarios, ${series.scenarioIds?.length ?? 0} in series)`);
+console.log(`Wrote ${outputPath} (${scenarios.length} scenarios, ${series.length} series)`);

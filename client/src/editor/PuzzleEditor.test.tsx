@@ -8,6 +8,8 @@ const savedScenario: Scenario = {
   name: 'Saved Puzzle',
   description: 'The saved description.',
   activeTeam: 'human',
+  objective: 'touchdown',
+  freePlay: false,
   published: true,
   ballPosition: null,
   pieces: [{
@@ -34,16 +36,21 @@ afterEach(() => {
 function renderEditor(scenarios: Scenario[] = [savedScenario]) {
   const initialData = {
     scenarios,
-    series: {
+    series: [{
       id: 'default',
       name: 'Tutorial',
       description: '',
       scenarioIds: scenarios.filter(scenario => scenario.published !== false).map(scenario => scenario.id),
-    },
+      teams: ['human', 'orc'],
+      objective: 'touchdown',
+      order: 0,
+    }],
   };
-  const fetchMock = vi.fn().mockImplementation((_url, options?: RequestInit) => Promise.resolve({
+  const fetchMock = vi.fn().mockImplementation((url, options?: RequestInit) => Promise.resolve({
     ok: true,
-    json: async () => options?.method === 'PUT' ? JSON.parse(String(options.body)) : initialData,
+    json: async () => String(url).includes('series-assignment')
+      ? initialData.series
+      : options?.method === 'PUT' ? JSON.parse(String(options.body)) : initialData,
   }));
   vi.stubGlobal('fetch', fetchMock);
   render(
@@ -147,17 +154,32 @@ describe('PuzzleEditor unsaved changes', { timeout: 15_000 }, () => {
     expect(screen.getByDisplayValue('Aldric')).toBeTruthy();
   });
 
-  it('saves title, description, and chooser logo as guarded series details', async () => {
+  it('shows objective, Free Play, and series assignment on each puzzle', async () => {
     const fetchMock = renderEditor();
     await screen.findByDisplayValue('Saved Puzzle');
-    openCreatorTool(/^Series$/);
 
-    fireEvent.change(screen.getByLabelText('Series name'), { target: { value: 'Orc Academy' } });
-    fireEvent.change(screen.getByLabelText('Series description'), { target: { value: 'A new six-drill course.' } });
-    fireEvent.change(screen.getByLabelText('Chooser logo key'), { target: { value: 'orc-academy' } });
+    expect((screen.getByRole('combobox', { name: 'Objective' }) as HTMLSelectElement).value).toBe('touchdown');
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Also enabled for Free Play' }));
+    fireEvent.change(screen.getByRole('combobox', { name: 'Series' }), { target: { value: '' } });
 
-    expect((screen.getByRole('button', { name: 'Publish Drafts' }) as HTMLButtonElement).disabled).toBe(true);
-    fireEvent.click(screen.getByRole('button', { name: 'Save Series Details' }));
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/editor/series-assignment', expect.objectContaining({ method: 'PUT' })));
+    fireEvent.click(screen.getByRole('button', { name: 'Save Puzzle' }));
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/editor/scenarios/scenario-001', expect.objectContaining({ method: 'PUT' })));
+    const scenarioCall = fetchMock.mock.calls.find(([url]) => url === '/api/editor/scenarios/scenario-001');
+    expect(JSON.parse(String(scenarioCall?.[1]?.body))).toMatchObject({ objective: 'touchdown', freePlay: true });
+  });
+
+  it('saves title, description, and chooser logo in the distinct Series Creator', async () => {
+    const fetchMock = renderEditor();
+    await screen.findByDisplayValue('Saved Puzzle');
+    openCreatorTool(/^Series Creator$/);
+
+    fireEvent.change(screen.getByLabelText('Title'), { target: { value: 'Orc Academy' } });
+    fireEvent.change(screen.getByLabelText('Description'), { target: { value: 'A new six-drill course.' } });
+    fireEvent.change(screen.getByLabelText('Logo key'), { target: { value: 'orc-academy' } });
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Enabled for players' }));
+
+    fireEvent.click(screen.getByRole('button', { name: 'Save Series' }));
 
     await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/editor/series/default', expect.objectContaining({ method: 'PUT' })));
     const [, options] = fetchMock.mock.calls[fetchMock.mock.calls.length - 1] as [string, RequestInit];
@@ -165,6 +187,7 @@ describe('PuzzleEditor unsaved changes', { timeout: 15_000 }, () => {
       name: 'Orc Academy',
       description: 'A new six-drill course.',
       logo: 'orc-academy',
+      published: false,
     });
   });
 });

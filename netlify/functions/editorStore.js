@@ -8,6 +8,7 @@ import { getStore } from '@netlify/blobs';
 // scenario JSON file is all that is required, matching the client's
 // import.meta.glob behavior.
 import { STATIC_SCENARIOS, STATIC_SERIES } from './scenarioSeed.js';
+import { normalizeScenario, normalizeSeriesCollection } from '../../shared/scenarioValidation.js';
 
 const SCENARIOS_KEY = 'scenarios';
 const SERIES_KEY = 'series-default';
@@ -36,8 +37,8 @@ async function readSeeded(store, key, seed) {
   return seed;
 }
 
-export const readDraftScenarios = store => readSeeded(store, SCENARIOS_KEY, STATIC_SCENARIOS);
-export const readDraftSeries = store => readSeeded(store, SERIES_KEY, STATIC_SERIES);
+export const readDraftScenarios = async store => (await readSeeded(store, SCENARIOS_KEY, STATIC_SCENARIOS)).map(normalizeScenario);
+export const readDraftSeries = async store => normalizeSeriesCollection(await readSeeded(store, SERIES_KEY, STATIC_SERIES));
 
 export const writeDraftScenarios = (store, scenarios) =>
   store.set(SCENARIOS_KEY, JSON.stringify(scenarios));
@@ -51,8 +52,8 @@ export const writeDraftSeries = (store, series) =>
  * every draft save, so an admin can stage several edits before making them live.
  */
 export const readPublishedScenarios = store =>
-  readSeeded(store, PUBLISHED_SCENARIOS_KEY, STATIC_SCENARIOS);
-export const readPublishedSeries = store => readSeeded(store, PUBLISHED_SERIES_KEY, STATIC_SERIES);
+  readSeeded(store, PUBLISHED_SCENARIOS_KEY, STATIC_SCENARIOS).then(scenarios => scenarios.map(normalizeScenario));
+export const readPublishedSeries = async store => normalizeSeriesCollection(await readSeeded(store, PUBLISHED_SERIES_KEY, STATIC_SERIES));
 
 export const writePublishedScenarios = (store, scenarios) =>
   store.set(PUBLISHED_SCENARIOS_KEY, JSON.stringify(scenarios));
@@ -67,8 +68,17 @@ export const writePublishedSeries = (store, series) =>
 export function toPublicView(scenarios, series) {
   const published = scenarios.filter(scenario => scenario.published !== false);
   const publishedIds = new Set(published.map(scenario => scenario.id));
+  const collection = normalizeSeriesCollection(series);
+  const narrowed = collection
+    .filter(item => item.published !== false)
+    .map(item => ({
+      ...item,
+      scenarioIds: item.scenarioIds.filter(id => publishedIds.has(id)),
+    }));
   return {
     scenarios: published,
-    series: { ...series, scenarioIds: (series?.scenarioIds ?? []).filter(id => publishedIds.has(id)) },
+    // Keep the old helper contract for legacy callers/tests while every stored
+    // collection and new public response uses the array form.
+    series: Array.isArray(series) ? narrowed : narrowed[0] ?? { scenarioIds: [] },
   };
 }

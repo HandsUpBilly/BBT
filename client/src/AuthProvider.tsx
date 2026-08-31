@@ -16,11 +16,17 @@ function loadStoredAuth(): StoredAuth | null {
     if (!raw) return null;
     const parsed = JSON.parse(raw) as Partial<StoredAuth> | null;
     if (!parsed?.user?.id || parsed.user.provider !== 'google' || !parsed.idToken) return null;
+    const payload = decodeJwtPayload(parsed.idToken);
     return {
       user: {
         id: parsed.user.id,
         provider: 'google',
-        ...(typeof parsed.user.email === 'string' ? { email: parsed.user.email } : {}),
+        ...(typeof parsed.user.email === 'string'
+          ? { email: parsed.user.email }
+          : typeof payload.email === 'string' ? { email: payload.email } : {}),
+        ...(typeof parsed.user.picture === 'string'
+          ? { picture: parsed.user.picture }
+          : typeof payload.picture === 'string' ? { picture: payload.picture } : {}),
       },
       idToken: parsed.idToken,
     };
@@ -110,6 +116,7 @@ function userFromCredential(credential: string): AuthUser | null {
       id: payload.sub,
       provider: 'google',
       email: payload.email,
+      picture: payload.picture,
     };
   } catch {
     return null;

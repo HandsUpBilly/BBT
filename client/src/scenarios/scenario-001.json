@@ -3,6 +3,8 @@
   "name": "Reikland's Opening Drive",
   "description": "OBJECTIVE: Carry the ball into the Human End Zone. Two Orc Linemen block the direct route. Choose the safest path.",
   "activeTeam": "human",
+  "objective": "touchdown",
+  "freePlay": false,
   "published": true,
   "pieces": [
     {

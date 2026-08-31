@@ -5,4 +5,5 @@ dist/
 .netlify/
 playwright-report/
 test-results/
+.bbt-player-profiles.json
 .claude/worktrees/

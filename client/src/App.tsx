@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useLayoutEffect, useRef } from 'react';
+import { useState, useCallback, useEffect, useLayoutEffect, useMemo, useRef } from 'react';
 import { makeEmptyState, makeScenarioState, pathPreviewProb, passActionAvailability } from './useGameState';
 import { useBranchRun } from './useBranchRun';
 import { BranchStrip } from './BranchStrip';
@@ -59,18 +59,20 @@ import { recordAttempt } from './attemptStore';
 import { summarizeActionLog } from './riskyMoves';
 import { readAllPrefs, readPrefs, writePrefs, GUEST_PREFS_KEY } from './prefs';
 import type { PlayerPrefs } from './prefs';
+import { fetchOwnProfile, playerAvatarUrl, saveOwnProfile } from './playerProfile';
+import type { PlayerProfilePatch } from './playerProfile';
 import { playerComparison } from './playerComparison';
 import { resolveSeriesScenarios } from './series';
 import { loadScenarioData } from './scenarios/runtime';
 import type { ScenarioData } from './scenarios/runtime';
 import { scenarios as staticScenarios } from './scenarios';
-import { defaultSeries as staticSeries } from './series';
+import { allSeries as staticSeries } from './series';
 import { PuzzleEditor } from './editor/PuzzleEditor';
 import { useAuth } from './auth';
 import { useAdminAccess } from './useAdminAccess';
 import type {
   AppMode, GameState, PlayerPiece, Position, Scenario, LeaderboardEntry,
-  SeriesLeaderboardEntry, SeriesPuzzleResult,
+  PublicPlayerProfile, SeriesDefinition, SeriesLeaderboardEntry, SeriesPuzzleResult,
 } from './types';
 import { key } from './bfs';
 import { useCompactLayout, useHoverCapable, usePortraitViewport } from './useMediaQuery';
@@ -175,6 +177,7 @@ function describeSubmitError(error: unknown): string {
 }
 
 interface SeriesRunState {
+  seriesId: string;
   playerName: string;
   puzzleIndex: number;           // 0-based index into the active series
   results: SeriesPuzzleResult[]; // one entry per completed puzzle so far
@@ -197,11 +200,38 @@ function IdentityGate({ authConfigured, googleSignedIn, mountGoogleSignInButton,
     const container = googleButtonRef.current;
     if (!authConfigured || !container || googleSignedIn) return;
     let cancelled = false;
-    void mountGoogleSignInButton(container).catch(() => {
-      if (!cancelled) setGoogleSignInFailed(true);
-    });
+    let resizeObserver: ResizeObserver | null = null;
+    const actions = container.parentElement;
+
+    void mountGoogleSignInButton(container)
+      .then(() => {
+        if (cancelled) return;
+        const iframe = container.querySelector('iframe');
+        if (!iframe) return;
+
+        const syncActionWidth = () => {
+          const style = window.getComputedStyle(iframe);
+          const horizontalMargins = (Number.parseFloat(style.marginLeft) || 0)
+            + (Number.parseFloat(style.marginRight) || 0);
+          const googleVisibleWidth = iframe.getBoundingClientRect().width + horizontalMargins;
+          const containerWidth = container.getBoundingClientRect().width;
+          actions?.style.setProperty(
+            '--identity-action-width',
+            `${Math.round(Math.max(containerWidth, googleVisibleWidth))}px`,
+          );
+        };
+
+        syncActionWidth();
+        resizeObserver = new ResizeObserver(syncActionWidth);
+        resizeObserver.observe(iframe);
+      })
+      .catch(() => {
+        if (!cancelled) setGoogleSignInFailed(true);
+      });
     return () => {
       cancelled = true;
+      resizeObserver?.disconnect();
+      actions?.style.removeProperty('--identity-action-width');
       container.replaceChildren();
     };
   }, [authConfigured, googleSignedIn, mountGoogleSignInButton]);
@@ -261,7 +291,12 @@ function IdentityGate({ authConfigured, googleSignedIn, mountGoogleSignInButton,
 export default function App() {
   useEffect(() => initializeAnalytics(), []);
   const { currentUser, idToken, sessionExpired, isConfigured: authConfigured, mountSignInButton, signOut } = useAuth();
-  const isAdmin = useAdminAccess(idToken);
+  // Forced on everywhere except the real production deploy — see
+  // __BBT_FORCE_ADMIN_NAV__ in vite.config.ts. This only affects nav
+  // visibility; the server still enforces the actual admin allowlist on
+  // every /api/editor/* call, staging included.
+  const confirmedAdmin = useAdminAccess(idToken);
+  const isAdmin = __BBT_FORCE_ADMIN_NAV__ || confirmedAdmin;
   // Scenario/series data starts as the build-time static bundle (immediate,
   // no loading flash) and is replaced by the currently published set fetched
   // from /api/scenarios once that resolves — see scenarios/runtime.ts.
@@ -269,7 +304,6 @@ export default function App() {
     scenarios: staticScenarios,
     series: staticSeries,
   }));
-  const seriesScenarios = resolveSeriesScenarios(scenarioData.series, scenarioData.scenarios);
   const [guestAlias, setGuestAliasState] = useState(readGuestName);
   const setGuestAlias = useCallback((alias: string) => {
     setGuestAliasState(alias);
@@ -292,6 +326,35 @@ export default function App() {
     setAllPrefs(all => ({ ...all, [identityKey]: { ...all[identityKey], ...patch } }));
     writePrefs(identityKey, patch);
   }, [identityKey]);
+  const [profileState, setProfileState] = useState<{
+    userId: string;
+    profile: PublicPlayerProfile;
+  } | null>(null);
+  useEffect(() => {
+    if (!currentUser || !idToken) return;
+    let cancelled = false;
+    void fetchOwnProfile(idToken).then(profile => {
+      if (!cancelled) setProfileState({ userId: currentUser.id, profile });
+    }).catch(() => {
+      // Public profile decoration is optional. A failed read must not block
+      // gameplay or erase the existing local-avatar migration fallback.
+    });
+    return () => { cancelled = true; };
+  }, [currentUser, idToken]);
+  const publicProfile = currentUser && profileState?.userId === currentUser.id
+    ? profileState.profile
+    : undefined;
+  const publicAvatar = currentUser && publicProfile?.avatarVersion
+    ? playerAvatarUrl(currentUser.id, publicProfile.avatarVersion)
+    : undefined;
+  const avatar = publicAvatar ?? prefs.avatar;
+  const avatarIsLocalOnly = Boolean(currentUser && !publicAvatar && prefs.avatar);
+  const updatePublicProfile = useCallback(async (patch: PlayerProfilePatch) => {
+    if (!currentUser || !idToken) throw new Error('Sign in with Google to update your public profile.');
+    const profile = await saveOwnProfile(patch, idToken);
+    setProfileState({ userId: currentUser.id, profile });
+    if (Object.hasOwn(patch, 'avatar')) setPrefs({ avatar: undefined });
+  }, [currentUser, idToken, setPrefs]);
   const tutorialConceptProgress = prefs.tutorialConceptProgress as TutorialConceptProgress | undefined;
   const updateTutorialConcepts = useCallback((conceptIds: readonly TutorialConceptId[], status: 'introduced' | 'used') => {
     const mergeProgress = (current: Record<string, 'introduced' | 'used'>) => {
@@ -363,6 +426,14 @@ export default function App() {
 
   // ── Series mode state ──────────────────────────────────────────────────
   const [seriesRun, setSeriesRun] = useState<SeriesRunState | null>(null);
+  const activeSeries = useMemo(
+    () => scenarioData.series.find(item => item.id === seriesRun?.seriesId) ?? scenarioData.series[0],
+    [scenarioData.series, seriesRun?.seriesId],
+  );
+  const seriesScenarios = useMemo(
+    () => activeSeries ? resolveSeriesScenarios(activeSeries, scenarioData.scenarios) : [],
+    [activeSeries, scenarioData.scenarios],
+  );
   const [seriesHighlight, setSeriesHighlight] = useState<string | undefined>();
   const [seriesRefreshKey, setSeriesRefreshKey] = useState(0);
   const [seriesInitialEntries, setSeriesInitialEntries] = useState<SeriesLeaderboardEntry[] | undefined>();
@@ -661,7 +732,8 @@ export default function App() {
   const accountMenu = (
     <UserMenu
       name={identityName}
-      avatar={prefs.avatar}
+      avatar={avatar}
+      country={publicProfile?.country}
       onHelp={openHelp}
       onSettings={openSettings}
       onAbout={() => {
@@ -1158,13 +1230,13 @@ export default function App() {
       beginTutorialAttempt]);
 
   // ── Series mode handlers ──────────────────────────────────────────────────
-  const startSeries = useCallback(() => {
+  const startSeries = useCallback((selectedSeries: SeriesDefinition) => {
     if (!identityName.trim()) return;
-    if (seriesScenarios.length === 0) return;
-    setSeriesRun({ playerName: identityName, puzzleIndex: 0, results: [] });
+    if (resolveSeriesScenarios(selectedSeries, scenarioData.scenarios).length === 0) return;
+    setSeriesRun({ seriesId: selectedSeries.id, playerName: identityName, puzzleIndex: 0, results: [] });
     const analyticsRunId = newAnalyticsId();
     analyticsSeriesRunIdRef.current = analyticsRunId;
-    trackAnalytics('series-started', { runId: analyticsRunId, seriesId: scenarioData.series.id });
+    trackAnalytics('series-started', { runId: analyticsRunId, seriesId: selectedSeries.id });
     setReviewingCompletedBoard(false);
     setTutorialRecaps({});
     setPendingTutorialReplay(null);
@@ -1172,7 +1244,7 @@ export default function App() {
     setTutorialLesson(null);
     setTutorialConceptGuideOpen(false);
     setAppMode('series-select');
-  }, [identityName, seriesScenarios.length, scenarioData.series.id]);
+  }, [identityName, scenarioData.scenarios]);
 
   const chooseSeriesPuzzle = useCallback((scenario: Scenario, replayGuidance = false) => {
     if (!seriesRun) return;
@@ -1379,7 +1451,7 @@ export default function App() {
       <div className="app app--home app--archive app--playbook">
         {archiveControls}
         <TutorialPuzzleChooser
-          seriesName={scenarioData.series.name}
+          seriesName={activeSeries?.name ?? 'Series'}
           scenarios={seriesScenarios}
           completedScenarioIds={completedScenarioIds}
           recaps={tutorialRecaps}
@@ -1486,10 +1558,25 @@ export default function App() {
           identityName={identityName}
           isGuest={!currentUser}
           onRename={currentUser ? setGoogleAlias : setGuestAlias}
-          avatar={prefs.avatar}
-          onAvatarChange={avatar => {
-            trackAnalytics('interaction', { name: 'setting-avatar', outcome: 'changed', value: Boolean(avatar) });
-            setPrefs({ avatar });
+          avatar={avatar}
+          avatarIsLocalOnly={avatarIsLocalOnly}
+          googleAvatarAvailable={Boolean(currentUser?.picture)}
+          onAvatarUpload={async dataUrl => {
+            await updatePublicProfile({ avatar: { source: 'upload', dataUrl } });
+            trackAnalytics('interaction', { name: 'setting-avatar', outcome: 'changed', value: 'upload' });
+          }}
+          onUseGoogleAvatar={async () => {
+            await updatePublicProfile({ avatar: { source: 'google' } });
+            trackAnalytics('interaction', { name: 'setting-avatar', outcome: 'changed', value: 'google' });
+          }}
+          onRemoveAvatar={async () => {
+            await updatePublicProfile({ avatar: null });
+            trackAnalytics('interaction', { name: 'setting-avatar', outcome: 'changed', value: false });
+          }}
+          country={publicProfile?.country ?? ''}
+          onCountryChange={async country => {
+            await updatePublicProfile({ country });
+            trackAnalytics('interaction', { name: 'setting-country', outcome: 'changed', value: Boolean(country) });
           }}
           tokenStyle={prefs.tokenStyle ?? 'portrait'}
           onTokenStyleChange={tokenStyle => {

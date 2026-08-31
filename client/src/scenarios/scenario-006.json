@@ -3,6 +3,8 @@
   "name": "Loose Ball on the Goal Line",
   "description": "OBJECTIVE: Recover the loose ball and score. Block Skullkrak away from the ball, complete the Pickup, then choose the scoring route.",
   "activeTeam": "human",
+  "objective": "touchdown",
+  "freePlay": true,
   "published": true,
   "ballPosition": { "col": 7, "row": 5 },
   "pieces": [

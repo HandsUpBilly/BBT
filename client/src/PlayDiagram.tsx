@@ -23,13 +23,13 @@ interface DiagramLogEntry {
 }
 
 function point(position: Position): { x: number; y: number } {
-  // Rotate the portrait game coordinates into the landscape review from the
-  // player's viewpoint. Row zero belongs at the right-hand end and the final
-  // lettered column belongs at the top, so a top-right scoring square stays
-  // top-right in the completed-play diagram.
+  // The completed review uses the live landscape pitch's screen convention:
+  // state rows run left → right and state columns run top → bottom. Keep this
+  // intentionally boring rather than introducing a second "player viewpoint"
+  // transform — reversing both axes here turns every recorded play around.
   return {
-    x: MARGIN + (STATE_ROWS - position.row - 0.5) * CELL,
-    y: MARGIN + (STATE_COLS - position.col - 0.5) * CELL,
+    x: MARGIN + (position.row + 0.5) * CELL,
+    y: MARGIN + (position.col + 0.5) * CELL,
   };
 }
 

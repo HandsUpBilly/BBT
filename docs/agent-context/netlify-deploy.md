@@ -61,9 +61,13 @@ All configured in `netlify.toml`, in this order:
 | `/api/progress` | `progress` | Public |
 | `/api/reports` | `reports` | Optional Google, rate-limited |
 | `/api/analytics` | `analytics` | Public, game-event batches only, rate-limited |
+| `/api/profile` | `profile` | **Verified Google user**, writes rate-limited |
+| `/api/avatar/*` | `avatar` | Public, current selected avatar only |
 | `/api/editor/statistics` | `editor-statistics` | **Admin only** |
 | `/api/editor/analytics` | `editor-analytics` | **Admin only** |
 | `/api/editor/admins` | `editor-admins` | **Admin only** (any verified user may add themselves as the first managed admin when the effective allowlist is empty — see AGENTS.md "Editor auth policy") |
+| `/api/editor/profiles` | `editor-profiles` | **Admin only**, public-profile moderation |
+| `/api/editor/rankings` | `editor-rankings` | **Admin only**, destructive ranking resets |
 | `/api/editor/scenarios` | `editor-scenarios` | **Admin only, including GET** |
 | `/api/editor/scenarios/*` | `editor-scenarios` | **Admin only** |
 | `/api/editor/series/default` | `editor-series` | **Admin only** |
@@ -230,6 +234,9 @@ indefinitely.
 - Google Analytics 4 (`G-WJ2Q968GC8`), disabled on localhost
 - Google/guest identity
 - Individual + series leaderboards, with server-side score validation
+- Cross-device public avatars and country/nationality labels for verified users,
+  with avatar moderation in Admin Console
+- Admin-only complete, per-series, and per-puzzle ranking resets
 - Combined home-screen progress endpoint
 - Player issue and feature reporting via `/api/reports`, rate-limited
 - Admin-only anonymous player-performance statistics from the full retained

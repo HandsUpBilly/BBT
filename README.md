@@ -51,7 +51,8 @@ configures:
   building, and `publish = "dist"`
 - `functions = "../netlify/functions"` (bundled with esbuild)
 - Redirects routing `/api/leaderboard/*`, `/api/series-leaderboard`,
-  `/api/progress`, `/api/reports`, `/api/editor/*`, and `/api/scenarios` to
+  `/api/profile`, `/api/avatar/*`, `/api/progress`, `/api/reports`,
+  `/api/editor/*`, and `/api/scenarios` to
   their respective functions, with an SPA fallback for everything else
 - Security headers, including a CSP scoped to the Google Identity Services
   script and its endpoints, Google avatar images, and the Google Analytics tag
@@ -112,6 +113,8 @@ deploy finishes, confirm:
 - The game loads and puzzles are playable.
 - Guest login and Google Sign-In both work.
 - Submitting a score updates the individual and series leaderboards.
+- A signed-in player can upload or select a Google avatar and save an optional
+  country/nationality; both appear on rankings after refresh.
 
 ### Puzzle Editor on Netlify
 
@@ -143,6 +146,11 @@ full retained puzzle and series leaderboards and returns anonymous aggregates.
 The dashboard reports personal-best counts and probability/dice summaries, not
 attempt counts or completion rates; leaderboard storage keeps only one personal
 best per player. Player names, ids, and move histories are not returned.
+
+**Ranking resets**: Admin Console can clear all retained rankings, one series,
+or one individual puzzle. Each action is confirmed and affects leaderboard
+personal bests only—profiles, logins, analytics, drafts, and players' local
+attempt history remain intact.
 
 If you'd rather commit puzzles to the repo (e.g. to keep the static
 fallback current, or avoid depending on Blobs), fetch the published JSON

@@ -20,6 +20,7 @@ export const STAT_RANGE = { min: 1, max: 12 };
 export const STAT_KEYS = ['ma', 'st', 'ag', 'pa', 'av'];
 
 export const TEAMS = ['human', 'orc'];
+export const OBJECTIVES = ['touchdown'];
 
 export function normalizeScenario(input) {
   const source = input && typeof input === 'object' ? input : {};
@@ -28,6 +29,10 @@ export function normalizeScenario(input) {
     name: String(source.name ?? '').trim(),
     description: String(source.description ?? '').trim(),
     activeTeam: source.activeTeam === 'orc' ? 'orc' : 'human',
+    objective: OBJECTIVES.includes(source.objective) ? source.objective : 'touchdown',
+    // Before this field existed, scenario-006 was the sole hard-coded Free
+    // Play puzzle. Preserve that published Blob data during migration.
+    freePlay: source.freePlay === true || (source.freePlay == null && source.id === 'scenario-006'),
     published: source.published !== false,
     ballPosition: normalizeBallPosition(source.ballPosition),
     pieces: Array.isArray(source.pieces) ? source.pieces.map(normalizePiece) : [],
@@ -59,21 +64,42 @@ function normalizePiece(piece) {
       row: Number(source.position?.row),
     },
     hasBall: Boolean(source.hasBall),
+    ...(source.down === true ? { down: true } : {}),
   };
 }
 
 export function normalizeSeries(input) {
   const source = input && typeof input === 'object' ? input : {};
   const logo = typeof source.logo === 'string' ? source.logo.trim().slice(0, 80) : '';
+  const id = String(source.id ?? 'default').trim().toLowerCase();
+  const teams = Array.isArray(source.teams) ? source.teams.filter(team => TEAMS.includes(team)) : [];
   return {
-    id: 'default',
+    id: SCENARIO_ID_RE.test(id) ? id : 'default',
     name: String(source.name ?? 'Default Series').trim() || 'Default Series',
     description: String(source.description ?? '').trim(),
     scenarioIds: Array.isArray(source.scenarioIds)
       ? source.scenarioIds.map(String).filter(Boolean)
       : [],
+    published: source.published !== false,
+    teams: [teams[0] ?? 'human', teams[1] ?? (teams[0] === 'orc' ? 'human' : 'orc')],
+    objective: OBJECTIVES.includes(source.objective) ? source.objective : 'touchdown',
+    order: Number.isInteger(source.order) && source.order >= 0 ? source.order : 0,
     ...(logo ? { logo } : {}),
   };
+}
+
+/** Accepts both the legacy single-series object and the new ordered collection. */
+export function normalizeSeriesCollection(input) {
+  const collection = Array.isArray(input) ? input : input ? [input] : [];
+  const seen = new Set();
+  return collection
+    .map(normalizeSeries)
+    .filter(series => {
+      if (seen.has(series.id)) return false;
+      seen.add(series.id);
+      return true;
+    })
+    .sort((left, right) => left.order - right.order || left.name.localeCompare(right.name));
 }
 
 function validatePosition(position, label, errors) {

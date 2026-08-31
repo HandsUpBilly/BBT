@@ -159,8 +159,8 @@ body,
 .identity-gate__panel {
   position: absolute;
   z-index: 1;
-  right: clamp(24px, 4vw, 62px);
-  bottom: clamp(24px, 4vw, 58px);
+  right: clamp(14px, 2vw, 30px);
+  bottom: clamp(14px, 2vw, 30px);
   min-width: 0;
   width: min(240px, calc(100% - 48px));
   color: var(--color-text);
@@ -192,15 +192,27 @@ body,
 }
 
 .identity-gate__google-button {
+  display: grid;
+  place-items: center;
   width: 100%;
   min-width: 0;
   min-height: 44px;
 }
 
-.identity-gate__google-button > div,
-.identity-gate__google-button iframe,
-.identity-gate__actions .btn {
+.identity-gate__google-button > div {
   width: 100% !important;
+}
+
+.identity-gate__actions .btn {
+  width: var(--identity-action-width, 100%) !important;
+}
+
+/* Google's personalised button deliberately makes its iframe wider than its
+   visible control and offsets it to leave room for the hover treatment. Do
+   not force that iframe back to the wrapper width: the retained offset then
+   shifts and clips the button whenever its hover state is shown. */
+.identity-gate__google-button iframe {
+  max-width: none;
 }
 
 .identity-gate__guest {

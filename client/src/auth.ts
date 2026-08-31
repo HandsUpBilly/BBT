@@ -47,6 +47,8 @@ export interface AuthUser {
   id: string;
   provider: 'google';
   email?: string;
+  /** Offered as a public-avatar choice; never selected automatically. */
+  picture?: string;
 }
 
 export interface AuthContextValue {

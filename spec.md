@@ -4116,7 +4116,7 @@ a backstop.
 
 # Player Config Screen
 
-**Status:** Phase 1 shipped, local-only. Requested directly: a config screen,
+**Status:** Phase 2 shipped. Requested directly: a config screen,
 logged-in-user dependent, starting with avatar upload, display name, and a
 toggle from the current portrait player tokens to something closer to the
 puzzle editor's simplified markers.
@@ -4137,21 +4137,24 @@ and a moderation story, none of which exists yet. Building both halves in one
 pass would have meant either shipping the local half now and reworking it once
 the server exists, or blocking the whole screen on the larger piece.
 
-## What ships (Phase 1)
+## What ships
 
 - **Display name.** Reuses the identity gate's existing `setGoogleAlias` /
   `setGuestAlias` — no new storage. A guest rename is confirmed first (see
   below); a signed-in rename commits immediately, since it's matched by
   `userId` and keeps its history either way.
-- **Avatar — local only.** `client/src/avatarImage.ts` validates type
+- **Public avatar.** `client/src/avatarImage.ts` validates type
   (PNG/JPEG/WebP) and source size (≤8MB), then decodes, center-crops, and
   downsamples to a fixed 256×256 WebP data URL before anything is stored.
-  Held in `client/src/prefs.ts` (`bbt.prefs.v1`), visible in `UserMenu` and the
-  Settings screen on this device only — **not** on leaderboards, which is
-  exactly the boundary that keeps it out of moderation/reporting territory for
-  now. Gated on being signed in, even though nothing about local storage
-  strictly requires it, so the gate doesn't move once Phase 2 (below) makes it
-  a real requirement.
+  A signed-in player may upload that processed image or explicitly select the
+  picture from their verified Google token. The server stores the selection by
+  Google subject id and every puzzle/series ranking renders it through the
+  public avatar endpoint, falling back to initials. Legacy local-only avatars
+  are never silently published; Settings labels them private and offers an
+  explicit **Publish current** action.
+- **Country / nationality.** A signed-in player may save one optional,
+  length-bounded public text label. It appears under their alias on puzzle and
+  series rankings and follows the account across devices.
 - **Player token style.** A `tokenStyle: 'portrait' | 'simple' | 'plain'`
   preference, also in `prefs.ts`. The three Settings choices are Detailed
   portraits, Tactical team-coloured discs with positional glyphs, role codes,
@@ -4174,39 +4177,37 @@ explaining this before committing a guest rename. A signed-in rename has no
 such cost — matched by `userId` regardless of display name — so it commits
 immediately.
 
-## Non-goals (Phase 1)
+## Boundaries
 
-- **No public avatar.** Not shown on any leaderboard row, not uploaded
-  anywhere, not tied to `LeaderboardEntry`.
-- **No cross-device sync.** Same posture as the guest alias and attempt
-  history: `localStorage`, per browser.
 - **No avatar for guests.** No verified identity to attach one to under the
-  Phase 2 design below; gating it now avoids a second migration later.
+  public profile design.
+- **No Google profile-name import.** The player-chosen public alias remains the
+  ranking identity; Google contributes only its verified subject id and, when
+  explicitly selected, its picture URL.
+- **No image bytes in leaderboard records or responses.** Profile decoration
+  is resolved at read time, so old personal bests acquire the current public
+  profile without rewriting score storage.
 
-## Future Enhancements — Phase 2 (public avatar)
-
-Making the avatar visible to other players is a materially larger feature,
-deliberately deferred rather than folded in:
+## Public-profile implementation
 
 - **Storage + read path.** Netlify Blobs keyed by Google subject id, behind a
-  new authenticated `PUT` and a public `GET /api/avatar/:userId` — mirrored in
-  `server/index.js` for local dev, same split as every other endpoint in
-  `netlify-deploy.md`.
+  new authenticated `GET`/`PUT /api/profile` and a public
+  `GET /api/avatar/:userId` — mirrored in Express for local dev.
 - **Independent server-side validation.** The client-side resize is a
   convenience, not a control — same posture as `shared/scoreValidation.js`.
-  The endpoint must re-check content type, byte length, and decoded dimensions
-  itself.
-- **Rendering needs no new field.** `LeaderboardEntry` already carries
-  `userId` via `entryAuthFields()`; `Leaderboard.tsx` and
-  `SeriesLeaderboard.tsx` could request `/api/avatar/{userId}` with a fallback
-  to initials on error, with no change to what's stored in an entry.
-- **Moderation.** Public user-uploaded images need a report path and an admin
-  removal action — the single largest piece of work in this phase, and the
-  reason it stayed out of Phase 1 rather than riding along as a rider.
+  `shared/playerProfile.js` re-checks the WebP signature, byte length, and
+  decoded 256×256 dimensions; Google pictures must come from the verified
+  token and a `googleusercontent.com` HTTPS URL.
+- **Rendering.** `LeaderboardEntry` already carries `userId` via
+  `entryAuthFields()`. Leaderboard reads attach only `country` and an avatar
+  version; the client requests `/api/avatar/{userId}` and falls back to
+  initials on absence or error.
+- **Moderation.** Admin Console lists public profiles and can remove an avatar
+  immediately. The normal Contact/report routes remain available to players.
 - **Rate limiting.** The existing `shared/rateLimit.js` bucket-by-verified-user
-  approach applies directly to the upload endpoint.
+  approach protects profile writes.
 
-## Acceptance Criteria (Phase 1)
+## Acceptance Criteria
 
 - Settings is reachable from the account menu on every screen it appears on,
   and Back returns to that same screen, including mid-puzzle.
@@ -4214,10 +4215,46 @@ deliberately deferred rather than folded in:
   immediately for a signed-in player, after confirmation for a guest.
 - Uploading a non-image or oversized file shows an error and leaves the
   existing avatar and preference state untouched.
+- Uploaded or explicitly selected Google avatars and country/nationality labels
+  follow a signed-in player across devices and are visible to everyone on
+  puzzle and series rankings.
+- Public profile reads never expose uploaded data URLs or upstream Google URLs,
+  and administrators can remove a public avatar.
 - The token style selector changes gameplay pitch tokens app-wide immediately;
   skill-group rings and letter badges remain visible in Detailed and Tactical,
   contrast, while Plain deliberately removes that decoration.
-- Nothing added in this phase makes a network request.
+
+---
+
+# Administrative Ranking Resets
+
+**Status:** Shipped. Requested directly: clear every ranking, one series, or
+one individual puzzle from Admin Mode.
+
+## What ships
+
+- Admin Console shows full retained entry counts separately for the current
+  series and every individual puzzle. Stored boards whose puzzle has since
+  been deleted remain visible by id so they can still be cleared.
+- Each row has a scoped reset. **Clear all rankings** covers every stored
+  puzzle and series key, including deleted/legacy boards, making it a genuine
+  clean slate rather than only clearing currently published content.
+- Every reset is admin-only and requires a destructive confirmation naming the
+  scope and number of retained personal-best entries that will be removed.
+- Express resets its in-memory boards. Netlify writes empty arrays through the
+  leaderboard store's etag-aware retry path so it composes safely with a score
+  submission arriving at the same time.
+
+## Boundaries
+
+- A reset removes leaderboard personal bests only. It does not delete public
+  profiles or avatars, player login history, product analytics, puzzle/editor
+  data, or browser-local attempt history.
+- Public ranking/progress responses keep their existing short cache and may
+  show the old rows for up to 15 seconds; the admin result and counts update
+  immediately.
+- New submissions after a reset are accepted normally and start the board
+  again from empty.
 
 ---
 
@@ -5739,3 +5776,13 @@ blocks the pitch.
   and controls all automatic teaching. Manual guide access remains available.
 - Analytics may record stable concept ids and fixed outcomes only; never board
   positions, routes, authored text, player identity, or free-form content.
+# Multi-Series Creator Workflows
+
+**Status: Shipped**
+
+Puzzle and series authoring are separate admin workflows. Puzzles carry an
+extensible objective and an independent Free Play flag, and can be assigned to
+one series through an atomic assignment action. Series are ordered records with
+two teams, a logo, title/description, objective, list position, and ordered
+puzzle steps. The runtime and draft/published stores accept the legacy single
+series object and migrate it to the multi-series collection on read.

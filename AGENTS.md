@@ -50,6 +50,8 @@ editor accepted drafts the server then rejected).
 | `contactMessage.js` | client `ContactModal.tsx`, both `/api/contact` implementations |
 | `resendEmail.js` | both `/api/contact` implementations (server-only) |
 | `scoreValidation.js` | both leaderboard implementations, `netlify/functions/progress.js` |
+| `playerProfile.js` | public profile/avatar validation in Express and Netlify Functions |
+| `rankingReset.js` | destructive ranking-reset target validation in Express and Netlify Functions |
 | `rateLimit.js` | both `/api/reports`, both `/api/contact`, and both leaderboard implementations |
 | `statistics.js` | `server/index.js`, `editor-statistics.js` |
 | `adminManagement.js` | `server/editor.js`, `server/adminStore.js`, `editor-admins.js`, `netlify/functions/adminStore.js` |

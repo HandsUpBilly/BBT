@@ -5,12 +5,12 @@ import type { LoginEntry } from '../../../shared/loginTracking.js';
 
 interface EditorLoadResponse {
   scenarios: Scenario[];
-  series: SeriesDefinition;
+  series: SeriesDefinition[];
 }
 
 interface PublishResponse {
   scenarios: Scenario[];
-  series: SeriesDefinition;
+  series: SeriesDefinition[];
 }
 
 export interface AdminAccess {
@@ -18,6 +18,30 @@ export interface AdminAccess {
   configuredAdminCount: number;
   audit: Array<{ action: 'added' | 'removed'; actor: string; target: string; at: string }>;
 }
+
+export interface ModeratedPlayerProfile {
+  userId: string;
+  country?: string;
+  avatarVersion?: string;
+  hasAvatar: boolean;
+  updatedAt: string;
+}
+
+export interface RankingResetBoard {
+  id: string;
+  name: string;
+  count: number;
+}
+
+export interface RankingResetSummary {
+  totalEntries: number;
+  series: RankingResetBoard[];
+  puzzles: RankingResetBoard[];
+}
+
+export type RankingResetTarget =
+  | { scope: 'all' }
+  | { scope: 'series' | 'puzzle'; id: string };
 
 async function parseJsonResponse<T>(response: Response): Promise<T> {
   let body: { errors?: unknown; error?: unknown };
@@ -102,6 +126,40 @@ export async function removeAdmin(email: string, idToken: string | null): Promis
   return parseJsonResponse<AdminAccess>(response);
 }
 
+export async function fetchModeratedPlayerProfiles(idToken: string | null): Promise<ModeratedPlayerProfile[]> {
+  const response = await fetch('/api/editor/profiles', { headers: authHeaders(idToken) });
+  return parseJsonResponse<ModeratedPlayerProfile[]>(response);
+}
+
+export async function removeModeratedAvatar(
+  userId: string,
+  idToken: string | null,
+): Promise<ModeratedPlayerProfile> {
+  const response = await fetch(`/api/editor/profiles?userId=${encodeURIComponent(userId)}`, {
+    method: 'DELETE',
+    headers: authHeaders(idToken),
+  });
+  return parseJsonResponse<ModeratedPlayerProfile>(response);
+}
+
+export async function fetchRankingResetSummary(idToken: string | null): Promise<RankingResetSummary> {
+  const response = await fetch('/api/editor/rankings', { headers: authHeaders(idToken) });
+  return parseJsonResponse<RankingResetSummary>(response);
+}
+
+export async function resetRankings(
+  target: RankingResetTarget,
+  idToken: string | null,
+): Promise<{ removed: number; summary: RankingResetSummary }> {
+  const params = new URLSearchParams({ scope: target.scope });
+  if ('id' in target) params.set('id', target.id);
+  const response = await fetch(`/api/editor/rankings?${params}`, {
+    method: 'DELETE',
+    headers: authHeaders(idToken),
+  });
+  return parseJsonResponse<{ removed: number; summary: RankingResetSummary }>(response);
+}
+
 export async function createScenario(scenario: Scenario, idToken: string | null): Promise<Scenario> {
   const response = await fetch('/api/editor/scenarios', {
     method: 'POST',
@@ -128,8 +186,34 @@ export async function deleteScenario(scenarioId: string, idToken: string | null)
   return parseJsonResponse<EditorLoadResponse>(response);
 }
 
+export async function saveSeries(series: SeriesDefinition, creating: boolean, idToken: string | null): Promise<SeriesDefinition> {
+  const response = await fetch(creating ? '/api/editor/series' : `/api/editor/series/${encodeURIComponent(series.id)}`, {
+    method: creating ? 'POST' : 'PUT',
+    headers: { 'Content-Type': 'application/json', ...authHeaders(idToken) },
+    body: JSON.stringify(series),
+  });
+  return parseJsonResponse<SeriesDefinition>(response);
+}
+
+export async function deleteSeries(seriesId: string, idToken: string | null): Promise<SeriesDefinition[]> {
+  const response = await fetch(`/api/editor/series/${encodeURIComponent(seriesId)}`, {
+    method: 'DELETE',
+    headers: authHeaders(idToken),
+  });
+  return parseJsonResponse<SeriesDefinition[]>(response);
+}
+
+export async function assignScenarioToSeries(scenarioId: string, seriesId: string, idToken: string | null): Promise<SeriesDefinition[]> {
+  const response = await fetch('/api/editor/series-assignment', {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...authHeaders(idToken) },
+    body: JSON.stringify({ scenarioId, seriesId }),
+  });
+  return parseJsonResponse<SeriesDefinition[]>(response);
+}
+
 export async function updateDefaultSeries(series: SeriesDefinition, idToken: string | null): Promise<SeriesDefinition> {
-  const response = await fetch('/api/editor/series/default', {
+  const response = await fetch(`/api/editor/series/${encodeURIComponent(series.id)}`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json', ...authHeaders(idToken) },
     body: JSON.stringify(series),

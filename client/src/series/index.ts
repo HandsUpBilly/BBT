@@ -1,5 +1,5 @@
 import type { Scenario, SeriesDefinition } from '../types';
-import defaultSeriesData from './default.json';
+const seriesModules = import.meta.glob('./*.json', { eager: true, import: 'default' }) as Record<string, SeriesDefinition>;
 
 export const FEATURED_SERIES_NAME = 'Humans vs Orcs: The Nuffle Shuffle';
 export const FEATURED_SERIES_LOGO = 'nuffle-shuffle';
@@ -25,7 +25,12 @@ export function normalizeSeriesDefinition(series: SeriesDefinition): SeriesDefin
 // scenario/series data fetched via loadScenarioData() (see scenarios/runtime.ts),
 // which reflects the currently published puzzles. This JSON is what the build
 // bundles, used before that fetch resolves and if it fails.
-export const defaultSeries = normalizeSeriesDefinition(defaultSeriesData as SeriesDefinition);
+export const allSeries = Object.values(seriesModules)
+  .map(normalizeSeriesDefinition)
+  .sort((left, right) => (left.order ?? 0) - (right.order ?? 0) || left.name.localeCompare(right.name));
+export const defaultSeries: SeriesDefinition = allSeries.find(series => series.id === 'default') ?? allSeries[0] ?? {
+  id: 'default', name: 'Default Series', description: '', scenarioIds: [], teams: ['human', 'orc'], objective: 'touchdown', order: 0,
+};
 
 export function resolveSeriesScenarios(series: SeriesDefinition, scenarios: Scenario[]): Scenario[] {
   const byId = new Map(scenarios.map(scenario => [scenario.id, scenario]));

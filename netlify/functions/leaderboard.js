@@ -9,6 +9,7 @@ import {
   validateScoreSubmission,
 } from '../../shared/scoreValidation.js';
 import { LEADERBOARD_RATE_LIMIT, createRateLimiter, rateLimitKey } from '../../shared/rateLimit.js';
+import { enrichEntriesWithProfiles } from './profileStore.js';
 
 // Rows returned to the client. The stored list is NOT trimmed — truncating the
 // store used to delete a player's personal best the moment they fell out of the
@@ -49,7 +50,8 @@ export default async function handler(req) {
   // ── GET ──────────────────────────────────────────────────────────────────
   if (req.method === 'GET') {
     const { entries } = await readEntries(store, scenarioId);
-    return json(sortEntries(entries).slice(0, TOP_N), 200, {
+    const visible = sortEntries(entries).slice(0, TOP_N);
+    return json(await enrichEntriesWithProfiles(visible), 200, {
       'Cache-Control': 'public, max-age=15',
     });
   }

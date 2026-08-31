@@ -36,3 +36,19 @@ test('toPublicView preserves other series fields untouched', () => {
   const { series: publicSeries } = toPublicView(scenarios, series);
   assert.equal(publicSeries.name, 'Default Run');
 });
+
+test('toPublicView narrows every series in the new collection shape', () => {
+  const result = toPublicView(scenarios, [
+    { id: 'one', scenarioIds: ['scenario-001', 'scenario-003'] },
+    { id: 'two', scenarioIds: ['scenario-002', 'missing'] },
+  ]);
+  assert.deepEqual(result.series.map(item => item.scenarioIds), [['scenario-001'], ['scenario-002']]);
+});
+
+test('toPublicView hides disabled series while leaving enabled series available', () => {
+  const result = toPublicView(scenarios, [
+    { id: 'enabled', published: true, scenarioIds: ['scenario-001'] },
+    { id: 'disabled', published: false, scenarioIds: ['scenario-002'] },
+  ]);
+  assert.deepEqual(result.series.map(item => item.id), ['enabled']);
+});

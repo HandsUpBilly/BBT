@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { fetchSeriesLeaderboard } from './api';
+import { PlayerAvatar } from './PlayerAvatar';
+import { playerAvatarUrl } from './playerProfile';
 import type { SeriesLeaderboardEntry } from './types';
 
 import './Leaderboard.css';
@@ -14,15 +16,6 @@ interface Props {
 
 function pct(p: number) { return `${Math.round(p * 100)}%`; }
 function dice(value: number) { return Number.isInteger(value) ? String(value) : value.toFixed(1); }
-
-function initials(name: string): string {
-  const trimmed = name.trim();
-  if (!trimmed) return '?';
-  const parts = trimmed.split(/\s+/);
-  const first = parts[0]?.[0] ?? '';
-  const last = parts.length > 1 ? parts[parts.length - 1]?.[0] ?? '' : '';
-  return (first + last).toUpperCase();
-}
 
 export function SeriesLeaderboard({ onBack, highlightId, initialEntries, onEntriesLoaded, onRowClick }: Props) {
   const [entries, setEntries] = useState<SeriesLeaderboardEntry[]>(initialEntries ?? []);
@@ -98,9 +91,19 @@ export function SeriesLeaderboard({ onBack, highlightId, initialEntries, onEntri
                   {i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : i + 1}
                 </td>
                 <td className="lb-table__avatar-cell">
-                  <span className="lb-table__avatar lb-table__avatar--fallback">{initials(e.name)}</span>
+                  <PlayerAvatar
+                    name={e.name}
+                    src={e.userId && e.profile?.avatarVersion
+                      ? playerAvatarUrl(e.userId, e.profile.avatarVersion)
+                      : undefined}
+                    className="lb-table__avatar"
+                    fallbackClassName="lb-table__avatar--fallback"
+                  />
                 </td>
-                <td className="lb-table__name">{e.name}</td>
+                <td className="lb-table__name">
+                  <span>{e.name}</span>
+                  {e.profile?.country && <span className="lb-table__country">{e.profile.country}</span>}
+                </td>
                 <td className="lb-table__prob">{pct(e.probability)}</td>
                 <td className="lb-table__dice">{dice(e.diceCount)}</td>
                 <td className="lb-table__date">{new Date(e.date).toLocaleDateString()}</td>

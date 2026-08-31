@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { readEntries, updateEntries } from '../functions/blobEntries.js';
+import { clearEntries, readEntries, updateEntries } from '../functions/blobEntries.js';
 
 /**
  * A minimal fake of the @netlify/blobs store surface updateEntries/readEntries
@@ -128,4 +128,11 @@ test('updateEntries surfaces the last error if even the final attempt throws', a
     () => updateEntries(store, 'k', entries => [...entries, { id: 'a' }]),
     failure,
   );
+});
+
+test('clearEntries removes the latest list through the concurrency-safe write path', async () => {
+  const store = makeFakeStore({ data: JSON.stringify([{ id: 'a' }, { id: 'b' }]), etag: 'e1' });
+  assert.equal(await clearEntries(store, 'k'), 2);
+  assert.equal(store.setCalls[0].value, '[]');
+  assert.deepEqual(store.setCalls[0].conditions, { onlyIfMatch: 'e1' });
 });

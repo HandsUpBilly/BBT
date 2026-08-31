@@ -119,6 +119,9 @@ export function createGoogleAuth({ verifyIdToken, adminEmails, allowUnauthentica
       // Only trust the address Google says it has verified — the admin
       // allowlist is matched against this.
       email: payload.email_verified ? payload.email : undefined,
+      // Used only when the player explicitly chooses their Google photo for
+      // the public profile. It is never copied into leaderboard entries.
+      picture: typeof payload.picture === 'string' ? payload.picture : undefined,
     };
   }
 

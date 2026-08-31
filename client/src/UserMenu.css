@@ -114,6 +114,13 @@
   white-space: nowrap;
 }
 
+.user-menu__dropdown-country {
+  display: block;
+  margin-top: 2px;
+  color: var(--color-text-muted);
+  font-size: 0.7rem;
+}
+
 .user-menu__item {
   background: none;
   border: none;

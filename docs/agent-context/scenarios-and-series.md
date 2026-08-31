@@ -4,7 +4,7 @@ Primary files:
 
 - `client/src/scenarios/*.json`
 - `client/src/scenarios/index.ts`
-- `client/src/series/default.json`
+- `client/src/series/*.json`
 - `client/src/series/index.ts`
 - `client/src/types.ts`
 
@@ -16,6 +16,8 @@ Primary files:
 - `name`
 - `description`
 - `activeTeam`
+- `objective` (`touchdown` today; the field is deliberately extensible)
+- `freePlay` (whether the puzzle also appears as a standalone match)
 - `published?: boolean`
 - `ballPosition?: Position | null`
 - `pieces`
@@ -60,7 +62,13 @@ server then rejected with a 400.
 
 ## Series
 
-Default series metadata lives in `client/src/series/default.json`.
+Series metadata lives in `client/src/series/*.json`. Each definition has a
+stable id, title/name, description, two teams, objective, logo key, zero-based
+display `order`, enabled/published state, and an ordered `scenarioIds` step list.
+Disabled series remain in drafts but are removed from the player-facing public
+view when drafts are published. A puzzle can be in at
+most one series; the assignment API removes it from every previous series in
+the same storage write before adding it to the selected series.
 
 Scenario JSON remains the source of truth for the puzzle name and description.
 Descriptions use an OBJECTIVE clause followed by the rules needed to read the
@@ -109,12 +117,11 @@ shorten a series run without explanation. Two guards exist:
   locally) narrow `series.scenarioIds` to scenarios that survive the
   `published !== false` filter, so disabling a puzzle can't silently truncate a
   live series.
-- The **editor** surfaces `missingSeriesScenarioIds()` as a warning with a
-  "Remove Missing Entries" action.
+- Deleting a puzzle removes it from every draft series in the same operation.
 
 When changing series behavior:
 
-- Update `default.json` if the order/content changes.
+- Update the relevant series JSON if its order/content changes.
 - Confirm `ScenarioSelect.tsx` displays the series metadata.
 - Confirm `App.tsx` series counters use the resolved series length.
 

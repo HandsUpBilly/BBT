@@ -64,8 +64,8 @@ export async function startGame(page: Page, playerName = 'E2E Tester'): Promise<
   await nameInput.fill(playerName);
   await page.getByRole('button', { name: /^continue$/i }).click();
 
-  await page.getByRole('button', { name: /start series/i }).click();
-  await page.getByRole('button', { name: 'Play this drill' }).first().click();
+  await page.getByRole('button', { name: /^(start series|tutorial)$/i }).click();
+  await page.getByRole('button', { name: /^(play this drill|play)$/i }).first().click();
 
   // The pitch is the signal that the game screen has actually mounted.
   await page.locator('.pitch__grid .square').first().waitFor({ state: 'visible' });

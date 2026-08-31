@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react';
 import { ConfirmDialog } from './ConfirmDialog';
+import { PlayerAvatar } from './PlayerAvatar';
 import { encodeAvatarFile, validateAvatarFile, AVATAR_ALLOWED_TYPES } from './avatarImage';
 import type { BoardSize, PitchSurface, TokenStyle } from './prefs';
 import detailedPitchPreview from './assets/token-style-previews/detailed.webp';
@@ -12,7 +13,13 @@ interface Props {
   isGuest: boolean;
   onRename: (name: string) => void;
   avatar: string | undefined;
-  onAvatarChange: (dataUrl: string | undefined) => void;
+  avatarIsLocalOnly: boolean;
+  googleAvatarAvailable: boolean;
+  onAvatarUpload: (dataUrl: string) => Promise<void>;
+  onUseGoogleAvatar: () => Promise<void>;
+  onRemoveAvatar: () => Promise<void>;
+  country: string;
+  onCountryChange: (country: string) => Promise<void>;
   tokenStyle: TokenStyle;
   onTokenStyleChange: (style: TokenStyle) => void;
   pitchSurface: PitchSurface;
@@ -26,20 +33,13 @@ interface Props {
   onBack: () => void;
 }
 
-function initials(name: string): string {
-  const trimmed = name.trim();
-  if (!trimmed) return '?';
-  const parts = trimmed.split(/\s+/);
-  const first = parts[0]?.[0] ?? '';
-  const last = parts.length > 1 ? parts[parts.length - 1]?.[0] ?? '' : '';
-  return (first + last).toUpperCase();
-}
-
 const AVATAR_ACCEPT = AVATAR_ALLOWED_TYPES.join(',');
 
 export function SettingsScreen({
   identityName, isGuest, onRename,
-  avatar, onAvatarChange,
+  avatar, avatarIsLocalOnly, googleAvatarAvailable,
+  onAvatarUpload, onUseGoogleAvatar, onRemoveAvatar,
+  country, onCountryChange,
   tokenStyle, onTokenStyleChange,
   pitchSurface, onPitchSurfaceChange,
   boardSize, onBoardSizeChange,
@@ -51,10 +51,18 @@ export function SettingsScreen({
   const [pendingRename, setPendingRename] = useState<string | null>(null);
   const [avatarError, setAvatarError] = useState<string>();
   const [avatarBusy, setAvatarBusy] = useState(false);
+  const [avatarNotice, setAvatarNotice] = useState<string>();
+  const [countryDraft, setCountryDraft] = useState({ source: country, value: country });
+  const [countryBusy, setCountryBusy] = useState(false);
+  const [countryError, setCountryError] = useState<string>();
+  const [countrySaved, setCountrySaved] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const trimmedName = name.trim();
   const nameChanged = trimmedName.length > 0 && trimmedName !== identityName;
+  const countryValue = countryDraft.source === country ? countryDraft.value : country;
+  const trimmedCountry = countryValue.trim();
+  const countryChanged = trimmedCountry !== country;
 
   function commitRename(newName: string) {
     onRename(newName);
@@ -76,6 +84,7 @@ export function SettingsScreen({
 
   async function handleAvatarFile(file: File) {
     setAvatarError(undefined);
+    setAvatarNotice(undefined);
     const invalidReason = validateAvatarFile(file);
     if (invalidReason) {
       setAvatarError(invalidReason);
@@ -84,11 +93,42 @@ export function SettingsScreen({
     setAvatarBusy(true);
     try {
       const dataUrl = await encodeAvatarFile(file);
-      onAvatarChange(dataUrl);
+      await onAvatarUpload(dataUrl);
+      setAvatarNotice('Public avatar updated.');
     } catch (error) {
       setAvatarError(error instanceof Error ? error.message : 'Could not process that image.');
     } finally {
       setAvatarBusy(false);
+    }
+  }
+
+  async function runAvatarChange(change: () => Promise<void>, success: string) {
+    setAvatarBusy(true);
+    setAvatarError(undefined);
+    setAvatarNotice(undefined);
+    try {
+      await change();
+      setAvatarNotice(success);
+    } catch (error) {
+      setAvatarError(error instanceof Error ? error.message : 'Could not update your public avatar.');
+    } finally {
+      setAvatarBusy(false);
+    }
+  }
+
+  async function saveCountry() {
+    if (!countryChanged) return;
+    setCountryBusy(true);
+    setCountryError(undefined);
+    setCountrySaved(false);
+    try {
+      await onCountryChange(trimmedCountry);
+      setCountryDraft({ source: trimmedCountry, value: trimmedCountry });
+      setCountrySaved(true);
+    } catch (error) {
+      setCountryError(error instanceof Error ? error.message : 'Could not update your country or nationality.');
+    } finally {
+      setCountryBusy(false);
     }
   }
 
@@ -112,11 +152,12 @@ export function SettingsScreen({
         <div className="settings-screen__profile-layout">
           <div className="settings-screen__avatar-column">
             <span className="settings-screen__avatar-preview" aria-hidden="true">
-              {avatar ? (
-                <img src={avatar} alt="" />
-              ) : (
-                <span className="settings-screen__avatar-fallback">{initials(identityName)}</span>
-              )}
+              <PlayerAvatar
+                name={identityName}
+                src={avatar}
+                className="settings-screen__avatar-image"
+                fallbackClassName="settings-screen__avatar-fallback"
+              />
             </span>
             {isGuest ? (
               <p className="settings-screen__avatar-note">Sign in with Google to set an avatar.</p>
@@ -139,15 +180,42 @@ export function SettingsScreen({
                     disabled={avatarBusy}
                     onClick={() => fileInputRef.current?.click()}
                   >
-                    {avatarBusy ? 'Processing...' : avatar ? 'Change avatar' : 'Upload avatar'}
+                    {avatarBusy ? 'Saving...' : 'Upload photo'}
                   </button>
+                  {googleAvatarAvailable && (
+                    <button
+                      className="btn btn--secondary"
+                      disabled={avatarBusy}
+                      onClick={() => { void runAvatarChange(onUseGoogleAvatar, 'Google photo is now public.'); }}
+                    >
+                      Use Google photo
+                    </button>
+                  )}
+                  {avatarIsLocalOnly && avatar && (
+                    <button
+                      className="btn btn--primary"
+                      disabled={avatarBusy}
+                      onClick={() => { void runAvatarChange(() => onAvatarUpload(avatar), 'Existing avatar is now public.'); }}
+                    >
+                      Publish current
+                    </button>
+                  )}
                   {avatar && (
-                    <button className="btn btn--ghost" onClick={() => onAvatarChange(undefined)}>
+                    <button
+                      className="btn btn--ghost"
+                      disabled={avatarBusy}
+                      onClick={() => { void runAvatarChange(onRemoveAvatar, 'Avatar removed.'); }}
+                    >
                       Remove
                     </button>
                   )}
                 </div>
-                <p className="settings-screen__avatar-note">Stored on this device only.</p>
+                <p className="settings-screen__avatar-note">
+                  {avatarIsLocalOnly
+                    ? 'This existing picture is still private to this device until you publish it.'
+                    : 'Your selected picture is public and appears beside your rankings.'}
+                </p>
+                {avatarNotice && <p className="settings-screen__success" role="status">{avatarNotice}</p>}
                 {avatarError && <p className="settings-screen__error" role="alert">{avatarError}</p>}
               </>
             )}
@@ -170,9 +238,38 @@ export function SettingsScreen({
                 aria-label="Display name"
               />
               <button className="btn btn--primary" disabled={!nameChanged} onClick={handleSaveName}>
-                Save
+                Save name
               </button>
             </div>
+            <div className="settings-screen__profile-divider" />
+            <label className="settings-screen__field-label" htmlFor="settings-country">Country / nationality</label>
+            <p className="settings-screen__section-help">Optional. Shown publicly underneath your leaderboard name.</p>
+            {isGuest ? (
+              <p className="settings-screen__avatar-note">Sign in with Google to add this to your profile.</p>
+            ) : (
+              <>
+                <div className="settings-screen__name-row">
+                  <input
+                    id="settings-country"
+                    className="settings-screen__name-input"
+                    type="text"
+                    maxLength={64}
+                    placeholder="e.g. England, UK, or British"
+                    value={countryValue}
+                    onChange={e => {
+                      setCountryDraft({ source: country, value: e.target.value });
+                      setCountrySaved(false);
+                    }}
+                    onKeyDown={e => e.key === 'Enter' && void saveCountry()}
+                  />
+                  <button className="btn btn--primary" disabled={!countryChanged || countryBusy} onClick={() => { void saveCountry(); }}>
+                    {countryBusy ? 'Saving...' : 'Save country'}
+                  </button>
+                </div>
+                {countrySaved && <p className="settings-screen__success" role="status">Profile updated.</p>}
+                {countryError && <p className="settings-screen__error" role="alert">{countryError}</p>}
+              </>
+            )}
           </div>
         </div>
       </section>
