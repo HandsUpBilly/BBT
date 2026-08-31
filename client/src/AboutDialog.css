@@ -51,3 +51,21 @@
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }
+
+.about-dialog__release-notes-btn {
+  justify-self: center;
+  margin-top: 2px;
+  padding: 6px 16px;
+  color: var(--color-text);
+  background: var(--color-surface-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-button);
+  font-size: 0.82rem;
+  cursor: pointer;
+  transition: background var(--transition-fast), border-color var(--transition-fast);
+}
+
+.about-dialog__release-notes-btn:hover {
+  background: var(--color-surface-hover);
+  border-color: var(--color-border-selected);
+}

@@ -24,7 +24,7 @@ Editor features:
 - drag Human/Orc player templates onto the editor pitch,
 - auto-generate Blood Bowl style player names,
 - **full piece inspector**: name, id, team, role, MA/ST/AG/PA/AV as bounded
-  numeric inputs, comma-separated skills, has-ball, delete,
+  numeric inputs, BB2025 career-skill picker, has-ball, delete,
 - move players by drag,
 - place ball on a player or loose on the ground,
 - save over existing / save as new,
@@ -145,6 +145,28 @@ Draft saves are not player-visible until an admin clicks Publish Drafts.
 Deleting a draft scenario also removes it from the draft series; publishing is
 still required before players see that deletion.
 
+## Creator Workbench Layout
+
+The Puzzle Creator is organized around three task zones rather than a long
+stack of editor cards:
+
+- **Puzzle Library** on the left owns search, filtering, selection, creation,
+  and duplication.
+- **Board Setup** in the centre owns puzzle metadata and the pitch. The pitch is
+  the primary working surface and keeps its native 15-by-26 orientation.
+- **Creator Tools** on the right switches between Roster, Player, Series, and
+  Review. Selecting a player on the pitch opens the Player tool automatically.
+
+Save Puzzle is kept in the persistent creator header. Publishing remains a
+separate action and is still disabled while any puzzle or series edits are
+unsaved. The status strip reports the active puzzle id and the latest API or
+editing result without requiring the admin to scroll to the Review tool.
+
+Above 1100px the three zones share one row. Between 761px and 1100px the
+library and board remain side by side while Creator Tools moves below them. At
+760px and narrower the zones stack in workflow order and the portrait pitch
+scrolls inside its own frame, so the document itself does not widen.
+
 ## Pitch Orientation
 
 Editor pitch uses scenario data orientation directly:
@@ -196,9 +218,22 @@ portrait art, including roles selectable only on an existing piece rather than
 the add-player palette. The text-free circular portraits share the same
 team-specific frame, palette, and painted style; the coverage test rejects
 duplicate fallback art and old non-gritty assets. Unknown roles outside the
-editor roster still fall back to the team default. Skills beyond
-Block/Wrestle/Dodge/Tackle are display-only labels; the rules engine does not
-implement them.
+editor roster still fall back to the team default.
+
+### Career skills
+
+The selected-player inspector exposes the career skill groups allowed by that
+player's BB2025 Human or Orc positional. It separates primary and secondary
+access and only offers skills from those groups. The mapping lives in
+`client/src/editor/careerSkills.ts`, sourced from the Human and Orc BB2025
+roster data at Mordorbihan; traits are not treated as career choices.
+Legacy/editor-only roles without a current roster equivalent intentionally show
+no picker rather than receiving guessed access.
+
+Only Block, Dodge, Tackle, and Wrestle are selectable because those are the
+career skills the rules engine implements. The other applicable career skills
+remain visible but disabled/grey so a puzzle author can see what is legal
+without accidentally creating a scenario whose rules are not modelled.
 
 ## Validation
 

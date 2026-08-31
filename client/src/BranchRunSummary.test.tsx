@@ -103,13 +103,11 @@ function baseProps() {
 }
 
 describe('BranchRunSummary branch list', () => {
-  it('shows compact hierarchical universe labels while retaining the full path', () => {
+  it('collapses outcomes that remained in lockstep into one distinct universe', () => {
     render(<BranchRunSummary {...baseProps()} />);
 
-    expect(screen.getByText('Universe 2')).toBeTruthy();
-    expect(screen.getByText('Universe 3')).toBeTruthy();
     expect(screen.getByRole('button', {
-      name: 'View Universe 3: Aldric Swiftfoot ⚔ Grukk Ironjaw: Pushed',
+      name: /View merged outcomes: Aldric Swiftfoot ⚔ Grukk Ironjaw: Defender Stumbles, Defender Down, Both Down, Push Back/,
     })).toBeTruthy();
   });
 
@@ -117,16 +115,20 @@ describe('BranchRunSummary branch list', () => {
     const { container } = render(<BranchRunSummary {...baseProps()} />);
 
     expect(screen.getByRole('img', {
-      name: 'Game branch tree with 1 block and 3 ending universes',
+      name: 'Game branch tree with 1 block and 1 distinct ending universe',
     })).toBeTruthy();
     expect(screen.getByText('Game branches')).toBeTruthy();
     expect(screen.getByText('Block 1')).toBeTruthy();
-    expect(screen.getByText('3 — Pushed')).toBeTruthy();
+    expect(screen.getByRole('button', {
+      name: 'View merged outcomes: Defender Stumbles, Defender Down, Both Down, Push Back',
+    })).toBeTruthy();
+    expect(container.querySelectorAll('.branch-tree__node--merged')).toHaveLength(1);
+    expect(container.querySelectorAll('.branch-tree__node--interactive')).toHaveLength(1);
     expect(container.querySelectorAll('.branch-tree__node--block')).toHaveLength(0);
     expect(container.querySelectorAll('.branch-tree__column-label')).toHaveLength(1);
   });
 
-  it('lays out a multi-block run as two block depths and all ending universes', () => {
+  it('lays out a multi-block lockstep run as two block depths and one ending universe', () => {
     const run = twoBlockScoredRun();
     const { container } = render(
       <BranchRunSummary
@@ -138,21 +140,21 @@ describe('BranchRunSummary branch list', () => {
     );
 
     expect(screen.getByRole('img', {
-      name: 'Game branch tree with 2 blocks and 9 ending universes',
+      name: 'Game branch tree with 2 blocks and 1 distinct ending universe',
     })).toBeTruthy();
     expect(container.querySelectorAll('.branch-tree__column-label')).toHaveLength(2);
     expect([...container.querySelectorAll('.branch-tree__column-label')].map(label => label.textContent))
       .toEqual(['Block 1', 'Block 2']);
     expect(container.querySelectorAll('.branch-tree__node--block')).toHaveLength(0);
-    expect(screen.getByText('Universe 1.1')).toBeTruthy();
+    expect(container.querySelectorAll('.branch-tree__node--merged')).toHaveLength(2);
   });
 
   it('opens a branch\'s own action summary and play diagram on click', () => {
     const { container } = render(<BranchRunSummary {...baseProps()} />);
 
-    // Exact match: "Pushed" alone would also match the "Pushed + Down" row.
+    // A merged card opens its complete group for drill-down.
     fireEvent.click(screen.getByRole('button', {
-      name: 'View Universe 3: Aldric Swiftfoot ⚔ Grukk Ironjaw: Pushed',
+      name: 'View merged outcomes: Defender Stumbles, Defender Down, Both Down, Push Back',
     }));
 
     // Detail view: the visual heading stays short while its accessible name
@@ -160,27 +162,27 @@ describe('BranchRunSummary branch list', () => {
     // diagram + move table (ActionLogDetail) are in its place — this branch's
     // own block, resolved as a Push Back, shows up as a row.
     const detailTitle = screen.getByRole('heading', {
-      name: 'Universe 3: Aldric Swiftfoot ⚔ Grukk Ironjaw: Pushed',
+      name: 'Merged outcomes: Aldric Swiftfoot ⚔ Grukk Ironjaw: Defender Stumbles, Defender Down, Both Down, Push Back',
     });
-    expect(detailTitle.textContent).toBe('Universe 3 Pushed');
+    expect(detailTitle.textContent).toBe('Merged outcomes — Aldric Swiftfoot ⚔ Grukk Ironjaw: Defender Stumbles, Defender Down, Both Down, Push Back');
+    expect(detailTitle.getAttribute('title')).toBe('Aldric Swiftfoot ⚔ Grukk Ironjaw: Defender Stumbles, Defender Down, Both Down, Push Back');
     expect(screen.getByText('Universe review')).toBeTruthy();
-    expect(screen.getByText('Aldric Swiftfoot ⚔ Grukk Ironjaw: Pushed')).toBeTruthy();
     expect(screen.getByRole('heading', { name: 'Decision log' })).toBeTruthy();
     expect(screen.queryByText(/run complete/)).toBeNull();
-    expect(screen.getByText('Block → Push Back')).toBeTruthy();
+    expect(screen.getByText(/Block →/)).toBeTruthy();
     expect(screen.getByRole('button', { name: /Back to summary/ })).toBeTruthy();
     expect(screen.getByRole('img', { name: /Completed play/ })).toBeTruthy();
     expect(screen.getByRole('img', {
-      name: 'Game branch tree with 1 block and 3 ending universes; reviewed branch highlighted',
+      name: 'Game branch tree with 1 block and 3 ending universes; 3 reviewed routes highlighted',
     })).toBeTruthy();
     expect(screen.getByTestId('branch-detail-scroll')).toBeTruthy();
     expect(container.querySelectorAll('.action-log-detail__diagrams--paired > figure')).toHaveLength(2);
-    expect(container.querySelectorAll('.branch-review__node--selected')).toHaveLength(1);
-    expect(container.querySelectorAll('.branch-review__node--highlighted')).toHaveLength(1);
-    // Every node carries its dice result; the selected Push node has one die.
+    expect(container.querySelectorAll('.branch-review__node--selected')).toHaveLength(3);
+    expect(container.querySelectorAll('.branch-review__node--highlighted')).toHaveLength(3);
+    // Every represented result is selected and carries its die result.
     expect(container.querySelectorAll('.branch-review__die')).toHaveLength(4);
-    expect(container.querySelectorAll('.branch-review__node--selected .branch-review__die')).toHaveLength(1);
-    expect(container.querySelectorAll('.branch-review__edge--highlighted')).toHaveLength(1);
+    expect(container.querySelectorAll('.branch-review__node--selected .branch-review__die').length).toBe(4);
+    expect(container.querySelectorAll('.branch-review__edge--highlighted')).toHaveLength(3);
   });
 
   it('highlights the reviewed leaf and its full ancestry through multiple blocks', () => {
@@ -196,9 +198,9 @@ describe('BranchRunSummary branch list', () => {
 
     fireEvent.click(screen.getAllByRole('button', { name: /^View / })[0]);
 
-    expect(container.querySelectorAll('.branch-review__node--selected')).toHaveLength(1);
-    expect(container.querySelectorAll('.branch-review__node--highlighted')).toHaveLength(2);
-    expect(container.querySelectorAll('.branch-review__edge--highlighted')).toHaveLength(2);
+    expect(container.querySelectorAll('.branch-review__node--selected')).toHaveLength(9);
+    expect(container.querySelectorAll('.branch-review__node--highlighted')).toHaveLength(12);
+    expect(container.querySelectorAll('.branch-review__edge--highlighted')).toHaveLength(12);
   });
 
   it('returns to the summary and its submit controls on Back', () => {

@@ -1,11 +1,12 @@
 import { useId, useState } from 'react';
-import { branchTreeView, type BranchRun, type BranchStripEntry } from './branchRun';
+import { branchSummaryGroups, branchTreeView, type BranchRun, type BranchStripEntry } from './branchRun';
 import type { BranchSummary } from './blockBranchTree';
 import type { Scenario } from './types';
 import { useModalFocus } from './useModalFocus';
 import { ActionLogDetail } from './ActionLogDetail';
 import { BranchReviewGraphic } from './BranchReviewGraphic';
 import { BranchTreeGraphic } from './BranchTreeGraphic';
+import { BLOCK_FACE_LABELS } from './blockDiceAssets';
 import './SubmitModal.css'; // shared modal-backdrop/modal styles
 import './BranchRunSummary.css';
 
@@ -32,6 +33,12 @@ function pct(value: number): string {
   return `${Math.round(value * 100)}%`;
 }
 
+function diceRollSummary(outcomes: BranchStripEntry['outcomes']): string {
+  return outcomes.map(outcome =>
+    `${outcome.blockLabel}: ${outcome.faces.map(face => BLOCK_FACE_LABELS[face]).join(', ')}`,
+  ).join(' → ');
+}
+
 /**
  * End-of-run readout for the branching model, and its submission step.
  *
@@ -55,7 +62,7 @@ export function BranchRunSummary({
   const ref = useModalFocus<HTMLDivElement>(onDismiss);
   const [name, setName] = useState(defaultName ?? '');
   const [submitting, setSubmitting] = useState(false);
-  const [detailId, setDetailId] = useState<string | null>(null);
+  const [detailIds, setDetailIds] = useState<string[] | null>(null);
 
   function runSubmit(value: string) {
     setSubmitting(true);
@@ -67,10 +74,13 @@ export function BranchRunSummary({
 
   const submitName = signedInName || name.trim();
 
-  const scored = branches.filter(b => b.status === 'scored');
-  const givenUp = branches.filter(b => b.status === 'conceded');
-  const detail = detailId ? branches.find(b => b.id === detailId) ?? null : null;
+  const universeGroups = branchSummaryGroups(run);
+  const detail = detailIds ? branches.find(b => b.id === detailIds[0]) ?? null : null;
+  const detailGroup = detailIds ? universeGroups.find(group =>
+    group.ids.length === detailIds.length && group.ids.every(id => detailIds.includes(id))) ?? null : null;
   const tree = branchTreeView(run);
+  const scoredGroups = universeGroups.filter(group => group.status === 'scored');
+  const givenUpGroups = universeGroups.filter(group => group.status === 'conceded');
 
   return (
     <div className="modal-backdrop">
@@ -85,7 +95,7 @@ export function BranchRunSummary({
         {detail ? (
           <>
             <header className="branch-summary__detail-header">
-              <button type="button" className="branch-summary__back" onClick={() => setDetailId(null)}>
+              <button type="button" className="branch-summary__back" onClick={() => setDetailIds(null)}>
                 <span aria-hidden="true">←</span>
                 <span>Back to summary</span>
               </button>
@@ -93,11 +103,12 @@ export function BranchRunSummary({
               <h2
                 id={titleId}
                 className="modal__title branch-summary__detail-title"
-                aria-label={`Universe ${detail.number}: ${detail.path}`}
+                aria-label={detailGroup?.merged ? `Merged outcomes: ${diceRollSummary(detailGroup.outcomes)}` : `Universe ${detail.number}: ${detail.path}`}
+                title={detailGroup?.merged ? diceRollSummary(detailGroup.outcomes) : detail.path}
               >
-                <span>Universe {detail.number}</span>
+                <span>{detailGroup?.merged ? 'Merged outcomes' : `Universe ${detail.number}`}</span>
                 {' '}
-                <span className="branch-summary__detail-outcome" aria-hidden="true">{detail.label}</span>
+                <span className="branch-summary__detail-outcome" aria-hidden="true">— {detailGroup?.merged ? diceRollSummary(detailGroup.outcomes) : detail.label}</span>
               </h2>
               <p className="branch-summary__detail-path" title={detail.path}>{detail.path}</p>
             </header>
@@ -107,7 +118,7 @@ export function BranchRunSummary({
                 actionLog={run.lines[detail.id].state.actionLog}
                 variant="review"
                 diagramAside={tree && (
-                  <BranchReviewGraphic tree={tree} highlightedBranchId={detail.id} />
+                  <BranchReviewGraphic tree={tree} highlightedBranchIds={detailIds ?? [detail.id]} />
                 )}
               />
             </div>
@@ -123,8 +134,8 @@ export function BranchRunSummary({
 
             <dl className="branch-summary__breakdown">
               <div>
-                <dt>Universes scored</dt>
-                <dd>{scored.length} of {branches.length}</dd>
+                <dt>Distinct universes scored</dt>
+                <dd>{scoredGroups.length} of {universeGroups.length}</dd>
               </div>
               <div>
                 <dt>Lost to knockdowns</dt>
@@ -134,7 +145,7 @@ export function BranchRunSummary({
                 <dt>Lost to failed rolls</dt>
                 <dd>{pct(summary.failedRollWeight)}</dd>
               </div>
-              {givenUp.length > 0 && (
+              {givenUpGroups.length > 0 && (
                 <div>
                   <dt>Given up on</dt>
                   <dd>{pct(summary.unresolvedWeight)}</dd>
@@ -153,24 +164,24 @@ export function BranchRunSummary({
               )}
             </dl>
 
-            {tree && <BranchTreeGraphic tree={tree} />}
+            {tree && <BranchTreeGraphic tree={tree} onSelectBranches={setDetailIds} />}
 
             <ul className="branch-summary__branches" aria-label="Parallel Universes">
-              {branches.map(branch => (
-                <li key={branch.id}>
+              {universeGroups.map(group => (
+                <li key={group.ids.join('-')}>
                   <button
                     type="button"
-                    className={`branch-summary__branch branch-summary__branch--${branch.status}`}
-                    aria-label={`View Universe ${branch.number}: ${branch.path}`}
-                    onClick={() => setDetailId(branch.id)}
+                    className={`branch-summary__branch branch-summary__branch--${group.status}`}
+                    aria-label={`View ${group.merged ? 'merged outcomes' : 'outcome'}: ${diceRollSummary(group.outcomes)}`}
+                    onClick={() => setDetailIds(group.ids)}
                   >
-                    <span className="branch-summary__branch-path" title={branch.path}>
-                      <span className="branch-summary__branch-number">Universe {branch.number}</span>
-                      <span className="branch-summary__branch-outcome">{branch.label}</span>
+                    <span className="branch-summary__branch-path" title={group.path}>
+                      <span className="branch-summary__branch-number">{diceRollSummary(group.outcomes)}</span>
+                      <span className="branch-summary__branch-outcome">— {group.label}</span>
                     </span>
-                    <span className="branch-summary__branch-weight">{pct(branch.weight)}</span>
+                    <span className="branch-summary__branch-weight">{pct(group.weight)}</span>
                     <span className="branch-summary__branch-value">
-                      {branch.status === 'conceded' ? 'given up' : `scores ${pct(branch.value)}`}
+                      {group.status === 'conceded' ? 'given up' : `scores ${pct(group.value)}`}
                     </span>
                   </button>
                 </li>

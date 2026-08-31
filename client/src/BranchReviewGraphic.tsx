@@ -11,7 +11,7 @@ const DIE_SIZE = 22;
 
 interface Props {
   tree: BranchTreeBlockView;
-  highlightedBranchId: string;
+  highlightedBranchIds: readonly string[];
 }
 
 interface StatePoint {
@@ -31,13 +31,13 @@ function shorten(value: string, length: number): string {
   return value.length > length ? `${value.slice(0, length - 1)}…` : value;
 }
 
-function pointHighlights(state: BranchTreeStateView, branchId: string): boolean {
-  return state.id === branchId
-    || (state.nextBlock ? branchTreeContains(state.nextBlock, branchId) : false);
+function pointHighlights(state: BranchTreeStateView, branchIds: readonly string[]): boolean {
+  return branchIds.some(branchId => state.id === branchId
+    || (state.nextBlock ? branchTreeContains(state.nextBlock, branchId) : false));
 }
 
-/** Lightweight playbook route for the universe currently being reviewed. */
-export function BranchReviewGraphic({ tree, highlightedBranchId }: Props) {
+/** Lightweight playbook route for every universe represented by the selected summary card. */
+export function BranchReviewGraphic({ tree, highlightedBranchIds }: Props) {
   const layout = branchTreeStripGrid(tree);
   const points = new Map<string, StatePoint>();
   const rootX = LABEL_WIDTH + MARGIN + layout.leafColumns * COLUMN_WIDTH / 2;
@@ -50,8 +50,8 @@ export function BranchReviewGraphic({ tree, highlightedBranchId }: Props) {
           state: placement.state,
           x: LABEL_WIDTH + MARGIN + (placement.startColumn + placement.columnSpan / 2) * COLUMN_WIDTH,
           y: MARGIN + 68 + depth * ROW_HEIGHT,
-          highlighted: pointHighlights(placement.state, highlightedBranchId),
-          selected: placement.state.id === highlightedBranchId,
+          highlighted: pointHighlights(placement.state, highlightedBranchIds),
+          selected: highlightedBranchIds.includes(placement.state.id),
         });
       });
     });
@@ -84,7 +84,7 @@ export function BranchReviewGraphic({ tree, highlightedBranchId }: Props) {
           style={{ minWidth: `${width}px` }}
           viewBox={`0 0 ${width} ${height}`}
           role="img"
-          aria-label={`Game branch tree with ${layout.strips.length} ${layout.strips.length === 1 ? 'block' : 'blocks'} and ${layout.leafColumns} ending ${layout.leafColumns === 1 ? 'universe' : 'universes'}; reviewed branch highlighted`}
+          aria-label={`Game branch tree with ${layout.strips.length} ${layout.strips.length === 1 ? 'block' : 'blocks'} and ${layout.leafColumns} ending ${layout.leafColumns === 1 ? 'universe' : 'universes'}; ${highlightedBranchIds.length} reviewed ${highlightedBranchIds.length === 1 ? 'route' : 'routes'} highlighted`}
         >
           <g className="branch-review__routes" aria-hidden="true">
             {firstRowPoints.map(point => {
@@ -164,7 +164,7 @@ export function BranchReviewGraphic({ tree, highlightedBranchId }: Props) {
           </g>
         </svg>
       </div>
-      <figcaption>The highlighted dotted route is the universe being reviewed.</figcaption>
+      <figcaption>The highlighted dotted routes are all outcomes represented by this summary card.</figcaption>
     </figure>
   );
 }
