@@ -31,7 +31,8 @@ carries a **Status** line — read it before treating a section as work to do.
 | Player Config Screen | Phase 1 Shipped, Phase 2 **Planned** |
 | Block Outcomes as Board-State Branches | Shipped as the standard Parallel Universes block model |
 | Tutorial Series and Parallel Universes Onboarding | Shipped |
-| Step-by-step Tutorial Coach | Shipped |
+| Step-by-step Tutorial Coach | Superseded |
+| Contextual Tutorial Coach Redesign | Shipped |
 | Engagement Analytics and Admin Graphs | Shipped |
 | Full-game Rulebook Copy Audit | Shipped |
 | Completed Play Diagram | Shipped |
@@ -5396,7 +5397,7 @@ start/retention caveat; do not label pre-launch zeroes as inactivity.
 
 # Step-by-step Tutorial Coach
 
-**Status:** Superseded by the contextual Tutorial coach redesign below.
+**Status:** Superseded — see Contextual Tutorial Coach Redesign below.
 
 ## Goal and Fixed Decisions
 
@@ -5676,7 +5677,10 @@ the authored next interaction illegal.
 
 # Contextual Tutorial Coach Redesign
 
-**Status:** Implemented on `hb/contextual-tutorial-coach`; awaiting review.
+**Status:** Shipped. Merged to `main` as PR #252 (`82f2960`) — see
+`TutorialContextCaption.tsx`, `TutorialConceptGuideDialog.tsx`,
+`TutorialObjectiveCard.tsx`, `TutorialPuzzleChooser.tsx`, and
+`tutorialConcepts.ts`.
 
 ## Goal
 
