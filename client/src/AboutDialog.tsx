@@ -9,6 +9,7 @@ interface Props {
   version: string;
   deployedAt: string;
   onClose: () => void;
+  onOpenReleaseNotes: () => void;
 }
 
 function formatDeploymentTime(deployedAt: string): string {
@@ -25,7 +26,7 @@ function formatDeploymentTime(deployedAt: string): string {
   });
 }
 
-export function AboutDialog({ version, deployedAt, onClose }: Props) {
+export function AboutDialog({ version, deployedAt, onClose, onOpenReleaseNotes }: Props) {
   const titleId = useId();
   const descriptionId = useId();
   const dialogRef = useModalFocus<HTMLDivElement>(onClose);
@@ -55,6 +56,13 @@ export function AboutDialog({ version, deployedAt, onClose }: Props) {
               {formatDeploymentTime(deployedAt)}
             </time>
           </p>
+          <button
+            type="button"
+            className="about-dialog__release-notes-btn"
+            onClick={onOpenReleaseNotes}
+          >
+            Release Notes
+          </button>
         </div>
         <p className="modal__desc">
           Turn 16 collects anonymous game statistics about puzzle starts, actions,

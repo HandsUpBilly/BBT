@@ -1,0 +1,94 @@
+.release-notes-dialog {
+  min-width: min(480px, 90vw);
+  max-width: 560px;
+  max-height: 85vh;
+}
+
+.release-notes-dialog__nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+}
+
+.release-notes-dialog__nav-btn {
+  flex: 0 0 auto;
+  padding: 8px 14px;
+  color: var(--color-text);
+  background: var(--color-surface-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-button);
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: background var(--transition-fast), border-color var(--transition-fast);
+}
+
+.release-notes-dialog__nav-btn:hover:not(:disabled) {
+  background: var(--color-surface-hover);
+  border-color: var(--color-border-selected);
+}
+
+.release-notes-dialog__nav-btn:disabled {
+  color: var(--color-text-disabled);
+  border-color: #292c29;
+  cursor: not-allowed;
+}
+
+.release-notes-dialog__week {
+  display: grid;
+  gap: 2px;
+  color: var(--color-text-strong);
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 0.95rem;
+  text-align: center;
+}
+
+.release-notes-dialog__week small {
+  color: var(--color-text-disabled);
+  font-family: var(--font-body);
+  font-weight: 400;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.release-notes-dialog__body {
+  width: 100%;
+  overflow-y: auto;
+  text-align: left;
+  display: grid;
+  gap: 14px;
+}
+
+.release-notes-dialog__note-title {
+  margin: 0;
+  color: var(--color-text-strong);
+  font-family: var(--font-display);
+  font-size: 1.1rem;
+  text-transform: uppercase;
+}
+
+.release-notes-dialog__category h4 {
+  margin: 0 0 6px;
+  color: var(--color-accent);
+  font-family: var(--font-display);
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.release-notes-dialog__category ul {
+  margin: 0;
+  padding-left: 1.2rem;
+  display: grid;
+  gap: 4px;
+}
+
+.release-notes-dialog__category li {
+  color: var(--color-text-muted);
+  font-size: 0.9rem;
+  line-height: 1.45;
+}
