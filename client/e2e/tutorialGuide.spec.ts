@@ -6,7 +6,7 @@ async function openTutorialChooser(page: import('@playwright/test').Page) {
   await page.getByRole('button', { name: /play as guest/i }).click();
   await page.locator('.identity-gate__input').fill('Tutorial Coach Tester');
   await page.getByRole('button', { name: /^continue$/i }).click();
-  await page.getByRole('button', { name: /start series/i }).click();
+  await page.getByRole('button', { name: 'Tutorial', exact: true }).click();
 }
 
 async function startFirstGuidedAttempt(page: import('@playwright/test').Page) {
@@ -16,7 +16,7 @@ async function startFirstGuidedAttempt(page: import('@playwright/test').Page) {
   await page.getByRole('button', { name: 'Begin Puzzle' }).click();
 }
 
-test('series chooser can start Puzzle 6 with its own guidance', async ({ page }, testInfo) => {
+test('series chooser can start Puzzle 6 with its own objective', async ({ page }, testInfo) => {
   test.skip(!['iphone-se', 'desktop'].includes(testInfo.project.name), 'Representative phone and desktop coverage');
   await openTutorialChooser(page);
 
@@ -24,13 +24,21 @@ test('series chooser can start Puzzle 6 with its own guidance', async ({ page },
   await expect(page.getByText('0 complete · 6 remaining')).toBeVisible();
   await page.getByRole('button', { name: 'Play this drill' }).last().click();
 
-  await expect(page.getByRole('dialog', { name: 'Blocking, Pickups and Parallel Universes' })).toBeVisible();
-  await expect(page.getByText('Tutorial Drill 6 / 6')).toBeVisible();
-  await page.getByRole('button', { name: 'Begin Puzzle' }).click();
-  const guide = page.getByRole('dialog', { name: 'Open a path to the ball' });
-  await expect(guide.getByText('Blocking, Pickups and Parallel Universes: Step 1 of 5')).toBeVisible();
-  await expect(guide.getByRole('img', { name: /loose ball, nearby Humans, and the marking Orc/i })).toBeVisible();
+  const objective = page.getByRole('complementary', { name: 'Tutorial drill objective' });
+  await expect(objective.getByText('Blocking, Pickups and Parallel Universes')).toBeVisible();
   await expect(page.getByText(/Series progress 0 \/ 6 complete/)).toBeVisible();
+});
+
+test('series chooser keeps per-drill rankings and returns to the run', async ({ page }, testInfo) => {
+  test.skip(!['iphone-se', 'desktop'].includes(testInfo.project.name), 'Representative phone and desktop coverage');
+  await openTutorialChooser(page);
+
+  await expect(page.getByRole('button', { name: /^Rankings for / })).toHaveCount(6);
+  await page.getByRole('button', { name: /^Rankings for / }).first().click();
+  await expect(page.locator('.leaderboard')).toBeVisible();
+  await page.getByRole('button', { name: '← Back' }).click();
+  await expect(page.getByRole('heading', { name: 'Choose a Tutorial drill' })).toBeVisible();
+  await expect(page.getByText('0 complete · 6 remaining')).toBeVisible();
 });
 
 test('guided attempt reveals help gradually and advances after the correct interaction', async ({ page }, testInfo) => {

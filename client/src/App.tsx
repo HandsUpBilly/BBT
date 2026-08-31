@@ -351,6 +351,7 @@ export default function App() {
   }, [appMode]);
   const [activeScenario, setActiveScenario] = useState<Scenario | null>(null);
   const [leaderboardHighlight, setLeaderboardHighlight] = useState<string | undefined>();
+  const [leaderboardReturnMode, setLeaderboardReturnMode] = useState<'home' | 'series-select'>('home');
   const [leaderboardRefreshKey, setLeaderboardRefreshKey] = useState(0);
   const [leaderboardInitialEntries, setLeaderboardInitialEntries] = useState<LeaderboardEntry[] | undefined>();
   const [selectedEntry, setSelectedEntry] = useState<LeaderboardEntry | undefined>();
@@ -676,6 +677,7 @@ export default function App() {
   );
 
   const startPuzzle = useCallback((scenario: Scenario) => {
+    setLeaderboardReturnMode('home');
     setEditorPreviewScenario(null);
     setActiveScenario(scenario);
     const s = makeScenarioState(scenario);
@@ -696,9 +698,10 @@ export default function App() {
     setAppMode('puzzle');
   }, [resetBoards]);
 
-  const goLeaderboard = useCallback((scenario: Scenario) => {
+  const goLeaderboard = useCallback((scenario: Scenario, returnMode: 'home' | 'series-select' = 'home') => {
     setActiveScenario(scenario);
     setLeaderboardHighlight(undefined);
+    setLeaderboardReturnMode(returnMode);
     setAppMode('leaderboard');
   }, []);
 
@@ -1376,6 +1379,7 @@ export default function App() {
             if (completedScenarioIds.has(scenario.id)) setPendingTutorialReplay(scenario);
             else chooseSeriesPuzzle(scenario);
           }}
+          onLeaderboard={scenario => goLeaderboard(scenario, 'series-select')}
           onLeave={requestLeaveSeries}
         />
         {pendingTutorialReplay && (
@@ -1557,7 +1561,7 @@ export default function App() {
         <Leaderboard
           key={leaderboardRefreshKey}
           scenario={activeScenario}
-          onBack={() => { setLeaderboardInitialEntries(undefined); setAppMode('home'); }}
+          onBack={() => { setLeaderboardInitialEntries(undefined); setAppMode(leaderboardReturnMode); }}
           highlightId={leaderboardHighlight}
           initialEntries={leaderboardInitialEntries}
           onEntriesLoaded={setLeaderboardInitialEntries}

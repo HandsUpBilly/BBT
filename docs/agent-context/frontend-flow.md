@@ -68,6 +68,10 @@ touchdown, but the player-facing rule deliberately does not make touchdown the
 only possible objective; later one-turn puzzles can target outcomes such as a
 successful foul or crowd surf.
 
+Starting the Tutorial opens its drill chooser. Each drill card offers both its
+play/replay action and its individual Rankings; returning from those Rankings
+restores the chooser and preserves the in-progress series results.
+
 About's focus-trapped dialog is the single player-facing location for the release version
 (`__BBT_VERSION__`) and deployment time (`__BBT_DEPLOYED_AT__`), formatted in
 the viewer's local timezone. Vite stamps the deployment time when it builds the
