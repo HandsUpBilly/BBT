@@ -44,6 +44,21 @@ function authHeaders(idToken: string | null): HeadersInit {
   return idToken ? { Authorization: `Bearer ${idToken}` } : {};
 }
 
+/**
+ * Server-authoritative navigation check. Any auth, network, or storage failure
+ * fails closed so Puzzle Creator is never advertised without confirmed access.
+ */
+export async function fetchAdminStatus(idToken: string | null): Promise<boolean> {
+  try {
+    const response = await fetch('/api/editor/access', { headers: authHeaders(idToken) });
+    if (!response.ok) return false;
+    const body = await response.json() as { isAdmin?: unknown };
+    return body.isAdmin === true;
+  } catch {
+    return false;
+  }
+}
+
 // Drafts include unpublished puzzles, so the read is admin-gated like the
 // writes and needs the same Authorization header.
 export async function fetchEditorData(idToken: string | null): Promise<EditorLoadResponse> {

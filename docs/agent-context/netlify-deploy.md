@@ -153,8 +153,10 @@ Required for Netlify Blobs (leaderboards + editor drafts):
 
 Required to gate the puzzle editor:
 
-- `ADMIN_EMAILS` (functions) — comma-separated allowlist
-- `VITE_ADMIN_EMAILS` (build) — same list, controls tab visibility only
+- `ADMIN_EMAILS` (functions) — optional comma-separated deployment
+  administrators; combined with the permanent owner and Managed Administrators
+- `EDITOR_ALLOW_UNAUTHENTICATED=false` (functions) — fail closed if an
+  environment ever has no effective administrator list
 
 Required for player-created GitHub issues:
 
@@ -165,22 +167,23 @@ Required for player-created GitHub issues:
 Google OAuth must include the deployed Netlify origin in its authorized
 JavaScript origins.
 
-### Editor access defaults open without an allowlist
+### Editor access is server-authoritative
 
-`netlify/functions/auth.js` and `server/auth.js` both treat an empty or unset
-`ADMIN_EMAILS` as unrestricted Puzzle Creator access. Once the allowlist contains an
-address, every `/api/editor/*` route requires a verified matching Google user.
-Set `EDITOR_ALLOW_UNAUTHENTICATED=false` to opt a deployment into returning 503
-when its allowlist is empty.
+`netlify/functions/auth.js` and `server/auth.js` combine the permanent project
+owner with `ADMIN_EMAILS` whenever Google token verification is configured,
+then merge the runtime Managed Administrators list. Every `/api/editor/*` route
+requires a verified matching Google user. `/api/editor/access` applies that
+same check and returns only a boolean capability used to reveal Puzzle Creator
+navigation; the browser never receives the list itself. Set
+`EDITOR_ALLOW_UNAUTHENTICATED=false` to return 503 if an environment ever has
+no effective allowlist.
 
-**Production should set it.** With it unset, the only thing protecting every
-`/api/editor/*` route — unpublished drafts, anonymous write/delete, publish, and
-the full retained leaderboard aggregates — is `ADMIN_EMAILS` being non-empty in
-the Netlify UI. Clear it, typo it, or restore the site into an environment where
-it was never set, and the whole surface opens to anonymous callers with no error
-and no banner. `EDITOR_ALLOW_UNAUTHENTICATED=false` makes that state a 503
-instead, and the open default stays available for local dev where it is
-genuinely convenient.
+**Production should set it.** The permanent owner normally guarantees a
+non-empty effective list wherever Google token verification is configured.
+`EDITOR_ALLOW_UNAUTHENTICATED=false` remains defence in depth for a restored or
+misconfigured environment where verification and every administrator source
+are absent; it makes that state a 503. The open default stays available for
+local development without OAuth configuration.
 
 The one visible signal is a cold-start `console.warn` from `createGoogleAuth`
 when the allowlist is empty *and* access is still open. It shows up in the

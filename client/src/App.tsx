@@ -67,6 +67,7 @@ import { scenarios as staticScenarios } from './scenarios';
 import { defaultSeries as staticSeries } from './series';
 import { PuzzleEditor } from './editor/PuzzleEditor';
 import { useAuth } from './auth';
+import { useAdminAccess } from './useAdminAccess';
 import type {
   AppMode, GameState, PlayerPiece, Position, Scenario, LeaderboardEntry,
   SeriesLeaderboardEntry, SeriesPuzzleResult,
@@ -85,19 +86,6 @@ import './PlaybookTheme.css';
 const LOCAL_SCORE_KEY = 'bbt.localScores.v1';
 const GUEST_NAME_KEY = 'bbt.guestName.v1';
 const GOOGLE_ALIASES_KEY = 'bbt.googleAliases.v1';
-
-// Client-side allowlist controlling whether the "Puzzle Creator" tab is shown at
-// all — this is a UX nicety only, NOT the security boundary. The actual write
-// endpoints (netlify/functions/editor-*.js, server/editor.js) independently
-// verify the signed-in user's Google identity token against the server-side
-// ADMIN_EMAILS env var, so hiding this tab doesn't grant write access and
-// showing it doesn't bypass the server check. Keep the two lists in sync.
-const ADMIN_EMAILS = new Set(
-  (import.meta.env.VITE_ADMIN_EMAILS ?? '')
-    .split(',')
-    .map((email: string) => email.trim().toLowerCase())
-    .filter(Boolean),
-);
 
 type LocalScoreMap = Record<string, string[]>;
 
@@ -273,6 +261,7 @@ function IdentityGate({ authConfigured, googleSignedIn, mountGoogleSignInButton,
 export default function App() {
   useEffect(() => initializeAnalytics(), []);
   const { currentUser, idToken, sessionExpired, isConfigured: authConfigured, mountSignInButton, signOut } = useAuth();
+  const isAdmin = useAdminAccess(idToken);
   // Scenario/series data starts as the build-time static bundle (immediate,
   // no loading flash) and is replaced by the currently published set fetched
   // from /api/scenarios once that resolves — see scenarios/runtime.ts.
@@ -552,17 +541,8 @@ export default function App() {
     loginRecordedRef.current = true;
     void recordLogin(identityName, idToken);
   }, [identityReady, identityName, idToken]);
-  // Empty ADMIN_EMAILS (unset in this environment) means "show to everyone" —
-  // matches the server-side fallback in requireAdminGoogleUser, keeping local
-  // dev usable without any Google OAuth/admin config.
-  // Runtime-managed administrators cannot be known at build time. Allow any
-  // signed-in account to reach the console; the server remains the authority
-  // and rejects non-admin calls before revealing editor data.
-  const isAdmin = ADMIN_EMAILS.size === 0 || Boolean(currentUser);
-  // Defense in depth: appMode is client-only state with no URL routing, so this
-  // shouldn't be reachable since the Puzzle Creator tab is hidden for non-admins.
-  // The real gate is server-side (ADMIN_EMAILS check on the write endpoints).
-  // Render 'home' instead of setState-in-effect to avoid an extra render pass.
+  // Defense in depth: render home if stale client state somehow points at the
+  // editor before the server has confirmed access for the current identity.
   const effectiveAppMode = appMode === 'admin' && !isAdmin ? 'home' : appMode;
   useLayoutEffect(() => {
     if (effectiveAppMode !== 'puzzle' && effectiveAppMode !== 'series-puzzle'

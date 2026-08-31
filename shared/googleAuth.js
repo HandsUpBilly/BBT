@@ -31,6 +31,21 @@ export function parseAdminEmails(raw) {
   );
 }
 
+// The project owner must retain access even if deployment configuration or the
+// runtime-managed list is changed. This is still protected by Google's token
+// verification: knowing the address does not grant access without a verified
+// identity token for that account.
+export const PERMANENT_ADMIN_EMAILS = Object.freeze([
+  'oliver.whitehead@gmail.com',
+]);
+
+export function withPermanentAdminEmails(raw) {
+  return [...new Set([
+    ...parseAdminEmails(raw),
+    ...PERMANENT_ADMIN_EMAILS,
+  ])].join(',');
+}
+
 export function bearerToken(getHeader) {
   const header = getHeader('authorization') ?? '';
   const [scheme, token] = header.split(' ');

@@ -63,7 +63,6 @@ interface GoogleAccountsId {
     shape: 'rectangular';
     width?: number;
   }): void;
-  prompt(): void;
   disableAutoSelect(): void;
 }
 

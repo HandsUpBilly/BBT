@@ -86,7 +86,7 @@
   background:
     linear-gradient(90deg, rgba(7, 9, 8, 0.48) 0%, rgba(7, 9, 8, 0.04) 44%, rgba(7, 9, 8, 0.04) 72%, rgba(7, 9, 8, 0.28) 100%),
     linear-gradient(0deg, rgba(6, 8, 7, 0.9) 0%, rgba(6, 8, 7, 0.08) 52%, rgba(6, 8, 7, 0.04) 100%),
-    url('./assets/matchday-hero-v2.png') center center / cover no-repeat,
+    url('./assets/matchday-hero-v2.webp') center center / cover no-repeat,
     var(--color-surface-1);
   border: 1px solid #343833;
   border-top: 0;
@@ -651,7 +651,7 @@
     background:
       linear-gradient(90deg, rgba(7, 9, 8, 0.5), rgba(7, 9, 8, 0.04) 76%),
       linear-gradient(0deg, rgba(6, 8, 7, 0.96) 0%, rgba(6, 8, 7, 0.1) 68%),
-      url('./assets/matchday-hero-v2.png') center center / cover no-repeat,
+      url('./assets/matchday-hero-v2.webp') center center / cover no-repeat,
       var(--color-surface-1);
   }
 

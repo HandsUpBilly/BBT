@@ -86,6 +86,13 @@ export async function readPublicScenarios() {
 }
 
 export function registerEditorRoutes(app) {
+  // Deliberately returns only a boolean capability, never the allowlist. The
+  // client uses this to decide whether to reveal Puzzle Creator navigation.
+  app.get('/api/editor/access', async (req, res) => withAdmin(req, res, async () => {
+    res.set({ 'Cache-Control': 'private, no-store', Vary: 'Authorization' });
+    jsonResponse(res, 200, { isAdmin: true });
+  }));
+
   app.get('/api/editor/admins', async (req, res) => withAdminManager(req, res, async () => {
     const managedAdmins = await readManagedAdmins();
     jsonResponse(res, 200, { managedAdmins, configuredAdminCount, audit: await readAdminAudit() });

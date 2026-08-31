@@ -197,7 +197,9 @@ plain punctuation. Arrows, crosses, dice, and other board symbols remain valid
 when they carry rules information rather than joining sentences.
 
 `ScenarioSelect.tsx` owns the main Series/Single Plays switch and exposes
-Puzzle Creator as a third tab for allowlisted admins.
+Puzzle Creator only after `/api/editor/access` confirms the current Google
+identity against the server's effective administrator list. The response is a
+boolean capability; administrator emails are never exposed to the client.
 
 - Series tab shows **Tutorial**, the default series row from
   `client/src/series/default.json`. Starting it opens the drill chooser rather
@@ -223,12 +225,12 @@ The identity gate and `home` mode use the tabletop-playbook visual shell:
 - Single-play cards derive their displayed `Play 01`, `Play 02`, etc. labels
   from the loaded scenario array order. These labels are decorative; scenario
   names and descriptions remain the source of truth.
-- The home hero uses `client/src/assets/matchday-hero-v2.png`, including its
+- The home hero uses `client/src/assets/matchday-hero-v2.webp`, including its
   oversized background wordmark, behind a responsive contrast overlay. The
   live `h1` remains visually hidden for semantics. Off-canvas chalk decoration
   is contained by `app--landing` so 320 px and wider viewports do not scroll
   horizontally.
-- The identity gate uses `client/src/assets/identity-tunnel-logo-v2.png`, with
+- The identity gate uses `client/src/assets/identity-tunnel-logo-v2.webp`, with
   the vertical badge baked into the tunnel wall. Generated reusable branding
   lives in `client/src/assets/brand/` and is exposed through `BrandLogo.tsx`:
   the horizontal wordmark leads the home top bar, desktop game HUD, and
@@ -617,7 +619,7 @@ is displayed in About.
 
 ### Published roster portraits
 
-The six roles used by the five published scenarios use generated gritty
+The six roles used by the six published scenarios use generated gritty
 medallion portraits in `client/public/*-gritty.webp`:
 
 - Human: thrower, catcher, lineman (blue/ivory armor, bronze frame).

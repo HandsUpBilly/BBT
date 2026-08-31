@@ -13,17 +13,21 @@ import {
   AuthError,
   AdminAuthError,
   entryAuthFields,
+  withPermanentAdminEmails,
 } from '../../shared/googleAuth.js';
 import { readManagedAdmins } from './adminStore.js';
 
 export { AuthError, AdminAuthError, entryAuthFields };
 
-// An empty ADMIN_EMAILS means Admin Mode is unrestricted. Set
-// EDITOR_ALLOW_UNAUTHENTICATED=false to opt into fail-closed behavior instead.
-// A non-empty allowlist always requires a verified, matching Google account.
+// The permanent owner is included wherever Google verification is configured.
+// EDITOR_ALLOW_UNAUTHENTICATED=false also makes an otherwise-empty effective
+// list fail closed. A non-empty list requires a verified matching account.
+const googleClientId = process.env.GOOGLE_CLIENT_ID;
 const auth = createGoogleAuth({
-  verifyIdToken: makeGoogleTokenVerifier(OAuth2Client, process.env.GOOGLE_CLIENT_ID),
-  adminEmails: process.env.ADMIN_EMAILS,
+  verifyIdToken: makeGoogleTokenVerifier(OAuth2Client, googleClientId),
+  adminEmails: googleClientId
+    ? withPermanentAdminEmails(process.env.ADMIN_EMAILS)
+    : process.env.ADMIN_EMAILS,
   allowUnauthenticated: process.env.EDITOR_ALLOW_UNAUTHENTICATED !== 'false',
   getManagedAdminEmails: readManagedAdmins,
 });
