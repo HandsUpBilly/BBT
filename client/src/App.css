@@ -159,8 +159,8 @@ body,
 .identity-gate__panel {
   position: absolute;
   z-index: 1;
-  right: clamp(24px, 4vw, 62px);
-  bottom: clamp(24px, 4vw, 58px);
+  right: clamp(14px, 2vw, 30px);
+  bottom: clamp(14px, 2vw, 30px);
   min-width: 0;
   width: min(240px, calc(100% - 48px));
   color: var(--color-text);
@@ -199,9 +199,12 @@ body,
   min-height: 44px;
 }
 
-.identity-gate__google-button > div,
-.identity-gate__actions .btn {
+.identity-gate__google-button > div {
   width: 100% !important;
+}
+
+.identity-gate__actions .btn {
+  width: calc(100% + 8px) !important;
 }
 
 /* Google's personalised button deliberately makes its iframe wider than its
