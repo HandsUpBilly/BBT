@@ -11,7 +11,7 @@ describe('AboutDialog', () => {
   it('shows the release version and closes from its button', () => {
     const onClose = vi.fn();
     const { container } = render(
-      <AboutDialog version="abc123" deployedAt={DEPLOYED_AT} onClose={onClose} />,
+      <AboutDialog version="abc123" deployedAt={DEPLOYED_AT} onClose={onClose} onOpenReleaseNotes={vi.fn()} />,
     );
 
     expect(screen.getByRole('dialog', { name: 'About Turn 16' })).toBeTruthy();
@@ -25,9 +25,24 @@ describe('AboutDialog', () => {
     expect(onClose).toHaveBeenCalledOnce();
   });
 
+  it('opens release notes from its button', () => {
+    const onOpenReleaseNotes = vi.fn();
+    render(
+      <AboutDialog
+        version="abc123"
+        deployedAt={DEPLOYED_AT}
+        onClose={vi.fn()}
+        onOpenReleaseNotes={onOpenReleaseNotes}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Release Notes' }));
+    expect(onOpenReleaseNotes).toHaveBeenCalledOnce();
+  });
+
   it('closes on Escape', () => {
     const onClose = vi.fn();
-    render(<AboutDialog version="abc123" deployedAt={DEPLOYED_AT} onClose={onClose} />);
+    render(<AboutDialog version="abc123" deployedAt={DEPLOYED_AT} onClose={onClose} onOpenReleaseNotes={vi.fn()} />);
 
     fireEvent.keyDown(document, { key: 'Escape' });
     expect(onClose).toHaveBeenCalledOnce();
@@ -44,6 +59,7 @@ describe('AboutDialog', () => {
               version="abc123"
               deployedAt={DEPLOYED_AT}
               onClose={() => setOpen(false)}
+              onOpenReleaseNotes={() => {}}
             />
           )}
         </>

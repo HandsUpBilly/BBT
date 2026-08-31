@@ -31,6 +31,8 @@ import { ReportProblemButton } from './ReportProblemButton';
 import { ReportProblemModal } from './ReportProblemModal';
 import { ContactModal } from './ContactModal';
 import { AboutDialog } from './AboutDialog';
+import { ReleaseNotesDialog } from './ReleaseNotesDialog';
+import { releaseNotes } from './releaseNotes';
 import { BrandLogo } from './BrandLogo';
 import { SettingsScreen } from './SettingsScreen';
 import { HelpScreen } from './HelpScreen';
@@ -389,6 +391,7 @@ export default function App() {
   const [reportOpen, setReportOpen] = useState(false);
   const [aboutOpen, setAboutOpen] = useState(false);
   const [contactOpen, setContactOpen] = useState(false);
+  const [releaseNotesOpen, setReleaseNotesOpen] = useState(false);
   // Blocking failure on the touchdown submit — keeps the SubmitModal open so
   // the player can retry rather than silently losing the run.
   const [submitError, setSubmitError] = useState<string | undefined>();
@@ -613,6 +616,20 @@ export default function App() {
       onClose={() => {
         trackAnalytics('interaction', { name: 'about', outcome: 'closed' });
         setAboutOpen(false);
+      }}
+      onOpenReleaseNotes={() => {
+        trackAnalytics('interaction', { name: 'release-notes', outcome: 'opened' });
+        setAboutOpen(false);
+        setReleaseNotesOpen(true);
+      }}
+    />
+  );
+  const releaseNotesModal = releaseNotesOpen && (
+    <ReleaseNotesDialog
+      notes={releaseNotes}
+      onClose={() => {
+        trackAnalytics('interaction', { name: 'release-notes', outcome: 'closed' });
+        setReleaseNotesOpen(false);
       }}
     />
   );
@@ -1359,6 +1376,7 @@ export default function App() {
         {notice}
         {reportModal}
         {aboutModal}
+        {releaseNotesModal}
         {contactModal}
         <AppFooter />
       </div>
@@ -1406,6 +1424,7 @@ export default function App() {
         {notice}
         {reportModal}
         {aboutModal}
+        {releaseNotesModal}
         {contactModal}
         <AppFooter />
       </div>
@@ -1424,6 +1443,7 @@ export default function App() {
           {notice}
           {reportModal}
           {aboutModal}
+          {releaseNotesModal}
           {contactModal}
           <AppFooter />
         </div>
@@ -1443,6 +1463,7 @@ export default function App() {
         {notice}
         {reportModal}
         {aboutModal}
+        {releaseNotesModal}
         {contactModal}
         <AppFooter />
       </div>
@@ -1460,6 +1481,7 @@ export default function App() {
           idToken={idToken}
         />
         {aboutModal}
+        {releaseNotesModal}
         {contactModal}
         <AppFooter />
       </div>
@@ -1512,6 +1534,7 @@ export default function App() {
         {notice}
         {reportModal}
         {aboutModal}
+        {releaseNotesModal}
         {contactModal}
         <AppFooter />
       </div>
@@ -1531,6 +1554,7 @@ export default function App() {
         {notice}
         {reportModal}
         {aboutModal}
+        {releaseNotesModal}
         {contactModal}
         <AppFooter />
       </div>
@@ -1550,6 +1574,7 @@ export default function App() {
           {notice}
           {reportModal}
           {aboutModal}
+          {releaseNotesModal}
           {contactModal}
           <AppFooter />
         </div>
@@ -1570,6 +1595,7 @@ export default function App() {
         {notice}
         {reportModal}
         {aboutModal}
+        {releaseNotesModal}
         {contactModal}
         <AppFooter />
       </div>
@@ -2056,7 +2082,7 @@ export default function App() {
           onDismiss={dismissTutorialLesson}
         />
       )}
-      {activeTutorialCaption && !confirmLeaveSeries && !reportOpen && !aboutOpen && !contactOpen
+      {activeTutorialCaption && !confirmLeaveSeries && !reportOpen && !aboutOpen && !contactOpen && !releaseNotesOpen
         && !parallelUniversesIntroOpen && !tutorialConceptGuideOpen && (
         <TutorialContextCaption
           concept={activeTutorialCaption}
@@ -2081,7 +2107,7 @@ export default function App() {
           onClose={() => setTutorialConceptGuideOpen(false)}
         />
       )}
-      {parallelUniversesIntroOpen && activeScenario && !confirmLeaveSeries && !reportOpen && !aboutOpen && !contactOpen && (
+      {parallelUniversesIntroOpen && activeScenario && !confirmLeaveSeries && !reportOpen && !aboutOpen && !contactOpen && !releaseNotesOpen && (
         <ParallelUniversesIntroDialog
           concept={tutorialConceptFor('parallel-universes')}
           state={state}
@@ -2097,6 +2123,7 @@ export default function App() {
       {notice}
       {reportModal}
       {aboutModal}
+      {releaseNotesModal}
       {contactModal}
     </div>
   );
