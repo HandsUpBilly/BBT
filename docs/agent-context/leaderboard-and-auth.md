@@ -62,16 +62,20 @@ Guest flow:
 
 ## Admin Access
 
-- Empty or unset `ADMIN_EMAILS` means Puzzle Creator is unrestricted; the matching
-  empty `VITE_ADMIN_EMAILS` makes the tab visible to everyone.
-- A non-empty `ADMIN_EMAILS` requires a verified Google account whose email is
-  listed. Guests cannot satisfy a configured allowlist.
+- The project owner's address in `PERMANENT_ADMIN_EMAILS`, deployment
+  `ADMIN_EMAILS`, and runtime Managed Administrators form the effective list.
+  A verified Google account whose email is present is required; guests cannot
+  satisfy it.
 - `EDITOR_ALLOW_UNAUTHENTICATED=false` opts a deployment into returning 503
   when the allowlist is empty.
 - The Admin Console can add/remove a persistent managed allowlist. It is merged
-  with immutable `ADMIN_EMAILS` deployment administrators and checked on every
-  editor request. Runtime management requires a verified Google email even in
-  legacy unrestricted local mode.
+  with the permanent owner and immutable `ADMIN_EMAILS` deployment
+  administrators and checked on every editor request. Runtime management
+  requires a verified Google email even in legacy unrestricted local mode.
+- The client calls `/api/editor/access` with the current Google token and shows
+  Puzzle Creator only after the server returns `{ isAdmin: true }`. Failure,
+  rejection, and the pending state all remain hidden, and no allowlist is sent
+  to the browser.
 
 ## Issue and Feature Report Identity
 

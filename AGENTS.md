@@ -180,8 +180,7 @@ Never hand-edit `netlify/functions/scenarioSeed.js`.
 | `VITE_GOOGLE_CLIENT_ID` | `AuthProvider.tsx` | Client-side Google Sign-In |
 | `NETLIFY_SITE_ID` / `SITE_ID` | Netlify functions | Netlify Blobs site ID |
 | `NETLIFY_TOKEN` / `NETLIFY_AUTH_TOKEN` | Netlify functions | Netlify Blobs auth |
-| `ADMIN_EMAILS` | `shared/googleAuth.js` | Comma-separated allowlist gating `/api/editor/*`. Unioned at runtime with the managed-admin list — see "Editor auth policy" below |
-| `VITE_ADMIN_EMAILS` | `client/src/App.tsx` | Same list, controls Admin Mode tab visibility only — not a security boundary |
+| `ADMIN_EMAILS` | `shared/googleAuth.js` | Optional comma-separated deployment administrators, unioned with the permanent owner and managed-admin list — see "Editor auth policy" below |
 | `EDITOR_ALLOW_UNAUTHENTICATED` | `shared/googleAuth.js` | Set to `false` to fail closed when no allowlist is set. Defaults **true** everywhere |
 | `GITHUB_ISSUES_TOKEN` | `shared/githubIssues.js` | Fine-grained token, `HandsUpBilly/BBT` + Issues:RW. Server-only — never a `VITE_` var |
 | `RESEND_API_KEY` | `shared/resendEmail.js` | Resend API key for the Contact form. Server-only — never a `VITE_` var |
@@ -192,26 +191,23 @@ Never hand-edit `netlify/functions/scenarioSeed.js`.
 
 ### Editor auth policy
 
-The effective allowlist is `ADMIN_EMAILS` **union** the managed-admin list the
-Admin Console maintains at runtime (`effectiveAllowlist()` in
-`shared/googleAuth.js`, consumed by `requireAdminGoogleUser`) — see "Managed
-administrators" in `docs/agent-context/puzzle-editor.md`. Admin Mode is
-unrestricted only when *both* lists are empty; a deployment with an empty
-`ADMIN_EMAILS` but at least one stored managed admin is restricted, even
-though `ADMIN_EMAILS` itself looks unset. A non-empty effective allowlist
-requires a verified Google user whose email is on it. Set
-`EDITOR_ALLOW_UNAUTHENTICATED=false` to opt a deployment into returning 503
-when the effective allowlist is empty.
+The effective allowlist is the permanent owner **union** `ADMIN_EMAILS` **union**
+the managed-admin list the Admin Console maintains at runtime
+(`effectiveAllowlist()` in `shared/googleAuth.js`, consumed by
+`requireAdminGoogleUser`) — see "Managed administrators" in
+`docs/agent-context/puzzle-editor.md`. A non-empty effective allowlist requires
+a verified Google user whose email is on it. The client never receives these
+lists: `/api/editor/access` returns only whether the current verified identity
+passed the same server check, and Puzzle Creator navigation stays hidden until
+that request succeeds. Set `EDITOR_ALLOW_UNAUTHENTICATED=false` to return 503
+if an environment has no effective allowlist.
 
-On a deployment where the effective allowlist is empty and unauthenticated
-access is allowed (the documented default), any verified Google account can
-add itself as the first managed admin (`server/editor.js`,
-`netlify/functions/editor-admins.js` fall back to `requireVerifiedGoogleUser`
-when `requireAdminGoogleUser` returns no admin). That first write then closes
-open access to everyone else, and the console refuses to remove the last
-managed admin, so it isn't reversible from the browser. This is the shipped
-bootstrap behavior today; whether it should be gated on a deployment that
-never set `ADMIN_EMAILS` is an open decision, not settled by this doc.
+The permanent owner is included whenever Google token verification is
+configured, so a normal deployment cannot enter the legacy empty-list bootstrap
+state. An unauthenticated local environment may still be unrestricted when
+`EDITOR_ALLOW_UNAUTHENTICATED` is not false; `/api/editor/access` deliberately
+reflects that server decision so local Puzzle Creator development remains
+usable without OAuth configuration.
 
 `GET /api/editor/scenarios` is admin-gated too — it returns *drafts*, including
 unpublished puzzles. Only `GET /api/scenarios` (published state) is public.

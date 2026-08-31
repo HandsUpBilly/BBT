@@ -12,17 +12,24 @@ import {
   AuthError,
   AdminAuthError,
   entryAuthFields,
+  withPermanentAdminEmails,
 } from '../shared/googleAuth.js';
 import { readManagedAdmins } from './adminStore.js';
 
 export { AuthError, AdminAuthError, entryAuthFields };
 
-// With no allowlist configured, Admin Mode is intentionally unrestricted.
-// Set EDITOR_ALLOW_UNAUTHENTICATED=false to make an empty ADMIN_EMAILS fail
-// closed instead. A non-empty allowlist always requires a matching Google user.
+// The permanent owner is included wherever Google verification is configured.
+// EDITOR_ALLOW_UNAUTHENTICATED=false also makes an otherwise-empty effective
+// list fail closed. A non-empty list always requires a matching Google user.
+const googleClientId = process.env.GOOGLE_CLIENT_ID;
 const auth = createGoogleAuth({
-  verifyIdToken: makeGoogleTokenVerifier(OAuth2Client, process.env.GOOGLE_CLIENT_ID),
-  adminEmails: process.env.ADMIN_EMAILS,
+  verifyIdToken: makeGoogleTokenVerifier(OAuth2Client, googleClientId),
+  // Keep unauthenticated local development usable when Google sign-in is not
+  // configured. In any environment that can verify Google identity, the
+  // project owner's address is an immutable member of the allowlist.
+  adminEmails: googleClientId
+    ? withPermanentAdminEmails(process.env.ADMIN_EMAILS)
+    : process.env.ADMIN_EMAILS,
   allowUnauthenticated: process.env.EDITOR_ALLOW_UNAUTHENTICATED !== 'false',
   getManagedAdminEmails: readManagedAdmins,
 });

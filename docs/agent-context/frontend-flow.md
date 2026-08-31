@@ -197,7 +197,9 @@ plain punctuation. Arrows, crosses, dice, and other board symbols remain valid
 when they carry rules information rather than joining sentences.
 
 `ScenarioSelect.tsx` owns the main Series/Single Plays switch and exposes
-Puzzle Creator as a third tab for allowlisted admins.
+Puzzle Creator only after `/api/editor/access` confirms the current Google
+identity against the server's effective administrator list. The response is a
+boolean capability; administrator emails are never exposed to the client.
 
 - Series tab shows **Tutorial**, the default series row from
   `client/src/series/default.json`. Starting it opens the drill chooser rather
