@@ -1,6 +1,7 @@
 import type { Scenario, SeriesDefinition } from '../types';
 import type { PlayerStatistics } from '../../../shared/statistics.js';
 import type { EngagementAnalytics } from '../../../shared/analyticsStatistics.js';
+import type { LoginEntry } from '../../../shared/loginTracking.js';
 
 interface EditorLoadResponse {
   scenarios: Scenario[];
@@ -62,6 +63,11 @@ export async function fetchEngagementAnalytics(
 ): Promise<EngagementAnalytics> {
   const response = await fetch(`/api/editor/analytics?window=${windowDays}`, { headers: authHeaders(idToken) });
   return parseJsonResponse<EngagementAnalytics>(response);
+}
+
+export async function fetchPlayerLogins(idToken: string | null): Promise<LoginEntry[]> {
+  const response = await fetch('/api/editor/logins', { headers: authHeaders(idToken) });
+  return parseJsonResponse<LoginEntry[]>(response);
 }
 
 export async function fetchAdminAccess(idToken: string | null): Promise<AdminAccess> {

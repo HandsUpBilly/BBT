@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import type { PerformanceSummary, PlayerStatistics } from '../../../shared/statistics.js';
 import { fetchPlayerStatistics } from './editorApi';
 import { AdminAnalytics } from './AdminAnalytics';
+import { AdminLogins } from './AdminLogins';
 import './AdminStatistics.css';
 import './AdminAnalytics.css';
 
@@ -291,6 +292,8 @@ export function AdminStatistics({ idToken, onBack }: Props) {
               ))}
             </dl>
           </section>
+
+          <AdminLogins idToken={idToken} />
         </>
       )}
     </section>

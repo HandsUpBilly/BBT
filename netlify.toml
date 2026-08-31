@@ -58,6 +58,13 @@
   to     = "/.netlify/functions/analytics"
   status = 200
 
+# Per-player login history (handle, first/last login, login count). The admin
+# read remains separately authenticated below.
+[[redirects]]
+  from   = "/api/logins"
+  to     = "/.netlify/functions/logins"
+  status = 200
+
 # Route puzzle editor calls to the editor functions (Netlify Blobs drafts —
 # see README "Puzzle Editor on Netlify" for the publish workflow). Every
 # /api/editor/* route, including GET, requires an allowlisted admin.
@@ -69,6 +76,11 @@
 [[redirects]]
   from   = "/api/editor/analytics"
   to     = "/.netlify/functions/editor-analytics"
+  status = 200
+
+[[redirects]]
+  from   = "/api/editor/logins"
+  to     = "/.netlify/functions/editor-logins"
   status = 200
 
 [[redirects]]

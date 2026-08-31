@@ -183,6 +183,24 @@ export async function submitAnalyticsBatch(payload: unknown, keepalive = false):
   }
 }
 
+/**
+ * Records one login for this session, keyed server-side by Google account or
+ * guest handle — see shared/loginTracking.js. Fire-and-forget, same posture as
+ * submitAnalyticsBatch: this is a usage record, not something play should ever
+ * wait on or fail over.
+ */
+export async function recordLogin(name: string, idToken?: string | null): Promise<void> {
+  try {
+    await fetch(`${BASE}/logins`, {
+      method: 'POST',
+      headers: authHeaders(idToken),
+      body: JSON.stringify({ name }),
+    });
+  } catch {
+    // Best-effort — a missed login record isn't worth surfacing to the player.
+  }
+}
+
 /** Used only if the request never reaches the server, so the player can still
  * save a report that matches the server-created issue layout. */
 export function createReportDownload(input: ReportInput): ReportDownload {
