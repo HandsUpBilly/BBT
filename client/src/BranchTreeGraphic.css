@@ -94,6 +94,21 @@
   filter: drop-shadow(0 0 4px rgba(201, 91, 71, 0.5));
 }
 
+.branch-tree__node--merged rect {
+  stroke: #7198c7;
+  stroke-dasharray: 4 2;
+}
+
+.branch-tree__node--interactive {
+  cursor: pointer;
+}
+
+.branch-tree__node--interactive:hover rect,
+.branch-tree__node--interactive:focus rect {
+  stroke: var(--color-accent);
+  stroke-width: 2.5;
+}
+
 .branch-tree__node-title,
 .branch-tree__node-detail {
   font-family: var(--font-body);

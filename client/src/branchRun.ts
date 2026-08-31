@@ -639,6 +639,8 @@ export interface BranchStripEntry {
 
 export interface BranchTreeStateView extends Omit<BranchStripEntry, 'status'> {
   status: BranchStripEntry['status'] | 'continued';
+  /** States with the same key kept following one authored plan. */
+  lockstepId?: string;
   /** Historical states have already forked again and are display-only. */
   isSelectable: boolean;
   /** Whether authored play exists after this branch's creation snapshot. */
@@ -654,6 +656,23 @@ export interface BranchTreeBlockView {
   diceCount: 1 | 2 | 3;
   picker: 'attacker' | 'defender';
   states: BranchTreeStateView[];
+}
+
+/**
+ * A completed-run presentation group. The game still retains every outcome
+ * lineage for scoring and replay, but outcomes that never left lockstep are
+ * one player-authored universe and should read as one card in the recap.
+ */
+export interface BranchSummaryGroup {
+  ids: string[];
+  /** The actual block faces represented by this distinct authored plan. */
+  outcomes: BranchStripEntry['outcomes'];
+  label: string;
+  path: string;
+  weight: number;
+  value: number;
+  status: BranchStripEntry['status'];
+  merged: boolean;
 }
 
 export interface GhostPiece {
@@ -810,6 +829,50 @@ export function branchStrip(run: BranchRun): BranchStripEntry[] {
     });
 }
 
+/** Collapse ending lines that completed under the same lockstep plan. */
+export function branchSummaryGroups(run: BranchRun): BranchSummaryGroup[] {
+  const branches = branchStrip(run);
+  const groups = new Map<string, BranchStripEntry[]>();
+  for (const branch of branches) {
+    const lockstepId = run.lines[branch.id]?.lockstepId ?? branch.id;
+    const group = groups.get(lockstepId);
+    if (group) group.push(branch);
+    else groups.set(lockstepId, [branch]);
+  }
+
+  return [...groups.values()].map(group => {
+    const weight = group.reduce((total, branch) => total + branch.weight, 0);
+    const scoreWeight = group.reduce((total, branch) => total + branch.weight * branch.value, 0);
+    const statuses = new Set(group.map(branch => branch.status));
+    const status = statuses.size === 1 ? group[0].status : 'authoring';
+    const merged = group.length > 1;
+    const outcomesByBlock = new Map<string, BranchStripEntry['outcomes'][number]>();
+    for (const branch of group) {
+      branch.outcomes.forEach((outcome, index) => {
+        const key = `${index}:${outcome.blockLabel}`;
+        const existing = outcomesByBlock.get(key);
+        if (!existing) {
+          outcomesByBlock.set(key, { ...outcome, faces: [...outcome.faces] });
+          return;
+        }
+        for (const face of outcome.faces) {
+          if (!existing.faces.includes(face)) existing.faces.push(face);
+        }
+      });
+    }
+    return {
+      ids: group.map(branch => branch.id),
+      outcomes: [...outcomesByBlock.values()],
+      label: merged ? `${group.length} outcomes merged` : group[0].label,
+      path: merged ? `${group.length} outcomes stayed in lockstep` : group[0].path,
+      weight,
+      value: weight > 0 ? scoreWeight / weight : 0,
+      status,
+      merged,
+    };
+  });
+}
+
 /**
  * Parent-child view of the real run tree. Block nodes own the states they
  * created; a state that later split points at its next block. Only leaf states
@@ -852,6 +915,7 @@ export function branchTreeView(run: BranchRun): BranchTreeBlockView | null {
         weight: summary?.weight ?? 0,
         value: summary?.value ?? 0,
         status,
+        lockstepId: child.lockstepId,
         isViewed: viewedPath.has(child.id),
         canResetActivation: canResetLineActivation(child),
         canResetBranchPoint: child.state !== child.startState || child.split !== null || child.conceded,

@@ -7,6 +7,7 @@ import { AdminConsole } from './AdminConsole';
 import { createScenario, deleteScenario, fetchEditorData, publishEditorData, updateDefaultSeries, updateScenario } from './editorApi';
 import { missingSeriesScenarioIds, nextScenarioId, validateScenarioDraft } from './editorValidation';
 import { PLAYER_TEMPLATES, generatedPlayerName, templateToPiece } from './playerTemplates';
+import { careerSkillGroupsFor, IMPLEMENTED_CAREER_SKILLS } from './careerSkills';
 import { PLAYER_ROLES, playerPortraitFor } from '../playerPortraits';
 import { FEATURED_SERIES_NAME } from '../series';
 import { STAT_KEYS, STAT_RANGE, PITCH } from '../../../shared/scenarioValidation.js';
@@ -174,6 +175,9 @@ export function PuzzleEditor({ onBack, onPlay, previewScenario, idToken }: Props
   const selectedPiece = selectedPieceId
     ? draft.pieces.find(piece => piece.id === selectedPieceId)
     : undefined;
+  const selectedPieceCareerSkills = selectedPiece
+    ? careerSkillGroupsFor(selectedPiece.team, selectedPiece.role)
+    : null;
   const seriesIndex = series.scenarioIds.indexOf(draft.id);
   const inSeries = seriesIndex >= 0;
 
@@ -272,6 +276,13 @@ export function PuzzleEditor({ onBack, onPlay, previewScenario, idToken }: Props
       ...scenario,
       pieces: scenario.pieces.map(piece => piece.id === pieceId ? { ...piece, ...patch } : piece),
     }));
+  }
+
+  function toggleCareerSkill(piece: ScenarioPieceDef, skill: string) {
+    const skills = piece.skills.includes(skill)
+      ? piece.skills.filter(existing => existing !== skill)
+      : [...piece.skills, skill];
+    updatePiece(piece.id, { skills });
   }
 
   /**
@@ -841,17 +852,51 @@ export function PuzzleEditor({ onBack, onPlay, previewScenario, idToken }: Props
                     </label>
                   ))}
                 </div>
-                <label>
-                  Skills
-                  <input
-                    value={selectedPiece.skills.join(', ')}
-                    placeholder="Block, Dodge"
-                    onChange={event => updatePiece(selectedPiece.id, {
-                      skills: event.target.value.split(',').map(skill => skill.trim()).filter(Boolean),
-                    })}
-                  />
-                </label>
-                <p className="editor__hint">Comma-separated. Block, Wrestle, Dodge, and Tackle affect block resolution.</p>
+                <div className="editor__career-skills" aria-labelledby="career-skills-heading">
+                  <div>
+                    <h3 id="career-skills-heading">Career skills</h3>
+                    <p className="editor__hint">Select an applicable skill to add or remove it. Bright skills have game rules; grey skills are legal BB2025 choices not modelled yet.</p>
+                  </div>
+                  {selectedPieceCareerSkills ? (
+                    <div className="editor__career-skill-groups">
+                      {(['primary', 'secondary'] as const).map(tier => {
+                        const groups = selectedPieceCareerSkills.filter(group => group.tier === tier);
+                        if (groups.length === 0) return null;
+                        return (
+                          <section key={tier} className="editor__career-skill-tier" aria-label={`${tier} skill access`}>
+                            <h4>{tier === 'primary' ? 'Primary access' : 'Secondary access'}</h4>
+                            {groups.map(group => (
+                              <div key={group.id} className="editor__career-skill-group">
+                                <span>{group.label}</span>
+                                <div className="editor__career-skill-list">
+                                  {group.skills.map(skill => {
+                                    const implemented = IMPLEMENTED_CAREER_SKILLS.has(skill);
+                                    const selected = selectedPiece.skills.includes(skill);
+                                    return (
+                                      <button
+                                        key={skill}
+                                        type="button"
+                                        className={`editor__career-skill ${selected ? 'editor__career-skill--selected' : ''} ${implemented ? '' : 'editor__career-skill--unimplemented'}`}
+                                        disabled={!implemented}
+                                        aria-pressed={selected}
+                                        title={implemented ? `${selected ? 'Remove' : 'Add'} ${skill}` : `${skill} is not implemented in the rules engine yet`}
+                                        onClick={() => toggleCareerSkill(selectedPiece, skill)}
+                                      >
+                                        {skill}
+                                      </button>
+                                    );
+                                  })}
+                                </div>
+                              </div>
+                            ))}
+                          </section>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <p className="editor__hint">Career skill access is unavailable for this custom or legacy role. Choose a current roster role to edit career skills.</p>
+                  )}
+                </div>
                 <label className="editor__checkbox">
                   <input type="checkbox" checked={selectedPiece.hasBall} onChange={() => assignBallToPiece(selectedPiece.id)} />
                   Has ball

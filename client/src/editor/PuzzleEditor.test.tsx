@@ -62,6 +62,21 @@ function openCreatorTool(name: RegExp) {
 }
 
 describe('PuzzleEditor unsaved changes', { timeout: 15_000 }, () => {
+  it('adds and removes applicable implemented career skills while keeping future skills unavailable', async () => {
+    renderEditor();
+    await screen.findByDisplayValue('Saved Puzzle');
+    fireEvent.click(screen.getByRole('button', { name: /Column 7, row 7:/ }));
+
+    const block = screen.getByRole('button', { name: 'Block' });
+    const fend = screen.getByRole('button', { name: 'Fend' });
+    expect((fend as HTMLButtonElement).disabled).toBe(true);
+
+    fireEvent.click(block);
+    expect(block.getAttribute('aria-pressed')).toBe('true');
+    fireEvent.click(block);
+    expect(block.getAttribute('aria-pressed')).toBe('false');
+  });
+
   it('can discard edits and restore the last saved draft without an API write', async () => {
     const fetchMock = renderEditor();
 

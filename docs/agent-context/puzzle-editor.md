@@ -24,7 +24,7 @@ Editor features:
 - drag Human/Orc player templates onto the editor pitch,
 - auto-generate Blood Bowl style player names,
 - **full piece inspector**: name, id, team, role, MA/ST/AG/PA/AV as bounded
-  numeric inputs, comma-separated skills, has-ball, delete,
+  numeric inputs, BB2025 career-skill picker, has-ball, delete,
 - move players by drag,
 - place ball on a player or loose on the ground,
 - save over existing / save as new,
@@ -218,9 +218,22 @@ portrait art, including roles selectable only on an existing piece rather than
 the add-player palette. The text-free circular portraits share the same
 team-specific frame, palette, and painted style; the coverage test rejects
 duplicate fallback art and old non-gritty assets. Unknown roles outside the
-editor roster still fall back to the team default. Skills beyond
-Block/Wrestle/Dodge/Tackle are display-only labels; the rules engine does not
-implement them.
+editor roster still fall back to the team default.
+
+### Career skills
+
+The selected-player inspector exposes the career skill groups allowed by that
+player's BB2025 Human or Orc positional. It separates primary and secondary
+access and only offers skills from those groups. The mapping lives in
+`client/src/editor/careerSkills.ts`, sourced from the Human and Orc BB2025
+roster data at Mordorbihan; traits are not treated as career choices.
+Legacy/editor-only roles without a current roster equivalent intentionally show
+no picker rather than receiving guessed access.
+
+Only Block, Dodge, Tackle, and Wrestle are selectable because those are the
+career skills the rules engine implements. The other applicable career skills
+remain visible but disabled/grey so a puzzle author can see what is legal
+without accidentally creating a scenario whose rules are not modelled.
 
 ## Validation
 
