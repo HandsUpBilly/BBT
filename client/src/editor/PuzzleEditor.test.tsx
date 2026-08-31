@@ -57,11 +57,16 @@ function renderEditor(scenarios: Scenario[] = [savedScenario]) {
   return fetchMock;
 }
 
+function openCreatorTool(name: RegExp) {
+  fireEvent.click(screen.getByRole('tab', { name }));
+}
+
 describe('PuzzleEditor unsaved changes', { timeout: 15_000 }, () => {
   it('can discard edits and restore the last saved draft without an API write', async () => {
     const fetchMock = renderEditor();
 
     const nameInput = await screen.findByDisplayValue('Saved Puzzle');
+    openCreatorTool(/^Review/);
     const discard = screen.getByRole('button', { name: 'Discard Unsaved Changes' });
     expect((discard as HTMLButtonElement).disabled).toBe(true);
 
@@ -86,6 +91,7 @@ describe('PuzzleEditor unsaved changes', { timeout: 15_000 }, () => {
     fireEvent.click(screen.getByRole('button', { name: 'New' }));
     const nameInput = screen.getByDisplayValue('New Puzzle');
     fireEvent.change(nameInput, { target: { value: 'Abandoned Draft' } });
+    openCreatorTool(/^Review/);
     fireEvent.click(screen.getByRole('button', { name: 'Discard Unsaved Changes' }));
 
     expect(screen.getByText(/Clear the unsaved puzzle "Abandoned Draft"/)).toBeTruthy();
@@ -116,9 +122,20 @@ describe('PuzzleEditor unsaved changes', { timeout: 15_000 }, () => {
     expect(screen.queryByText('Disabled Puzzle')).toBeNull();
   });
 
+  it('opens the player inspector when a placed player is selected', async () => {
+    renderEditor();
+    const playerSquare = await screen.findByRole('button', { name: /Column 7, row 7: Aldric/ });
+
+    fireEvent.click(playerSquare);
+
+    expect(screen.getByRole('tab', { name: /^Player$/ }).getAttribute('aria-selected')).toBe('true');
+    expect(screen.getByDisplayValue('Aldric')).toBeTruthy();
+  });
+
   it('saves title, description, and chooser logo as guarded series details', async () => {
     const fetchMock = renderEditor();
     await screen.findByDisplayValue('Saved Puzzle');
+    openCreatorTool(/^Series$/);
 
     fireEvent.change(screen.getByLabelText('Series name'), { target: { value: 'Orc Academy' } });
     fireEvent.change(screen.getByLabelText('Series description'), { target: { value: 'A new six-drill course.' } });

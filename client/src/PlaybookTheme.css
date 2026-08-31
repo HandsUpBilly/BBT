@@ -1179,22 +1179,13 @@
 }
 
 .app--admin .editor__header::after {
-  content: 'TACTICAL ARCHIVE · AUTHORIZED COACHES';
-  position: absolute;
-  left: 20px;
-  bottom: 5px;
-  color: rgba(222, 217, 203, 0.16);
-  font-family: var(--font-display);
-  font-size: 0.5rem;
-  font-weight: 600;
-  letter-spacing: 0.11em;
-  pointer-events: none;
+  content: none;
 }
 
 .app--admin .editor__title {
   color: var(--color-text-strong);
   font-family: var(--font-display);
-  font-size: 1.8rem;
+  font-size: clamp(2rem, 3vw, 3.1rem);
   font-weight: 600;
   line-height: 1.05;
   letter-spacing: 0.02em;
