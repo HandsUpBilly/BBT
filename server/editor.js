@@ -89,7 +89,9 @@ export async function readPublicScenarios() {
   const publishedIds = new Set(scenarios.map(scenario => scenario.id));
   return {
     scenarios,
-    series: series.map(item => ({ ...item, scenarioIds: item.scenarioIds.filter(id => publishedIds.has(id)) })),
+    series: series
+      .filter(item => item.published !== false)
+      .map(item => ({ ...item, scenarioIds: item.scenarioIds.filter(id => publishedIds.has(id)) })),
   };
 }
 

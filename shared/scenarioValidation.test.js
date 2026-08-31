@@ -120,20 +120,20 @@ test('normalizeScenario coerces hostile input rather than throwing', () => {
 test('normalizeSeries supplies future-ready defaults and preserves a valid id', () => {
   assert.deepEqual(normalizeSeries(null), {
     id: 'default', name: 'Default Series', description: '', scenarioIds: [],
-    teams: ['human', 'orc'], objective: 'touchdown', order: 0,
+    published: true, teams: ['human', 'orc'], objective: 'touchdown', order: 0,
   });
   assert.deepEqual(
     normalizeSeries({ id: 'hacked', name: '  Cup  ', scenarioIds: ['a', '', 'b'] }),
-    { id: 'hacked', name: 'Cup', description: '', scenarioIds: ['a', 'b'], teams: ['human', 'orc'], objective: 'touchdown', order: 0 },
+    { id: 'hacked', name: 'Cup', description: '', scenarioIds: ['a', 'b'], published: true, teams: ['human', 'orc'], objective: 'touchdown', order: 0 },
   );
 });
 
 test('normalizeSeries preserves a bounded series logo key', () => {
   assert.deepEqual(normalizeSeries({ logo: '  nuffle-shuffle  ', scenarioIds: [] }), {
-    id: 'default', name: 'Default Series', description: '', scenarioIds: [], teams: ['human', 'orc'], objective: 'touchdown', order: 0, logo: 'nuffle-shuffle',
+    id: 'default', name: 'Default Series', description: '', scenarioIds: [], published: true, teams: ['human', 'orc'], objective: 'touchdown', order: 0, logo: 'nuffle-shuffle',
   });
   assert.deepEqual(normalizeSeries({ logo: 42, scenarioIds: [] }), {
-    id: 'default', name: 'Default Series', description: '', scenarioIds: [], teams: ['human', 'orc'], objective: 'touchdown', order: 0,
+    id: 'default', name: 'Default Series', description: '', scenarioIds: [], published: true, teams: ['human', 'orc'], objective: 'touchdown', order: 0,
   });
 });
 

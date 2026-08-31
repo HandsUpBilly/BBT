@@ -33,7 +33,7 @@ Editor features:
 - independently enable/disable puzzles globally and opt them into Free Play,
 - publish draft changes (behind a confirmation),
 - create, edit, and delete multiple series in the separate Series Creator,
-- set each series title, description, two teams, logo, objective, and list position,
+- set each series title, description, two teams, logo, objective, list position, and player-facing enabled state,
 - add, remove, and reorder its puzzle steps,
 - play draft and return to designer.
 

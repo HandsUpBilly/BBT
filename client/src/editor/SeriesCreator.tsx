@@ -16,6 +16,7 @@ function newSeries(order: number): SeriesDefinition {
     name: 'New Series',
     description: '',
     scenarioIds: [],
+    published: false,
     teams: ['human', 'orc'],
     objective: 'touchdown',
     order,
@@ -109,7 +110,7 @@ export function SeriesCreator({ scenarios, series, idToken, onChange, onStatus }
         </div>
         {series.map(item => (
           <button key={item.id} type="button" className={`editor__puzzle-row${item.id === selectedId ? ' editor__puzzle-row--active' : ''}`} onClick={() => select(item.id)}>
-            <strong>{item.name}</strong><span>{item.scenarioIds.length} steps · position {(item.order ?? 0) + 1}</span>
+            <strong>{item.name}</strong><span>{item.scenarioIds.length} steps · position {(item.order ?? 0) + 1} · {item.published === false ? 'Disabled' : 'Enabled'}</span>
           </button>
         ))}
       </aside>
@@ -125,6 +126,7 @@ export function SeriesCreator({ scenarios, series, idToken, onChange, onStatus }
           <label>Objective<select value={draft.objective ?? 'touchdown'} onChange={() => undefined}><option value="touchdown">Touchdown</option></select></label>
           <label>List position<input type="number" min="1" value={(draft.order ?? 0) + 1} onChange={event => setDraft(current => ({ ...current, order: Math.max(0, Number(event.target.value) - 1) }))} /></label>
           <label>Logo key<input value={draft.logo ?? ''} placeholder="nuffle-shuffle" onChange={event => setDraft(current => ({ ...current, logo: event.target.value || undefined }))} /></label>
+          <label className="editor__checkbox"><input type="checkbox" checked={draft.published !== false} onChange={event => setDraft(current => ({ ...current, published: event.target.checked }))} />Enabled for players</label>
         </div>
 
         <section className="series-creator__steps" aria-labelledby="series-steps-heading">

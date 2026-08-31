@@ -64,7 +64,9 @@ server then rejected with a 400.
 
 Series metadata lives in `client/src/series/*.json`. Each definition has a
 stable id, title/name, description, two teams, objective, logo key, zero-based
-display `order`, and an ordered `scenarioIds` step list. A puzzle can be in at
+display `order`, enabled/published state, and an ordered `scenarioIds` step list.
+Disabled series remain in drafts but are removed from the player-facing public
+view when drafts are published. A puzzle can be in at
 most one series; the assignment API removes it from every previous series in
 the same storage write before adding it to the selected series.
 

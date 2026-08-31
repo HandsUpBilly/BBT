@@ -177,6 +177,7 @@ describe('PuzzleEditor unsaved changes', { timeout: 15_000 }, () => {
     fireEvent.change(screen.getByLabelText('Title'), { target: { value: 'Orc Academy' } });
     fireEvent.change(screen.getByLabelText('Description'), { target: { value: 'A new six-drill course.' } });
     fireEvent.change(screen.getByLabelText('Logo key'), { target: { value: 'orc-academy' } });
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Enabled for players' }));
 
     fireEvent.click(screen.getByRole('button', { name: 'Save Series' }));
 
@@ -186,6 +187,7 @@ describe('PuzzleEditor unsaved changes', { timeout: 15_000 }, () => {
       name: 'Orc Academy',
       description: 'A new six-drill course.',
       logo: 'orc-academy',
+      published: false,
     });
   });
 });
