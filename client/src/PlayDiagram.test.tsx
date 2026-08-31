@@ -103,8 +103,22 @@ describe('PlayDiagram', () => {
     expect(container.querySelectorAll('[data-route-kind="block"]')).toHaveLength(1);
     expect(container.querySelector('.play-diagram__ball')).not.toBeNull();
 
-    // Match the live landscape board: numbered rows increase left-to-right.
+    // Portrait game coordinates rotate into the landscape review without
+    // mirroring the route.
     expect(container.querySelector('[data-route-kind="movement"]')?.getAttribute('points'))
-      .toBe('148,168 168,168 188,168');
+      .toBe('408,168 388,168 368,168');
+  });
+
+  it('keeps a top-right scoring route in the top-right of the review', () => {
+    const topRightScore: ActionLogEntry[] = [{
+      kind: 'move', pieceName: 'Runner', pieceRole: 'catcher',
+      from: { col: 14, row: 1 }, to: { col: 14, row: 0 }, steps: 1,
+      dodgeTarget: null, isGfi: false, actionProb: 1, cumulativeProb: 1,
+    }];
+
+    const { container } = render(<PlayDiagram scenario={scenario} actionLog={topRightScore} />);
+
+    expect(container.querySelector('[data-route-kind="movement"]')?.getAttribute('points'))
+      .toBe('508,28 528,28');
   });
 });

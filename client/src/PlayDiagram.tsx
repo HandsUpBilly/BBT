@@ -5,8 +5,10 @@ import './PlayDiagram.css';
 
 const CELL = 20;
 const MARGIN = 18;
-const PITCH_WIDTH = 26 * CELL;
-const PITCH_HEIGHT = 15 * CELL;
+const STATE_ROWS = 26;
+const STATE_COLS = 15;
+const PITCH_WIDTH = STATE_ROWS * CELL;
+const PITCH_HEIGHT = STATE_COLS * CELL;
 const SVG_WIDTH = PITCH_WIDTH + MARGIN * 2;
 const SVG_HEIGHT = PITCH_HEIGHT + MARGIN * 2;
 
@@ -21,11 +23,13 @@ interface DiagramLogEntry {
 }
 
 function point(position: Position): { x: number; y: number } {
-  // Match the live landscape pitch: numbered state rows run left-to-right,
-  // while lettered state columns run top-to-bottom.
+  // Rotate the portrait game coordinates into the landscape review from the
+  // player's viewpoint. Row zero belongs at the right-hand end and the final
+  // lettered column belongs at the top, so a top-right scoring square stays
+  // top-right in the completed-play diagram.
   return {
-    x: MARGIN + (position.row + 0.5) * CELL,
-    y: MARGIN + (position.col + 0.5) * CELL,
+    x: MARGIN + (STATE_ROWS - position.row - 0.5) * CELL,
+    y: MARGIN + (STATE_COLS - position.col - 0.5) * CELL,
   };
 }
 
