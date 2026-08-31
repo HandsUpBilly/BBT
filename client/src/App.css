@@ -204,7 +204,7 @@ body,
 }
 
 .identity-gate__actions .btn {
-  width: calc(100% + 8px) !important;
+  width: var(--identity-action-width, 100%) !important;
 }
 
 /* Google's personalised button deliberately makes its iframe wider than its
