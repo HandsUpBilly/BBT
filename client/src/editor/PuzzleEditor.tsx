@@ -22,6 +22,7 @@ const EMPTY_SERIES: SeriesDefinition = {
 };
 
 type SeriesDetails = Pick<SeriesDefinition, 'name' | 'description' | 'logo'>;
+type InspectorSection = 'roster' | 'player' | 'series' | 'review';
 
 function seriesDetailsFor(series: SeriesDefinition): SeriesDetails {
   return { name: series.name, description: series.description, logo: series.logo };
@@ -101,6 +102,7 @@ export function PuzzleEditor({ onBack, onPlay, previewScenario, idToken }: Props
   const [publishing, setPublishing] = useState(false);
   const [puzzleQuery, setPuzzleQuery] = useState('');
   const [puzzleFilter, setPuzzleFilter] = useState<'all' | 'enabled' | 'disabled' | 'series'>('all');
+  const [inspectorSection, setInspectorSection] = useState<InspectorSection>('roster');
   // Pending confirmation, if any: the action to run once the player confirms.
   const [confirm, setConfirm] = useState<{
     title: string; message: string; confirmLabel: string; destructive?: boolean; run: () => void;
@@ -335,6 +337,7 @@ export function PuzzleEditor({ onBack, onPlay, previewScenario, idToken }: Props
       return;
     }
     setSelectedPieceId(piece?.id ?? null);
+    if (piece) setInspectorSection('player');
   }
 
   function handleDrop(col: number, row: number, event: DragEvent<HTMLButtonElement>) {
@@ -497,7 +500,7 @@ export function PuzzleEditor({ onBack, onPlay, previewScenario, idToken }: Props
           aria-selected={adminSection === 'editor'}
           onClick={() => setAdminSection('editor')}
         >
-          Puzzle Editor
+          Puzzle Creator
         </button>
         <button
           className={`editor__section-tab${adminSection === 'statistics' ? ' editor__section-tab--active' : ''}`}
@@ -526,22 +529,34 @@ export function PuzzleEditor({ onBack, onPlay, previewScenario, idToken }: Props
       ) : (
         <>
       <header className="editor__header">
-        <div>
-          <h1 className="editor__title">Puzzle Editor</h1>
+        <div className="editor__heading">
+          <span className="editor__kicker">Scenario workshop</span>
+          <h1 className="editor__title">Puzzle Creator</h1>
           <p className="editor__subtitle">
-            Build scenario JSON and manage the current series. Saves stay as drafts until Publish Drafts makes them live for players.
+            Build one-turn puzzles, test every route, then publish the saved draft for players.
           </p>
         </div>
+        <div className="editor__draft-state" aria-live="polite">
+          <span className={`editor__draft-marker${hasUnsavedEditorChanges || !originalId ? ' editor__draft-marker--changed' : ''}`} aria-hidden="true" />
+          <span>
+            <strong>{hasUnsavedEditorChanges ? 'Unsaved changes' : originalId ? 'Draft saved' : 'New draft'}</strong>
+            <small>{validationErrors.length === 0 ? 'Ready to test' : `${validationErrors.length} issue${validationErrors.length === 1 ? '' : 's'} to resolve`}</small>
+          </span>
+        </div>
         <div className="editor__header-actions">
-          {hasUnsavedEditorChanges && (
-            <span className="editor__unsaved">Unsaved changes. Save before publishing.</span>
-          )}
           <button className="btn btn--secondary" onClick={() => guardUnsaved(onBack, 'Leaving the editor')}>Back</button>
-          <button className="btn btn--primary" onClick={() => onPlay(draft)} disabled={validationErrors.length > 0}>
+          <button className="btn btn--secondary" onClick={() => onPlay(draft)} disabled={validationErrors.length > 0}>
             Play Draft
           </button>
           <button
             className="btn btn--primary"
+            disabled={saving || validationErrors.length > 0}
+            onClick={() => { void saveScenario(Boolean(originalId)); }}
+          >
+            {saving ? 'Saving...' : 'Save Puzzle'}
+          </button>
+          <button
+            className="btn btn--secondary editor__publish"
             disabled={publishing || hasUnsavedEditorChanges}
             title={hasUnsavedEditorChanges ? 'Save changes before publishing. Only saved drafts can be published.' : undefined}
             onClick={requestPublish}
@@ -551,10 +566,18 @@ export function PuzzleEditor({ onBack, onPlay, previewScenario, idToken }: Props
         </div>
       </header>
 
+      <div className="editor__status-strip" role="status">
+        <span>{draft.id}</span>
+        <p>{status}</p>
+      </div>
+
       <div className="editor__layout">
-        <aside className="editor__panel editor__panel--list">
+        <aside className="editor__panel editor__panel--list" aria-label="Puzzle library">
           <div className="editor__panel-header">
-            <h2>Puzzles</h2>
+            <div>
+              <span className="editor__panel-number">01</span>
+              <h2>Puzzle Library</h2>
+            </div>
             <button className="btn btn--secondary" onClick={createNew}>New</button>
           </div>
           <div className="editor__puzzle-tools">
@@ -598,10 +621,17 @@ export function PuzzleEditor({ onBack, onPlay, previewScenario, idToken }: Props
             })}
             {filteredScenarios.length === 0 && <p className="editor__empty-list">No puzzles match that filter.</p>}
           </div>
-          <button className="btn btn--secondary" onClick={duplicateCurrent}>Duplicate Current</button>
+          <button className="btn btn--secondary editor__duplicate" onClick={duplicateCurrent}>Duplicate Current</button>
         </aside>
 
         <main className="editor__pitch-panel">
+          <header className="editor__stage-header">
+            <div>
+              <span className="editor__panel-number">02</span>
+              <h2>Board Setup</h2>
+            </div>
+            <p><strong>{draft.pieces.length}</strong> players placed</p>
+          </header>
           <section className="editor__metadata">
             <label>
               ID
@@ -632,6 +662,8 @@ export function PuzzleEditor({ onBack, onPlay, previewScenario, idToken }: Props
             </label>
           </section>
 
+          <div className="editor__pitch-frame">
+            <span className="editor__endzone-label">Orc end zone</span>
           <section className="editor-pitch" aria-label="Puzzle pitch">
             {Array.from({ length: ROWS }).map((_, row) => (
               Array.from({ length: COLS }).map((__, col) => {
@@ -673,11 +705,38 @@ export function PuzzleEditor({ onBack, onPlay, previewScenario, idToken }: Props
               })
             ))}
           </section>
+            <span className="editor__endzone-label editor__endzone-label--bottom">Human end zone</span>
+          </div>
         </main>
 
-        <aside className="editor__panel">
-          <section className="editor-tool">
-            <h2>Palette</h2>
+        <aside className="editor__panel editor__panel--inspector" aria-label="Creator tools">
+          <header className="editor__inspector-header">
+            <span className="editor__panel-number">03</span>
+            <h2>Creator Tools</h2>
+          </header>
+          <nav className="editor__inspector-tabs" role="tablist" aria-label="Creator tools">
+            {([
+              ['roster', 'Roster'],
+              ['player', 'Player'],
+              ['series', 'Series'],
+              ['review', validationErrors.length > 0 ? `Review ${validationErrors.length}` : 'Review'],
+            ] as [InspectorSection, string][]).map(([section, label]) => (
+              <button
+                key={section}
+                type="button"
+                role="tab"
+                aria-selected={inspectorSection === section}
+                className={`editor__inspector-tab${inspectorSection === section ? ' editor__inspector-tab--active' : ''}`}
+                onClick={() => setInspectorSection(section)}
+              >
+                {label}
+              </button>
+            ))}
+          </nav>
+          <div className="editor__inspector-body">
+          {inspectorSection === 'roster' && (
+          <section className="editor-tool" aria-labelledby="roster-heading">
+            <h2 id="roster-heading">Player Roster</h2>
             {(['human', 'orc'] as Team[]).map(team => (
               <div key={team} className="editor-tool__group">
                 <h3>{team === 'human' ? 'Humans' : 'Orcs'}</h3>
@@ -712,9 +771,11 @@ export function PuzzleEditor({ onBack, onPlay, previewScenario, idToken }: Props
             </button>
             <p className="editor__hint">With Ball Tool active, click a player to hand them the ball or an empty square to place it loose.</p>
           </section>
+          )}
 
-          <section className="editor-tool">
-            <h2>Selected Player</h2>
+          {inspectorSection === 'player' && (
+          <section className="editor-tool" aria-labelledby="player-heading">
+            <h2 id="player-heading">Selected Player</h2>
             {selectedPiece ? (
               <>
                 <label>
@@ -801,9 +862,11 @@ export function PuzzleEditor({ onBack, onPlay, previewScenario, idToken }: Props
               <p className="editor__hint">Select a placed player to edit its stats, skills, and role, assign the ball, or delete it. Drag a player to move it.</p>
             )}
           </section>
+          )}
 
-          <section className="editor-tool">
-            <h2>Series</h2>
+          {inspectorSection === 'series' && (
+          <section className="editor-tool" aria-labelledby="series-heading">
+            <h2 id="series-heading">Series</h2>
             <label>
               Series name
               <input value={seriesDetails.name} onChange={event => setSeriesDetails(details => ({ ...details, name: event.target.value }))} />
@@ -840,17 +903,16 @@ export function PuzzleEditor({ onBack, onPlay, previewScenario, idToken }: Props
               ))}
             </ol>
           </section>
+          )}
 
-          <section className="editor-tool">
-            <h2>Save</h2>
+          {inspectorSection === 'review' && (
+          <section className="editor-tool" aria-labelledby="review-heading">
+            <h2 id="review-heading">Review Draft</h2>
             {validationErrors.length > 0 && (
               <ul className="editor__errors">
                 {validationErrors.map(error => <li key={error}>{error}</li>)}
               </ul>
             )}
-            <button className="btn btn--primary" disabled={saving || validationErrors.length > 0 || !originalId} onClick={() => { void saveScenario(true); }}>
-              Save
-            </button>
             <button className="btn btn--secondary" disabled={saving || validationErrors.length > 0} onClick={() => { void saveScenario(false); }}>
               Save As New
             </button>
@@ -865,8 +927,9 @@ export function PuzzleEditor({ onBack, onPlay, previewScenario, idToken }: Props
               Delete Puzzle
             </button>
             <button className="btn btn--secondary" onClick={() => guardUnsaved(() => { void load(); }, 'Reloading')}>Reload</button>
-            <p className="editor__status" role="status">{status}</p>
           </section>
+          )}
+          </div>
         </aside>
       </div>
         </>

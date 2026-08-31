@@ -145,6 +145,28 @@ Draft saves are not player-visible until an admin clicks Publish Drafts.
 Deleting a draft scenario also removes it from the draft series; publishing is
 still required before players see that deletion.
 
+## Creator Workbench Layout
+
+The Puzzle Creator is organized around three task zones rather than a long
+stack of editor cards:
+
+- **Puzzle Library** on the left owns search, filtering, selection, creation,
+  and duplication.
+- **Board Setup** in the centre owns puzzle metadata and the pitch. The pitch is
+  the primary working surface and keeps its native 15-by-26 orientation.
+- **Creator Tools** on the right switches between Roster, Player, Series, and
+  Review. Selecting a player on the pitch opens the Player tool automatically.
+
+Save Puzzle is kept in the persistent creator header. Publishing remains a
+separate action and is still disabled while any puzzle or series edits are
+unsaved. The status strip reports the active puzzle id and the latest API or
+editing result without requiring the admin to scroll to the Review tool.
+
+Above 1100px the three zones share one row. Between 761px and 1100px the
+library and board remain side by side while Creator Tools moves below them. At
+760px and narrower the zones stack in workflow order and the portrait pitch
+scrolls inside its own frame, so the document itself does not widen.
+
 ## Pitch Orientation
 
 Editor pitch uses scenario data orientation directly:
