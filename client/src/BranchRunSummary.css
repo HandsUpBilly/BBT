@@ -134,28 +134,74 @@
 }
 
 .branch-summary__back {
-  align-self: flex-start;
-  margin-bottom: 4px;
-  padding: 4px 0;
-  font-size: 0.82rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0;
   color: var(--color-text-muted);
+  font-family: var(--font-display);
+  font-size: 0.76rem;
+  font-weight: 600;
+  letter-spacing: 0.045em;
+  text-transform: uppercase;
   background: none;
-  border: none;
+  border: 0;
   cursor: pointer;
 }
 
-.branch-summary__back:hover {
-  color: var(--color-text);
+.branch-summary__back > span:first-child {
+  color: var(--color-accent);
+  font-size: 1rem;
+  transition: transform var(--transition-fast);
+}
+
+.branch-summary__back:hover,
+.branch-summary__back:focus-visible {
+  color: var(--color-text-strong);
+}
+
+.branch-summary__back:hover > span:first-child {
+  transform: translateX(-2px);
+}
+
+.branch-summary__detail-header {
+  align-self: stretch;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 7px;
+  padding: 0 0 16px;
+  text-align: left;
+  border-bottom: 1px solid var(--color-border-subtle);
+}
+
+.branch-summary__detail-kicker {
+  margin: 13px 0 0;
+  color: var(--color-accent);
+  font-family: var(--font-display);
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+}
+
+.branch-summary__detail-path {
+  max-width: 88ch;
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 0.8rem;
+  line-height: 1.35;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .branch-summary__detail-title {
-  align-self: flex-start;
   display: flex;
-  align-items: baseline;
+  align-items: center;
+  gap: 14px;
   max-width: 100%;
   margin: 0;
   text-align: left;
-  white-space: nowrap;
 }
 
 .branch-summary__detail-title > span:first-child {
@@ -164,22 +210,31 @@
 
 .branch-summary__detail-outcome {
   min-width: 0;
-  margin-left: 0.5em;
+  padding-left: 14px;
   overflow: hidden;
-  color: var(--color-text-muted);
-  font-size: 0.72em;
+  color: var(--color-warning);
+  border-left: 1px solid var(--color-border-strong);
+  font-size: 0.58em;
+  letter-spacing: 0.055em;
   text-overflow: ellipsis;
+  text-transform: uppercase;
+  white-space: nowrap;
 }
 
 .branch-summary--detail {
-  gap: 12px;
+  gap: 16px;
 }
 
 /* The header stays visible while long branch reviews scroll. Giving the detail
    body its own flex area also avoids relying on iOS to scroll the modal itself. */
-.app--playbook .branch-summary--detail {
+.app--playbook .modal.branch-summary--detail {
+  box-sizing: border-box;
+  width: min(1180px, calc(100vw - 32px));
+  max-width: none;
   max-height: calc(100dvh - 32px);
   overflow: hidden;
+  border-color: var(--color-border);
+  border-top: 3px solid var(--color-accent-dark);
 }
 
 .branch-summary__detail-scroll {
@@ -187,14 +242,35 @@
   flex: 1 1 auto;
   min-height: 0;
   width: 100%;
+  padding-right: 3px;
   overflow-y: auto;
   overscroll-behavior: contain;
   -webkit-overflow-scrolling: touch;
 }
 
+@media (max-width: 700px) {
+  .branch-summary__detail-title {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 7px;
+  }
+
+  .branch-summary__detail-outcome {
+    padding-left: 0;
+    border-left: 0;
+    font-size: 0.62em;
+  }
+
+  .branch-summary__detail-path {
+    white-space: normal;
+  }
+}
+
 @media (max-width: 600px) {
-  .app--playbook .branch-summary--detail {
+  .app--playbook .modal.branch-summary--detail {
+    width: calc(100vw - 20px);
     max-height: calc(100dvh - 20px);
+    padding: 20px 16px 16px;
   }
 }
 

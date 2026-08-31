@@ -162,8 +162,10 @@ describe('BranchRunSummary branch list', () => {
     const detailTitle = screen.getByRole('heading', {
       name: 'Universe 3: Aldric Swiftfoot ⚔ Grukk Ironjaw: Pushed',
     });
-    expect(detailTitle.textContent).toBe('Universe 3— Pushed');
-    expect(detailTitle.getAttribute('title')).toBe('Aldric Swiftfoot ⚔ Grukk Ironjaw: Pushed');
+    expect(detailTitle.textContent).toBe('Universe 3 Pushed');
+    expect(screen.getByText('Universe review')).toBeTruthy();
+    expect(screen.getByText('Aldric Swiftfoot ⚔ Grukk Ironjaw: Pushed')).toBeTruthy();
+    expect(screen.getByRole('heading', { name: 'Decision log' })).toBeTruthy();
     expect(screen.queryByText(/run complete/)).toBeNull();
     expect(screen.getByText('Block → Push Back')).toBeTruthy();
     expect(screen.getByRole('button', { name: /Back to summary/ })).toBeTruthy();

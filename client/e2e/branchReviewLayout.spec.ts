@@ -13,8 +13,14 @@ test('a long branch review keeps its action log reachable inside the viewport', 
       <div id="branch-review-fixture" class="app app--game app--playbook">
         <div class="modal-backdrop">
           <div class="modal branch-summary branch-summary--detail">
-            <button class="branch-summary__back">Back to summary</button>
-            <h2 class="modal__title branch-summary__detail-title">Universe 1</h2>
+            <header class="branch-summary__detail-header">
+              <button class="branch-summary__back"><span>←</span><span>Back to summary</span></button>
+              <p class="branch-summary__detail-kicker">Universe review</p>
+              <h2 class="modal__title branch-summary__detail-title">
+                <span>Universe 1</span><span class="branch-summary__detail-outcome">Pushed</span>
+              </h2>
+              <p class="branch-summary__detail-path">Aldric Swiftfoot versus Grukk Ironjaw: Pushed</p>
+            </header>
             <div class="branch-summary__detail-scroll">
               <div style="height: 900px">Play diagrams</div>
               <div data-review-log>Action log</div>
@@ -39,9 +45,13 @@ test('a long branch review keeps its action log reachable inside the viewport', 
   expect(geometry.overflowY).toBe('auto');
 
   const modalBox = await modal.boundingBox();
+  const viewport = page.viewportSize()!;
   expect(modalBox).not.toBeNull();
   expect(modalBox!.y).toBeGreaterThanOrEqual(0);
-  expect(modalBox!.y + modalBox!.height).toBeLessThanOrEqual(page.viewportSize()!.height + 1);
+  expect(modalBox!.y + modalBox!.height).toBeLessThanOrEqual(viewport.height + 1);
+  const viewportGutter = viewport.width <= 480 ? 20 : 32;
+  expect(modalBox!.width).toBeLessThanOrEqual(Math.min(1180, viewport.width - viewportGutter) + 1);
+  if (viewport.width >= 1212) expect(modalBox!.width).toBeGreaterThanOrEqual(1179);
 
   await scrollArea.evaluate(element => { element.scrollTop = element.scrollHeight; });
   await expect(actionLog).toBeInViewport();

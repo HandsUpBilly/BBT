@@ -1,6 +1,7 @@
 import type { Scenario } from './types';
 import { tutorialLessonFor } from './tutorialLessons';
 import type { TutorialDrillRecap } from './tutorialRecap';
+import { UI_COPY } from './uiCopy';
 import './TutorialPuzzleChooser.css';
 
 interface Props {
@@ -9,11 +10,12 @@ interface Props {
   completedScenarioIds: ReadonlySet<string>;
   recaps?: Readonly<Record<string, TutorialDrillRecap>>;
   onChoose: (scenario: Scenario) => void;
+  onLeaderboard: (scenario: Scenario) => void;
   onLeave: () => void;
 }
 
 export function TutorialPuzzleChooser({
-  seriesName, scenarios, completedScenarioIds, recaps = {}, onChoose, onLeave,
+  seriesName, scenarios, completedScenarioIds, recaps = {}, onChoose, onLeaderboard, onLeave,
 }: Props) {
   const completed = scenarios.filter(scenario => completedScenarioIds.has(scenario.id)).length;
   const remaining = scenarios.length - completed;
@@ -61,13 +63,23 @@ export function TutorialPuzzleChooser({
                   )}
                 </div>
               </div>
-              <button
-                type="button"
-                className={`btn ${isComplete ? 'btn--secondary' : 'btn--primary'}`}
-                onClick={() => onChoose(scenario)}
-              >
-                {isComplete ? 'Replay' : 'Play'}
-              </button>
+              <div className="tutorial-chooser__actions">
+                <button
+                  type="button"
+                  className={`btn ${isComplete ? 'btn--secondary' : 'btn--primary'}`}
+                  onClick={() => onChoose(scenario)}
+                >
+                  {isComplete ? 'Replay' : 'Play'}
+                </button>
+                <button
+                  type="button"
+                  className="btn btn--secondary"
+                  onClick={() => onLeaderboard(scenario)}
+                  aria-label={`${UI_COPY.landing.rankings} for ${scenario.name}`}
+                >
+                  {UI_COPY.landing.rankings}
+                </button>
+              </div>
             </article>
           );
         })}

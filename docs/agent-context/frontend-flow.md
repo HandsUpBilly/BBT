@@ -43,6 +43,11 @@ Identity can be:
 - Guest alias from localStorage key `bbt.guestName.v1` (the legacy key remains
   for compatibility).
 
+The landing action panel stays compact while it contains only the Google and
+guest buttons, then expands when the public-alias form appears so the name
+field has useful writing room. On phone widths the field and Continue button
+stack within the existing landing-page gutters.
+
 `UserMenu` and leaderboards display the public alias, never a Google profile
 name or avatar. Google identity is retained only as a stable account key and
 for the server-side admin email allowlist. Signing out clears Google auth if
@@ -62,6 +67,10 @@ of meeting the puzzle's stated objective. Current shipped puzzles end in a
 touchdown, but the player-facing rule deliberately does not make touchdown the
 only possible objective; later one-turn puzzles can target outcomes such as a
 successful foul or crowd surf.
+
+Starting the Tutorial opens its drill chooser. Each drill card offers both its
+play/replay action and its individual Rankings; returning from those Rankings
+restores the chooser and preserves the in-progress series results.
 
 About's focus-trapped dialog is the single player-facing location for the release version
 (`__BBT_VERSION__`) and deployment time (`__BBT_DEPLOYED_AT__`), formatted in
@@ -279,9 +288,13 @@ Parallel Universes use hierarchical addresses everywhere they are shown: the
 root is implicit, its first split creates 1, 2, 3, and a later split inside 2
 creates 2.1, 2.2, and so on. Summary rows and drill-downs use
 these compact numbers so a long chain of player names and block outcomes cannot
-crowd the action log out of a phone viewport. The complete branch path remains
-the accessible name and title, while visible labels keep the universe number
-and final outcome.
+crowd the action log out of a phone viewport. The drill-down is a wide tactical
+review surface: its header keeps the compact universe number and final outcome,
+then shows the complete branch path as visible context. The play diagram and
+branch playbook sit in an asymmetric pair on wide screens and stack below 920px.
+The numbered decision log follows them, with cumulative probability promoted as
+the review's conclusion; its rows collapse to a readable two-column treatment
+on narrow screens.
 
 During a series, the touchdown analysis has a **Review Board** action. It hides
 the analysis without submitting or advancing, leaving the scored board exactly

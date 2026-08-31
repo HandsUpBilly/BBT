@@ -115,7 +115,13 @@
 .tutorial-chooser__recap span { display: block; color: var(--color-text); }
 .tutorial-chooser__recap ol { margin: 0.35rem 0; padding-left: 1.2rem; }
 
-.tutorial-chooser__card > .btn {
+.tutorial-chooser__actions {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(7.5rem, auto);
+  gap: 0.65rem;
+}
+
+.tutorial-chooser__actions .btn {
   width: 100%;
 }
 
@@ -123,5 +129,9 @@
   .tutorial-chooser {
     width: min(100% - 1rem, 76rem);
     padding-top: 1rem;
+  }
+
+  .tutorial-chooser__actions {
+    grid-template-columns: 1fr;
   }
 }

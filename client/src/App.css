@@ -169,6 +169,10 @@ body,
   gap: 18px;
 }
 
+.identity-gate__panel--alias {
+  width: min(420px, calc(100% - 48px));
+}
+
 .identity-gate__title {
   position: absolute;
   width: 1px;
@@ -268,6 +272,10 @@ body,
     right: 16px;
     bottom: 16px;
     width: min(240px, calc(100% - 32px));
+  }
+
+  .identity-gate__panel--alias {
+    width: calc(100% - 32px);
   }
 
   .identity-gate__guest-row {
