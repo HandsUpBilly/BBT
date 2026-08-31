@@ -228,7 +228,7 @@ function IdentityGate({ authConfigured, googleSignedIn, mountGoogleSignInButton,
     <div className="identity-gate">
       <div className="identity-gate__shell">
         <h1 className="identity-gate__title">Turn 16</h1>
-        <div className="identity-gate__panel">
+        <div className={`identity-gate__panel${showAliasEntry ? ' identity-gate__panel--alias' : ''}`}>
           {!googleSignedIn && (
             <div className="identity-gate__actions">
               {authConfigured && !googleSignInFailed

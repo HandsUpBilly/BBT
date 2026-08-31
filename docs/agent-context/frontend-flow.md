@@ -43,6 +43,11 @@ Identity can be:
 - Guest alias from localStorage key `bbt.guestName.v1` (the legacy key remains
   for compatibility).
 
+The landing action panel stays compact while it contains only the Google and
+guest buttons, then expands when the public-alias form appears so the name
+field has useful writing room. On phone widths the field and Continue button
+stack within the existing landing-page gutters.
+
 `UserMenu` and leaderboards display the public alias, never a Google profile
 name or avatar. Google identity is retained only as a stable account key and
 for the server-side admin email allowlist. Signing out clears Google auth if

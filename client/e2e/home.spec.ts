@@ -96,3 +96,20 @@ test('the signed-out footer stays at the bottom of the page', async ({ page }) =
   await page.goto('/');
   expectFooterAtPageBottom(await footerPlacement(page));
 });
+
+test('the guest alias form gives the name field useful writing room', async ({ page }) => {
+  await page.goto('/');
+  await page.getByRole('button', { name: /play as guest/i }).click();
+
+  const panel = await boxOf(page.locator('.identity-gate__panel--alias'));
+  const input = await boxOf(page.locator('.identity-gate__input'));
+  const viewportWidth = page.viewportSize()?.width ?? 0;
+
+  if (viewportWidth > 560) {
+    expect(panel.width, 'expanded alias panel width').toBeGreaterThanOrEqual(400);
+    expect(input.width, 'desktop alias input width').toBeGreaterThanOrEqual(240);
+  } else {
+    expect(input.width, 'mobile alias input width').toBeGreaterThanOrEqual(panel.width - 40);
+  }
+  expect(await hasHorizontalOverflow(page)).toBe(false);
+});
