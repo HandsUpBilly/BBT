@@ -200,10 +200,14 @@
 .branch-strip-state,
 .branch-strip-state__actions { min-width: 0; }
 
+/* inline-flex, not flex: a state's grid cell is sized for the widest
+   possible card (3 dice plus every control button — see BRANCH_TRACK_WIDTH
+   in BranchStrip.tsx), but most cards need far less than that. Shrinking to
+   fit here keeps the card itself compact instead of stretching its
+   background across space its own content doesn't use. */
 .branch-strip-state__actions {
-  display: flex;
+  display: inline-flex;
   align-items: stretch;
-  width: 100%;
   height: 100%;
 }
 
@@ -214,7 +218,7 @@
     'dice weight'
     'status status';
   gap: 0 8px;
-  flex: 1 1 190px;
+  flex: 0 0 auto;
   min-width: 190px;
   padding: 6px 10px;
   text-align: left;
