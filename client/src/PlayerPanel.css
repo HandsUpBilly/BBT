@@ -46,22 +46,24 @@
   background: rgba(196, 74, 55, 0.16);
 }
 
-/* Both cards have to fit a rail that held one. The portrait is the only part
-   worth most of its height — a square one at a 210px rail is 210px on its own —
-   so while comparing it gives up its aspect ratio and the rest of the card,
-   which is the part being read, keeps full size. */
-.side-col--comparing {
-  /* .game-area aligns its columns to flex-start, so the rail is normally as
-     tall as its content and could never scroll — it would simply grow past the
-     board. Stretching it to the row height is what gives overflow something to
-     overflow, on the rare pairing that still does not fit. */
+/* Keep the rail's box identical whether it contains one card or two. Changing
+   it from content-height to stretched only when a target was hovered changed
+   the game row's height, moved the pitch out from under the pointer, and could
+   make the comparison card appear and disappear forever. Size containment
+   also stops the cards' intrinsic height from feeding back into the row size. */
+.side-col--right {
   align-self: stretch;
   min-height: 0;
   overflow-y: auto;
   overscroll-behavior: contain;
   scrollbar-width: thin;
+  contain: size;
 }
 
+/* Both cards have to fit a rail that held one. The portrait is the only part
+   worth most of its height — a square one at a 210px rail is 210px on its own —
+   so while comparing it gives up its aspect ratio and the rest of the card,
+   which is the part being read, keeps full size. */
 .side-col--comparing .panel__portrait-wrap {
   aspect-ratio: auto;
   height: clamp(64px, 12vh, 108px);

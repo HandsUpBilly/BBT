@@ -59,11 +59,12 @@ test.describe('two-player comparison', () => {
     }
   });
 
-  test('the pair fits the rail without pushing the page sideways', async ({ page }) => {
+  test('the pair fits the rail without moving the board', async ({ page }) => {
     await declareBlock(page);
     const boardBefore = await boxOf(page.locator('.pitch__grid'));
 
     await page.locator('.square[data-square="6F"]').hover();
+    await expect(page.locator('.side-col--right .panel')).toHaveCount(2);
 
     const rail = page.locator('.side-col--right');
     const fits = await rail.evaluate((el) => el.scrollHeight <= el.clientHeight + 1);
@@ -73,7 +74,18 @@ test.describe('two-player comparison', () => {
     expect(fits || scrollable === 'auto' || scrollable === 'scroll').toBe(true);
 
     const boardAfter = await boxOf(page.locator('.pitch__grid'));
+    expect(boardAfter.x, 'board x position unchanged').toBeCloseTo(boardBefore.x, 0);
+    expect(boardAfter.y, 'board y position unchanged').toBeCloseTo(boardBefore.y, 0);
     expect(boardAfter.width, 'board width unchanged').toBeCloseTo(boardBefore.width, 0);
+    expect(boardAfter.height, 'board height unchanged').toBeCloseTo(boardBefore.height, 0);
+
+    // Leave the pointer stationary over the target. A board that moves when
+    // the second card appears removes the hover, moves back, and repeats.
+    await page.waitForTimeout(500);
+    await expect(page.locator('.side-col--right .panel')).toHaveCount(2);
+    const boardSettled = await boxOf(page.locator('.pitch__grid'));
+    expect(boardSettled.x, 'board remains horizontally stable').toBeCloseTo(boardBefore.x, 0);
+    expect(boardSettled.y, 'board remains vertically stable').toBeCloseTo(boardBefore.y, 0);
   });
 
   test('drops back to one card when the cursor leaves', async ({ page }) => {
