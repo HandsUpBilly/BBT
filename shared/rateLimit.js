@@ -100,3 +100,7 @@ export const LEADERBOARD_RATE_LIMIT = { limit: 20, windowMs: 60 * 1000 };
 
 /** Batched heartbeats plus gameplay events; loose enough for a long active tab. */
 export const ANALYTICS_RATE_LIMIT = { limit: 120, windowMs: 60 * 60 * 1000 };
+
+/** One login is recorded per app session, so this is a flood guard, not a
+ * realistic ceiling for a genuine player. */
+export const LOGIN_RATE_LIMIT = { limit: 10, windowMs: 60 * 1000 };

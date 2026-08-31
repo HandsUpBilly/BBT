@@ -231,6 +231,33 @@ to the report/leaderboard endpoints above — do not assume the local avatar
 data URL can simply be forwarded as-is; it is deliberately never sent over the
 network today.
 
+## Player Login Tracking
+
+Unlike everything else on this page (and unlike `shared/statistics.js`,
+which is deliberately anonymous), `shared/loginTracking.js` records a
+per-player login history keyed by handle: first login, last login, and a
+login count. It exists specifically for the admin Statistics screen's
+"Player Logins" panel (`client/src/editor/AdminLogins.tsx`) — an explicit,
+separate exception to the "no player names" rule stated in
+`AdminStatistics.tsx`'s notice banner, not a change to it.
+
+- `App.tsx` posts to `POST /api/logins` once per app session/mount, right
+  after `identityReady` becomes true (immediately for a returning player
+  whose alias is already in `localStorage`, or after the `IdentityGate`
+  submission for a first-time one). It does **not** fire again just because
+  the player renames their alias mid-session.
+- Matching follows the same convention as `upsertPersonalBest`: signed-in
+  players by `userId`, guests by exact handle. A guest who reuses another
+  guest's handle is indistinguishable from them, same limitation the
+  leaderboards already have.
+- Storage is one JSON blob (key `logins` in the `player-logins` Blobs store
+  locally, an in-memory array in Express), read by the admin-only
+  `GET /api/editor/logins`. Same Blobs read-modify-write helpers as the
+  leaderboards (`netlify/functions/blobEntries.js`).
+- Fire-and-forget on the client (`recordLogin` in `api.ts`) — a missed login
+  record is not worth surfacing to the player, same posture as
+  `submitAnalyticsBatch`.
+
 ## Home-Screen Progress
 
 `GET /api/progress` returns every scenario board plus the series board in one

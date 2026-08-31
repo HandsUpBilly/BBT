@@ -53,7 +53,7 @@ import {
   type TutorialConceptId,
   type TutorialConceptProgress,
 } from './tutorialConcepts';
-import { submitScore, fetchLeaderboard, submitSeriesScore, fetchSeriesLeaderboard, fetchProgress, ApiError } from './api';
+import { submitScore, fetchLeaderboard, submitSeriesScore, fetchSeriesLeaderboard, fetchProgress, recordLogin, ApiError } from './api';
 import type { ProgressData } from './api';
 import { recordAttempt } from './attemptStore';
 import { summarizeActionLog } from './riskyMoves';
@@ -531,6 +531,16 @@ export default function App() {
 
   const identityName = currentUser ? googleAliases[currentUser.id] ?? '' : guestAlias;
   const identityReady = Boolean(identityName.trim());
+  // Records one login per app session/mount, not on every alias edit — see
+  // shared/loginTracking.js. Fires the moment identity is ready, whether that
+  // is immediate (a returning player's stored alias) or after the first-time
+  // IdentityGate submission below.
+  const loginRecordedRef = useRef(false);
+  useEffect(() => {
+    if (!identityReady || loginRecordedRef.current) return;
+    loginRecordedRef.current = true;
+    void recordLogin(identityName, idToken);
+  }, [identityReady, identityName, idToken]);
   // Defense in depth: render home if stale client state somehow points at the
   // editor before the server has confirmed access for the current identity.
   const effectiveAppMode = appMode === 'admin' && !isAdmin ? 'home' : appMode;
