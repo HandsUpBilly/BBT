@@ -42,6 +42,15 @@ export default defineConfig({
     // the instant this bundle is produced; allow controlled/reproducible builds
     // to supply the same ISO timestamp explicitly.
     __BBT_DEPLOYED_AT__: JSON.stringify(deployedAt),
+    // Netlify sets CONTEXT to exactly 'production' for the configured
+    // production-branch deploy, and to 'deploy-preview' / 'branch-deploy' /
+    // 'dev' for everything else (staging, PR previews, `netlify dev`); it is
+    // unset for a plain local build. Only the real production deploy should
+    // ever gate Admin nav on a confirmed server-side check — everywhere else
+    // (staging included) shows it unconditionally as a convenience. This is
+    // client-side nav visibility only; `/api/editor/*` authorization is
+    // unchanged and still enforced on every environment, staging included.
+    __BBT_FORCE_ADMIN_NAV__: JSON.stringify(process.env.CONTEXT !== 'production'),
   },
   server: {
     // Gitpod workspace URLs are ephemeral, so match the domain rather than

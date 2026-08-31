@@ -263,7 +263,12 @@ function IdentityGate({ authConfigured, googleSignedIn, mountGoogleSignInButton,
 export default function App() {
   useEffect(() => initializeAnalytics(), []);
   const { currentUser, idToken, sessionExpired, isConfigured: authConfigured, mountSignInButton, signOut } = useAuth();
-  const isAdmin = useAdminAccess(idToken);
+  // Forced on everywhere except the real production deploy — see
+  // __BBT_FORCE_ADMIN_NAV__ in vite.config.ts. This only affects nav
+  // visibility; the server still enforces the actual admin allowlist on
+  // every /api/editor/* call, staging included.
+  const confirmedAdmin = useAdminAccess(idToken);
+  const isAdmin = __BBT_FORCE_ADMIN_NAV__ || confirmedAdmin;
   // Scenario/series data starts as the build-time static bundle (immediate,
   // no loading flash) and is replaced by the currently published set fetched
   // from /api/scenarios once that resolves — see scenarios/runtime.ts.

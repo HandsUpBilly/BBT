@@ -76,6 +76,16 @@ Guest flow:
   Puzzle Creator only after the server returns `{ isAdmin: true }`. Failure,
   rejection, and the pending state all remain hidden, and no allowlist is sent
   to the browser.
+- **This nav check is bypassed everywhere except the real production deploy.**
+  `App.tsx` computes `isAdmin` as `__BBT_FORCE_ADMIN_NAV__ || useAdminAccess(idToken)`.
+  `__BBT_FORCE_ADMIN_NAV__` (`vite.config.ts`) is `process.env.CONTEXT !== 'production'`
+  — Netlify sets `CONTEXT` to `production` only for the configured production
+  branch (`main`), and to `deploy-preview` / `branch-deploy` / `dev` for
+  everything else (`staging`, PR previews, `netlify dev`); a plain local build
+  leaves it unset, so this also preserves the old local-dev-friendly default.
+  This is nav visibility only — `/api/editor/*` authorization is untouched and
+  still enforced on every environment, staging included, so a non-admin who
+  sees the tab on staging still gets a real 401/403 past it.
 
 ## Issue and Feature Report Identity
 
