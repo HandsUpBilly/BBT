@@ -1,4 +1,5 @@
 import type { TutorialLesson } from './tutorialLessons';
+import { OBJECTIVE_GUIDANCE } from './objectiveCopy';
 import './TutorialObjectiveCard.css';
 
 interface Props {
@@ -14,6 +15,7 @@ export function TutorialObjectiveCard({ lesson, objective, onDismiss }: Props) {
       <span>Drill objective</span>
       <strong>{lesson.title}</strong>
       <p>{objective}</p>
+      <p className="tutorial-objective-card__concept">{OBJECTIVE_GUIDANCE}</p>
       {concept && <p className="tutorial-objective-card__concept">{concept}</p>}
       <button type="button" onClick={onDismiss} aria-label="Dismiss drill objective">×</button>
     </aside>
