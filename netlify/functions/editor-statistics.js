@@ -3,8 +3,8 @@ import { AdminAuthError, authErrorResponse, requireAdminGoogleUser } from './aut
 import { leaderboardStore, readEntries } from './blobEntries.js';
 import {
   editorStore,
-  readPublishedScenarios,
-  readPublishedSeries,
+  readDraftScenarios,
+  readDraftSeries,
   toPublicView,
 } from './editorStore.js';
 
@@ -29,11 +29,11 @@ export default async function handler(req) {
   const windowDays = windowValue === '7' ? 7 : windowValue === '30' ? 30 : undefined;
 
   const drafts = editorStore();
-  const [publishedScenarios, publishedSeries] = await Promise.all([
-    readPublishedScenarios(drafts),
-    readPublishedSeries(drafts),
+  const [savedScenarios, savedSeries] = await Promise.all([
+    readDraftScenarios(drafts),
+    readDraftSeries(drafts),
   ]);
-  const { scenarios } = toPublicView(publishedScenarios, publishedSeries);
+  const { scenarios } = toPublicView(savedScenarios, savedSeries);
   const scenarioStore = leaderboardStore('leaderboard');
   const seriesStore = leaderboardStore('series-leaderboard');
 

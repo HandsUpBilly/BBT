@@ -63,12 +63,22 @@ server then rejected with a 400.
 ## Series
 
 Series metadata lives in `client/src/series/*.json`. Each definition has a
-stable id, title/name, description, two teams, objective, logo key, zero-based
-display `order`, enabled/published state, and an ordered `scenarioIds` step list.
-Disabled series remain in drafts but are removed from the player-facing public
-view when drafts are published. A puzzle can be in at
-most one series; the assignment API removes it from every previous series in
-the same storage write before adding it to the selected series.
+stable id, title/name, short player-facing category `label`, description, two
+teams, objective, uploaded logo, zero-based display `order`, enabled/published
+state, and an ordered `scenarioIds` step list. The chooser derives the numeric
+prefix from actual list position, displays that label, renders the stored
+objective, and uses a generic Play action.
+Disabled series remain saved in Admin Mode but are removed from the
+player-facing public view. A puzzle can be in at most one series; Series Creator
+is the authoritative place to add, remove, and reorder puzzle membership, and
+rejects attempts to add a puzzle already owned by another series.
+Both scenarios and series may also set `adminEnabled: true`. The public endpoint
+uses only `published !== false`; confirmed admins securely load the union of
+public and admin-enabled content from the protected editor endpoint. Records
+with both flags off remain visible only inside the Creator.
+Saving a series also validates the BB2025 positional composition of every
+assigned puzzle, so legacy or production-only boards with excess positionals
+must be corrected before the series can be saved.
 
 Scenario JSON remains the source of truth for the puzzle name and description.
 Descriptions use an OBJECTIVE clause followed by the rules needed to read the
@@ -94,11 +104,13 @@ does not gate the action menu. Persistent Introduced/Used concept progress
 prevents repeated automatic teaching across drills, while a completed-drill
 replay asks whether guidance should replay. The same concept library and
 contextual guidance are available when a drill is launched individually.
-Series definitions may include a stable `logo` key. The chooser resolves that
-key through its local series-art registry, so each series can have dedicated
-artwork while unknown or omitted keys retain the text-only fallback.
+Series definitions may include a client-processed 256×256 WebP data URL uploaded
+in Series Creator. PNG, JPEG, and WebP source files are accepted, cropped to a
+square, stripped of source metadata, and bounded before save. The chooser also
+resolves the legacy `nuffle-shuffle` built-in key; an omitted logo retains the
+text-only fallback.
 
-Published series metadata can outlive a deployment in Netlify Blobs.
+Saved series metadata can outlive a deployment in Netlify Blobs.
 `normalizeSeriesDefinition()` maps the two known legacy featured-series names
 to the current title and backfills the featured crest when older published
 metadata has no `logo` field. The chooser always renders its `01` series marker
@@ -113,7 +125,7 @@ list, not all scenarios sorted by id.
 `resolveSeriesScenarios` silently skips ids that no longer resolve, which would
 shorten a series run without explanation. Two guards exist:
 
-- The **published views** (`toPublicView` on Netlify, `readPublicScenarios`
+- The **player-facing views** (`toPublicView` on Netlify, `readPublicScenarios`
   locally) narrow `series.scenarioIds` to scenarios that survive the
   `published !== false` filter, so disabling a puzzle can't silently truncate a
   live series.

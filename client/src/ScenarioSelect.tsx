@@ -1,8 +1,8 @@
 import { useMemo, useState, type ReactNode } from 'react';
 import type { ProgressData } from './api';
 import type { LeaderboardEntry, Scenario, SeriesDefinition, SeriesLeaderboardEntry } from './types';
-import nuffleShuffleLogo from './assets/series/nuffle-shuffle-transparent.webp';
 import { BrandLogo } from './BrandLogo';
+import { seriesLogoSource } from './seriesLogo';
 import { UI_COPY } from './uiCopy';
 import './ScenarioSelect.css';
 
@@ -18,10 +18,6 @@ const FREE_PLAY_FILTERS: Array<{ value: FreePlayFilter; label: string }> = [
   { value: 'series', label: UI_COPY.landing.seriesFilter },
   { value: 'specials', label: UI_COPY.landing.specialsFilter },
 ];
-
-const SERIES_LOGOS: Record<string, string> = {
-  'nuffle-shuffle': nuffleShuffleLogo,
-};
 
 interface ScenarioProgress {
   played: boolean;
@@ -46,11 +42,17 @@ interface Props {
   userId?: string;
   isAdmin: boolean;
   userMenu: ReactNode;
-  reportButton: ReactNode;
 }
 
 function pct(value: number): string {
   return `${Math.round(value * 100)}%`;
+}
+
+function objectiveLabel(objective: string | undefined): string {
+  return (objective ?? 'touchdown')
+    .split('-')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ');
 }
 
 function readLocalScores(): LocalScoreMap {
@@ -119,7 +121,6 @@ export function ScenarioSelect({
   userId,
   isAdmin,
   userMenu,
-  reportButton,
 }: Props) {
   const [playView, setPlayView] = useState<PlayView>('series');
   const [freePlayFilter, setFreePlayFilter] = useState<FreePlayFilter>('all');
@@ -167,7 +168,6 @@ export function ScenarioSelect({
           <button type="button" onClick={onAbout}>{UI_COPY.landing.about}</button>
         </nav>
         <div className="scenario-select__controls">
-          {reportButton}
           {userMenu}
         </div>
       </header>
@@ -205,30 +205,36 @@ export function ScenarioSelect({
 
       {playView === 'series' ? (
         <section className="play-section">
-          {seriesList.map(item => <div className="series-row" key={item.id}>
-            <div className="series-row__logo">
-              {item.logo && SERIES_LOGOS[item.logo] ? (
-                <span className="series-row__crest">
-                  <img src={SERIES_LOGOS[item.logo]} alt={`${item.name} logo`} />
-                </span>
-              ) : null}
-            </div>
-            <div className="series-row__body">
-              <span className="series-row__eyebrow">{UI_COPY.landing.seriesEyebrow}</span>
-              <h2 className="series-row__title">{item.name}</h2>
-              <p className="series-row__desc">{item.description}</p>
-              <div className="series-row__meta">{(item.teams ?? ['human', 'orc']).map(team => team === 'human' ? 'Humans' : 'Orcs').join(' vs ')} · Touchdown · {item.scenarioIds.length} steps</div>
-              <div className="series-row__meta">{formatProgress(seriesProgress)}</div>
-            </div>
-            <div className="series-row__actions">
-              <button className="btn btn--primary" onClick={() => onStartSeries(item)}>
-                {UI_COPY.landing.startSeries}
-              </button>
-              <button className="btn btn--secondary" onClick={() => onSeriesLeaderboard(item)}>
-                {UI_COPY.landing.rankings}
-              </button>
-            </div>
-          </div>)}
+          {seriesList.map((item, index) => {
+            const logoSource = seriesLogoSource(item.logo);
+            const stepCount = item.scenarioIds.length;
+            return (
+              <div className="series-row" key={item.id}>
+                <div className="series-row__logo">
+                  {logoSource ? (
+                    <span className="series-row__crest">
+                      <img src={logoSource} alt={`${item.name} logo`} />
+                    </span>
+                  ) : null}
+                </div>
+                <div className="series-row__body">
+                  <span className="series-row__eyebrow">{String(index + 1).padStart(2, '0')} {item.label ?? 'Series'}</span>
+                  <h2 className="series-row__title">{item.name}</h2>
+                  <p className="series-row__desc">{item.description}</p>
+                  <div className="series-row__meta">{(item.teams ?? ['human', 'orc']).map(team => team === 'human' ? 'Humans' : 'Orcs').join(' vs ')} · {objectiveLabel(item.objective)} · {stepCount} {stepCount === 1 ? 'step' : 'steps'}</div>
+                  <div className="series-row__meta">{formatProgress(seriesProgress)}</div>
+                </div>
+                <div className="series-row__actions">
+                  <button className="btn btn--primary" onClick={() => onStartSeries(item)}>
+                    {UI_COPY.landing.play}
+                  </button>
+                  <button className="btn btn--secondary" onClick={() => onSeriesLeaderboard(item)}>
+                    {UI_COPY.landing.rankings}
+                  </button>
+                </div>
+              </div>
+            );
+          })}
         </section>
       ) : (
         <section className="play-section">
@@ -259,19 +265,23 @@ export function ScenarioSelect({
 
           <div className="challenge-tile-grid">
             {visibleFreePlayScenarios.map((s, index) => {
+              const owningSeries = seriesList.find(item => item.scenarioIds.includes(s.id));
+              const isTutorial = owningSeries?.label?.trim().toLocaleLowerCase() === 'tutorial';
               return (
                 <div key={s.id} className="challenge-tile">
                   <div className="challenge-tile__header">
-                    <div className="challenge-tile__origin">
-                      {UI_COPY.landing.tutorialOrigin}
-                    </div>
+                    {owningSeries ? (
+                      <div className="challenge-tile__origin">
+                        {isTutorial ? UI_COPY.landing.tutorialOrigin : UI_COPY.landing.seriesOrigin(owningSeries.name)}
+                      </div>
+                    ) : null}
                     <div className="challenge-tile__index" aria-hidden="true">
                       {UI_COPY.landing.playPrefix} {String(index + 1).padStart(2, '0')}
                     </div>
                   </div>
                   <div className="challenge-tile__body">
                     <div className="challenge-tile__name">{s.name}</div>
-                    <div className="challenge-tile__context">{UI_COPY.landing.tutorialFinalPuzzle}</div>
+                    {isTutorial ? <div className="challenge-tile__context">{UI_COPY.landing.tutorialFinalPuzzle}</div> : null}
                     <div className="challenge-tile__desc">{s.description}</div>
                     <div className="challenge-tile__meta">{formatProgress(scenarioProgress[s.id])}</div>
                   </div>

@@ -6,10 +6,24 @@ export declare const STAT_RANGE: { min: number; max: number };
 export declare const STAT_KEYS: readonly ('ma' | 'st' | 'ag' | 'pa' | 'av')[];
 export declare const TEAMS: readonly ('human' | 'orc')[];
 export declare const OBJECTIVES: readonly Objective[];
+export declare const ROSTER_LIMITS: Readonly<Record<'human' | 'orc', Readonly<Record<string, { max: number; label: string }>>>>;
+export declare function rosterLimitFor(team: 'human' | 'orc', role?: string): { max: number; label: string } | undefined;
+export declare function scenarioRosterErrors(scenario: Pick<Scenario, 'pieces'>): string[];
 
 export declare function normalizeScenario(input: unknown): Scenario & { pieces: ScenarioPieceDef[] };
 export declare function normalizeSeries(input: unknown): SeriesDefinition;
 export declare function normalizeSeriesCollection(input: unknown): SeriesDefinition[];
+export declare function seriesMembershipErrors(
+  series: SeriesDefinition,
+  collection?: readonly SeriesDefinition[],
+  scenarios?: readonly Scenario[],
+): string[];
+export declare function updateSeriesAssignment(
+  collection: readonly SeriesDefinition[],
+  scenarioId: string,
+  targetSeriesId: string,
+  scenarios?: readonly Scenario[],
+): { series: readonly SeriesDefinition[]; errors: string[] };
 
 export interface ValidateScenarioOptions {
   /** Skip the "id already exists" check entirely (server-side updates). */

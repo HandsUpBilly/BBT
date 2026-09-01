@@ -71,8 +71,8 @@ All configured in `netlify.toml`, in this order:
 | `/api/editor/scenarios` | `editor-scenarios` | **Admin only, including GET** |
 | `/api/editor/scenarios/*` | `editor-scenarios` | **Admin only** |
 | `/api/editor/series/default` | `editor-series` | **Admin only** |
-| `/api/editor/publish` | `editor-publish` | **Admin only** |
-| `/api/scenarios` | `scenarios` | Public (published state only) |
+| `/api/editor/publish` | `editor-publish` | **Admin only** (legacy no-op) |
+| `/api/scenarios` | `scenarios` | Public (enabled saved state only) |
 | `/*` | SPA fallback | — |
 
 `/api/progress` returns every scenario board plus the series board in one
@@ -243,5 +243,5 @@ indefinitely.
   personal-best leaderboards
 - Admin-only game engagement, completion/drop-off, Tutorial, action, and active
   play-time graphs from first-party game-session summaries
-- **Persistent puzzle-editor saves** via Netlify Blobs, with an explicit
-  draft → published publish step
+- **Persistent live puzzle-editor saves** via Netlify Blobs; enabled flags
+  control player visibility without a separate publish step

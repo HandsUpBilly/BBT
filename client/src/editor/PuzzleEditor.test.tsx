@@ -1,6 +1,6 @@
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import type { Scenario } from '../types';
+import type { Scenario, SeriesDefinition } from '../types';
 import { PuzzleEditor } from './PuzzleEditor';
 
 const savedScenario: Scenario = {
@@ -30,13 +30,14 @@ const savedScenario: Scenario = {
 
 afterEach(() => {
   cleanup();
+  vi.restoreAllMocks();
   vi.unstubAllGlobals();
 });
 
-function renderEditor(scenarios: Scenario[] = [savedScenario]) {
+function renderEditor(scenarios: Scenario[] = [savedScenario], series?: SeriesDefinition[]) {
   const initialData = {
     scenarios,
-    series: [{
+    series: series ?? [{
       id: 'default',
       name: 'Tutorial',
       description: '',
@@ -46,17 +47,16 @@ function renderEditor(scenarios: Scenario[] = [savedScenario]) {
       order: 0,
     }],
   };
-  const fetchMock = vi.fn().mockImplementation((url, options?: RequestInit) => Promise.resolve({
+  const fetchMock = vi.fn().mockImplementation((_: unknown, options?: RequestInit) => Promise.resolve({
     ok: true,
-    json: async () => String(url).includes('series-assignment')
-      ? initialData.series
-      : options?.method === 'PUT' ? JSON.parse(String(options.body)) : initialData,
+    json: async () => options?.method === 'PUT' ? JSON.parse(String(options.body)) : initialData,
   }));
   vi.stubGlobal('fetch', fetchMock);
   render(
     <PuzzleEditor
       onBack={vi.fn()}
       onPlay={vi.fn()}
+      onReport={vi.fn()}
       previewScenario={null}
       idToken="admin-token"
     />,
@@ -82,6 +82,27 @@ describe('PuzzleEditor unsaved changes', { timeout: 15_000 }, () => {
     expect(block.getAttribute('aria-pressed')).toBe('true');
     fireEvent.click(block);
     expect(block.getAttribute('aria-pressed')).toBe('false');
+  });
+
+  it('shows BB2025 roster usage and blocks excess positional players', async () => {
+    const threeBlitzers: Scenario = {
+      ...savedScenario,
+      pieces: [0, 1, 2].map(index => ({
+        ...savedScenario.pieces[0],
+        id: `human-blitzer-${index}`,
+        role: 'blitzer',
+        position: { col: 5 + index, row: 7 },
+        hasBall: index === 0,
+      })),
+    };
+    renderEditor([threeBlitzers]);
+    await screen.findByDisplayValue('Saved Puzzle');
+
+    const blitzer = screen.getByRole('button', { name: /Human Blitzer/ }) as HTMLButtonElement;
+    expect(blitzer.disabled).toBe(true);
+    expect(screen.getByText(/3\/2 · MA 7/)).toBeTruthy();
+    openCreatorTool(/^Review/);
+    expect(screen.getByText('Human roster allows at most 2 Human Blitzers (currently 3)')).toBeTruthy();
   });
 
   it('can discard edits and restore the last saved draft without an API write', async () => {
@@ -154,30 +175,81 @@ describe('PuzzleEditor unsaved changes', { timeout: 15_000 }, () => {
     expect(screen.getByDisplayValue('Aldric')).toBeTruthy();
   });
 
-  it('shows objective, Free Play, and series assignment on each puzzle', async () => {
+  it('keeps puzzle metadata here while series membership belongs to the Series Creator', async () => {
     const fetchMock = renderEditor();
     await screen.findByDisplayValue('Saved Puzzle');
 
     expect((screen.getByRole('combobox', { name: 'Objective' }) as HTMLSelectElement).value).toBe('touchdown');
+    expect(screen.queryByRole('combobox', { name: 'Series' })).toBeNull();
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Enabled for everyone' }));
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Enabled for admins' }));
     fireEvent.click(screen.getByRole('checkbox', { name: 'Also enabled for Free Play' }));
-    fireEvent.change(screen.getByRole('combobox', { name: 'Series' }), { target: { value: '' } });
 
-    await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/editor/series-assignment', expect.objectContaining({ method: 'PUT' })));
     fireEvent.click(screen.getByRole('button', { name: 'Save Puzzle' }));
     await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/editor/scenarios/scenario-001', expect.objectContaining({ method: 'PUT' })));
     const scenarioCall = fetchMock.mock.calls.find(([url]) => url === '/api/editor/scenarios/scenario-001');
-    expect(JSON.parse(String(scenarioCall?.[1]?.body))).toMatchObject({ objective: 'touchdown', freePlay: true });
+    expect(JSON.parse(String(scenarioCall?.[1]?.body))).toMatchObject({
+      objective: 'touchdown', freePlay: true, published: false, adminEnabled: true,
+    });
   });
 
-  it('saves title, description, and chooser logo in the distinct Series Creator', async () => {
+  it('shows puzzles owned by another series but does not let them be added again', async () => {
+    const secondScenario = { ...savedScenario, id: 'scenario-002', name: 'Already Owned' };
+    renderEditor([savedScenario, secondScenario], [
+      { id: 'default', name: 'Tutorial', description: '', scenarioIds: ['scenario-001'], published: true, teams: ['human', 'orc'], objective: 'touchdown', order: 0 },
+      { id: 'advanced', name: 'Advanced', description: '', scenarioIds: ['scenario-002'], published: true, teams: ['human', 'orc'], objective: 'touchdown', order: 1 },
+    ]);
+    await screen.findByDisplayValue('Saved Puzzle');
+    openCreatorTool(/^Series Creator$/);
+
+    expect(screen.getByText(/Series membership and play order are managed here/)).toBeTruthy();
+    const ownedOption = screen.getByRole('option', { name: 'Already Owned — already in Advanced' }) as HTMLOptionElement;
+    expect(ownedOption.disabled).toBe(true);
+  });
+
+  it('prevents a series save while an assigned puzzle has an illegal roster', async () => {
+    const twoTrolls: Scenario = {
+      ...savedScenario,
+      id: 'two-trolls',
+      name: 'Two Troll Trouble',
+      pieces: [0, 1].map(index => ({
+        ...savedScenario.pieces[0],
+        id: `orc-troll-${index}`,
+        team: 'orc',
+        role: 'troll',
+        position: { col: 6 + index, row: 7 },
+        hasBall: index === 0,
+      })),
+      activeTeam: 'orc',
+    };
+    renderEditor([twoTrolls], [
+      { id: 'league', name: 'League', description: '', scenarioIds: ['two-trolls'], published: true, teams: ['human', 'orc'], objective: 'touchdown', order: 0 },
+    ]);
+    await screen.findByDisplayValue('Two Troll Trouble');
+    openCreatorTool(/^Series Creator$/);
+
+    expect(screen.getByText('Two Troll Trouble: Orc roster allows at most 1 Troll (currently 2)')).toBeTruthy();
+    expect((screen.getByRole('button', { name: 'Save Series' }) as HTMLButtonElement).disabled).toBe(true);
+  });
+
+  it('saves title, description, and an uploaded chooser logo in the distinct Series Creator', async () => {
     const fetchMock = renderEditor();
     await screen.findByDisplayValue('Saved Puzzle');
     openCreatorTool(/^Series Creator$/);
 
     fireEvent.change(screen.getByLabelText('Title'), { target: { value: 'Orc Academy' } });
+    fireEvent.change(screen.getByLabelText('Series label'), { target: { value: 'League' } });
     fireEvent.change(screen.getByLabelText('Description'), { target: { value: 'A new six-drill course.' } });
-    fireEvent.change(screen.getByLabelText('Logo key'), { target: { value: 'orc-academy' } });
-    fireEvent.click(screen.getByRole('checkbox', { name: 'Enabled for players' }));
+    const uploadedLogo = 'data:image/webp;base64,YWJj';
+    vi.stubGlobal('createImageBitmap', vi.fn().mockResolvedValue({ width: 300, height: 200, close: vi.fn() }));
+    vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue({ drawImage: vi.fn() } as unknown as CanvasRenderingContext2D);
+    vi.spyOn(HTMLCanvasElement.prototype, 'toDataURL').mockReturnValue(uploadedLogo);
+    fireEvent.change(screen.getByLabelText('Choose series logo file'), {
+      target: { files: [new File(['image'], 'logo.png', { type: 'image/png' })] },
+    });
+    await screen.findByRole('img', { name: 'Series logo preview' });
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Enabled for everyone' }));
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Enabled for admins' }));
 
     fireEvent.click(screen.getByRole('button', { name: 'Save Series' }));
 
@@ -185,9 +257,12 @@ describe('PuzzleEditor unsaved changes', { timeout: 15_000 }, () => {
     const [, options] = fetchMock.mock.calls[fetchMock.mock.calls.length - 1] as [string, RequestInit];
     expect(JSON.parse(String(options.body))).toMatchObject({
       name: 'Orc Academy',
+      label: 'League',
       description: 'A new six-drill course.',
-      logo: 'orc-academy',
+      logo: uploadedLogo,
       published: false,
+      adminEnabled: true,
     });
+    expect(screen.queryByRole('button', { name: /Publish Drafts/i })).toBeNull();
   });
 });

@@ -6,6 +6,9 @@ import {
   normalizeScenario,
   normalizeSeries,
   normalizeSeriesCollection,
+  scenarioRosterErrors,
+  seriesMembershipErrors,
+  updateSeriesAssignment,
   validateScenario,
 } from './scenarioValidation.js';
 
@@ -99,6 +102,35 @@ test('requires a player on the active team', () => {
   assert.ok(errors.some(e => e.includes('must belong to the active team')));
 });
 
+test('enforces BB2025 positional and on-pitch roster limits', () => {
+  assert.deepEqual(scenarioRosterErrors({
+    pieces: Array.from({ length: 3 }, (_, index) => ({ team: 'human', role: 'blitzer', id: `h${index}` })),
+  }), ['Human roster allows at most 2 Human Blitzers (currently 3)']);
+
+  assert.deepEqual(scenarioRosterErrors({
+    pieces: [{ team: 'orc', role: 'troll' }, { team: 'orc', role: 'troll' }],
+  }), ['Orc roster allows at most 1 Troll (currently 2)']);
+
+  assert.ok(scenarioRosterErrors({
+    pieces: Array.from({ length: 12 }, () => ({ team: 'orc', role: 'lineman' })),
+  }).includes('Orc team may field at most 11 players (currently 12)'));
+
+  assert.deepEqual(scenarioRosterErrors({ pieces: [{ team: 'orc', role: 'catcher' }] }), [
+    'Orc roster does not allow role: catcher',
+  ]);
+});
+
+test('seriesMembershipErrors identifies an invalid roster in an assigned puzzle', () => {
+  const series = normalizeSeries({ id: 'league', scenarioIds: ['two-trolls'] });
+  const scenarios = [{
+    id: 'two-trolls', name: 'Two Troll Trouble',
+    pieces: [{ team: 'orc', role: 'troll' }, { team: 'orc', role: 'troll' }],
+  }];
+  assert.deepEqual(seriesMembershipErrors(series, [], scenarios), [
+    'Two Troll Trouble: Orc roster allows at most 1 Troll (currently 2)',
+  ]);
+});
+
 test('id uniqueness respects currentId and allowExisting', () => {
   const taken = new Set(['scenario-010']);
   assert.ok(validateScenario(validScenario(), taken).some(e => e.includes('already exists')));
@@ -117,6 +149,13 @@ test('normalizeScenario coerces hostile input rather than throwing', () => {
   assert.ok(validateScenario(scenario).length > 0);
 });
 
+test('normalizers preserve explicit admin visibility without enabling it by default', () => {
+  assert.equal(normalizeScenario({ adminEnabled: true }).adminEnabled, true);
+  assert.equal(normalizeScenario({ adminEnabled: false }).adminEnabled, undefined);
+  assert.equal(normalizeSeries({ adminEnabled: true }).adminEnabled, true);
+  assert.equal(normalizeSeries({ adminEnabled: false }).adminEnabled, undefined);
+});
+
 test('normalizeSeries supplies future-ready defaults and preserves a valid id', () => {
   assert.deepEqual(normalizeSeries(null), {
     id: 'default', name: 'Default Series', description: '', scenarioIds: [],
@@ -128,6 +167,48 @@ test('normalizeSeries supplies future-ready defaults and preserves a valid id', 
   );
 });
 
+test('normalizeSeries removes duplicate puzzle steps while preserving their first position', () => {
+  assert.deepEqual(
+    normalizeSeries({ id: 'cup', scenarioIds: ['a', 'b', 'a', 'b', 'c'] }).scenarioIds,
+    ['a', 'b', 'c'],
+  );
+});
+
+test('seriesMembershipErrors rejects enabled empty series and puzzles owned elsewhere', () => {
+  assert.deepEqual(seriesMembershipErrors(
+    normalizeSeries({ id: 'empty', published: true, scenarioIds: [] }),
+  ), ['An enabled series must contain at least one puzzle']);
+
+  assert.deepEqual(seriesMembershipErrors(
+    normalizeSeries({ id: 'second', scenarioIds: ['scenario-001'] }),
+    [normalizeSeries({ id: 'first', name: 'First Series', scenarioIds: ['scenario-001'] })],
+  ), ['scenario-001 is already assigned to First Series']);
+
+  assert.deepEqual(seriesMembershipErrors(
+    normalizeSeries({ id: 'admin-empty', published: false, adminEnabled: true, scenarioIds: [] }),
+  ), ['An enabled series must contain at least one puzzle']);
+});
+
+test('updateSeriesAssignment never reorders an existing step or silently moves it', () => {
+  const collection = [
+    normalizeSeries({ id: 'first', name: 'First Series', scenarioIds: ['a', 'b'] }),
+    normalizeSeries({ id: 'second', name: 'Second Series', published: false, scenarioIds: [] }),
+  ];
+  assert.deepEqual(updateSeriesAssignment(collection, 'a', 'first'), { series: collection, errors: [] });
+  assert.deepEqual(updateSeriesAssignment(collection, 'a', 'second'), {
+    series: collection,
+    errors: ['a is already assigned to First Series'],
+  });
+});
+
+test('updateSeriesAssignment cannot leave an enabled series with no steps', () => {
+  const collection = [normalizeSeries({ id: 'only', name: 'Only Series', scenarioIds: ['a'] })];
+  assert.deepEqual(updateSeriesAssignment(collection, 'a', ''), {
+    series: collection,
+    errors: ['An enabled series must contain at least one puzzle'],
+  });
+});
+
 test('normalizeSeries preserves a bounded series logo key', () => {
   assert.deepEqual(normalizeSeries({ logo: '  nuffle-shuffle  ', scenarioIds: [] }), {
     id: 'default', name: 'Default Series', description: '', scenarioIds: [], published: true, teams: ['human', 'orc'], objective: 'touchdown', order: 0, logo: 'nuffle-shuffle',
@@ -135,6 +216,16 @@ test('normalizeSeries preserves a bounded series logo key', () => {
   assert.deepEqual(normalizeSeries({ logo: 42, scenarioIds: [] }), {
     id: 'default', name: 'Default Series', description: '', scenarioIds: [], published: true, teams: ['human', 'orc'], objective: 'touchdown', order: 0,
   });
+  const uploadedLogo = `data:image/webp;base64,${Buffer.from('series-logo').toString('base64')}`;
+  assert.equal(normalizeSeries({ logo: uploadedLogo }).logo, uploadedLogo);
+  assert.equal(normalizeSeries({ logo: 'https://example.com/tracker.png' }).logo, undefined);
+  assert.equal(normalizeSeries({ logo: 'data:image/png;base64,YWJj' }).logo, undefined);
+});
+
+test('normalizeSeries preserves a bounded player-facing label', () => {
+  assert.equal(normalizeSeries({ label: '  League  ' }).label, 'League');
+  assert.equal(normalizeSeries({ label: 'x'.repeat(50) }).label, 'x'.repeat(40));
+  assert.equal(normalizeSeries({ label: 42 }).label, undefined);
 });
 
 test('normalizeSeriesCollection migrates a legacy object and sorts multiple series', () => {

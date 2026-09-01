@@ -57,7 +57,10 @@ export interface Scenario {
   objective?: Objective;
   /** Whether this puzzle is also listed as a standalone Free Play puzzle. */
   freePlay?: boolean;
+  /** Visible to everyone when true/omitted; false keeps it out of public data. */
   published?: boolean;
+  /** Visible to confirmed admins even when it is not public. */
+  adminEnabled?: boolean;
   ballPosition?: Position | null;
   pieces: ScenarioPieceDef[];
 }
@@ -67,13 +70,17 @@ export interface SeriesDefinition {
   name: string;
   description: string;
   scenarioIds: string[];
-  /** Whether the series appears to players after drafts are published. */
+  /** Short player-facing category shown beside the series position. */
+  label?: string;
+  /** Whether the saved series appears to players. */
   published?: boolean;
+  /** Whether confirmed admins can see the series when it is not public. */
+  adminEnabled?: boolean;
   teams?: [Team, Team];
   objective?: Objective;
   /** Zero-based display order on the series selection screen. */
   order?: number;
-  /** Stable key for the chooser artwork; omitted for series without artwork. */
+  /** Uploaded WebP data URL or a legacy built-in artwork key. */
   logo?: string;
 }
 

@@ -757,6 +757,19 @@
 
 .series-creator__fields label { display: grid; gap: 6px; }
 .series-creator__wide { grid-column: 1 / -1; }
+.series-creator__logo { display: grid; gap: 6px; }
+.series-creator__logo-control { display: flex; align-items: center; gap: 12px; }
+.series-creator__logo-control img,
+.series-creator__logo-placeholder {
+  width: 72px;
+  height: 72px;
+  border: 1px solid var(--editor-line);
+  border-radius: 10px;
+  object-fit: contain;
+  background: var(--editor-bg);
+}
+.series-creator__logo-placeholder { display: grid; place-items: center; color: var(--color-text-disabled); font-size: 12px; }
+.series-creator__logo-actions { display: flex; flex-wrap: wrap; gap: 8px; }
 .series-creator__steps { margin-top: 24px; }
 .series-creator__add-step { display: flex; gap: 10px; }
 .series-creator__add-step select { flex: 1; }

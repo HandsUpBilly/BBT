@@ -4,13 +4,13 @@ import type { Scenario, ScenarioPieceDef, SeriesDefinition, Team } from '../type
 import { ConfirmDialog } from '../ConfirmDialog';
 import { AdminStatistics } from './AdminStatistics';
 import { AdminConsole } from './AdminConsole';
-import { assignScenarioToSeries, createScenario, deleteScenario, fetchEditorData, publishEditorData, updateScenario } from './editorApi';
+import { createScenario, deleteScenario, fetchEditorData, updateScenario } from './editorApi';
 import { nextScenarioId, validateScenarioDraft } from './editorValidation';
 import { PLAYER_TEMPLATES, generatedPlayerName, templateToPiece } from './playerTemplates';
 import { careerSkillGroupsFor, IMPLEMENTED_CAREER_SKILLS } from './careerSkills';
-import { PLAYER_ROLES, playerPortraitFor } from '../playerPortraits';
+import { playerPortraitFor } from '../playerPortraits';
 import { SeriesCreator } from './SeriesCreator';
-import { STAT_KEYS, STAT_RANGE, PITCH } from '../../../shared/scenarioValidation.js';
+import { STAT_KEYS, STAT_RANGE, PITCH, rosterLimitFor } from '../../../shared/scenarioValidation.js';
 import './PuzzleEditor.css';
 
 const COLS = PITCH.maxCol + 1;
@@ -59,6 +59,19 @@ function groupTemplates(team: Team) {
   return PLAYER_TEMPLATES.filter(template => template.team === team);
 }
 
+function rosterRoles(team: Team): string[] {
+  return groupTemplates(team).map(template => template.role);
+}
+
+function rosterUsage(scenario: Scenario, team: Team, role: string) {
+  const limit = rosterLimitFor(team, role);
+  const teamCount = scenario.pieces.filter(piece => piece.team === team).length;
+  const roleCount = limit
+    ? scenario.pieces.filter(piece => piece.team === team && rosterLimitFor(team, piece.role)?.label === limit.label).length
+    : 0;
+  return { limit, teamCount, roleCount, allowed: teamCount < 11 && Boolean(limit) && roleCount < (limit?.max ?? 0) };
+}
+
 /** Structural comparison used to detect unsaved edits. */
 function sameScenario(a: Scenario, b: Scenario): boolean {
   return JSON.stringify(a) === JSON.stringify(b);
@@ -67,11 +80,12 @@ function sameScenario(a: Scenario, b: Scenario): boolean {
 interface Props {
   onBack: () => void;
   onPlay: (scenario: Scenario) => void;
+  onReport: () => void;
   previewScenario: Scenario | null;
   idToken: string | null;
 }
 
-export function PuzzleEditor({ onBack, onPlay, previewScenario, idToken }: Props) {
+export function PuzzleEditor({ onBack, onPlay, onReport, previewScenario, idToken }: Props) {
   const [scenarios, setScenarios] = useState<Scenario[]>([]);
   const [series, setSeries] = useState<SeriesDefinition[]>([]);
   const [draft, setDraft] = useState<Scenario>(() => emptyScenario([]));
@@ -83,7 +97,6 @@ export function PuzzleEditor({ onBack, onPlay, previewScenario, idToken }: Props
   const [ballTool, setBallTool] = useState(false);
   const [status, setStatus] = useState('Loading editor data...');
   const [saving, setSaving] = useState(false);
-  const [publishing, setPublishing] = useState(false);
   const [puzzleQuery, setPuzzleQuery] = useState('');
   const [puzzleFilter, setPuzzleFilter] = useState<'all' | 'enabled' | 'disabled' | 'series'>('all');
   const [inspectorSection, setInspectorSection] = useState<InspectorSection>('roster');
@@ -133,8 +146,8 @@ export function PuzzleEditor({ onBack, onPlay, previewScenario, idToken }: Props
     return scenarios.filter(scenario => {
       const matchesQuery = !query || `${scenario.id} ${scenario.name} ${scenario.description}`.toLocaleLowerCase().includes(query);
       const matchesFilter = puzzleFilter === 'all'
-        || (puzzleFilter === 'enabled' && scenario.published !== false)
-        || (puzzleFilter === 'disabled' && scenario.published === false)
+        || (puzzleFilter === 'enabled' && (scenario.published !== false || scenario.adminEnabled === true))
+        || (puzzleFilter === 'disabled' && scenario.published === false && scenario.adminEnabled !== true)
         || (puzzleFilter === 'series' && series.some(item => item.scenarioIds.includes(scenario.id)));
       return matchesQuery && matchesFilter;
     });
@@ -155,7 +168,6 @@ export function PuzzleEditor({ onBack, onPlay, previewScenario, idToken }: Props
   const selectedPieceCareerSkills = selectedPiece
     ? careerSkillGroupsFor(selectedPiece.team, selectedPiece.role)
     : null;
-  const assignedSeries = series.find(item => item.scenarioIds.includes(draft.id));
 
   function discardUnsavedWork() {
     if (hasUnsavedChanges) {
@@ -335,6 +347,13 @@ export function PuzzleEditor({ onBack, onPlay, previewScenario, idToken }: Props
     }
     const template = PLAYER_TEMPLATES.find(item => item.key === templateKey);
     if (!template) return;
+    const usage = rosterUsage(draft, template.team, template.role);
+    if (!usage.allowed) {
+      setStatus(usage.teamCount >= 11
+        ? `${template.team === 'human' ? 'Human' : 'Orc'} team already has 11 players on the pitch.`
+        : `${usage.limit?.label ?? template.label} limit reached (${usage.limit?.max ?? 0}).`);
+      return;
+    }
     updateDraft(scenario => {
       const id = makePieceId(scenario, template.team, template.role);
       const sameTeamCount = scenario.pieces.filter(piece => piece.team === template.team).length;
@@ -362,32 +381,11 @@ export function PuzzleEditor({ onBack, onPlay, previewScenario, idToken }: Props
       setDraft(cloneScenario(saved));
       setSavedDraft(cloneScenario(saved));
       setOriginalId(saved.id);
-      setStatus(`Saved ${saved.id} as a draft. Click Publish Drafts to make it live for players.`);
+      setStatus(`Saved ${saved.id}. ${saved.published !== false ? 'Enabled for everyone.' : saved.adminEnabled ? 'Enabled for admins only.' : 'Creator only.'}`);
     } catch (error) {
       setStatus(error instanceof Error ? error.message : 'Failed to save puzzle.');
     } finally {
       setSaving(false);
-    }
-  }
-
-  function requestPublish() {
-    setConfirm({
-      title: 'Publish drafts to players?',
-      message: 'PUBLISH: Every saved change becomes live immediately. This includes new puzzles, edits, deletions, and enabled or disabled puzzles.',
-      confirmLabel: 'Publish',
-      run: () => { void publish(); },
-    });
-  }
-
-  async function publish() {
-    setPublishing(true);
-    try {
-      await publishEditorData(idToken);
-      setStatus('Published. Live for players now.');
-    } catch (error) {
-      setStatus(error instanceof Error ? error.message : 'Failed to publish.');
-    } finally {
-      setPublishing(false);
     }
   }
 
@@ -398,7 +396,7 @@ export function PuzzleEditor({ onBack, onPlay, previewScenario, idToken }: Props
     }
     setConfirm({
       title: `Delete ${draft.name}?`,
-      message: 'This removes the puzzle from drafts and from the current series. Publish afterwards to apply it for players.',
+      message: 'This removes the puzzle from the library and from its current series immediately.',
       confirmLabel: 'Delete',
       destructive: true,
       run: () => { void deleteCurrentScenario(); },
@@ -419,23 +417,9 @@ export function PuzzleEditor({ onBack, onPlay, previewScenario, idToken }: Props
       setOriginalId(isSaved ? nextDraft.id : undefined);
       setSelectedPieceId(null);
       setBallTool(false);
-      setStatus(`Deleted ${originalId}. Click Publish Drafts to update players.`);
+      setStatus(`Deleted ${originalId}. The player list is updated.`);
     } catch (error) {
       setStatus(error instanceof Error ? error.message : 'Failed to delete puzzle.');
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  async function assignToSeries(seriesId: string) {
-    if (!originalId) return;
-    setSaving(true);
-    try {
-      const saved = await assignScenarioToSeries(originalId, seriesId, idToken);
-      setSeries(saved);
-      setStatus(seriesId ? 'Saved puzzle series assignment.' : 'Puzzle is no longer assigned to a series.');
-    } catch (error) {
-      setStatus(error instanceof Error ? error.message : 'Failed to save series assignment.');
     } finally {
       setSaving(false);
     }
@@ -489,14 +473,14 @@ export function PuzzleEditor({ onBack, onPlay, previewScenario, idToken }: Props
       </nav>
 
       {adminSection === 'console' ? (
-        <AdminConsole idToken={idToken} onBack={onBack} />
+        <AdminConsole idToken={idToken} onBack={onBack} onReport={onReport} />
       ) : adminSection === 'statistics' ? (
         <AdminStatistics idToken={idToken} onBack={onBack} />
       ) : adminSection === 'series' ? (
         <>
           <header className="editor__header">
             <div className="editor__heading"><span className="editor__kicker">Campaign workshop</span><h1 className="editor__title">Series Creator</h1><p className="editor__subtitle">Create a series, set its identity and list position, then arrange its puzzle steps.</p></div>
-            <div className="editor__header-actions"><button className="btn btn--secondary" onClick={onBack}>Back</button><button className="btn btn--primary" disabled={publishing} onClick={requestPublish}>{publishing ? 'Publishing…' : 'Publish Drafts'}</button></div>
+            <div className="editor__header-actions"><button className="btn btn--secondary" onClick={onBack}>Back</button></div>
           </header>
           <SeriesCreator scenarios={scenarios} series={series} idToken={idToken} onChange={setSeries} onStatus={setStatus} />
           <div className="editor__status" role="status">{status}</div>
@@ -508,13 +492,13 @@ export function PuzzleEditor({ onBack, onPlay, previewScenario, idToken }: Props
           <span className="editor__kicker">Scenario workshop</span>
           <h1 className="editor__title">Puzzle Creator</h1>
           <p className="editor__subtitle">
-            Build one-turn puzzles, test every route, then publish the saved draft for players.
+            Build one-turn puzzles, test every route, then save enabled puzzles for players.
           </p>
         </div>
         <div className="editor__draft-state" aria-live="polite">
           <span className={`editor__draft-marker${hasUnsavedEditorChanges || !originalId ? ' editor__draft-marker--changed' : ''}`} aria-hidden="true" />
           <span>
-            <strong>{hasUnsavedEditorChanges ? 'Unsaved changes' : originalId ? 'Draft saved' : 'New draft'}</strong>
+            <strong>{hasUnsavedEditorChanges ? 'Unsaved changes' : originalId ? 'Saved' : 'New puzzle'}</strong>
             <small>{validationErrors.length === 0 ? 'Ready to test' : `${validationErrors.length} issue${validationErrors.length === 1 ? '' : 's'} to resolve`}</small>
           </span>
         </div>
@@ -529,14 +513,6 @@ export function PuzzleEditor({ onBack, onPlay, previewScenario, idToken }: Props
             onClick={() => { void saveScenario(Boolean(originalId)); }}
           >
             {saving ? 'Saving...' : 'Save Puzzle'}
-          </button>
-          <button
-            className="btn btn--secondary editor__publish"
-            disabled={publishing || hasUnsavedEditorChanges}
-            title={hasUnsavedEditorChanges ? 'Save changes before publishing. Only saved drafts can be published.' : undefined}
-            onClick={requestPublish}
-          >
-            {publishing ? 'Publishing...' : 'Publish Drafts'}
           </button>
         </div>
       </header>
@@ -565,8 +541,8 @@ export function PuzzleEditor({ onBack, onPlay, previewScenario, idToken }: Props
             />
             <select value={puzzleFilter} onChange={event => setPuzzleFilter(event.target.value as typeof puzzleFilter)} aria-label="Filter puzzles">
               <option value="all">All puzzles</option>
-              <option value="enabled">Enabled</option>
-              <option value="disabled">Disabled</option>
+              <option value="enabled">Any enabled</option>
+              <option value="disabled">Creator only</option>
               <option value="series">In series</option>
             </select>
             <span>{filteredScenarios.length} of {scenarios.length}</span>
@@ -587,7 +563,7 @@ export function PuzzleEditor({ onBack, onPlay, previewScenario, idToken }: Props
                   <span>
                     {scenario.activeTeam === 'orc' ? 'Orcs' : 'Humans'} active,{' '}
                     {scenario.pieces.length} player{scenario.pieces.length === 1 ? '' : 's'},{' '}
-                    {scenario.published === false ? 'Disabled' : 'Enabled'}
+                    {scenario.published !== false ? 'Everyone' : scenario.adminEnabled ? 'Admins' : 'Creator only'}
                   </span>
                   <span className={position >= 0 ? 'editor__puzzle-series' : 'editor__puzzle-series editor__puzzle-series--out'}>
                     {position >= 0 ? `${membership?.name} · step ${position + 1}` : 'Not in series'}
@@ -630,21 +606,21 @@ export function PuzzleEditor({ onBack, onPlay, previewScenario, idToken }: Props
                 <option value="touchdown">Touchdown</option>
               </select>
             </label>
-            <label>
-              Series
-              <select value={assignedSeries?.id ?? ''} disabled={!originalId || saving} onChange={event => { void assignToSeries(event.target.value); }}>
-                <option value="">Not assigned</option>
-                {series.map(item => <option key={item.id} value={item.id}>{item.name}</option>)}
-              </select>
-              {!originalId && <small>Save the puzzle before assigning it.</small>}
-            </label>
             <label className="editor__checkbox">
               <input
                 type="checkbox"
                 checked={draft.published !== false}
                 onChange={event => setMetadata('published', event.target.checked)}
               />
-              Enabled for players
+              Enabled for everyone
+            </label>
+            <label className="editor__checkbox">
+              <input
+                type="checkbox"
+                checked={draft.adminEnabled === true}
+                onChange={event => setMetadata('adminEnabled', event.target.checked)}
+              />
+              Enabled for admins
             </label>
             <label className="editor__checkbox">
               <input
@@ -737,11 +713,15 @@ export function PuzzleEditor({ onBack, onPlay, previewScenario, idToken }: Props
             {(['human', 'orc'] as Team[]).map(team => (
               <div key={team} className="editor-tool__group">
                 <h3>{team === 'human' ? 'Humans' : 'Orcs'}</h3>
-                {groupTemplates(team).map(template => (
+                {groupTemplates(team).map(template => {
+                  const usage = rosterUsage(draft, template.team, template.role);
+                  return (
                   <button
                     key={template.key}
                     className={`palette-piece palette-piece--${template.team}`}
-                    draggable
+                    draggable={usage.allowed}
+                    disabled={!usage.allowed}
+                    title={!usage.allowed ? 'BB2025 roster limit reached' : undefined}
                     onDragStart={event => event.dataTransfer.setData('application/x-bbt-template', template.key)}
                     type="button"
                   >
@@ -753,10 +733,11 @@ export function PuzzleEditor({ onBack, onPlay, previewScenario, idToken }: Props
                     />
                     <span className="palette-piece__text">
                       <strong>{template.label}</strong>
-                      <span>MA {template.ma} ST {template.st} AG {template.ag} PA {template.pa} AV {template.av}</span>
+                      <span>{usage.roleCount}/{usage.limit?.max ?? '—'} · MA {template.ma} ST {template.st} AG {template.ag} PA {template.pa} AV {template.av}</span>
                     </span>
                   </button>
-                ))}
+                  );
+                })}
               </div>
             ))}
             <button
@@ -799,9 +780,10 @@ export function PuzzleEditor({ onBack, onPlay, previewScenario, idToken }: Props
                     onChange={event => {
                       const team = event.target.value as Team;
                       // Keep the role valid for the new team.
-                      const role = PLAYER_ROLES[team].includes(selectedPiece.role ?? '')
+                      const roles = rosterRoles(team);
+                      const role = roles.includes(selectedPiece.role ?? '')
                         ? selectedPiece.role
-                        : PLAYER_ROLES[team][0];
+                        : roles[0];
                       updatePiece(selectedPiece.id, { team, role });
                     }}
                   >
@@ -812,10 +794,10 @@ export function PuzzleEditor({ onBack, onPlay, previewScenario, idToken }: Props
                 <label>
                   Role
                   <select
-                    value={selectedPiece.role ?? PLAYER_ROLES[selectedPiece.team][0]}
+                    value={selectedPiece.role ?? rosterRoles(selectedPiece.team)[0]}
                     onChange={event => updatePiece(selectedPiece.id, { role: event.target.value })}
                   >
-                    {PLAYER_ROLES[selectedPiece.team].map(role => (
+                    {rosterRoles(selectedPiece.team).map(role => (
                       <option key={role} value={role}>{role}</option>
                     ))}
                   </select>
