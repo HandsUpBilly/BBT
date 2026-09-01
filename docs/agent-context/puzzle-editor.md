@@ -61,8 +61,9 @@ The two admin surfaces also include their own client-side workbench tools:
   owned by another series remain visible in the step chooser but are disabled
   and name their owner. Shared validation rejects duplicate membership,
   repeated steps, and enabled series with no playable steps.
-- Admin Console owns the Report a problem launcher; player-facing home,
-  archive, and game screens do not show it.
+- Admin Console owns its Report a problem launcher. Gameplay also exposes the
+  launcher directly on tablet and desktop widths, and inside Game Tools on
+  phones; player-facing home and archive screens do not show it.
 - Statistics can search its per-puzzle table, sort every displayed metric, and
   download the anonymous per-puzzle summary as CSV. The export contains the
   same aggregate data already visible on-screen—never names, ids, or move logs.

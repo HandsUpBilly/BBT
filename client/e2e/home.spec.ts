@@ -49,6 +49,23 @@ test.describe('home account controls', () => {
     expectFooterAtPageBottom(await footerPlacement(page));
   });
 
+  test('the footer gives the wordmark its own brand zone', async ({ page }) => {
+    const brand = await boxOf(page.locator('.app-footer__brand'));
+    const logo = await boxOf(page.locator('.app-footer__logo'));
+    const legal = await boxOf(page.locator('.app-footer__legal'));
+    const viewportWidth = page.viewportSize()?.width ?? 0;
+
+    expect(logo.width, 'footer wordmark width').toBeGreaterThanOrEqual(84);
+    if (viewportWidth > 760) {
+      expect(brand.right, 'brand zone ends before legal copy')
+        .toBeLessThanOrEqual(legal.left + 1);
+    } else {
+      expect(brand.bottom, 'brand zone sits above legal copy')
+        .toBeLessThanOrEqual(legal.top + 1);
+    }
+    expect(await hasHorizontalOverflow(page)).toBe(false);
+  });
+
   test('free play filters stay usable without widening the page', async ({ page }) => {
     await page.getByRole('tab', { name: 'Free Play' }).click();
 

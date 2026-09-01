@@ -182,7 +182,11 @@ public avatars).
   it does not compare the line with an optimum.
 - **The compact game HUD keeps every control inside the viewport.** Account
   remains near the front. Tutorial guidance and restart share the `GameToolsMenu`
-  trigger, while the Key and action log retain their own triggers. Compact
+  trigger. Reporting remains a dedicated top-bar control on tablets and compact
+  laptops; only phone-width toolbars move it into `GameToolsMenu`. The desktop
+  control carries a visible label and every direct control uses the same
+  code-native flag icon, avoiding platform-dependent symbol fonts. The Key and
+  action log retain their own triggers. Compact
   dropdowns use viewport-fixed geometry so no parent can clip them. The empty
   100% success readout leaves the row until a roll puts probability at risk.
   During a guided Tutorial run, Game Tools exposes **Tutorial guide**. It opens
@@ -242,9 +246,11 @@ The identity gate and `home` mode use the tabletop-playbook visual shell:
   the vertical badge baked into the tunnel wall. Generated reusable branding
   lives in `client/src/assets/brand/` and is exposed through `BrandLogo.tsx`:
   the horizontal wordmark leads the home top bar, desktop game HUD, and
-  footer, while the compact badge appears in About. Repeated marks are
-  decorative so the page exposes only one accessible Turn 16 heading at a
-  time.
+  footer, while the compact badge appears in About. In the footer the wordmark
+  and copyright form a dedicated brand zone, separated from the two-line legal
+  notice; narrow screens stack those zones instead of shrinking them into one
+  long row. Repeated marks are decorative so the page exposes only one
+  accessible Turn 16 heading at a time.
 - The shared `.app` shell uses viewport `min-height`, never a fixed viewport
   height. This lets the flex layout pin `AppFooter` to the bottom on short
   screens while growing normally on long pages instead of leaving the footer

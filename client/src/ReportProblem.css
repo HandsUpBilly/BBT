@@ -38,8 +38,44 @@
 }
 
 .report-problem-button--hud {
+  width: auto;
   flex-shrink: 0;
+  gap: 7px;
   min-height: 30px;
+  padding: 0 9px;
+}
+
+.report-problem-button__icon {
+  display: inline-flex;
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+}
+
+.report-problem-button__icon svg {
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.report-problem-button__label {
+  white-space: nowrap;
+}
+
+@media (max-width: 1024px) {
+  .report-problem-button--hud {
+    width: 30px;
+    padding: 0;
+  }
+
+  .report-problem-button--hud .report-problem-button__label {
+    display: none;
+  }
 }
 
 @media (pointer: coarse) {
@@ -47,6 +83,10 @@
     width: 44px;
     min-width: 44px;
     min-height: 44px;
+  }
+
+  .report-problem-button--hud {
+    padding: 0;
   }
 }
 
