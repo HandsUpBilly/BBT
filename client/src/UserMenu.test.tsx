@@ -93,6 +93,20 @@ describe('UserMenu', () => {
     );
   });
 
+  it('offers Report an issue and restores focus to the trigger when chosen', () => {
+    const onReport = vi.fn();
+    render(<UserMenu name="Endzone Expert" onReport={onReport} />);
+    openMenu();
+
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Report an issue' }));
+
+    expect(onReport).toHaveBeenCalledOnce();
+    expect(screen.queryByRole('menu')).toBeNull();
+    expect(document.activeElement).toBe(
+      screen.getByRole('button', { name: 'Player menu for Endzone Expert' }),
+    );
+  });
+
   it('still offers Log Out alongside Settings and About', () => {
     const onSignOut = vi.fn();
     render(

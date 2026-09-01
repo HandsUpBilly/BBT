@@ -21,7 +21,13 @@ Editor features:
 - list all scenarios (including disabled ones) with description, active team,
   piece count, enabled state, and series position,
 - create, duplicate, and delete puzzles,
-- drag Human/Orc player templates onto the editor pitch,
+- choose the two opposing team rosters for the puzzle; the active-team selector,
+  add-player palette, and selected-player team control are limited to that pair,
+- when a puzzle belongs to a series, the series First team and Second team are
+  authoritative: Puzzle Creator shows those inherited values read-only, uses
+  them for the palette/validation/test run, and persists them on the next puzzle
+  save,
+- drag player templates from those two rosters onto the editor pitch,
 - auto-generate Blood Bowl style player names,
 - **full piece inspector**: name, id, team, role, MA/ST/AG/PA/AV as bounded
   numeric inputs, BB2025 career-skill picker, has-ball, delete,
@@ -38,7 +44,7 @@ Editor features:
   logo, objective, list position, and everyone/admin enabled states,
 - add, remove, and reorder its puzzle steps; this is the single owner of series
   membership, each puzzle can belong to only one series, and assigned puzzles
-  must satisfy BB2025 roster limits,
+  must satisfy BB2025 roster limits and use the series matchup,
 - play draft and return to designer.
 
 The Statistics section shows anonymous player-performance aggregates from the
@@ -223,10 +229,13 @@ the 1–12 range enforced by `shared/scenarioValidation.js`.
 Add a genuinely new player type by adding a template — that keeps the palette
 useful — rather than always hand-tuning stats after the fact.
 
-The palette is exactly the BB2025 Human and Orc rosters
-(https://bbtactics.com/human-teams/, https://bbtactics.com/orc-teams/):
-Lineman, Catcher, Thrower, Blitzer, Halfling Hopeful, and Ogre for Humans;
-Lineman, Thrower, Blitzer, Big Un Blocker, Goblin Lineman, and Troll for Orcs.
+The palette contains four complete BB2025 rosters: Human, Orc, Black Orc, and
+Imperial Nobility. In addition to the original Human and Orc positions, Black
+Orcs provide Goblin Bruisers, Black Orcs, and a Trained Troll; Imperial
+Nobility provide Imperial Retainers, Imperial Throwers, Bodyguards, Noble
+Blitzers, and an Ogre. The roster data comes from the BB2025 team sheets
+(https://bbtactics.com/black-orc-teams/ and
+https://bbtactics.com/imperial-nobility-teams/ for the two added teams).
 
 The generic "Orc Blocker" template was removed — BB2025 has no such position,
 the Big Un Blocker replaces it. The `blocker` role itself is still in the role
@@ -250,17 +259,16 @@ as-is, and `av` is the printed target minus 1 and is display-only.
 Templates may carry a `names` pool, used by `generatedPlayerName` instead of the
 team-wide pool — Halflings, Ogres, Goblins, and Trolls each have their own.
 
-Every role in `playerPortraits.ts`'s `PLAYER_ROLES` has dedicated gritty
-portrait art, including roles selectable only on an existing piece rather than
-the add-player palette. The text-free circular portraits share the same
-team-specific frame, palette, and painted style; the coverage test rejects
-duplicate fallback art and old non-gritty assets. Unknown roles outside the
-editor roster still fall back to the team default.
+The original Human and Orc roles in `playerPortraits.ts` retain dedicated
+gritty portrait art. Black Orc and Imperial Nobility positions use the closest
+existing gritty positional portrait as a safe fallback until team-specific art
+is added. Unknown roles outside the editor roster still fall back to the team
+default.
 
 ### Career skills
 
 The selected-player inspector exposes the career skill groups allowed by that
-player's BB2025 Human or Orc positional. It separates primary and secondary
+player's BB2025 positional across all four supported teams. It separates primary and secondary
 access and only offers skills from those groups. The mapping lives in
 `client/src/editor/careerSkills.ts`, sourced from the Human and Orc BB2025
 roster data at Mordorbihan; traits are not treated as career choices.
@@ -279,10 +287,12 @@ error list is exactly what the server will enforce. The client previously had
 its own looser validator (no stat ranges, no team checks), which meant a
 designer could see a clean list and still get a 400 on save.
 
-Roster validation uses the BB2025 Human and Orc team sheets. Both teams may
-field at most 11 players in a puzzle. Human caps are 3 Halflings, 2 Catchers, 2
+Roster validation uses the BB2025 team sheets. Every team may field at most 11
+players in a puzzle. Human caps are 3 Halflings, 2 Catchers, 2
 Throwers, 2 Blitzers, and 1 Ogre; Orc caps are 4 Goblins, 2 Throwers, 2
-Blitzers, 2 Big Un Blockers, and 1 Troll. Linemen remain bounded by the
+Blitzers, 2 Big Un Blockers, and 1 Troll. Black Orc caps are 6 Black Orcs and 1
+Trained Troll; Imperial Nobility caps are 2 Throwers, 4 Bodyguards, 2 Noble
+Blitzers, and 1 Ogre. Linemen and Goblin Bruisers remain bounded by the
 11-player on-pitch limit. The roster palette displays current/cap counts and
 disables a positional at its cap; the Review panel and both scenario save APIs
 enforce the same rules. Series Creator also checks every assigned puzzle and

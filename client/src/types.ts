@@ -2,7 +2,7 @@ import type { PathStep, BlockOutcomeFace } from './bfs';
 
 export type { BlockOutcomeFace };
 
-export type Team = 'human' | 'orc';
+export type Team = 'human' | 'orc' | 'black-orc' | 'imperial-nobility';
 export type Objective = 'touchdown';
 
 /**
@@ -54,6 +54,8 @@ export interface Scenario {
   name: string;
   description: string;
   activeTeam: Team;
+  /** The two opposing rosters available to this puzzle. */
+  teams?: [Team, Team];
   objective?: Objective;
   /** Whether this puzzle is also listed as a standalone Free Play puzzle. */
   freePlay?: boolean;

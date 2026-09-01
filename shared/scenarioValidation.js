@@ -19,7 +19,7 @@ export const STAT_RANGE = { min: 1, max: 12 };
 
 export const STAT_KEYS = ['ma', 'st', 'ag', 'pa', 'av'];
 
-export const TEAMS = ['human', 'orc'];
+export const TEAMS = ['human', 'orc', 'black-orc', 'imperial-nobility'];
 export const OBJECTIVES = ['touchdown'];
 
 /** BB2025 team-sheet caps. A puzzle is a single on-pitch state, so each team
@@ -41,6 +41,18 @@ export const ROSTER_LIMITS = {
     'big-un': { max: 2, label: 'Big Un Blockers' },
     troll: { max: 1, label: 'Troll' },
   },
+  'black-orc': {
+    goblin: { max: 16, label: 'Goblin Bruisers' },
+    'black-orc': { max: 6, label: 'Black Orcs' },
+    troll: { max: 1, label: 'Trained Troll' },
+  },
+  'imperial-nobility': {
+    retainer: { max: 16, label: 'Imperial Retainers' },
+    thrower: { max: 2, label: 'Imperial Throwers' },
+    bodyguard: { max: 4, label: 'Bodyguards' },
+    'noble-blitzer': { max: 2, label: 'Noble Blitzers' },
+    ogre: { max: 1, label: 'Ogre' },
+  },
 };
 
 // Old test fixtures and pre-roster editor drafts used portrait/archetype names
@@ -48,7 +60,20 @@ export const ROSTER_LIMITS = {
 const ROSTER_ROLE_ALIASES = {
   human: { blocker: 'lineman', guard: 'lineman', tackle: 'lineman' },
   orc: { blocker: 'big-un', 'black-orc': 'big-un' },
+  'black-orc': { lineman: 'goblin', blocker: 'black-orc', 'goblin-bruiser': 'goblin' },
+  'imperial-nobility': { lineman: 'retainer', blitzer: 'noble-blitzer', guard: 'bodyguard' },
 };
+
+const TEAM_LABELS = {
+  human: 'Human',
+  orc: 'Orc',
+  'black-orc': 'Black Orc',
+  'imperial-nobility': 'Imperial Nobility',
+};
+
+function normalizeTeam(team, fallback = 'human') {
+  return TEAMS.includes(team) ? team : fallback;
+}
 
 function canonicalRosterRole(team, role) {
   if (ROSTER_LIMITS[team]?.[role]) return role;
@@ -63,7 +88,7 @@ export function rosterLimitFor(team, role) {
 export function scenarioRosterErrors(scenario) {
   const errors = [];
   for (const team of TEAMS) {
-    const teamName = team === 'human' ? 'Human' : 'Orc';
+    const teamName = TEAM_LABELS[team];
     const pieces = (scenario?.pieces ?? []).filter(piece => piece.team === team);
     if (pieces.length > 11) {
       errors.push(`${teamName} team may field at most 11 players (currently ${pieces.length})`);
@@ -89,11 +114,20 @@ export function scenarioRosterErrors(scenario) {
 
 export function normalizeScenario(input) {
   const source = input && typeof input === 'object' ? input : {};
+  const activeTeam = normalizeTeam(source.activeTeam);
+  const configuredTeams = Array.isArray(source.teams)
+    ? [...new Set(source.teams.filter(team => TEAMS.includes(team)))]
+    : [];
+  const firstTeam = configuredTeams[0] ?? activeTeam;
+  const secondTeam = configuredTeams.find(team => team !== firstTeam)
+    ?? TEAMS.find(team => team !== firstTeam)
+    ?? firstTeam;
   return {
     id: String(source.id ?? '').trim(),
     name: String(source.name ?? '').trim(),
     description: String(source.description ?? '').trim(),
-    activeTeam: source.activeTeam === 'orc' ? 'orc' : 'human',
+    activeTeam,
+    teams: [firstTeam, secondTeam],
     objective: OBJECTIVES.includes(source.objective) ? source.objective : 'touchdown',
     // Before this field existed, scenario-006 was the sole hard-coded Free
     // Play puzzle. Preserve that published Blob data during migration.
@@ -114,7 +148,7 @@ function normalizePiece(piece) {
   const source = piece && typeof piece === 'object' ? piece : {};
   return {
     id: String(source.id ?? '').trim(),
-    team: source.team === 'orc' ? 'orc' : 'human',
+    team: normalizeTeam(source.team),
     role: String(source.role ?? 'lineman').trim(),
     name: String(source.name ?? '').trim(),
     ma: Number(source.ma),
@@ -142,7 +176,13 @@ export function normalizeSeries(input) {
     ? rawLogo.length <= 200_000 && /^data:image\/webp;base64,[a-z0-9+/]+=*$/i.test(rawLogo) ? rawLogo : ''
     : /^[a-z0-9-]{1,80}$/.test(rawLogo) ? rawLogo : '';
   const id = String(source.id ?? 'default').trim().toLowerCase();
-  const teams = Array.isArray(source.teams) ? source.teams.filter(team => TEAMS.includes(team)) : [];
+  const teams = Array.isArray(source.teams)
+    ? [...new Set(source.teams.filter(team => TEAMS.includes(team)))]
+    : [];
+  const firstTeam = teams[0] ?? 'human';
+  const secondTeam = teams.find(team => team !== firstTeam)
+    ?? TEAMS.find(team => team !== firstTeam)
+    ?? firstTeam;
   const scenarioIds = Array.isArray(source.scenarioIds)
     ? [...new Set(source.scenarioIds.map(String).filter(Boolean))]
     : [];
@@ -154,7 +194,7 @@ export function normalizeSeries(input) {
     ...(label ? { label } : {}),
     published: source.published !== false,
     ...(source.adminEnabled === true ? { adminEnabled: true } : {}),
-    teams: [teams[0] ?? 'human', teams[1] ?? (teams[0] === 'orc' ? 'human' : 'orc')],
+    teams: [firstTeam, secondTeam],
     objective: OBJECTIVES.includes(source.objective) ? source.objective : 'touchdown',
     order: Number.isInteger(source.order) && source.order >= 0 ? source.order : 0,
     ...(logo ? { logo } : {}),
@@ -168,6 +208,9 @@ export function normalizeSeries(input) {
  */
 export function seriesMembershipErrors(series, collection = [], scenarios = []) {
   const errors = [];
+  if (!Array.isArray(series.teams) || new Set(series.teams).size !== 2 || series.teams.some(team => !TEAMS.includes(team))) {
+    errors.push('Choose two different teams for the series');
+  }
   if ((series.published !== false || series.adminEnabled === true) && series.scenarioIds.length === 0) {
     errors.push('An enabled series must contain at least one puzzle');
   }
@@ -244,7 +287,12 @@ export function validateScenario(scenario, existingIds = new Set(), options = {}
   }
   if (!scenario.name) errors.push('Scenario name is required');
   if (!scenario.description) errors.push('Scenario description is required');
-  if (!TEAMS.includes(scenario.activeTeam)) errors.push('Active team must be human or orc');
+  if (!TEAMS.includes(scenario.activeTeam)) errors.push('Active team must be a recognized team');
+  const involvedTeams = Array.isArray(scenario.teams)
+    ? [...new Set(scenario.teams.filter(team => TEAMS.includes(team)))]
+    : [...TEAMS];
+  if (involvedTeams.length !== 2) errors.push('Choose two different teams for the puzzle');
+  if (!involvedTeams.includes(scenario.activeTeam)) errors.push('Active team must be one of the two selected teams');
   if (!allowExisting && scenario.id !== currentId && taken.has(scenario.id)) {
     errors.push('Scenario id already exists');
   }
@@ -262,7 +310,8 @@ export function validateScenario(scenario, existingIds = new Set(), options = {}
     if (ids.has(piece.id)) errors.push(`Duplicate player id: ${piece.id}`);
     ids.add(piece.id);
     if (!piece.name) errors.push(`Player ${piece.id || '(missing id)'} needs a name`);
-    if (!TEAMS.includes(piece.team)) errors.push(`Player ${piece.id} team must be human or orc`);
+    if (!TEAMS.includes(piece.team)) errors.push(`Player ${piece.id} must belong to a recognized team`);
+    if (!involvedTeams.includes(piece.team)) errors.push(`Player ${piece.id} must belong to one of the two selected teams`);
     if (piece.team === scenario.activeTeam) activeTeamPieces += 1;
 
     validatePosition(piece.position, `Player ${piece.id}`, errors);

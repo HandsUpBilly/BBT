@@ -56,6 +56,10 @@
   --team-human-deep: #123c66;
   --team-orc: #cf5340;
   --team-orc-deep: #6a1f18;
+  --team-black-orc: #87954b;
+  --team-black-orc-deep: #34451f;
+  --team-imperial-nobility: #d1aa58;
+  --team-imperial-nobility-deep: #594476;
 
   /* ── Movement and tactical overlays ───────────────────────────────── */
   --move-safe: rgba(222, 217, 203, 0.2);

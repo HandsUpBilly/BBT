@@ -804,6 +804,14 @@
   background: rgba(207, 83, 64, 0.3);
 }
 
+.piece--black-orc .piece__team-tint {
+  background: rgba(135, 149, 75, 0.34);
+}
+
+.piece--imperial-nobility .piece__team-tint {
+  background: rgba(209, 170, 88, 0.3);
+}
+
 /* High-contrast token style — a team-coloured role disc in place of the
    portrait bitmap, matching the puzzle editor's marker (see .editor-piece).
    Skill-group rings and letter badges remain for the middle detail level.
@@ -828,6 +836,8 @@
 
 .pitch--simple .piece--human .piece__portrait-frame { background: var(--team-human-deep); }
 .pitch--simple .piece--orc .piece__portrait-frame { background: var(--team-orc-deep); }
+.pitch--simple .piece--black-orc .piece__portrait-frame { background: var(--team-black-orc-deep); }
+.pitch--simple .piece--imperial-nobility .piece__portrait-frame { background: var(--team-imperial-nobility-deep); }
 
 .pitch--simple .piece__role-code {
   display: flex;

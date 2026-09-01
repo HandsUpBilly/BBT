@@ -9,6 +9,8 @@ import { nextScenarioId, validateScenarioDraft } from './editorValidation';
 import { PLAYER_TEMPLATES, generatedPlayerName, templateToPiece } from './playerTemplates';
 import { careerSkillGroupsFor, IMPLEMENTED_CAREER_SKILLS } from './careerSkills';
 import { playerPortraitFor } from '../playerPortraits';
+import { TEAMS as AVAILABLE_TEAMS, teamLabel, teamPluralLabel } from '../teamPresentation';
+import { applySeriesTeams } from '../series';
 import { SeriesCreator } from './SeriesCreator';
 import { STAT_KEYS, STAT_RANGE, PITCH, rosterLimitFor } from '../../../shared/scenarioValidation.js';
 import './PuzzleEditor.css';
@@ -31,6 +33,7 @@ function emptyScenario(existingIds: string[]): Scenario {
     name: 'New Puzzle',
     description: 'Describe the scoring puzzle.',
     activeTeam: 'human',
+    teams: ['human', 'orc'],
     objective: 'touchdown',
     freePlay: false,
     published: false,
@@ -131,9 +134,15 @@ export function PuzzleEditor({ onBack, onPlay, onReport, previewScenario, idToke
   }, [load]);
 
   const existingIds = useMemo(() => scenarios.map(scenario => scenario.id), [scenarios]);
+  const owningSeries = series.find(item => item.scenarioIds.includes(draft.id));
+  const effectiveDraft = useMemo(
+    () => owningSeries ? applySeriesTeams(owningSeries, draft) : draft,
+    [draft, owningSeries],
+  );
+  const involvedTeams: [Team, Team] = effectiveDraft.teams ?? ['human', 'orc'];
   const validationErrors = useMemo(
-    () => validateScenarioDraft(draft, existingIds, originalId),
-    [draft, existingIds, originalId],
+    () => validateScenarioDraft(effectiveDraft, existingIds, originalId),
+    [effectiveDraft, existingIds, originalId],
   );
   // Series entries pointing at scenarios that no longer exist would silently
   // shorten a series run, so surface them here rather than dropping them.
@@ -177,6 +186,20 @@ export function PuzzleEditor({ onBack, onPlay, onReport, previewScenario, idToke
       setSelectedPieceId(null);
       setBallTool(false);
     }
+  }
+
+  function updateInvolvedTeam(index: 0 | 1, team: Team) {
+    updateDraft(scenario => {
+      const teams: [Team, Team] = [...(scenario.teams ?? ['human', 'orc'])];
+      const otherIndex = index === 0 ? 1 : 0;
+      if (teams[otherIndex] === team) teams[otherIndex] = teams[index];
+      teams[index] = team;
+      return {
+        ...scenario,
+        teams,
+        activeTeam: teams.includes(scenario.activeTeam) ? scenario.activeTeam : team,
+      };
+    });
   }
 
   /** Runs `action`, first asking to confirm if the editor has unsaved edits. */
@@ -347,10 +370,14 @@ export function PuzzleEditor({ onBack, onPlay, onReport, previewScenario, idToke
     }
     const template = PLAYER_TEMPLATES.find(item => item.key === templateKey);
     if (!template) return;
+    if (!involvedTeams.includes(template.team)) {
+      setStatus('That roster is not selected for this puzzle.');
+      return;
+    }
     const usage = rosterUsage(draft, template.team, template.role);
     if (!usage.allowed) {
       setStatus(usage.teamCount >= 11
-        ? `${template.team === 'human' ? 'Human' : 'Orc'} team already has 11 players on the pitch.`
+        ? `${teamLabel(template.team)} team already has 11 players on the pitch.`
         : `${usage.limit?.label ?? template.label} limit reached (${usage.limit?.max ?? 0}).`);
       return;
     }
@@ -365,7 +392,8 @@ export function PuzzleEditor({ onBack, onPlay, onReport, previewScenario, idToke
   }
 
   async function saveScenario(overwrite: boolean) {
-    const errors = validateScenarioDraft(draft, existingIds, overwrite ? originalId : undefined);
+    const scenarioToSave = owningSeries ? applySeriesTeams(owningSeries, draft) : draft;
+    const errors = validateScenarioDraft(scenarioToSave, existingIds, overwrite ? originalId : undefined);
     if (errors.length) {
       setStatus(errors.join(' '));
       return;
@@ -373,8 +401,8 @@ export function PuzzleEditor({ onBack, onPlay, onReport, previewScenario, idToke
     setSaving(true);
     try {
       const saved = overwrite && originalId === draft.id
-        ? await updateScenario(draft, idToken)
-        : await createScenario(draft, idToken);
+        ? await updateScenario(scenarioToSave, idToken)
+        : await createScenario(scenarioToSave, idToken);
       const next = scenarios.filter(scenario => scenario.id !== saved.id);
       const sorted = [...next, saved].sort((a, b) => a.id.localeCompare(b.id));
       setScenarios(sorted);
@@ -504,7 +532,7 @@ export function PuzzleEditor({ onBack, onPlay, onReport, previewScenario, idToke
         </div>
         <div className="editor__header-actions">
           <button className="btn btn--secondary" onClick={() => guardUnsaved(onBack, 'Leaving the editor')}>Back</button>
-          <button className="btn btn--secondary" onClick={() => onPlay(draft)} disabled={validationErrors.length > 0}>
+          <button className="btn btn--secondary" onClick={() => onPlay(effectiveDraft)} disabled={validationErrors.length > 0}>
             Play Draft
           </button>
           <button
@@ -551,6 +579,7 @@ export function PuzzleEditor({ onBack, onPlay, onReport, previewScenario, idToke
             {filteredScenarios.map(scenario => {
               const membership = series.find(item => item.scenarioIds.includes(scenario.id));
               const position = membership?.scenarioIds.indexOf(scenario.id) ?? -1;
+              const displayedScenario = membership ? applySeriesTeams(membership, scenario) : scenario;
               return (
                 <button
                   key={scenario.id}
@@ -561,7 +590,7 @@ export function PuzzleEditor({ onBack, onPlay, onReport, previewScenario, idToke
                   <span>{scenario.id}</span>
                   <span className="editor__puzzle-desc">{scenario.description}</span>
                   <span>
-                    {scenario.activeTeam === 'orc' ? 'Orcs' : 'Humans'} active,{' '}
+                    {teamPluralLabel(displayedScenario.activeTeam)} active,{' '}
                     {scenario.pieces.length} player{scenario.pieces.length === 1 ? '' : 's'},{' '}
                     {scenario.published !== false ? 'Everyone' : scenario.adminEnabled ? 'Admins' : 'Creator only'}
                   </span>
@@ -594,10 +623,26 @@ export function PuzzleEditor({ onBack, onPlay, onReport, previewScenario, idToke
               <input value={draft.name} onChange={event => setMetadata('name', event.target.value)} />
             </label>
             <label>
+              Team 1 roster
+              <select value={involvedTeams[0]} disabled={Boolean(owningSeries)} onChange={event => updateInvolvedTeam(0, event.target.value as Team)}>
+                {AVAILABLE_TEAMS.map(team => <option key={team} value={team}>{teamLabel(team)}</option>)}
+              </select>
+            </label>
+            <label>
+              Team 2 roster
+              <select value={involvedTeams[1]} disabled={Boolean(owningSeries)} onChange={event => updateInvolvedTeam(1, event.target.value as Team)}>
+                {AVAILABLE_TEAMS.map(team => <option key={team} value={team}>{teamLabel(team)}</option>)}
+              </select>
+            </label>
+            {owningSeries && (
+              <p className="editor__series-team-note">
+                Matchup inherited from <strong>{owningSeries.name}</strong>. Change it in Series Creator.
+              </p>
+            )}
+            <label>
               Active team
-              <select value={draft.activeTeam} onChange={event => setMetadata('activeTeam', event.target.value as Team)}>
-                <option value="human">Human</option>
-                <option value="orc">Orc</option>
+              <select value={effectiveDraft.activeTeam} onChange={event => setMetadata('activeTeam', event.target.value as Team)}>
+                {involvedTeams.map(team => <option key={team} value={team}>{teamLabel(team)}</option>)}
               </select>
             </label>
             <label>
@@ -606,30 +651,39 @@ export function PuzzleEditor({ onBack, onPlay, onReport, previewScenario, idToke
                 <option value="touchdown">Touchdown</option>
               </select>
             </label>
-            <label className="editor__checkbox">
-              <input
-                type="checkbox"
-                checked={draft.published !== false}
-                onChange={event => setMetadata('published', event.target.checked)}
-              />
-              Enabled for everyone
-            </label>
-            <label className="editor__checkbox">
-              <input
-                type="checkbox"
-                checked={draft.adminEnabled === true}
-                onChange={event => setMetadata('adminEnabled', event.target.checked)}
-              />
-              Enabled for admins
-            </label>
-            <label className="editor__checkbox">
-              <input
-                type="checkbox"
-                checked={draft.freePlay === true}
-                onChange={event => setMetadata('freePlay', event.target.checked)}
-              />
-              Also enabled for Free Play
-            </label>
+            <fieldset className="editor__toggle-group">
+              <legend>Availability</legend>
+              <label className="editor__toggle">
+                <input
+                  type="checkbox"
+                  aria-label="Enabled for everyone"
+                  checked={draft.published !== false}
+                  onChange={event => setMetadata('published', event.target.checked)}
+                />
+                <span className="editor__toggle-track" aria-hidden="true" />
+                <span aria-hidden="true">Everyone</span>
+              </label>
+              <label className="editor__toggle">
+                <input
+                  type="checkbox"
+                  aria-label="Enabled for admins"
+                  checked={draft.adminEnabled === true}
+                  onChange={event => setMetadata('adminEnabled', event.target.checked)}
+                />
+                <span className="editor__toggle-track" aria-hidden="true" />
+                <span aria-hidden="true">Admins</span>
+              </label>
+              <label className="editor__toggle">
+                <input
+                  type="checkbox"
+                  aria-label="Also enabled for Free Play"
+                  checked={draft.freePlay === true}
+                  onChange={event => setMetadata('freePlay', event.target.checked)}
+                />
+                <span className="editor__toggle-track" aria-hidden="true" />
+                <span aria-hidden="true">Free Play</span>
+              </label>
+            </fieldset>
             <label className="editor__metadata-desc">
               Description
               <textarea value={draft.description} onChange={event => setMetadata('description', event.target.value)} />
@@ -710,9 +764,9 @@ export function PuzzleEditor({ onBack, onPlay, onReport, previewScenario, idToke
           {inspectorSection === 'roster' && (
           <section className="editor-tool" aria-labelledby="roster-heading">
             <h2 id="roster-heading">Player Roster</h2>
-            {(['human', 'orc'] as Team[]).map(team => (
+            {involvedTeams.map(team => (
               <div key={team} className="editor-tool__group">
-                <h3>{team === 'human' ? 'Humans' : 'Orcs'}</h3>
+                <h3>{teamPluralLabel(team)}</h3>
                 {groupTemplates(team).map(template => {
                   const usage = rosterUsage(draft, template.team, template.role);
                   return (
@@ -787,8 +841,8 @@ export function PuzzleEditor({ onBack, onPlay, onReport, previewScenario, idToke
                       updatePiece(selectedPiece.id, { team, role });
                     }}
                   >
-                    <option value="human">Human</option>
-                    <option value="orc">Orc</option>
+                    {!involvedTeams.includes(selectedPiece.team) && <option value={selectedPiece.team}>{teamLabel(selectedPiece.team)} (not in matchup)</option>}
+                    {involvedTeams.map(team => <option key={team} value={team}>{teamLabel(team)}</option>)}
                   </select>
                 </label>
                 <label>

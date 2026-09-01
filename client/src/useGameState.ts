@@ -1,7 +1,8 @@
 import { useState, useCallback } from 'react';
-import type { GameState, PlayerPiece, Position, ActionLogEntry, Scenario, BlockOutcomeFace } from './types';
+import type { GameState, PlayerPiece, Position, ActionLogEntry, Scenario, BlockOutcomeFace, Team } from './types';
 import type { PathStep } from './bfs';
 import type { BlockBoardState } from './blockBranching';
+import { attacksTopEndZone } from './teamPresentation';
 import {
   computeReachable, findShortestPath, key, fromKey, neighbours, catchTargetAt, passTargetAt, computePassRange,
   rangeBandForPass, countEligibleAssists, blockDiceCount, blockOutcomeProbabilities, blockCombinedProbability,
@@ -295,8 +296,8 @@ function resumeMovementAfterBlitz(
   };
 }
 
-function isTouchdownSquare(pos: Position, team: string): boolean {
-  return team === 'human' ? pos.row === 0 : pos.row === ROWS - 1;
+function isTouchdownSquare(pos: Position, team: Team): boolean {
+  return attacksTopEndZone(team) ? pos.row === 0 : pos.row === ROWS - 1;
 }
 
 /**

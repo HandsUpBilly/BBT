@@ -2,6 +2,7 @@ import { useMemo, useRef, useState } from 'react';
 import type { Scenario, SeriesDefinition, Team } from '../types';
 import { AVATAR_ALLOWED_TYPES, encodeAvatarFile, validateAvatarFile } from '../avatarImage';
 import { seriesLogoSource } from '../seriesLogo';
+import { TEAMS, teamLabel } from '../teamPresentation';
 import { deleteSeries, saveSeries } from './editorApi';
 import { seriesMembershipErrors } from '../../../shared/scenarioValidation.js';
 
@@ -171,8 +172,8 @@ export function SeriesCreator({ scenarios, series, idToken, onChange, onStatus }
           <label>Title<input value={draft.name} onChange={event => setDraft(current => ({ ...current, name: event.target.value }))} /></label>
           <label>Series label<input value={draft.label ?? ''} placeholder="League" maxLength={40} onChange={event => setDraft(current => ({ ...current, label: event.target.value || undefined }))} /></label>
           <label className="series-creator__wide">Description<textarea value={draft.description} onChange={event => setDraft(current => ({ ...current, description: event.target.value }))} /></label>
-          <label>First team<select value={(draft.teams ?? ['human', 'orc'])[0]} onChange={event => updateTeam(0, event.target.value as Team)}><option value="human">Human</option><option value="orc">Orc</option></select></label>
-          <label>Second team<select value={(draft.teams ?? ['human', 'orc'])[1]} onChange={event => updateTeam(1, event.target.value as Team)}><option value="human">Human</option><option value="orc">Orc</option></select></label>
+          <label>First team<select value={(draft.teams ?? ['human', 'orc'])[0]} onChange={event => updateTeam(0, event.target.value as Team)}>{TEAMS.map(team => <option key={team} value={team} disabled={team === (draft.teams ?? ['human', 'orc'])[1]}>{teamLabel(team)}</option>)}</select></label>
+          <label>Second team<select value={(draft.teams ?? ['human', 'orc'])[1]} onChange={event => updateTeam(1, event.target.value as Team)}>{TEAMS.map(team => <option key={team} value={team} disabled={team === (draft.teams ?? ['human', 'orc'])[0]}>{teamLabel(team)}</option>)}</select></label>
           <label>Objective<select value={draft.objective ?? 'touchdown'} onChange={() => undefined}><option value="touchdown">Touchdown</option></select></label>
           <label>List position<input type="number" min="1" value={(draft.order ?? 0) + 1} onChange={event => setDraft(current => ({ ...current, order: Math.max(0, Number(event.target.value) - 1) }))} /></label>
           <div className="series-creator__logo">
@@ -194,8 +195,19 @@ export function SeriesCreator({ scenarios, series, idToken, onChange, onStatus }
             </div>
             {logoError ? <small className="editor__error" role="alert">{logoError}</small> : <small>PNG, JPEG or WebP; cropped square automatically.</small>}
           </div>
-          <label className="editor__checkbox"><input type="checkbox" checked={draft.published !== false} onChange={event => setDraft(current => ({ ...current, published: event.target.checked }))} />Enabled for everyone</label>
-          <label className="editor__checkbox"><input type="checkbox" checked={draft.adminEnabled === true} onChange={event => setDraft(current => ({ ...current, adminEnabled: event.target.checked }))} />Enabled for admins</label>
+          <fieldset className="editor__toggle-group series-creator__wide">
+            <legend>Availability</legend>
+            <label className="editor__toggle">
+              <input type="checkbox" aria-label="Enabled for everyone" checked={draft.published !== false} onChange={event => setDraft(current => ({ ...current, published: event.target.checked }))} />
+              <span className="editor__toggle-track" aria-hidden="true" />
+              <span aria-hidden="true">Everyone</span>
+            </label>
+            <label className="editor__toggle">
+              <input type="checkbox" aria-label="Enabled for admins" checked={draft.adminEnabled === true} onChange={event => setDraft(current => ({ ...current, adminEnabled: event.target.checked }))} />
+              <span className="editor__toggle-track" aria-hidden="true" />
+              <span aria-hidden="true">Admins</span>
+            </label>
+          </fieldset>
         </div>
 
         <section className="series-creator__steps" aria-labelledby="series-steps-heading">
