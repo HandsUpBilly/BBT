@@ -28,6 +28,17 @@ const savedScenario: Scenario = {
   }],
 };
 
+const unassignedSeries: SeriesDefinition[] = [{
+  id: 'empty',
+  name: 'Empty Draft',
+  description: '',
+  scenarioIds: [],
+  published: false,
+  teams: ['human', 'orc'],
+  objective: 'touchdown',
+  order: 0,
+}];
+
 afterEach(() => {
   cleanup();
   vi.restoreAllMocks();
@@ -70,7 +81,7 @@ function openCreatorTool(name: RegExp) {
 
 describe('PuzzleEditor unsaved changes', { timeout: 15_000 }, () => {
   it('chooses the two involved teams and limits team controls to that pairing', async () => {
-    renderEditor();
+    renderEditor([savedScenario], unassignedSeries);
     await screen.findByDisplayValue('Saved Puzzle');
 
     const firstTeam = screen.getByLabelText('Team 1 roster') as HTMLSelectElement;
@@ -87,7 +98,7 @@ describe('PuzzleEditor unsaved changes', { timeout: 15_000 }, () => {
   });
 
   it('offers Black Orc and Imperial Nobility rosters and scopes the palette to them', async () => {
-    renderEditor();
+    renderEditor([savedScenario], unassignedSeries);
     await screen.findByDisplayValue('Saved Puzzle');
 
     fireEvent.change(screen.getByLabelText('Team 1 roster'), { target: { value: 'black-orc' } });
@@ -101,6 +112,47 @@ describe('PuzzleEditor unsaved changes', { timeout: 15_000 }, () => {
     expect(screen.getByRole('button', { name: /Noble Blitzer/ })).toBeTruthy();
     expect(screen.queryByRole('button', { name: /Human Catcher/ })).toBeNull();
     expect(screen.queryByRole('button', { name: /Orc Blitzer/ })).toBeNull();
+  });
+
+  it('inherits first and second team from the puzzle\'s selected series', async () => {
+    const assignedScenario: Scenario = {
+      ...savedScenario,
+      activeTeam: 'black-orc',
+      teams: ['human', 'orc'],
+      pieces: [{
+        ...savedScenario.pieces[0],
+        id: 'bruiser-1',
+        team: 'black-orc',
+        role: 'goblin',
+        name: 'Snik Ratfinger',
+        st: 2,
+        av: 7,
+      }],
+    };
+    const fetchMock = renderEditor([assignedScenario], [{
+      id: 'new-league',
+      name: 'New League',
+      description: '',
+      scenarioIds: [assignedScenario.id],
+      teams: ['black-orc', 'imperial-nobility'],
+      objective: 'touchdown',
+      order: 0,
+    }]);
+    await screen.findByDisplayValue('Saved Puzzle');
+
+    const firstTeam = screen.getByLabelText('Team 1 roster') as HTMLSelectElement;
+    const secondTeam = screen.getByLabelText('Team 2 roster') as HTMLSelectElement;
+    expect(firstTeam.value).toBe('black-orc');
+    expect(secondTeam.value).toBe('imperial-nobility');
+    expect(firstTeam.disabled).toBe(true);
+    expect(secondTeam.disabled).toBe(true);
+    expect(screen.getByText(/Matchup inherited from/).textContent).toContain('New League');
+
+    fireEvent.change(screen.getByLabelText('Name'), { target: { value: 'Series Matchup' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Save Puzzle' }));
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
+    const request = fetchMock.mock.calls[1][1] as RequestInit;
+    expect(JSON.parse(String(request.body)).teams).toEqual(['black-orc', 'imperial-nobility']);
   });
 
   it('adds and removes applicable implemented career skills while keeping future skills unavailable', async () => {

@@ -10,6 +10,7 @@ import { PLAYER_TEMPLATES, generatedPlayerName, templateToPiece } from './player
 import { careerSkillGroupsFor, IMPLEMENTED_CAREER_SKILLS } from './careerSkills';
 import { playerPortraitFor } from '../playerPortraits';
 import { TEAMS as AVAILABLE_TEAMS, teamLabel, teamPluralLabel } from '../teamPresentation';
+import { applySeriesTeams } from '../series';
 import { SeriesCreator } from './SeriesCreator';
 import { STAT_KEYS, STAT_RANGE, PITCH, rosterLimitFor } from '../../../shared/scenarioValidation.js';
 import './PuzzleEditor.css';
@@ -133,9 +134,15 @@ export function PuzzleEditor({ onBack, onPlay, onReport, previewScenario, idToke
   }, [load]);
 
   const existingIds = useMemo(() => scenarios.map(scenario => scenario.id), [scenarios]);
+  const owningSeries = series.find(item => item.scenarioIds.includes(draft.id));
+  const effectiveDraft = useMemo(
+    () => owningSeries ? applySeriesTeams(owningSeries, draft) : draft,
+    [draft, owningSeries],
+  );
+  const involvedTeams: [Team, Team] = effectiveDraft.teams ?? ['human', 'orc'];
   const validationErrors = useMemo(
-    () => validateScenarioDraft(draft, existingIds, originalId),
-    [draft, existingIds, originalId],
+    () => validateScenarioDraft(effectiveDraft, existingIds, originalId),
+    [effectiveDraft, existingIds, originalId],
   );
   // Series entries pointing at scenarios that no longer exist would silently
   // shorten a series run, so surface them here rather than dropping them.
@@ -167,7 +174,6 @@ export function PuzzleEditor({ onBack, onPlay, onReport, previewScenario, idToke
   const selectedPiece = selectedPieceId
     ? draft.pieces.find(piece => piece.id === selectedPieceId)
     : undefined;
-  const involvedTeams: [Team, Team] = draft.teams ?? ['human', 'orc'];
   const selectedPieceCareerSkills = selectedPiece
     ? careerSkillGroupsFor(selectedPiece.team, selectedPiece.role)
     : null;
@@ -386,7 +392,8 @@ export function PuzzleEditor({ onBack, onPlay, onReport, previewScenario, idToke
   }
 
   async function saveScenario(overwrite: boolean) {
-    const errors = validateScenarioDraft(draft, existingIds, overwrite ? originalId : undefined);
+    const scenarioToSave = owningSeries ? applySeriesTeams(owningSeries, draft) : draft;
+    const errors = validateScenarioDraft(scenarioToSave, existingIds, overwrite ? originalId : undefined);
     if (errors.length) {
       setStatus(errors.join(' '));
       return;
@@ -394,8 +401,8 @@ export function PuzzleEditor({ onBack, onPlay, onReport, previewScenario, idToke
     setSaving(true);
     try {
       const saved = overwrite && originalId === draft.id
-        ? await updateScenario(draft, idToken)
-        : await createScenario(draft, idToken);
+        ? await updateScenario(scenarioToSave, idToken)
+        : await createScenario(scenarioToSave, idToken);
       const next = scenarios.filter(scenario => scenario.id !== saved.id);
       const sorted = [...next, saved].sort((a, b) => a.id.localeCompare(b.id));
       setScenarios(sorted);
@@ -525,7 +532,7 @@ export function PuzzleEditor({ onBack, onPlay, onReport, previewScenario, idToke
         </div>
         <div className="editor__header-actions">
           <button className="btn btn--secondary" onClick={() => guardUnsaved(onBack, 'Leaving the editor')}>Back</button>
-          <button className="btn btn--secondary" onClick={() => onPlay(draft)} disabled={validationErrors.length > 0}>
+          <button className="btn btn--secondary" onClick={() => onPlay(effectiveDraft)} disabled={validationErrors.length > 0}>
             Play Draft
           </button>
           <button
@@ -572,6 +579,7 @@ export function PuzzleEditor({ onBack, onPlay, onReport, previewScenario, idToke
             {filteredScenarios.map(scenario => {
               const membership = series.find(item => item.scenarioIds.includes(scenario.id));
               const position = membership?.scenarioIds.indexOf(scenario.id) ?? -1;
+              const displayedScenario = membership ? applySeriesTeams(membership, scenario) : scenario;
               return (
                 <button
                   key={scenario.id}
@@ -582,7 +590,7 @@ export function PuzzleEditor({ onBack, onPlay, onReport, previewScenario, idToke
                   <span>{scenario.id}</span>
                   <span className="editor__puzzle-desc">{scenario.description}</span>
                   <span>
-                    {scenario.activeTeam === 'orc' ? 'Orcs' : 'Humans'} active,{' '}
+                    {teamPluralLabel(displayedScenario.activeTeam)} active,{' '}
                     {scenario.pieces.length} player{scenario.pieces.length === 1 ? '' : 's'},{' '}
                     {scenario.published !== false ? 'Everyone' : scenario.adminEnabled ? 'Admins' : 'Creator only'}
                   </span>
@@ -616,19 +624,24 @@ export function PuzzleEditor({ onBack, onPlay, onReport, previewScenario, idToke
             </label>
             <label>
               Team 1 roster
-              <select value={involvedTeams[0]} onChange={event => updateInvolvedTeam(0, event.target.value as Team)}>
+              <select value={involvedTeams[0]} disabled={Boolean(owningSeries)} onChange={event => updateInvolvedTeam(0, event.target.value as Team)}>
                 {AVAILABLE_TEAMS.map(team => <option key={team} value={team}>{teamLabel(team)}</option>)}
               </select>
             </label>
             <label>
               Team 2 roster
-              <select value={involvedTeams[1]} onChange={event => updateInvolvedTeam(1, event.target.value as Team)}>
+              <select value={involvedTeams[1]} disabled={Boolean(owningSeries)} onChange={event => updateInvolvedTeam(1, event.target.value as Team)}>
                 {AVAILABLE_TEAMS.map(team => <option key={team} value={team}>{teamLabel(team)}</option>)}
               </select>
             </label>
+            {owningSeries && (
+              <p className="editor__series-team-note">
+                Matchup inherited from <strong>{owningSeries.name}</strong>. Change it in Series Creator.
+              </p>
+            )}
             <label>
               Active team
-              <select value={draft.activeTeam} onChange={event => setMetadata('activeTeam', event.target.value as Team)}>
+              <select value={effectiveDraft.activeTeam} onChange={event => setMetadata('activeTeam', event.target.value as Team)}>
                 {involvedTeams.map(team => <option key={team} value={team}>{teamLabel(team)}</option>)}
               </select>
             </label>

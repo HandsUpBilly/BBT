@@ -23,6 +23,10 @@ Editor features:
 - create, duplicate, and delete puzzles,
 - choose the two opposing team rosters for the puzzle; the active-team selector,
   add-player palette, and selected-player team control are limited to that pair,
+- when a puzzle belongs to a series, the series First team and Second team are
+  authoritative: Puzzle Creator shows those inherited values read-only, uses
+  them for the palette/validation/test run, and persists them on the next puzzle
+  save,
 - drag player templates from those two rosters onto the editor pitch,
 - auto-generate Blood Bowl style player names,
 - **full piece inspector**: name, id, team, role, MA/ST/AG/PA/AV as bounded
@@ -40,7 +44,7 @@ Editor features:
   logo, objective, list position, and everyone/admin enabled states,
 - add, remove, and reorder its puzzle steps; this is the single owner of series
   membership, each puzzle can belong to only one series, and assigned puzzles
-  must satisfy BB2025 roster limits,
+  must satisfy BB2025 roster limits and use the series matchup,
 - play draft and return to designer.
 
 The Statistics section shows anonymous player-performance aggregates from the
