@@ -1950,13 +1950,18 @@ export default function App() {
             scrolls rather than squeezing the board, and the cards go compact
             (see .side-col--comparing) so both usually fit without it. */}
         <div className={`side-col side-col--right${comparisonPiece ? ' side-col--comparing' : ''}`}>
-          <PlayerPanel
-            piece={inspectedPiece}
-            side="right"
-            role={comparisonPiece ? 'acting' : undefined}
-          />
-          {comparisonPiece && (
-            <PlayerPanel piece={comparisonPiece} side="right" role="target" />
+          {comparisonPiece ? (
+            <div
+              className="player-matchup"
+              role="group"
+              aria-label={`${inspectedPiece?.name ?? 'Acting player'} versus ${comparisonPiece.name}`}
+            >
+              <PlayerPanel piece={inspectedPiece} side="right" role="acting" />
+              <div className="player-matchup__divider" aria-hidden="true">VS</div>
+              <PlayerPanel piece={comparisonPiece} side="right" role="target" />
+            </div>
+          ) : (
+            <PlayerPanel piece={inspectedPiece} side="right" />
           )}
         </div>
 

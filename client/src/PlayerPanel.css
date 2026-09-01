@@ -60,23 +60,179 @@
   contain: size;
 }
 
-/* Both cards have to fit a rail that held one. The portrait is the only part
-   worth most of its height — a square one at a 210px rail is 210px on its own —
-   so while comparing it gives up its aspect ratio and the rest of the card,
-   which is the part being read, keeps full size. */
+/* Comparison is a single tactical dossier, not two collectible cards stacked
+   in the rail. Each player becomes a compact identity row followed by one
+   five-stat strip, while the shared shell and VS divider carry the matchup. */
+.player-matchup {
+  width: 100%;
+  overflow: hidden;
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  box-shadow: 0 14px 32px rgba(0, 0, 0, 0.22);
+}
+
+.side-col--comparing .panel {
+  display: grid;
+  grid-template-columns: 68px minmax(0, 1fr);
+  grid-template-rows: auto auto auto;
+  width: 100%;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.side-col--comparing .panel--human {
+  box-shadow: inset 3px 0 0 var(--team-human);
+}
+
+.side-col--comparing .panel--orc {
+  box-shadow: inset 3px 0 0 var(--team-orc);
+}
+
+.side-col--comparing .panel__role-tag {
+  grid-column: 1 / -1;
+  min-height: 20px;
+  display: flex;
+  align-items: center;
+  padding: 3px 9px 2px;
+  background: var(--color-surface-sunken);
+  border-bottom-color: var(--color-border-subtle);
+}
+
+.side-col--comparing .panel__role-tag--acting {
+  color: #d8cfa8;
+  background:
+    linear-gradient(90deg, rgba(199, 150, 61, 0.18), transparent 72%),
+    var(--color-surface-sunken);
+}
+
+.side-col--comparing .panel__role-tag--target {
+  color: #cf9b90;
+  background:
+    linear-gradient(90deg, rgba(196, 74, 55, 0.18), transparent 72%),
+    var(--color-surface-sunken);
+}
+
 .side-col--comparing .panel__portrait-wrap {
-  aspect-ratio: auto;
-  height: clamp(64px, 12vh, 108px);
+  grid-column: 1;
+  grid-row: 2 / span 2;
+  width: 56px;
+  height: 56px;
+  aspect-ratio: 1;
+  margin: 8px 0 8px 9px;
+  border: 1px solid rgba(239, 233, 220, 0.22);
+  border-radius: 50%;
 }
 
 .side-col--comparing .panel__portrait {
   object-position: top center;
 }
 
-/* A watermark is the first thing to drop when two cards are competing. */
+.side-col--comparing .panel__name {
+  grid-column: 2;
+  grid-row: 2;
+  align-self: end;
+  padding: 9px 8px 0;
+  font-family: var(--font-display);
+  font-size: 0.82rem;
+  line-height: 1.05;
+}
+
+.side-col--comparing .panel__role {
+  grid-column: 2;
+  grid-row: 3;
+  align-self: start;
+  padding: 2px 8px 8px;
+  font-family: var(--font-display);
+  font-size: 0.56rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+}
+
+.side-col--comparing .panel__stats {
+  grid-column: 1 / -1;
+  grid-row: 4;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 0;
+  padding: 0;
+  border-top: 1px solid var(--color-border-subtle);
+  border-bottom: 1px solid var(--color-border-subtle);
+}
+
+.side-col--comparing .panel__stat {
+  min-width: 0;
+  padding: 5px 1px 4px;
+  gap: 1px;
+  background: transparent;
+  border-radius: 0;
+}
+
+.side-col--comparing .panel__stat + .panel__stat {
+  border-left: 1px solid var(--color-border-subtle);
+}
+
+.side-col--comparing .panel__stat-icon {
+  display: none;
+}
+
+.side-col--comparing .panel__stat-value {
+  font-family: var(--font-display);
+  font-size: 0.88rem;
+}
+
+.side-col--comparing .panel__stat-label {
+  font-size: 0.48rem;
+  letter-spacing: 0.08em;
+}
+
+.side-col--comparing .panel__skills {
+  grid-column: 1 / -1;
+  grid-row: 5;
+  gap: 4px;
+  min-height: 26px;
+  padding: 5px 8px 6px;
+}
+
+.side-col--comparing .panel__skill {
+  padding: 0 4px;
+  background: transparent;
+  font-size: 0.56rem;
+}
+
 .side-col--comparing .panel__crest {
   display: none;
 }
+
+.player-matchup__divider {
+  position: relative;
+  height: 18px;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  color: var(--color-text-muted);
+  background: var(--color-surface-sunken);
+  border-top: 1px solid var(--color-border-subtle);
+  border-bottom: 1px solid var(--color-border-subtle);
+  font-family: var(--font-display);
+  font-size: 0.54rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+}
+
+.player-matchup__divider::before,
+.player-matchup__divider::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  width: 38%;
+  border-top: 1px solid var(--color-border);
+}
+
+.player-matchup__divider::before { left: 0; }
+.player-matchup__divider::after { right: 0; }
 
 .panel--human {
   box-shadow: inset 3px 0 0 var(--team-human);
