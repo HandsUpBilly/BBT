@@ -44,11 +44,11 @@ const PLAYER_PORTRAITS: Record<Team, Record<string, string>> = {
     troll: '/troll-v3-gritty.webp',
   },
   'imperial-nobility': {
-    retainer: '/human-lineman-gritty.webp',
-    thrower: '/human-thrower-gritty.webp',
-    bodyguard: '/human-blocker-gritty.webp',
-    'noble-blitzer': '/human-blitzer-gritty.webp',
-    ogre: '/ogre-gritty.webp',
+    retainer: '/imperial-retainer-gritty.webp',
+    thrower: '/imperial-thrower-gritty.webp',
+    bodyguard: '/imperial-bodyguard-gritty.webp',
+    'noble-blitzer': '/imperial-noble-blitzer-gritty.webp',
+    ogre: '/imperial-ogre-gritty.webp',
   },
 };
 
