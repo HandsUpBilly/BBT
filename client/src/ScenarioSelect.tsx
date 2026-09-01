@@ -1,9 +1,9 @@
-import { useMemo, useState, type ReactNode } from 'react';
+import { useMemo, useState, type CSSProperties, type ReactNode } from 'react';
 import type { ProgressData } from './api';
 import type { LeaderboardEntry, Scenario, SeriesDefinition, SeriesLeaderboardEntry } from './types';
 import { BrandLogo } from './BrandLogo';
 import { seriesLogoSource } from './seriesLogo';
-import { teamPluralLabel } from './teamPresentation';
+import { teamAccentRgb, teamPluralLabel } from './teamPresentation';
 import { UI_COPY } from './uiCopy';
 import './ScenarioSelect.css';
 
@@ -209,8 +209,13 @@ export function ScenarioSelect({
           {seriesList.map((item, index) => {
             const logoSource = seriesLogoSource(item.logo);
             const stepCount = item.scenarioIds.length;
+            const [firstTeam, secondTeam] = item.teams ?? ['human', 'orc'];
+            const seriesColourStyle = {
+              '--series-team-a-rgb': teamAccentRgb(firstTeam),
+              '--series-team-b-rgb': teamAccentRgb(secondTeam),
+            } as CSSProperties;
             return (
-              <div className="series-row" key={item.id}>
+              <div className="series-row" key={item.id} style={seriesColourStyle}>
                 <div className="series-row__logo">
                   {logoSource ? (
                     <span className="series-row__crest">

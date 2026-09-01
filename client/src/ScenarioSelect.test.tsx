@@ -60,6 +60,29 @@ describe('ScenarioSelect Free Play', () => {
     expect(screen.getAllByRole('button', { name: 'Play' })).toHaveLength(2);
   });
 
+  it('tints each series row from its two team colours', () => {
+    const { container } = render(
+      <ScenarioSelect
+        scenarios={scenarios}
+        series={[{ ...defaultSeries, teams: ['imperial-nobility', 'black-orc'] }]}
+        onPlay={vi.fn()}
+        onLeaderboard={vi.fn()}
+        onStartSeries={vi.fn()}
+        onSeriesLeaderboard={vi.fn()}
+        onAdmin={vi.fn()}
+        onHelp={vi.fn()}
+        onSettings={vi.fn()}
+        onAbout={vi.fn()}
+        isAdmin={false}
+        userMenu={<span />}
+      />,
+    );
+
+    const row = container.querySelector<HTMLElement>('.series-row');
+    expect(row?.style.getPropertyValue('--series-team-a-rgb')).toBe('103 79 137');
+    expect(row?.style.getPropertyValue('--series-team-b-rgb')).toBe('74 96 43');
+  });
+
   it('lists only the final unrestricted tutorial board', () => {
     const freePlay = scenarios.find(scenario => scenario.id === FREE_PLAY_SCENARIO_ID);
     const guidedDrill = scenarios.find(scenario => scenario.id === 'scenario-001');

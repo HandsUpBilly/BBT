@@ -215,7 +215,10 @@ players use `/api/scenarios`, which never contains admin-only records.
 
 - Series tab shows **Tutorial**, the default series row from
   `client/src/series/default.json`. Starting it opens the drill chooser rather
-  than forcing a fixed first puzzle.
+  than forcing a fixed first puzzle. Each series row uses its configured first
+  and second teams as restrained colour washes at the corresponding outer
+  edges, with a dark central reading surface and a fine two-team accent line;
+  team colour never becomes a full-saturation card background.
 - Free Play explains that its matches can be played individually. Its compact
   filter separates matches drawn from a series from future one-off specials.
   Each match card derives its source from actual series membership. A puzzle in

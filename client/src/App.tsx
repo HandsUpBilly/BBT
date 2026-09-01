@@ -1950,6 +1950,7 @@ export default function App() {
             tokenStyle={prefs.tokenStyle ?? 'portrait'}
             pitchSurface={prefs.pitchSurface ?? 'grass'}
             showCoordinates={prefs.showCoordinates ?? true}
+            teams={activeScenario?.teams}
             branchGhosts={branchedBoards.ghosts}
             moveDecision={activeTransfer ? {
               position: activeTransfer.position,

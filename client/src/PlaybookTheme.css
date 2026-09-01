@@ -400,10 +400,10 @@
 
 .app--game .square--light { background: #3c6031; }
 .app--game .square--dark { background: #355729; }
-.app--game .square--endzone-human.square--dark { background: #22405a; }
-.app--game .square--endzone-human.square--light { background: #294c69; }
-.app--game .square--endzone-orc.square--dark { background: #562c25; }
-.app--game .square--endzone-orc.square--light { background: #63352c; }
+.app--game .square--endzone-human.square--dark,
+.app--game .square--endzone-orc.square--dark { background-color: var(--endzone-dark); }
+.app--game .square--endzone-human.square--light,
+.app--game .square--endzone-orc.square--light { background-color: var(--endzone-light); }
 
 .app--game .pitch__col-label,
 .app--game .pitch__row-label {

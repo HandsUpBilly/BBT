@@ -233,30 +233,30 @@
 
 .pitch.pitch--surface-grass.pitch--detailed .square--endzone-human.square--light {
   background:
-    radial-gradient(circle at 72% 24%, rgba(106, 169, 219, 0.13), transparent 42%),
+    radial-gradient(circle at 72% 24%, var(--endzone-glow-light), transparent 42%),
     repeating-linear-gradient(105deg, rgba(229, 222, 184, 0.028) 0 1px, transparent 1px 4px),
-    #294c69;
+    var(--endzone-light);
 }
 
 .pitch.pitch--surface-grass.pitch--detailed .square--endzone-human.square--dark {
   background:
-    radial-gradient(circle at 28% 76%, rgba(8, 20, 30, 0.24), transparent 48%),
+    radial-gradient(circle at 28% 76%, var(--endzone-glow-dark), transparent 48%),
     repeating-linear-gradient(76deg, rgba(229, 222, 184, 0.022) 0 1px, transparent 1px 5px),
-    #22405a;
+    var(--endzone-dark);
 }
 
 .pitch.pitch--surface-grass.pitch--detailed .square--endzone-orc.square--light {
   background:
-    radial-gradient(circle at 72% 24%, rgba(210, 105, 76, 0.12), transparent 42%),
+    radial-gradient(circle at 72% 24%, var(--endzone-glow-light), transparent 42%),
     repeating-linear-gradient(105deg, rgba(229, 222, 184, 0.028) 0 1px, transparent 1px 4px),
-    #63352c;
+    var(--endzone-light);
 }
 
 .pitch.pitch--surface-grass.pitch--detailed .square--endzone-orc.square--dark {
   background:
-    radial-gradient(circle at 28% 76%, rgba(32, 10, 8, 0.25), transparent 48%),
+    radial-gradient(circle at 28% 76%, var(--endzone-glow-dark), transparent 48%),
     repeating-linear-gradient(76deg, rgba(229, 222, 184, 0.022) 0 1px, transparent 1px 5px),
-    #562c25;
+    var(--endzone-dark);
 }
 
 .pitch.pitch--tactical .square {
@@ -276,12 +276,12 @@
 
 .pitch.pitch--surface-grass.pitch--plain .square--endzone-human.square--light,
 .pitch.pitch--surface-grass.pitch--plain .square--endzone-human.square--dark {
-  background: #284b66;
+  background: var(--endzone-light);
 }
 
 .pitch.pitch--surface-grass.pitch--plain .square--endzone-orc.square--light,
 .pitch.pitch--surface-grass.pitch--plain .square--endzone-orc.square--dark {
-  background: #603229;
+  background: var(--endzone-light);
 }
 
 /* Slate is independent of information density: Detailed uses scratched,
@@ -320,9 +320,9 @@
 }
 
 .pitch.pitch--surface-slate .square--endzone-human.square--light,
-.pitch.pitch--surface-slate .square--endzone-human.square--dark { background-color: #2b4658; }
+.pitch.pitch--surface-slate .square--endzone-human.square--dark { background-color: var(--endzone-dark); }
 .pitch.pitch--surface-slate .square--endzone-orc.square--light,
-.pitch.pitch--surface-slate .square--endzone-orc.square--dark { background-color: #58342e; }
+.pitch.pitch--surface-slate .square--endzone-orc.square--dark { background-color: var(--endzone-dark); }
 
 /* ── Compact: narrow coordinate gutters ──────────────────────────────────
    Keep the grid references visible, but on narrow rails so the playable
@@ -393,10 +393,72 @@
 /* ── End zones ──────────────────────────────────────────────────────── */
 /* Named for the team that scores there (state row 0 / row 25) rather than for
    a screen edge, because which edge that is depends on the orientation. */
-.square--endzone-human.square--dark  { background: #22405a; }
-.square--endzone-human.square--light { background: #294c69; }
-.square--endzone-orc.square--dark    { background: #562c25; }
-.square--endzone-orc.square--light   { background: #63352c; }
+.square--endzone-human {
+  --endzone-light: #294c69;
+  --endzone-dark: #22405a;
+  --endzone-glow-light: rgba(106, 169, 219, 0.13);
+  --endzone-glow-dark: rgba(8, 20, 30, 0.24);
+}
+
+.square--endzone-orc {
+  --endzone-light: #63352c;
+  --endzone-dark: #562c25;
+  --endzone-glow-light: rgba(210, 105, 76, 0.12);
+  --endzone-glow-dark: rgba(32, 10, 8, 0.25);
+}
+
+.square--endzone-team-black-orc {
+  --endzone-light: #50652f;
+  --endzone-dark: #34451f;
+  --endzone-glow-light: rgba(170, 190, 92, 0.14);
+  --endzone-glow-dark: rgba(12, 20, 7, 0.28);
+}
+
+.square--endzone-team-imperial-nobility {
+  --endzone-light: #6c5788;
+  --endzone-dark: #594476;
+  --endzone-glow-light: rgba(209, 170, 88, 0.16);
+  --endzone-glow-dark: rgba(25, 16, 36, 0.28);
+}
+
+.square--endzone-human.square--dark,
+.square--endzone-orc.square--dark { background-color: var(--endzone-dark); }
+.square--endzone-human.square--light,
+.square--endzone-orc.square--light { background-color: var(--endzone-light); }
+
+.pitch__endzone-emblem {
+  position: absolute;
+  z-index: 1;
+  width: 11.5%;
+  height: 20%;
+  object-fit: contain;
+  opacity: 0.16;
+  filter: saturate(0.85) contrast(1.08) drop-shadow(0 1px 2px rgba(0, 0, 0, 0.6));
+  pointer-events: none;
+}
+
+.pitch--landscape .pitch__endzone-emblem {
+  top: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.pitch--landscape .pitch__endzone-emblem--top { left: 5.75%; }
+.pitch--landscape .pitch__endzone-emblem--bottom { left: 94.25%; }
+
+.pitch--portrait .pitch__endzone-emblem {
+  left: 50%;
+  width: 20%;
+  height: 11.5%;
+  transform: translate(-50%, -50%);
+}
+
+.pitch--portrait .pitch__endzone-emblem--top { top: 5.75%; }
+.pitch--portrait .pitch__endzone-emblem--bottom { top: 94.25%; }
+
+.pitch--plain .pitch__endzone-emblem {
+  opacity: 0.12;
+  filter: grayscale(0.25) contrast(1.15);
+}
 
 /* ── Pitch markings ──────────────────────────────────────────────────────
    The three marking lines are facts about the pitch — the two end-zone
