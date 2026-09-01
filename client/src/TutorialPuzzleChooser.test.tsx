@@ -14,6 +14,7 @@ describe('TutorialPuzzleChooser', () => {
     render(
       <TutorialPuzzleChooser
         seriesName="Tutorial"
+        isTutorial
         scenarios={tutorialScenarios}
         completedScenarioIds={new Set([tutorialScenarios[0].id])}
         onChoose={onChoose}
@@ -36,6 +37,7 @@ describe('TutorialPuzzleChooser', () => {
     render(
       <TutorialPuzzleChooser
         seriesName="Tutorial"
+        isTutorial
         scenarios={tutorialScenarios}
         completedScenarioIds={new Set()}
         onChoose={onChoose}
@@ -56,6 +58,7 @@ describe('TutorialPuzzleChooser', () => {
     render(
       <TutorialPuzzleChooser
         seriesName="Tutorial"
+        isTutorial
         scenarios={[scenario]}
         completedScenarioIds={new Set([scenario.id])}
         recaps={{ [scenario.id]: { actions: ['Moved Sera 4 squares'], probability: 0.72 } }}
@@ -66,5 +69,24 @@ describe('TutorialPuzzleChooser', () => {
     );
     expect(screen.getByText('Moved Sera 4 squares')).toBeTruthy();
     expect(screen.getByText('Final probability 72%')).toBeTruthy();
+  });
+
+  it('uses match language and suppresses tutorial lesson labels for other series', () => {
+    render(
+      <TutorialPuzzleChooser
+        seriesName="Bromley Blood Bowl League"
+        isTutorial={false}
+        scenarios={[tutorialScenarios[0]]}
+        completedScenarioIds={new Set()}
+        onChoose={vi.fn()}
+        onLeaderboard={vi.fn()}
+        onLeave={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByRole('heading', { name: 'Choose a match' })).toBeTruthy();
+    expect(screen.getByText(/Play the matches in any order/)).toBeTruthy();
+    expect(screen.getByText('Series match')).toBeTruthy();
+    expect(screen.queryByText('Choose a Tutorial drill')).toBeNull();
   });
 });

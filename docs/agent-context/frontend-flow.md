@@ -184,16 +184,20 @@ public avatars).
   it does not compare the line with an optimum.
 - **The compact game HUD keeps every control inside the viewport.** Account
   remains near the front. Tutorial guidance and restart share the `GameToolsMenu`
-  trigger. Reporting remains a dedicated top-bar control on tablets and compact
-  laptops; only phone-width toolbars move it into `GameToolsMenu`. The desktop
-  control carries a visible label and every direct control uses the same
-  code-native flag icon, avoiding platform-dependent symbol fonts. The Key and
-  action log retain their own triggers. Compact
+  trigger. Reporting lives in the player-name account dropdown on every game
+  layout rather than competing with the dense HUD or moving between menus at
+  different widths. The Key and action log retain their own triggers. Compact
   dropdowns use viewport-fixed geometry so no parent can clip them. The empty
   100% success readout leaves the row until a roll puts probability at risk.
   During a guided Tutorial run, Game Tools exposes **Tutorial guide**. It opens
   the current drill's concept library even when automatic guidance is disabled.
   The `?` control is the pitch/skill Key, not Settings.
+- **Player inspection trusts real pointer events over hybrid-device media
+  queries.** A mouse or hovering pen updates the player card even when a Surface
+  or similar touchscreen reports `(any-hover: none)`. Touch pointer-enter is
+  ignored and still uses tap-to-inspect. In compact layouts a genuine hover
+  opens the stats sheet and preserves the last hovered player when the pointer
+  leaves the small token.
 - **`UserMenu`'s avatar falls back to initials on load failure**, not just on
   absence — a corrupted or future-format data URL degrades the same way a
   missing one does, rather than rendering a broken image icon.

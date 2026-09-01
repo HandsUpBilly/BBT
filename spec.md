@@ -3202,7 +3202,7 @@ a real pass/fail dice roll.
 
 # Block and Blitz Actions
 
-**Status:** Shipped, with rules simplifications. Live. Later fixes made a knocked-down carrier drop the ball, made a Blitz block cost a square of movement, and excluded marked assisters. Still simplified: no Guard, no armour/injury rolls, and no chain pushes. The outcome-checklist design below is **superseded** by the shipped Parallel Universes model; the ST/dice/assist and push-back rules in this section remain current.
+**Status:** Shipped, with rules simplifications. Live. Later fixes made a knocked-down carrier drop the ball, made a Blitz block cost a square of movement, excluded marked assisters, and added recursive chain pushes through occupied push arcs. Still simplified: no Guard, no armour/injury rolls, and no crowd pushes. The outcome-checklist design below is **superseded** by the shipped Parallel Universes model; the ST/dice/assist and push-back rules in this section remain current.
 
 ## Problem Statement
 

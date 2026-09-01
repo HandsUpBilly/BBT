@@ -6,6 +6,7 @@ import './TutorialPuzzleChooser.css';
 
 interface Props {
   seriesName: string;
+  isTutorial: boolean;
   scenarios: readonly Scenario[];
   completedScenarioIds: ReadonlySet<string>;
   recaps?: Readonly<Record<string, TutorialDrillRecap>>;
@@ -15,7 +16,7 @@ interface Props {
 }
 
 export function TutorialPuzzleChooser({
-  seriesName, scenarios, completedScenarioIds, recaps = {}, onChoose, onLeaderboard, onLeave,
+  seriesName, isTutorial, scenarios, completedScenarioIds, recaps = {}, onChoose, onLeaderboard, onLeave,
 }: Props) {
   const completed = scenarios.filter(scenario => completedScenarioIds.has(scenario.id)).length;
   const remaining = scenarios.length - completed;
@@ -25,12 +26,20 @@ export function TutorialPuzzleChooser({
       <header className="tutorial-chooser__header">
         <button type="button" className="lb-back-btn" onClick={onLeave}>← Main menu</button>
         <p className="tutorial-chooser__eyebrow">{seriesName}</p>
-        <h1>Choose a Tutorial drill</h1>
-        <p>
-          Play the drills in any order. Before finishing the series, you can replay
-          a completed drill and replace its earlier result. One result from each drill
-          combines into the final series score.
-        </p>
+        <h1>{isTutorial ? 'Choose a Tutorial drill' : 'Choose a match'}</h1>
+        {isTutorial ? (
+          <p>
+            Play the drills in any order. Before finishing the series, you can replay
+            a completed drill and replace its earlier result. One result from each drill
+            combines into the final series score.
+          </p>
+        ) : (
+          <p>
+            Play the matches in any order. Before finishing the series, you can replay
+            a completed match and replace its earlier result. One result from each match
+            combines into the final series score.
+          </p>
+        )}
         <div className="tutorial-chooser__progress" role="status">
           {completed} complete · {remaining} remaining
         </div>
@@ -39,7 +48,7 @@ export function TutorialPuzzleChooser({
       <div className="tutorial-chooser__grid">
         {scenarios.map((scenario, index) => {
           const isComplete = completedScenarioIds.has(scenario.id);
-          const lesson = tutorialLessonFor(scenario.id);
+          const lesson = isTutorial ? tutorialLessonFor(scenario.id) : null;
           const recap = recaps[scenario.id];
           return (
             <article
@@ -51,7 +60,7 @@ export function TutorialPuzzleChooser({
                   {String(index + 1).padStart(2, '0')}
                 </div>
                 <div className="tutorial-chooser__card-copy">
-                  <p className="tutorial-chooser__lesson">{lesson?.title ?? 'Open play'}</p>
+                  <p className="tutorial-chooser__lesson">{lesson?.title ?? (isTutorial ? 'Open play' : 'Series match')}</p>
                   <h2>{scenario.name}</h2>
                   <p>{scenario.description}</p>
                   {recap && (

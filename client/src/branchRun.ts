@@ -330,8 +330,8 @@ export function isBlockPending(run: BranchRun): boolean {
   return viewedLine(run).state.blockChoice !== null;
 }
 
-/** Choose a push-back square (and follow-up) across the lockstep group. */
-export function choosePush(run: BranchRun, pos: Position, followUp: boolean): BranchRun {
+/** Choose one chain-push destination (and, at the final empty square, follow-up). */
+export function choosePush(run: BranchRun, pos: Position, followUp?: boolean): BranchRun {
   return authorAcrossGroup(
     run,
     state => applyPushChoice(state, pos, followUp),

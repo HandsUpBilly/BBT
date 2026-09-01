@@ -31,7 +31,11 @@ function actionLabel(e: ActionLogEntry): string {
   if (e.kind === 'handoff')    return `Hand-off ${e.catchTarget}+`;
   if (e.kind === 'pass')       return `${BAND_LABEL[e.rangeBand]} Pass ${e.passTarget}+`;
   if (e.kind === 'pass-catch') return `Catch ${e.catchTarget}+`;
-  if (e.kind === 'block')      return `${e.isBlitz ? 'Blitz' : 'Block'} → ${FACE_LABEL[e.resolvedFace]}`;
+  if (e.kind === 'block') {
+    const pushCount = e.pushes?.length ?? 0;
+    const pushSuffix = pushCount > 1 ? ` · ${pushCount} pushes` : '';
+    return `${e.isBlitz ? 'Blitz' : 'Block'} → ${FACE_LABEL[e.resolvedFace]}${pushSuffix}`;
+  }
   const pickupSuffix = e.kind === 'move' && e.pickupTarget ? `, Pickup ${e.pickupTarget}+` : '';
   const rerollSuffix = e.kind === 'move' && e.dodgeSkillReroll ? ' (skill reroll)' : '';
   if (e.isGfi && e.dodgeTarget !== null) return `Rush 2+, Dodge ${e.dodgeTarget}+${rerollSuffix}${pickupSuffix}`;

@@ -10,6 +10,29 @@ const noop = () => undefined;
 const state = makeState([humanBlocker({ role: 'lineman' })]);
 
 describe('Pitch token style', () => {
+  it('recognises real mouse hover without trusting a device-wide media query', () => {
+    const onSquareHover = vi.fn();
+    const onSquareLeave = vi.fn();
+    const { container } = render(
+      <Pitch
+        state={state}
+        onSquareClick={noop}
+        onPieceClick={noop}
+        onSquareHover={onSquareHover}
+        onSquareLeave={onSquareLeave}
+      />,
+    );
+    const occupiedSquare = container.querySelector<HTMLElement>('.piece')!.closest<HTMLElement>('[data-square]')!;
+
+    fireEvent.pointerEnter(occupiedSquare, { pointerType: 'touch' });
+    expect(onSquareHover).not.toHaveBeenCalled();
+
+    fireEvent.pointerEnter(occupiedSquare, { pointerType: 'mouse' });
+    expect(onSquareHover).toHaveBeenCalledWith(7, 10, true);
+    fireEvent.pointerLeave(occupiedSquare, { pointerType: 'mouse' });
+    expect(onSquareLeave).toHaveBeenCalledWith(true);
+  });
+
   it('defaults to the portrait class and hides the role code', () => {
     const { container } = render(
       <Pitch state={state} onSquareClick={noop} onPieceClick={noop} onSquareHover={noop} onSquareLeave={noop} />,
@@ -180,6 +203,11 @@ describe('Pitch block dice marker', () => {
       outcomeProbs: { 'attacker-down': 0, 'both-down': 0, push: 1, 'defender-stumbles': 0, 'defender-down': 0 },
       acceptedFaces: ['push'],
       resolvedFace: 'push',
+      pushTo: { col: 7, row: 8 },
+      pushes: [
+        { pieceId: defender.id, from: defender.position, to: { col: 7, row: 8 } },
+        { pieceId: 'screen', from: { col: 7, row: 8 }, to: { col: 7, row: 7 } },
+      ],
       actionProb: 1,
       cumulativeProb: 1,
       dodgeTarget: null,
@@ -198,6 +226,7 @@ describe('Pitch block dice marker', () => {
     expect(marker?.querySelectorAll('.block-die-icon')).toHaveLength(2);
     expect(marker?.getAttribute('title')).toBe('Block: Push Back');
     expect(square?.getAttribute('aria-label')).toContain('block result: Push Back');
+    expect(container.querySelectorAll('.pitch__push-indicator')).toHaveLength(2);
   });
 
   it('clears once the block entry is rolled back out of the action log', () => {
