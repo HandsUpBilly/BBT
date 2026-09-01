@@ -47,4 +47,30 @@ describe('GameToolsMenu', () => {
     expect(onTutorialGuide).toHaveBeenCalledOnce();
     expect(screen.queryByRole('menu')).toBeNull();
   });
+
+  it('runs reporting and closes the menu on phone-width toolbars', () => {
+    const onReport = vi.fn();
+    render(
+      <GameToolsMenu
+        onReport={onReport}
+        onRestart={vi.fn()}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Game tools' }));
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Report a problem' }));
+    expect(onReport).toHaveBeenCalledOnce();
+    expect(screen.queryByRole('menu')).toBeNull();
+  });
+
+  it('omits reporting when the dedicated toolbar control is visible', () => {
+    render(
+      <GameToolsMenu
+        onRestart={vi.fn()}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Game tools' }));
+    expect(screen.queryByRole('menuitem', { name: 'Report a problem' })).toBeNull();
+  });
 });

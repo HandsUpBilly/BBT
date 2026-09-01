@@ -1,0 +1,108 @@
+.run-outcome-backdrop {
+  z-index: 40;
+}
+
+.run-outcome-dialog {
+  width: min(720px, calc(100vw - 32px));
+  padding: 0;
+  overflow: hidden;
+}
+
+.run-outcome-dialog__banner {
+  display: grid;
+  place-items: center;
+  min-height: 138px;
+  padding: 22px 28px 16px;
+  background: #0c0f0d;
+  border-bottom: 1px solid var(--color-border-subtle);
+}
+
+.run-outcome-dialog__banner img {
+  display: block;
+  width: min(100%, 630px);
+  height: auto;
+}
+
+.run-outcome-dialog__body {
+  padding: 24px 30px 28px;
+}
+
+.run-outcome-dialog__body h2 {
+  margin: 4px 0 10px;
+  color: var(--color-text-strong);
+  font-family: var(--font-display);
+  font-size: clamp(1.65rem, 4vw, 2.25rem);
+  font-weight: 600;
+  letter-spacing: 0.025em;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.run-outcome-dialog__body p {
+  max-width: 62ch;
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 1rem;
+  line-height: 1.55;
+}
+
+.run-outcome-dialog__kicker {
+  color: var(--color-accent-border);
+  font-family: var(--font-display);
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.run-outcome-dialog__actions {
+  justify-content: flex-start;
+  margin-top: 24px;
+}
+
+.run-outcome-dialog__branch-art {
+  position: relative;
+  height: clamp(170px, 28vw, 240px);
+  overflow: hidden;
+  border-bottom: 1px solid var(--color-accent-dark);
+  background: #0b0c0c;
+}
+
+.run-outcome-dialog__branch-art::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(0deg, rgba(8, 10, 9, 0.72), transparent 54%);
+  pointer-events: none;
+}
+
+.run-outcome-dialog__branch-art img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 43%;
+}
+
+@media (max-width: 560px) {
+  .run-outcome-dialog__banner {
+    min-height: 104px;
+    padding: 16px 18px 12px;
+  }
+
+  .run-outcome-dialog__body {
+    padding: 20px;
+  }
+
+  .run-outcome-dialog__branch-art {
+    height: 160px;
+  }
+
+  .run-outcome-dialog__actions {
+    align-items: stretch;
+  }
+
+  .run-outcome-dialog__actions button {
+    width: 100%;
+  }
+}

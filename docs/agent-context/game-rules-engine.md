@@ -17,6 +17,18 @@ mechanism that resets the turn would also reset the score. The old multi-turn
 machinery (`handleEndTurn`, `advanceTurn`, `PhaseModal`, Free Play) was never
 wired to any UI and has been deleted; don't reintroduce it.
 
+The UI treats an activated ball carrier on a still-playing board as a terminal
+failure: that carrier cannot act again, so the touchdown objective is no longer
+reachable in the current one-turn puzzle. `runOutcome.ts` owns this predicate;
+`RunOutcomeDialog` blocks the dead board and offers Restart Puzzle or Exit
+Puzzle.
+
+In a Parallel Universes run, a touchdown resolves only the viewed universe.
+When other leaf branches remain in `authoring` or `needs-attention`, the first
+touchdown in that viewed branch opens an acknowledgement dialog and then moves
+the player directly to the next unfinished branch. The full touchdown summary
+still waits for `isRunComplete(run)`.
+
 ## Coordinates
 
 Game state uses portrait coordinates:

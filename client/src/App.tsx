@@ -12,6 +12,7 @@ import type { MenuAnchor } from './menuPosition';
 import { PlayerPanel } from './PlayerPanel';
 import { ScenarioSelect } from './ScenarioSelect';
 import { SubmitModal } from './SubmitModal';
+import { RunOutcomeDialog } from './RunOutcomeDialog';
 import { Leaderboard } from './Leaderboard';
 import { ScoreSummary } from './ScoreSummary';
 import { SeriesLeaderboard } from './SeriesLeaderboard';
@@ -27,6 +28,7 @@ import { ActionLogMenu } from './ActionLogMenu';
 import { GameToolsMenu } from './GameToolsMenu';
 import { AppFooter } from './AppFooter';
 import { SuccessChanceReadout } from './SuccessChanceReadout';
+import { ReportProblemButton } from './ReportProblemButton';
 import { ReportProblemModal } from './ReportProblemModal';
 import { ContactModal } from './ContactModal';
 import { AboutDialog } from './AboutDialog';
@@ -56,6 +58,7 @@ import { submitScore, fetchLeaderboard, submitSeriesScore, fetchSeriesLeaderboar
 import type { ProgressData } from './api';
 import { recordAttempt } from './attemptStore';
 import { summarizeActionLog } from './riskyMoves';
+import { isScoringRunStalled, unfinishedBranches } from './runOutcome';
 import { readAllPrefs, readPrefs, writePrefs, GUEST_PREFS_KEY } from './prefs';
 import type { PlayerPrefs } from './prefs';
 import { fetchOwnProfile, playerAvatarUrl, saveOwnProfile } from './playerProfile';
@@ -74,7 +77,7 @@ import type {
   PublicPlayerProfile, SeriesDefinition, SeriesLeaderboardEntry, SeriesPuzzleResult,
 } from './types';
 import { key } from './bfs';
-import { useCompactLayout, useHoverCapable, usePortraitViewport } from './useMediaQuery';
+import { useCompactLayout, useHoverCapable, usePhoneToolbarLayout, usePortraitViewport } from './useMediaQuery';
 import {
   initializeAnalytics,
   newAnalyticsId,
@@ -494,6 +497,7 @@ export default function App() {
   // The third, pointer precision, decides hit-target sizes and is answered
   // entirely in CSS — no component needs to branch on it.
   const compact = useCompactLayout();
+  const phoneToolbar = usePhoneToolbarLayout();
   const hoverCapable = useHoverCapable();
   const portraitViewport = usePortraitViewport();
   // Rotating the board is worth it whenever the viewport is tall and narrow,
@@ -519,10 +523,14 @@ export default function App() {
   // the branching summary needs its own dismissal flag rather than borrowing
   // the single-board trick of rewinding the phase.
   const [branchSummaryDismissed, setBranchSummaryDismissed] = useState(false);
+  const [acknowledgedBranchTouchdowns, setAcknowledgedBranchTouchdowns] = useState<Set<string>>(
+    () => new Set(),
+  );
   const analyticsSplitRecordedRef = useRef(false);
   const resetBoards = useCallback((next: GameState) => {
     setBranchedState(next);
     setBranchSummaryDismissed(false);
+    setAcknowledgedBranchTouchdowns(new Set());
   }, [setBranchedState]);
 
   const analyticsAttemptIdRef = useRef<string | null>(null);
@@ -1112,6 +1120,16 @@ export default function App() {
   // the viewed line's. Recording the viewed line here would file an attempt at a
   // number the leaderboard never sees.
   const runFinished = branchedBoards.complete;
+  const unresolvedBranchList = useMemo(
+    () => unfinishedBranches(branchedBoards.strip),
+    [branchedBoards.strip],
+  );
+  const viewedBranchId = branchedBoards.run.viewedId;
+  const showStalledRunDialog = isScoringRunStalled(state);
+  const showUnfinishedBranchesDialog = branchedBoards.hasSplit
+    && state.phase === 'touchdown'
+    && unresolvedBranchList.length > 0
+    && !acknowledgedBranchTouchdowns.has(viewedBranchId);
   useEffect(() => {
     if (!runFinished) {
       attemptRecordedRef.current = false;
@@ -1224,6 +1242,37 @@ export default function App() {
   }, [activeScenario, state.pieces, state.activeTeam, state.actionLog.length, resetBoards,
       beginAnalyticsAttempt, endAnalyticsAttempt, appMode, seriesRun,
       beginTutorialAttempt]);
+
+  const handleExitFailedPuzzle = useCallback(() => {
+    endAnalyticsAttempt('left-puzzle', {
+      activatedPieces: state.pieces.filter(piece =>
+        piece.team === state.activeTeam && piece.activated).length,
+      committedActions: state.actionLog.length,
+      reason: 'activated-ball-carrier',
+    });
+    setReviewingCompletedBoard(false);
+    setAcknowledgedBranchTouchdowns(new Set());
+    setActiveScenario(null);
+    setTutorialLesson(null);
+    setTutorialConceptGuideOpen(false);
+    setPieceMenu(null);
+    if (editorPreviewScenario) {
+      setAppMode('admin');
+      return;
+    }
+    setAppMode(appMode === 'series-puzzle' && seriesRun ? 'series-select' : 'home');
+  }, [appMode, editorPreviewScenario, endAnalyticsAttempt, seriesRun,
+      state.actionLog.length, state.activeTeam, state.pieces]);
+
+  const handleContinueUnfinishedBranches = useCallback(() => {
+    setAcknowledgedBranchTouchdowns(current => {
+      const next = new Set(current);
+      next.add(viewedBranchId);
+      return next;
+    });
+    const nextBranch = unresolvedBranchList[0];
+    if (nextBranch) branchedBoards.handleSelectBranch(nextBranch.id);
+  }, [branchedBoards, unresolvedBranchList, viewedBranchId]);
 
   // ── Series mode handlers ──────────────────────────────────────────────────
   const startSeries = useCallback((selectedSeries: SeriesDefinition) => {
@@ -1828,6 +1877,7 @@ export default function App() {
                 : undefined
             }
             onRestart={handleRestartTurn}
+            onReport={phoneToolbar ? openReport : undefined}
           />
         ) : (
           <>
@@ -1860,6 +1910,7 @@ export default function App() {
 
         <ActionLogMenu log={state.actionLog} />
 
+        {!phoneToolbar && <ReportProblemButton variant="hud" onClick={openReport} />}
       </header>
 
       <BranchStrip
@@ -2051,6 +2102,22 @@ export default function App() {
           defaultName={identityName}
           signedInName={identityName}
           error={submitError}
+        />
+      )}
+
+      {showStalledRunDialog && (
+        <RunOutcomeDialog
+          variant="failed"
+          onRestart={handleRestartTurn}
+          onExit={handleExitFailedPuzzle}
+        />
+      )}
+
+      {showUnfinishedBranchesDialog && (
+        <RunOutcomeDialog
+          variant="unfinished-branches"
+          remainingBranches={unresolvedBranchList.length}
+          onContinue={handleContinueUnfinishedBranches}
         />
       )}
 
