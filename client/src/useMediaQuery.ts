@@ -74,6 +74,23 @@ export function useCompactLayout(): boolean {
 }
 
 /**
+ * Is the game toolbar narrow enough that reporting must live in Game Tools?
+ *
+ * Compact layout begins at tablet width, but a tablet still has room for the
+ * dedicated report control. Only phone-width toolbars need to fold that action
+ * away. Keep the iPhone desktop-site fallback because those handsets may report
+ * a much wider CSS viewport than they physically have.
+ */
+export const PHONE_TOOLBAR_MAX_WIDTH = 640;
+
+export function usePhoneToolbarLayout(): boolean {
+  const phoneBySize = useMediaQuery(`(max-width: ${PHONE_TOOLBAR_MAX_WIDTH}px)`);
+  const phoneByHandset = typeof navigator !== 'undefined'
+    && isIOSHandsetUserAgent(navigator.userAgent);
+  return phoneBySize || phoneByHandset;
+}
+
+/**
  * Can any available input hover?
  *
  * A touchscreen laptop often reports touch as its primary input even while a

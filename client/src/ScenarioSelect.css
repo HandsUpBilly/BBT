@@ -239,7 +239,7 @@
   color: var(--color-text-strong);
   background:
     var(--texture-noise),
-    linear-gradient(100deg, #a73526, #81251d);
+    var(--gradient-accent);
   box-shadow:
     inset 0 0 0 1px rgba(255, 239, 221, 0.18),
     inset 0 -8px 24px rgba(45, 5, 2, 0.25);
@@ -475,7 +475,7 @@
   color: var(--color-text-strong);
   background:
     var(--texture-noise),
-    linear-gradient(105deg, rgba(167, 53, 38, 0.72), rgba(105, 31, 25, 0.72));
+    var(--gradient-accent-muted);
 }
 
 .challenge-tile-grid {

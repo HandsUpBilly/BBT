@@ -32,12 +32,17 @@
 
   /* ── Accent ───────────────────────────────────────────────────────────
      Reserved for active navigation, primary actions, selected/focused
-     controls and important warnings. Never applied decoratively. */
+     controls and important warnings. The gradient variants give large active
+     surfaces the worn red depth; small markers remain flat for clarity. */
   --color-accent: #9f3024;
   --color-accent-hover: #b53a2e;
   --color-accent-dark: #6f1d18;
   --color-accent-press: #84231c;
   --color-accent-border: #c75a4d;
+  --gradient-accent: linear-gradient(105deg, #a73526, #6f211a);
+  --gradient-accent-hover: linear-gradient(105deg, #b83d2d, #84271f);
+  --gradient-accent-press: linear-gradient(105deg, #8f291f, #641b17);
+  --gradient-accent-muted: linear-gradient(105deg, rgba(167, 53, 38, 0.72), rgba(105, 31, 25, 0.72));
 
   /* ── Status ───────────────────────────────────────────────────────── */
   --color-success: #7fa84b;

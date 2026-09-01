@@ -1,41 +1,104 @@
 .app-footer {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 0 0.45rem;
   margin: auto 0 0;
-  padding: 16px 20px 10px;
+  padding: 22px clamp(24px, 4vw, 72px) 20px;
+  border-top: 1px solid rgb(167 58 38 / 38%);
   color: var(--color-text-disabled);
   font-size: 0.68rem;
   line-height: 1.45;
-  text-align: center;
+}
+
+.app-footer__inner {
+  display: grid;
+  grid-template-columns: minmax(116px, 148px) minmax(0, 1fr);
+  align-items: center;
+  width: min(100%, 1880px);
+  margin: 0 auto;
+}
+
+.app-footer__brand {
+  display: grid;
+  justify-items: start;
+  gap: 7px;
+  min-height: 58px;
+  padding-right: clamp(20px, 2vw, 32px);
+  border-right: 1px solid rgb(151 155 148 / 20%);
 }
 
 .app-footer__logo {
-  width: 58px;
-  margin-right: 0.2rem;
-  align-self: center;
-  opacity: 0.72;
+  width: 96px;
+  opacity: 0.86;
 }
 
-.app-footer span + span::before {
-  content: '·';
-  margin-right: 0.45rem;
+.app-footer__copyright {
+  color: rgb(151 155 148 / 72%);
+  font-size: 0.62rem;
+  letter-spacing: 0.035em;
+  white-space: nowrap;
 }
 
-@media (max-width: 560px) {
-  .app-footer {
-    flex-direction: column;
-    gap: 3px;
-    padding-inline: 24px;
+.app-footer__legal {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+  padding-left: clamp(20px, 2.5vw, 40px);
+  text-align: left;
+}
+
+.app-footer__legal p {
+  margin: 0;
+}
+
+.app-footer__legal p:first-child {
+  color: rgb(186 188 182 / 76%);
+}
+
+.app-footer__legal p:last-child {
+  color: rgb(151 155 148 / 62%);
+}
+
+.app-footer__legal p:last-child span {
+  margin-left: 1.35rem;
+}
+
+@media (max-width: 760px) {
+  .app-footer__inner {
+    grid-template-columns: 1fr;
+  }
+
+  .app-footer__brand {
+    grid-template-columns: auto 1fr;
+    align-items: end;
+    justify-items: start;
+    gap: 14px;
+    min-height: 0;
+    padding: 0 0 14px;
+    border-right: 0;
+    border-bottom: 1px solid rgb(151 155 148 / 20%);
   }
 
   .app-footer__logo {
-    width: 72px;
-    margin: 0 auto 3px;
+    width: 88px;
   }
 
-  .app-footer span + span::before {
-    content: none;
+  .app-footer__legal {
+    gap: 6px;
+    padding: 14px 0 0;
+  }
+
+  .app-footer__legal p:last-child span {
+    display: block;
+    margin: 3px 0 0;
+  }
+}
+
+@media (max-width: 380px) {
+  .app-footer {
+    padding-inline: 20px;
+  }
+
+  .app-footer__brand {
+    grid-template-columns: 1fr;
+    align-items: start;
+    gap: 6px;
   }
 }

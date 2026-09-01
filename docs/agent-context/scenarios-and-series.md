@@ -109,6 +109,9 @@ in Series Creator. PNG, JPEG, and WebP source files are accepted, cropped to a
 square, stripped of source metadata, and bounded before save. The chooser also
 resolves the legacy `nuffle-shuffle` built-in key; an omitted logo retains the
 text-only fallback.
+The short label is rendered after the automatically derived two-digit list
+position, so admins control “Series” in “02 Series” without hand-maintaining
+the numbering.
 
 Saved series metadata can outlive a deployment in Netlify Blobs.
 `normalizeSeriesDefinition()` maps the two known legacy featured-series names
