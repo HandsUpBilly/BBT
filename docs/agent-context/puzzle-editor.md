@@ -21,7 +21,9 @@ Editor features:
 - list all scenarios (including disabled ones) with description, active team,
   piece count, enabled state, and series position,
 - create, duplicate, and delete puzzles,
-- drag Human/Orc player templates onto the editor pitch,
+- choose the two opposing team rosters for the puzzle; the active-team selector,
+  add-player palette, and selected-player team control are limited to that pair,
+- drag player templates from those two rosters onto the editor pitch,
 - auto-generate Blood Bowl style player names,
 - **full piece inspector**: name, id, team, role, MA/ST/AG/PA/AV as bounded
   numeric inputs, BB2025 career-skill picker, has-ball, delete,

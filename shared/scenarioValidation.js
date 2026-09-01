@@ -89,11 +89,20 @@ export function scenarioRosterErrors(scenario) {
 
 export function normalizeScenario(input) {
   const source = input && typeof input === 'object' ? input : {};
+  const activeTeam = source.activeTeam === 'orc' ? 'orc' : 'human';
+  const configuredTeams = Array.isArray(source.teams)
+    ? [...new Set(source.teams.filter(team => TEAMS.includes(team)))]
+    : [];
+  const firstTeam = configuredTeams[0] ?? activeTeam;
+  const secondTeam = configuredTeams.find(team => team !== firstTeam)
+    ?? TEAMS.find(team => team !== firstTeam)
+    ?? firstTeam;
   return {
     id: String(source.id ?? '').trim(),
     name: String(source.name ?? '').trim(),
     description: String(source.description ?? '').trim(),
-    activeTeam: source.activeTeam === 'orc' ? 'orc' : 'human',
+    activeTeam,
+    teams: [firstTeam, secondTeam],
     objective: OBJECTIVES.includes(source.objective) ? source.objective : 'touchdown',
     // Before this field existed, scenario-006 was the sole hard-coded Free
     // Play puzzle. Preserve that published Blob data during migration.
@@ -245,6 +254,11 @@ export function validateScenario(scenario, existingIds = new Set(), options = {}
   if (!scenario.name) errors.push('Scenario name is required');
   if (!scenario.description) errors.push('Scenario description is required');
   if (!TEAMS.includes(scenario.activeTeam)) errors.push('Active team must be human or orc');
+  const involvedTeams = Array.isArray(scenario.teams)
+    ? [...new Set(scenario.teams.filter(team => TEAMS.includes(team)))]
+    : [...TEAMS];
+  if (involvedTeams.length !== 2) errors.push('Choose two different teams for the puzzle');
+  if (!involvedTeams.includes(scenario.activeTeam)) errors.push('Active team must be one of the two selected teams');
   if (!allowExisting && scenario.id !== currentId && taken.has(scenario.id)) {
     errors.push('Scenario id already exists');
   }
@@ -263,6 +277,7 @@ export function validateScenario(scenario, existingIds = new Set(), options = {}
     ids.add(piece.id);
     if (!piece.name) errors.push(`Player ${piece.id || '(missing id)'} needs a name`);
     if (!TEAMS.includes(piece.team)) errors.push(`Player ${piece.id} team must be human or orc`);
+    if (!involvedTeams.includes(piece.team)) errors.push(`Player ${piece.id} must belong to one of the two selected teams`);
     if (piece.team === scenario.activeTeam) activeTeamPieces += 1;
 
     validatePosition(piece.position, `Player ${piece.id}`, errors);

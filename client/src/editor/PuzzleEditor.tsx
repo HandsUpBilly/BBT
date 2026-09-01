@@ -15,6 +15,7 @@ import './PuzzleEditor.css';
 
 const COLS = PITCH.maxCol + 1;
 const ROWS = PITCH.maxRow + 1;
+const AVAILABLE_TEAMS: Team[] = ['human', 'orc'];
 type InspectorSection = 'roster' | 'player' | 'review';
 
 const STAT_LABELS: Record<string, string> = {
@@ -31,6 +32,7 @@ function emptyScenario(existingIds: string[]): Scenario {
     name: 'New Puzzle',
     description: 'Describe the scoring puzzle.',
     activeTeam: 'human',
+    teams: ['human', 'orc'],
     objective: 'touchdown',
     freePlay: false,
     published: false,
@@ -165,6 +167,7 @@ export function PuzzleEditor({ onBack, onPlay, onReport, previewScenario, idToke
   const selectedPiece = selectedPieceId
     ? draft.pieces.find(piece => piece.id === selectedPieceId)
     : undefined;
+  const involvedTeams: [Team, Team] = draft.teams ?? ['human', 'orc'];
   const selectedPieceCareerSkills = selectedPiece
     ? careerSkillGroupsFor(selectedPiece.team, selectedPiece.role)
     : null;
@@ -177,6 +180,20 @@ export function PuzzleEditor({ onBack, onPlay, onReport, previewScenario, idToke
       setSelectedPieceId(null);
       setBallTool(false);
     }
+  }
+
+  function updateInvolvedTeam(index: 0 | 1, team: Team) {
+    updateDraft(scenario => {
+      const teams: [Team, Team] = [...(scenario.teams ?? ['human', 'orc'])];
+      const otherIndex = index === 0 ? 1 : 0;
+      if (teams[otherIndex] === team) teams[otherIndex] = teams[index];
+      teams[index] = team;
+      return {
+        ...scenario,
+        teams,
+        activeTeam: teams.includes(scenario.activeTeam) ? scenario.activeTeam : team,
+      };
+    });
   }
 
   /** Runs `action`, first asking to confirm if the editor has unsaved edits. */
@@ -347,6 +364,10 @@ export function PuzzleEditor({ onBack, onPlay, onReport, previewScenario, idToke
     }
     const template = PLAYER_TEMPLATES.find(item => item.key === templateKey);
     if (!template) return;
+    if (!involvedTeams.includes(template.team)) {
+      setStatus('That roster is not selected for this puzzle.');
+      return;
+    }
     const usage = rosterUsage(draft, template.team, template.role);
     if (!usage.allowed) {
       setStatus(usage.teamCount >= 11
@@ -594,10 +615,21 @@ export function PuzzleEditor({ onBack, onPlay, onReport, previewScenario, idToke
               <input value={draft.name} onChange={event => setMetadata('name', event.target.value)} />
             </label>
             <label>
+              Team 1 roster
+              <select value={involvedTeams[0]} onChange={event => updateInvolvedTeam(0, event.target.value as Team)}>
+                {AVAILABLE_TEAMS.map(team => <option key={team} value={team}>{team === 'human' ? 'Human' : 'Orc'}</option>)}
+              </select>
+            </label>
+            <label>
+              Team 2 roster
+              <select value={involvedTeams[1]} onChange={event => updateInvolvedTeam(1, event.target.value as Team)}>
+                {AVAILABLE_TEAMS.map(team => <option key={team} value={team}>{team === 'human' ? 'Human' : 'Orc'}</option>)}
+              </select>
+            </label>
+            <label>
               Active team
               <select value={draft.activeTeam} onChange={event => setMetadata('activeTeam', event.target.value as Team)}>
-                <option value="human">Human</option>
-                <option value="orc">Orc</option>
+                {involvedTeams.map(team => <option key={team} value={team}>{team === 'human' ? 'Human' : 'Orc'}</option>)}
               </select>
             </label>
             <label>
@@ -719,7 +751,7 @@ export function PuzzleEditor({ onBack, onPlay, onReport, previewScenario, idToke
           {inspectorSection === 'roster' && (
           <section className="editor-tool" aria-labelledby="roster-heading">
             <h2 id="roster-heading">Player Roster</h2>
-            {(['human', 'orc'] as Team[]).map(team => (
+            {involvedTeams.map(team => (
               <div key={team} className="editor-tool__group">
                 <h3>{team === 'human' ? 'Humans' : 'Orcs'}</h3>
                 {groupTemplates(team).map(template => {
@@ -796,8 +828,7 @@ export function PuzzleEditor({ onBack, onPlay, onReport, previewScenario, idToke
                       updatePiece(selectedPiece.id, { team, role });
                     }}
                   >
-                    <option value="human">Human</option>
-                    <option value="orc">Orc</option>
+                    {involvedTeams.map(team => <option key={team} value={team}>{team === 'human' ? 'Human' : 'Orc'}</option>)}
                   </select>
                 </label>
                 <label>

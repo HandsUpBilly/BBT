@@ -54,6 +54,8 @@ export interface Scenario {
   name: string;
   description: string;
   activeTeam: Team;
+  /** The two opposing rosters available to this puzzle. */
+  teams?: [Team, Team];
   objective?: Objective;
   /** Whether this puzzle is also listed as a standalone Free Play puzzle. */
   freePlay?: boolean;

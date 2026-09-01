@@ -144,9 +144,19 @@ test('normalizeScenario coerces hostile input rather than throwing', () => {
   assert.deepEqual(scenario.pieces, []);
   assert.equal(scenario.ballPosition, null);
   assert.equal(scenario.activeTeam, 'human');
+  assert.deepEqual(scenario.teams, ['human', 'orc']);
   assert.equal(scenario.published, true);
   // A completely bogus payload is invalid, not a crash.
   assert.ok(validateScenario(scenario).length > 0);
+});
+
+test('normalizes the two puzzle teams and validates roster membership', () => {
+  const scenario = validScenario({ teams: ['orc', 'human'] });
+  assert.deepEqual(scenario.teams, ['orc', 'human']);
+  assert.deepEqual(validateScenario(scenario), []);
+
+  const invalid = { ...scenario, teams: ['human', 'human'] };
+  assert.ok(validateScenario(invalid).some(error => error.includes('two different teams')));
 });
 
 test('normalizers preserve explicit admin visibility without enabling it by default', () => {

@@ -69,6 +69,23 @@ function openCreatorTool(name: RegExp) {
 }
 
 describe('PuzzleEditor unsaved changes', { timeout: 15_000 }, () => {
+  it('chooses the two involved teams and limits team controls to that pairing', async () => {
+    renderEditor();
+    await screen.findByDisplayValue('Saved Puzzle');
+
+    const firstTeam = screen.getByLabelText('Team 1 roster') as HTMLSelectElement;
+    const secondTeam = screen.getByLabelText('Team 2 roster') as HTMLSelectElement;
+    const activeTeam = screen.getByLabelText('Active team') as HTMLSelectElement;
+
+    expect(firstTeam.value).toBe('human');
+    expect(secondTeam.value).toBe('orc');
+    expect(Array.from(activeTeam.options).map(option => option.value)).toEqual(['human', 'orc']);
+
+    fireEvent.change(firstTeam, { target: { value: 'orc' } });
+    expect(firstTeam.value).toBe('orc');
+    expect(secondTeam.value).toBe('human');
+  });
+
   it('adds and removes applicable implemented career skills while keeping future skills unavailable', async () => {
     renderEditor();
     await screen.findByDisplayValue('Saved Puzzle');
