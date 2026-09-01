@@ -452,17 +452,14 @@ export const STATIC_SCENARIOS = [
       {
         "id": "orc3",
         "team": "orc",
-        "role": "blitzer",
+        "role": "lineman",
         "name": "Vrak Bonecruncher",
-        "ma": 6,
+        "ma": 5,
         "st": 3,
         "ag": 3,
         "pa": 4,
         "av": 9,
-        "skills": [
-          "Block",
-          "Break Tackle"
-        ],
+        "skills": [],
         "position": {
           "col": 7,
           "row": 6
@@ -1008,6 +1005,7 @@ export const STATIC_SERIES = [
   {
     "id": "default",
     "name": "Humans vs Orcs: The Nuffle Shuffle",
+    "label": "Tutorial",
     "logo": "nuffle-shuffle",
     "description": "Six drills cover Movement, Dodging, Hand-offs, Passing, Blocking, Pickups, and Parallel Universes. Score a touchdown in each drill.",
     "published": true,
