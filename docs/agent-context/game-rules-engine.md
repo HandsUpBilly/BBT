@@ -204,6 +204,11 @@ dice tie-break.
 - Push outcomes require a legal push-back square. All three push-back results
   (Push, Defender Stumbles, Defender Down) offer the attacker a follow-up into
   the vacated square, since the attacker stays standing in each case.
+- A push must use an empty square from its three-square push arc when one is
+  available. When all available squares are occupied, those occupants become
+  selectable and the chosen player is pushed through its own forward arc. This
+  repeats until the chain reaches empty turf. Only the originally blocked
+  defender falls; every displacement is retained in the block log and diagram.
 - `blockActionAvailability` only offers Blitz when a standing opponent is
   actually reachable — checking merely that one exists left an enabled menu
   button that silently did nothing.
@@ -220,8 +225,8 @@ Deliberate, and worth knowing before "fixing" them:
 
 - Guard is not modelled, so a marked player with Guard cannot assist.
 - No armour or injury rolls; `down` is the only knocked-over state.
-- No chain pushes: if every push-back square is occupied, the defender stays
-  put and still falls.
+- Crowd pushes remain out of scope. A chain route that cannot ultimately reach
+  an on-pitch empty square is not offered.
 - Failed rolls aren't simulated — the model tracks the probability of the whole
   line succeeding, so play continues as though every roll passed.
 

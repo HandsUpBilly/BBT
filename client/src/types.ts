@@ -168,10 +168,18 @@ export type BlockLogEntry = {
   // defender-down with a legal push square). `to` stays the pre-push square
   // so the two together describe the full push: from `to` to `pushTo`.
   pushTo?: Position;
+  /** Every displacement in order, including the originally blocked defender. */
+  pushes?: PushMovement[];
   // These mirror MoveLogEntry fields so existing risky-move filters work unchanged
   dodgeTarget: null;
   isGfi: false;
 };
+
+export interface PushMovement {
+  pieceId: string;
+  from: Position;
+  to: Position;
+}
 
 export type ActionLogEntry = MoveLogEntry | HandoffLogEntry | PassLogEntry | PassCatchLogEntry | BlockLogEntry;
 
@@ -278,8 +286,13 @@ export interface GameState {
     resolvedFace: BlockOutcomeFace;
     defenderFalls: boolean;    // whether the defender is marked `down` once pushed
     defenderFrom: Position;    // defender's pre-push square (needed for follow-up)
-    offerFollowUp: boolean;    // true only for a defender-down resolution
+    offerFollowUp: boolean;    // all standing-attacker push outcomes may follow up
     isBlitz: boolean;          // resume any remaining movement after resolving the push
+    /** Completed links while an occupied destination is producing a chain push. */
+    pushes?: PushMovement[];
+    /** The next player displaced by the chain; defaults to the original defender. */
+    chainPieceId?: string;
+    chainFrom?: Position;
   } | null;
 }
 
@@ -321,6 +334,7 @@ export interface PlayLogEntry {
   receiverName?: string;
   isBlitz?: boolean;
   diceCount?: 1 | 2 | 3;
+  pushes?: Array<Pick<PushMovement, 'from' | 'to'>>;
 }
 
 export interface LeaderboardEntry {

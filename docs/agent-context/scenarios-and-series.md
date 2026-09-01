@@ -104,6 +104,10 @@ does not gate the action menu. Persistent Introduced/Used concept progress
 prevents repeated automatic teaching across drills, while a completed-drill
 replay asks whether guidance should replay. The same concept library and
 contextual guidance are available when a drill is launched individually.
+The in-series chooser uses Tutorial/drill language only when the selected
+series has the `Tutorial` label. Other series use neutral match language,
+replay completed matches directly, and keep Tutorial wording out of their
+chooser, leave confirmation, and post-match continuation action.
 Series definitions may include a client-processed 256×256 WebP data URL uploaded
 in Series Creator. PNG, JPEG, and WebP source files are accepted, cropped to a
 square, stripped of source metadata, and bounded before save. The chooser also

@@ -103,12 +103,21 @@
   stroke-width: 4;
 }
 
+.play-diagram__route--push {
+  stroke: #7bb8c7;
+  stroke-width: 2.5;
+}
+
 .play-diagram__arrowhead--movement {
   fill: #f1ede2;
 }
 
 .play-diagram__arrowhead--ball {
   fill: #d9a34e;
+}
+
+.play-diagram__arrowhead--push {
+  fill: #7bb8c7;
 }
 
 .play-diagram__block-mark {

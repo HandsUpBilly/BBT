@@ -105,6 +105,9 @@ export function DiceLog({ log }: Props) {
                 {entry.diceCount}D {entry.picker === 'attacker' ? 'Att' : 'Def'} pick
               </span>
               {' '}<span className="dice-log__block-face">{FACE_LABEL[entry.resolvedFace]}</span>
+              {(entry.pushes?.length ?? 0) > 1 && (
+                <> <span className="dice-log__block-face">Chain ×{entry.pushes?.length}</span></>
+              )}
               {' '}<span className="dice-log__prob-pct">({pct(entry.actionProb)})</span>
             </span>
           ) : (entry.isGfi || entry.dodgeTarget !== null || !!entry.pickupTarget) && (

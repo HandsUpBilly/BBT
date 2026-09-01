@@ -24,7 +24,11 @@ export function tutorialActionSequence(log: readonly ActionLogEntry[]): string[]
     }
     if (entry.kind === 'handoff') actions.push(`Handed off from ${entry.pieceName} to ${entry.receiverName}`);
     if (entry.kind === 'pass') actions.push(`Passed from ${entry.pieceName} to ${entry.receiverName}`);
-    if (entry.kind === 'block') actions.push(`${entry.isBlitz ? 'Blitzed' : 'Blocked'} ${entry.receiverName} with ${entry.pieceName}`);
+    if (entry.kind === 'block') {
+      const pushCount = entry.pushes?.length ?? 0;
+      const chain = pushCount > 1 ? `, chaining ${pushCount} pushes` : '';
+      actions.push(`${entry.isBlitz ? 'Blitzed' : 'Blocked'} ${entry.receiverName} with ${entry.pieceName}${chain}`);
+    }
     index += 1;
   }
   return actions;

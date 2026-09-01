@@ -356,6 +356,69 @@ describe('Block outcome resolution', () => {
     expect(blockEntry.pushTo).toEqual({ col: 7, row: 8 });
   });
 
+  it('push: recursively displaces occupied players until the chain reaches an empty square', () => {
+    const state = makeState([
+      blocker(),
+      orc(),
+      orc({ id: 'chain-1', position: { col: 7, row: 8 } }),
+      orc({ id: 'flank-left', position: { col: 6, row: 8 } }),
+      orc({ id: 'flank-right', position: { col: 8, row: 8 } }),
+    ]);
+    const { result } = renderHook(() => useGameState(state));
+
+    act(() => result.current.handleBlockAction('human1', false));
+    act(() => result.current.handleBlockTarget(7, 9));
+    act(() => result.current.handleBlockOutcomeChoice(['push'], 'push'));
+
+    expect(result.current.state.pushTargetKeys).toEqual(new Set(['7,8', '6,8', '8,8']));
+    act(() => result.current.handlePushChoice(7, 8, undefined));
+    expect(result.current.state.pendingBlockResolution?.pushes).toHaveLength(1);
+    expect(result.current.state.pushTargetKeys).toEqual(new Set(['7,7', '6,7', '8,7']));
+
+    act(() => result.current.handlePushChoice(7, 7, false));
+
+    expect(result.current.state.pieces.find(piece => piece.id === 'orc1')?.position)
+      .toEqual({ col: 7, row: 8 });
+    expect(result.current.state.pieces.find(piece => piece.id === 'chain-1')?.position)
+      .toEqual({ col: 7, row: 7 });
+    const blockEntry = result.current.state.actionLog.find(entry => entry.kind === 'block');
+    if (!blockEntry || blockEntry.kind !== 'block') throw new Error('expected a block entry');
+    expect(blockEntry.pushes).toEqual([
+      { pieceId: 'orc1', from: { col: 7, row: 9 }, to: { col: 7, row: 8 } },
+      { pieceId: 'chain-1', from: { col: 7, row: 8 }, to: { col: 7, row: 7 } },
+    ]);
+  });
+
+  it('push: supports a long chain and knocks down only the original defender', () => {
+    const state = makeState([
+      blocker(),
+      orc(),
+      orc({ id: 'chain-1', position: { col: 7, row: 8 } }),
+      orc({ id: 'chain-2', position: { col: 7, row: 7 }, hasBall: true }),
+      orc({ id: 'row-8-left', position: { col: 6, row: 8 } }),
+      orc({ id: 'row-8-right', position: { col: 8, row: 8 } }),
+      orc({ id: 'row-7-left', position: { col: 6, row: 7 } }),
+      orc({ id: 'row-7-right', position: { col: 8, row: 7 } }),
+    ]);
+    const { result } = renderHook(() => useGameState(state));
+
+    act(() => result.current.handleBlockAction('human1', false));
+    act(() => result.current.handleBlockTarget(7, 9));
+    act(() => result.current.handleBlockOutcomeChoice(['defender-down'], 'defender-down'));
+    act(() => result.current.handlePushChoice(7, 8, undefined));
+    act(() => result.current.handlePushChoice(7, 7, undefined));
+    act(() => result.current.handlePushChoice(7, 6, false));
+
+    expect(result.current.state.pieces.find(piece => piece.id === 'orc1')?.down).toBe(true);
+    expect(result.current.state.pieces.find(piece => piece.id === 'chain-1')?.down).toBe(false);
+    expect(result.current.state.pieces.find(piece => piece.id === 'chain-2')).toMatchObject({
+      position: { col: 7, row: 6 },
+      down: false,
+      hasBall: true,
+    });
+    expect(result.current.state.ballPosition).toBeNull();
+  });
+
   it('defender-stumbles: offers a follow-up like push and defender-down', () => {
     const state = makeState([blocker(), orc()]);
     const { result } = renderHook(() => useGameState(state));

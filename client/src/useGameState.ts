@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import type { GameState, PlayerPiece, Position, ActionLogEntry, Scenario, BlockOutcomeFace, Team } from './types';
+import type { GameState, PlayerPiece, Position, ActionLogEntry, Scenario, BlockOutcomeFace, PushMovement, Team } from './types';
 import type { PathStep } from './bfs';
 import type { BlockBoardState } from './blockBranching';
 import { attacksTopEndZone } from './teamPresentation';
@@ -800,19 +800,61 @@ export function applySquareLeave(prev: GameState): GameState {
   return prev.pathPreview.length === 0 ? prev : { ...prev, pathPreview: [] };
 }
 
-/** Pure body of `handlePushChoice`, so a push can be replayed across branches. */
-export function applyPushChoice(prev: GameState, pos: Position, followUp: boolean): GameState {
+/**
+ * Pure body of `handlePushChoice`, so every link in a possibly recursive push
+ * can be replayed across parallel branches before the whole chain is committed.
+ */
+export function applyPushChoice(prev: GameState, pos: Position, followUp?: boolean): GameState {
   if (!prev.pendingBlockResolution) return prev;
   const resolution = prev.pendingBlockResolution;
   const targetKey = key(pos);
   if (!prev.pushTargetKeys.has(targetKey)) return prev;
 
+  const currentPieceId = resolution.chainPieceId ?? resolution.defenderId;
+  const currentFrom = resolution.chainFrom ?? resolution.defenderFrom;
+  const push: PushMovement = { pieceId: currentPieceId, from: currentFrom, to: pos };
+  const pushes = [...(resolution.pushes ?? []), push];
+  const occupyingPiece = prev.pieces.find(piece =>
+    piece.id !== currentPieceId && key(piece.position) === targetKey,
+  );
+
+  if (occupyingPiece) {
+    const nextTargets = pushBackCandidates(
+      currentFrom,
+      occupyingPiece.position,
+      prev.pieces.map(piece => piece.position),
+    );
+    if (nextTargets.length === 0) return prev;
+    return {
+      ...prev,
+      pushTargetKeys: new Set(nextTargets.map(key)),
+      pendingBlockResolution: {
+        ...resolution,
+        pushes,
+        chainPieceId: occupyingPiece.id,
+        chainFrom: occupyingPiece.position,
+      },
+    };
+  }
+
+  // Intermediate chain choices deliberately omit followUp. If this square is
+  // empty on a sibling universe but occupied on the viewed one, do not silently
+  // decline that sibling's follow-up; leave it for its own plan instead.
+  if (followUp === undefined && resolution.offerFollowUp) return prev;
+
   const attacker = prev.pieces.find(p => p.id === resolution.attackerId);
   const attackerFollowsUp = resolution.offerFollowUp && followUp;
 
+  const destinations = new Map(pushes.map(step => [step.pieceId, step.to]));
+
   const pushed = prev.pieces.map(p => {
-    if (p.id === resolution.defenderId) {
-      return { ...p, position: pos, down: resolution.defenderFalls };
+    const destination = destinations.get(p.id);
+    if (destination) {
+      return {
+        ...p,
+        position: destination,
+        down: p.id === resolution.defenderId ? resolution.defenderFalls : p.down,
+      };
     }
     if (p.id === resolution.attackerId) {
       return {
@@ -838,7 +880,7 @@ export function applyPushChoice(prev: GameState, pos: Position, followUp: boolea
   const loggedPush = blockEntryIndex === -1
     ? prev.actionLog
     : prev.actionLog.map((entry, index) =>
-        index === blockEntryIndex ? { ...entry, pushTo: pos } : entry,
+        index === blockEntryIndex ? { ...entry, pushTo: pushes[0].to, pushes } : entry,
       );
 
   // Log the follow-up as a free move step so the committed-movement
@@ -1570,12 +1612,11 @@ export function useGameState(initialState: GameState) {
   }, []);
 
   /**
-   * Called once the player picks a push-back square (and, for a Defender
-   * Down resolution, a follow-up choice). Finalizes the defender's position
-   * and down state, optionally moves the attacker into the vacated square,
-   * and ends the attacker's activation.
+   * Resolve one choice in a pending push. Occupied choices queue another link;
+   * reaching empty turf commits every displacement together, then applies the
+   * attacker's follow-up choice and ends (or resumes) the activation.
    */
-  const handlePushChoice = useCallback((col: number, row: number, followUp: boolean) => {
+  const handlePushChoice = useCallback((col: number, row: number, followUp?: boolean) => {
     setState(prev => applyPushChoice(prev, { col, row }, followUp));
   }, []);
 

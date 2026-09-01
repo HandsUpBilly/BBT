@@ -1,6 +1,6 @@
 import { memo, useCallback, useMemo } from 'react';
 import type { CSSProperties } from 'react';
-import type { GameState, Team, BlockOutcomeFace, BlockLogEntry, Position } from './types';
+import type { GameState, Team, BlockOutcomeFace, Position } from './types';
 import { key, neighbours } from './bfs';
 import { buildMovementTrailMap, buildMovementStartMarkers, trailPolylinePoints } from './movementTrail';
 import type { PathTrail } from './movementTrail';
@@ -267,8 +267,8 @@ interface SquareProps {
   focusable: boolean;
   onSquareClick: (col: number, row: number) => void;
   onPieceClick: (col: number, row: number, anchor: MenuAnchor) => void;
-  onSquareHover: (col: number, row: number) => void;
-  onSquareLeave: () => void;
+  onSquareHover: (col: number, row: number, directHover?: boolean) => void;
+  onSquareLeave: (directHover?: boolean) => void;
 }
 
 /**
@@ -313,10 +313,14 @@ const Square = memo(function Square({
         // pointer position to anchor to.
         activateFromSquare(e.currentTarget);
       }}
-      onFocus={() => onSquareHover(pCol, pRow)}
-      onBlur={onSquareLeave}
-      onMouseEnter={() => onSquareHover(pCol, pRow)}
-      onMouseLeave={onSquareLeave}
+      onFocus={() => onSquareHover(pCol, pRow, true)}
+      onBlur={() => onSquareLeave(true)}
+      onPointerEnter={event => {
+        if (event.pointerType !== 'touch') onSquareHover(pCol, pRow, true);
+      }}
+      onPointerLeave={event => {
+        if (event.pointerType !== 'touch') onSquareLeave(true);
+      }}
       data-square={name}
       data-col={pCol}
       data-row={pRow}
@@ -407,8 +411,8 @@ interface Props {
   state: GameState;
   onSquareClick: (col: number, row: number) => void;
   onPieceClick: (col: number, row: number, anchor: MenuAnchor) => void;
-  onSquareHover: (col: number, row: number) => void;
-  onSquareLeave: () => void;
+  onSquareHover: (col: number, row: number, directHover?: boolean) => void;
+  onSquareLeave: (directHover?: boolean) => void;
   /**
    * Which screen axis the pitch's long side runs along. Portrait puts the end
    * zones top and bottom, which roughly doubles the square size on a phone —
@@ -572,22 +576,26 @@ export function Pitch({
     return map;
   }, [state.actionLog]);
 
-  // Squares a push touched this turn: origin (the defender's pre-push
-  // square, `entry.to`) and destination (`entry.pushTo`). Same actionLog-
+  // Squares a push touched this turn. Modern entries retain every chain link;
+  // legacy entries use the original defender's `to` -> `pushTo` pair. Same actionLog-
   // derived, auto-clears-on-cancel convention as the trail/dice/block-outcome
   // maps above — a square pushed through more than once keeps every glow it
   // was part of, since origin and destination read differently.
   const pushOriginKeys = useMemo(() => {
     const keys = new Set<string>();
     for (const entry of state.actionLog) {
-      if (entry.kind === 'block' && entry.pushTo) keys.add(key(entry.to));
+      if (entry.kind !== 'block') continue;
+      if (entry.pushes?.length) entry.pushes.forEach(push => keys.add(key(push.from)));
+      else if (entry.pushTo) keys.add(key(entry.to));
     }
     return keys;
   }, [state.actionLog]);
   const pushDestinationKeys = useMemo(() => {
     const keys = new Set<string>();
     for (const entry of state.actionLog) {
-      if (entry.kind === 'block' && entry.pushTo) keys.add(key(entry.pushTo));
+      if (entry.kind !== 'block') continue;
+      if (entry.pushes?.length) entry.pushes.forEach(push => keys.add(key(push.to)));
+      else if (entry.pushTo) keys.add(key(entry.pushTo));
     }
     return keys;
   }, [state.actionLog]);
@@ -668,12 +676,16 @@ export function Pitch({
   // isn't mistaken for a throw — see pushOriginKeys/pushDestinationKeys above
   // for why the origin square can also be carrying that block's resolved-face
   // marker.
-  const pushIndicators = state.actionLog
-    .filter((entry): entry is BlockLogEntry & { pushTo: Position } => entry.kind === 'block' && !!entry.pushTo)
-    .map((entry, index) => ({
-      key: `${entry.pieceName}-${entry.receiverName}-push-${index}`,
-      path: passTrajectoryPath(entry.to, entry.pushTo, portrait, acrossStart, downStart),
+  const pushIndicators = state.actionLog.flatMap((entry, entryIndex) => {
+    if (entry.kind !== 'block') return [];
+    const pushes = entry.pushes?.length
+      ? entry.pushes
+      : entry.pushTo ? [{ pieceId: entry.receiverName, from: entry.to, to: entry.pushTo }] : [];
+    return pushes.map((push, pushIndex) => ({
+      key: `${entry.pieceName}-${entry.receiverName}-push-${entryIndex}-${pushIndex}`,
+      path: passTrajectoryPath(push.from, push.to, portrait, acrossStart, downStart),
     }));
+  });
 
   // Labels follow the axis, not the orientation: the letter always names the
   // state col and the number always names the state row.

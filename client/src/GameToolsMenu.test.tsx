@@ -48,22 +48,7 @@ describe('GameToolsMenu', () => {
     expect(screen.queryByRole('menu')).toBeNull();
   });
 
-  it('runs reporting and closes the menu on phone-width toolbars', () => {
-    const onReport = vi.fn();
-    render(
-      <GameToolsMenu
-        onReport={onReport}
-        onRestart={vi.fn()}
-      />,
-    );
-
-    fireEvent.click(screen.getByRole('button', { name: 'Game tools' }));
-    fireEvent.click(screen.getByRole('menuitem', { name: 'Report a problem' }));
-    expect(onReport).toHaveBeenCalledOnce();
-    expect(screen.queryByRole('menu')).toBeNull();
-  });
-
-  it('omits reporting when the dedicated toolbar control is visible', () => {
+  it('keeps reporting out of game tools because it lives in the account menu', () => {
     render(
       <GameToolsMenu
         onRestart={vi.fn()}
