@@ -12,8 +12,6 @@ import { normalizeScenario, normalizeSeriesCollection } from '../../shared/scena
 
 const SCENARIOS_KEY = 'scenarios';
 const SERIES_KEY = 'series-default';
-const PUBLISHED_SCENARIOS_KEY = 'published-scenarios';
-const PUBLISHED_SERIES_KEY = 'published-series-default';
 
 export function editorStore() {
   return getStore({
@@ -46,22 +44,7 @@ export const writeDraftSeries = (store, series) =>
   store.set(SERIES_KEY, JSON.stringify(series));
 
 /**
- * Published state is what the public scenarios endpoint serves to players. It's
- * a separate Blobs key from the draft state above — publishing is an explicit
- * copy-draft-to-published action (see editor-publish.js), not automatic on
- * every draft save, so an admin can stage several edits before making them live.
- */
-export const readPublishedScenarios = store =>
-  readSeeded(store, PUBLISHED_SCENARIOS_KEY, STATIC_SCENARIOS).then(scenarios => scenarios.map(normalizeScenario));
-export const readPublishedSeries = async store => normalizeSeriesCollection(await readSeeded(store, PUBLISHED_SERIES_KEY, STATIC_SERIES));
-
-export const writePublishedScenarios = (store, scenarios) =>
-  store.set(PUBLISHED_SCENARIOS_KEY, JSON.stringify(scenarios));
-export const writePublishedSeries = (store, series) =>
-  store.set(PUBLISHED_SERIES_KEY, JSON.stringify(series));
-
-/**
- * The player-facing view: published scenarios only, with series ids narrowed to
+ * The player-facing view: enabled scenarios only, with series ids narrowed to
  * scenarios that survive that filter. Without the narrowing, disabling a puzzle
  * that is still listed in the series silently shortened Series Play mid-run.
  */

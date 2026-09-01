@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { scenarios } from '../scenarios';
 import {
   FEATURED_SERIES_LOGO,
+  FEATURED_SERIES_LABEL,
   FEATURED_SERIES_NAME,
   defaultSeries,
   normalizeSeriesDefinition,
@@ -31,10 +32,13 @@ describe('Tutorial series', () => {
   });
 
   it('keeps the featured crest when runtime metadata predates logo support', () => {
-    expect(normalizeSeriesDefinition({
+    const normalized = normalizeSeriesDefinition({
       ...defaultSeries,
       logo: undefined,
+      label: undefined,
       name: 'Humans vs Orcs: Touchdown or Bust',
-    }).logo).toBe(FEATURED_SERIES_LOGO);
+    });
+    expect(normalized.logo).toBe(FEATURED_SERIES_LOGO);
+    expect(normalized.label).toBe(FEATURED_SERIES_LABEL);
   });
 });

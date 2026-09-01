@@ -24,7 +24,7 @@ describe('AdminConsole', () => {
         : url === '/api/editor/rankings' ? emptyRankings : responses.shift(),
     }));
     vi.stubGlobal('fetch', fetchMock);
-    render(<AdminConsole idToken="admin-token" onBack={() => undefined} />);
+    render(<AdminConsole idToken="admin-token" onBack={() => undefined} onReport={() => undefined} />);
     expect(await screen.findByText('coach@example.com')).toBeTruthy();
 
     fireEvent.change(screen.getByLabelText('Email address'), { target: { value: 'assistant@example.com' } });
@@ -53,7 +53,7 @@ describe('AdminConsole', () => {
       return Promise.resolve({ ok: true, json: async () => ({ managedAdmins: [], configuredAdminCount: 1, audit: [] }) });
     });
     vi.stubGlobal('fetch', fetchMock);
-    render(<AdminConsole idToken="admin-token" onBack={() => undefined} />);
+    render(<AdminConsole idToken="admin-token" onBack={() => undefined} onReport={() => undefined} />);
 
     expect(await screen.findByText('Wales')).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: 'Remove avatar' }));
@@ -84,7 +84,7 @@ describe('AdminConsole', () => {
       return Promise.resolve({ ok: true, json: async () => ({ managedAdmins: [], configuredAdminCount: 1, audit: [] }) });
     });
     vi.stubGlobal('fetch', fetchMock);
-    render(<AdminConsole idToken="admin-token" onBack={() => undefined} />);
+    render(<AdminConsole idToken="admin-token" onBack={() => undefined} onReport={() => undefined} />);
 
     expect(await screen.findByText('6 retained ranking entries in total')).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: 'Clear Opening Drive puzzle rankings' }));
@@ -111,5 +111,22 @@ describe('AdminConsole', () => {
       '/api/editor/rankings?scope=all',
       { method: 'DELETE', headers: { Authorization: 'Bearer admin-token' } },
     ));
+  });
+
+  it('keeps problem reporting inside the admin console', async () => {
+    const onReport = vi.fn();
+    vi.stubGlobal('fetch', vi.fn().mockImplementation((url: string) => Promise.resolve({
+      ok: true,
+      json: async () => url === '/api/editor/profiles'
+        ? []
+        : url === '/api/editor/rankings'
+          ? emptyRankings
+          : { managedAdmins: [], configuredAdminCount: 1, audit: [] },
+    })));
+    render(<AdminConsole idToken="admin-token" onBack={() => undefined} onReport={onReport} />);
+
+    await screen.findByText('Ranking data');
+    fireEvent.click(screen.getByRole('button', { name: 'Report a problem' }));
+    expect(onReport).toHaveBeenCalledOnce();
   });
 });

@@ -27,7 +27,6 @@ import { ActionLogMenu } from './ActionLogMenu';
 import { GameToolsMenu } from './GameToolsMenu';
 import { AppFooter } from './AppFooter';
 import { SuccessChanceReadout } from './SuccessChanceReadout';
-import { ReportProblemButton } from './ReportProblemButton';
 import { ReportProblemModal } from './ReportProblemModal';
 import { ContactModal } from './ContactModal';
 import { AboutDialog } from './AboutDialog';
@@ -298,7 +297,7 @@ export default function App() {
   const confirmedAdmin = useAdminAccess(idToken);
   const isAdmin = __BBT_FORCE_ADMIN_NAV__ || confirmedAdmin;
   // Scenario/series data starts as the build-time static bundle (immediate,
-  // no loading flash) and is replaced by the currently published set fetched
+  // no loading flash) and is replaced by the currently enabled set fetched
   // from /api/scenarios once that resolves — see scenarios/runtime.ts.
   const [scenarioData, setScenarioData] = useState<ScenarioData>(() => ({
     scenarios: staticScenarios,
@@ -393,16 +392,16 @@ export default function App() {
   const [helpReturnMode, setHelpReturnMode] = useState<AppMode>('home');
   const [appMode, setAppMode] = useState<AppMode>('home');
   // Re-fetch whenever the player lands on the home/select screen (including on
-  // first load) so a scenario published while this tab was open — or before
+  // first load) so a scenario saved while this tab was open — or before
   // this tab was ever opened — shows up without a hard refresh. Cheap no-op if
   // nothing changed since /api/scenarios falls back to the static bundle on
   // failure and the fetch itself is a single small JSON payload.
   useEffect(() => {
     if (appMode !== 'home') return;
     let cancelled = false;
-    void loadScenarioData().then(data => { if (!cancelled) setScenarioData(data); });
+    void loadScenarioData({ admin: confirmedAdmin, idToken }).then(data => { if (!cancelled) setScenarioData(data); });
     return () => { cancelled = true; };
-  }, [appMode]);
+  }, [appMode, confirmedAdmin, idToken]);
   const [activeScenario, setActiveScenario] = useState<Scenario | null>(null);
   const [leaderboardHighlight, setLeaderboardHighlight] = useState<string | undefined>();
   const [leaderboardReturnMode, setLeaderboardReturnMode] = useState<'home' | 'series-select'>('home');
@@ -629,12 +628,10 @@ export default function App() {
     appVersion: __BBT_VERSION__,
     userAgent: navigator.userAgent,
   };
-  const reportButton = (variant: 'header' | 'hud') => (
-    <ReportProblemButton variant={variant} onClick={() => {
-      trackAnalytics('interaction', { name: 'report-dialog', outcome: 'opened' });
-      setReportOpen(true);
-    }} />
-  );
+  const openReport = () => {
+    trackAnalytics('interaction', { name: 'report-dialog', outcome: 'opened' });
+    setReportOpen(true);
+  };
   // A lapsed Google session still shows the player as signed in, but writes
   // would 401. Offer the fix before they lose a run to it.
   const expiredBanner = sessionExpired && (
@@ -750,7 +747,6 @@ export default function App() {
 
   const archiveControls = (
     <div className="app__account-controls">
-      {reportButton('header')}
       {accountMenu}
     </div>
   );
@@ -1433,7 +1429,6 @@ export default function App() {
           userId={currentUser?.id}
           isAdmin={isAdmin}
           userMenu={accountMenu}
-          reportButton={reportButton('header')}
         />
         {notice}
         {reportModal}
@@ -1539,9 +1534,11 @@ export default function App() {
         <PuzzleEditor
           onBack={() => setAppMode('home')}
           onPlay={previewPuzzle}
+          onReport={openReport}
           previewScenario={editorPreviewScenario}
           idToken={idToken}
         />
+        {reportModal}
         {aboutModal}
         {releaseNotesModal}
         {contactModal}
@@ -1831,10 +1828,6 @@ export default function App() {
                 : undefined
             }
             onRestart={handleRestartTurn}
-            onReport={() => {
-              trackAnalytics('interaction', { name: 'report-dialog', outcome: 'opened' });
-              setReportOpen(true);
-            }}
           />
         ) : (
           <>
@@ -1867,7 +1860,6 @@ export default function App() {
 
         <ActionLogMenu log={state.actionLog} />
 
-        {!compact && reportButton('hud')}
       </header>
 
       <BranchStrip
@@ -1950,13 +1942,18 @@ export default function App() {
             scrolls rather than squeezing the board, and the cards go compact
             (see .side-col--comparing) so both usually fit without it. */}
         <div className={`side-col side-col--right${comparisonPiece ? ' side-col--comparing' : ''}`}>
-          <PlayerPanel
-            piece={inspectedPiece}
-            side="right"
-            role={comparisonPiece ? 'acting' : undefined}
-          />
-          {comparisonPiece && (
-            <PlayerPanel piece={comparisonPiece} side="right" role="target" />
+          {comparisonPiece ? (
+            <div
+              className="player-matchup"
+              role="group"
+              aria-label={`${inspectedPiece?.name ?? 'Acting player'} versus ${comparisonPiece.name}`}
+            >
+              <PlayerPanel piece={inspectedPiece} side="right" role="acting" />
+              <div className="player-matchup__divider" aria-hidden="true">VS</div>
+              <PlayerPanel piece={comparisonPiece} side="right" role="target" />
+            </div>
+          ) : (
+            <PlayerPanel piece={inspectedPiece} side="right" />
           )}
         </div>
 

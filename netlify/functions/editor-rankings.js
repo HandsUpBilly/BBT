@@ -6,8 +6,8 @@ import { AdminAuthError, authErrorResponse, requireAdminGoogleUser } from './aut
 import { leaderboardStore } from './blobEntries.js';
 import {
   editorStore,
-  readPublishedScenarios,
-  readPublishedSeries,
+  readDraftScenarios,
+  readDraftSeries,
   toPublicView,
 } from './editorStore.js';
 import { clearRankingTarget, readRankingResetSummary } from './rankingResetStore.js';
@@ -21,11 +21,11 @@ function json(status, body) {
 
 async function context() {
   const drafts = editorStore();
-  const [publishedScenarios, publishedSeries] = await Promise.all([
-    readPublishedScenarios(drafts),
-    readPublishedSeries(drafts),
+  const [savedScenarios, savedSeries] = await Promise.all([
+    readDraftScenarios(drafts),
+    readDraftSeries(drafts),
   ]);
-  const { scenarios, series } = toPublicView(publishedScenarios, publishedSeries);
+  const { scenarios, series } = toPublicView(savedScenarios, savedSeries);
   return {
     scenarioStore: leaderboardStore('leaderboard'),
     seriesStore: leaderboardStore('series-leaderboard'),

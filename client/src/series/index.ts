@@ -3,6 +3,7 @@ const seriesModules = import.meta.glob('./*.json', { eager: true, import: 'defau
 
 export const FEATURED_SERIES_NAME = 'Humans vs Orcs: The Nuffle Shuffle';
 export const FEATURED_SERIES_LOGO = 'nuffle-shuffle';
+export const FEATURED_SERIES_LABEL = 'Tutorial';
 
 const LEGACY_FEATURED_SERIES_NAMES = new Set([
   'Humans vs Orcs: Touchdown or Bust',
@@ -18,7 +19,12 @@ export function normalizeSeriesDefinition(series: SeriesDefinition): SeriesDefin
   if (!LEGACY_FEATURED_SERIES_NAMES.has(series.name)) return series;
   // Published metadata can predate `logo`: the static chooser crest would
   // otherwise flash, then disappear when the runtime response replaces it.
-  return { ...series, name: FEATURED_SERIES_NAME, logo: series.logo || FEATURED_SERIES_LOGO };
+  return {
+    ...series,
+    name: FEATURED_SERIES_NAME,
+    label: series.label || FEATURED_SERIES_LABEL,
+    logo: series.logo || FEATURED_SERIES_LOGO,
+  };
 }
 
 // Static fallback only — the app's actual source of truth at runtime is the

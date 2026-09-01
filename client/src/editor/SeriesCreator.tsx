@@ -1,6 +1,9 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import type { Scenario, SeriesDefinition, Team } from '../types';
+import { AVATAR_ALLOWED_TYPES, encodeAvatarFile, validateAvatarFile } from '../avatarImage';
+import { seriesLogoSource } from '../seriesLogo';
 import { deleteSeries, saveSeries } from './editorApi';
+import { seriesMembershipErrors } from '../../../shared/scenarioValidation.js';
 
 interface Props {
   scenarios: Scenario[];
@@ -14,9 +17,11 @@ function newSeries(order: number): SeriesDefinition {
   return {
     id: '',
     name: 'New Series',
+    label: 'Series',
     description: '',
     scenarioIds: [],
     published: false,
+    adminEnabled: false,
     teams: ['human', 'orc'],
     objective: 'touchdown',
     order,
@@ -30,8 +35,22 @@ export function SeriesCreator({ scenarios, series, idToken, onChange, onStatus }
   const [creating, setCreating] = useState(series.length === 0);
   const [saving, setSaving] = useState(false);
   const [stepToAdd, setStepToAdd] = useState('');
+  const [logoBusy, setLogoBusy] = useState(false);
+  const [logoError, setLogoError] = useState('');
+  const logoInputRef = useRef<HTMLInputElement>(null);
 
-  const availableSteps = useMemo(() => scenarios.filter(scenario => !draft.scenarioIds.includes(scenario.id)), [draft.scenarioIds, scenarios]);
+  const stepOptions = useMemo(() => scenarios
+    .filter(scenario => !draft.scenarioIds.includes(scenario.id))
+    .map(scenario => ({
+      scenario,
+      owner: series.find(item => item.id !== draft.id && item.scenarioIds.includes(scenario.id)),
+    })), [draft.id, draft.scenarioIds, scenarios, series]);
+  const selectedStep = stepOptions.find(item => item.scenario.id === stepToAdd);
+  const logoSource = seriesLogoSource(draft.logo);
+  const validationErrors = useMemo(
+    () => seriesMembershipErrors(draft, series, scenarios),
+    [draft, scenarios, series],
+  );
 
   function select(id: string) {
     const next = series.find(item => item.id === id);
@@ -52,6 +71,10 @@ export function SeriesCreator({ scenarios, series, idToken, onChange, onStatus }
       onStatus('Series id and title are required.');
       return;
     }
+    if (validationErrors.length) {
+      onStatus(validationErrors.join(' '));
+      return;
+    }
     setSaving(true);
     try {
       const saved = await saveSeries(draft, creating, idToken);
@@ -61,7 +84,7 @@ export function SeriesCreator({ scenarios, series, idToken, onChange, onStatus }
       setSelectedId(saved.id);
       setDraft(structuredClone(saved));
       setCreating(false);
-      onStatus(`Saved ${saved.name} as a draft. Publish Drafts when it is ready for players.`);
+      onStatus(`Saved ${saved.name}. ${saved.published !== false ? 'Enabled for everyone.' : saved.adminEnabled ? 'Enabled for admins only.' : 'Creator only.'}`);
     } catch (error) {
       onStatus(error instanceof Error ? error.message : 'Failed to save series.');
     } finally {
@@ -79,7 +102,7 @@ export function SeriesCreator({ scenarios, series, idToken, onChange, onStatus }
       setSelectedId(first?.id ?? '');
       setDraft(first ? structuredClone(first) : newSeries(0));
       setCreating(!first);
-      onStatus(`Deleted ${draft.name}. Publish Drafts to remove it from players.`);
+      onStatus(`Deleted ${draft.name}. It has been removed from the player list.`);
     } catch (error) {
       onStatus(error instanceof Error ? error.message : 'Failed to delete series.');
     } finally {
@@ -101,6 +124,32 @@ export function SeriesCreator({ scenarios, series, idToken, onChange, onStatus }
     setDraft(current => ({ ...current, scenarioIds }));
   }
 
+  function addStep() {
+    if (!stepToAdd || selectedStep?.owner || draft.scenarioIds.includes(stepToAdd)) return;
+    setDraft(current => ({ ...current, scenarioIds: [...current.scenarioIds, stepToAdd] }));
+    setStepToAdd('');
+  }
+
+  async function uploadLogo(file: File | undefined) {
+    if (!file) return;
+    const invalidReason = validateAvatarFile(file);
+    if (invalidReason) {
+      setLogoError(invalidReason);
+      return;
+    }
+    setLogoBusy(true);
+    setLogoError('');
+    try {
+      const logo = await encodeAvatarFile(file);
+      setDraft(current => ({ ...current, logo }));
+    } catch (error) {
+      setLogoError(error instanceof Error ? error.message : 'Could not process that image.');
+    } finally {
+      setLogoBusy(false);
+      if (logoInputRef.current) logoInputRef.current.value = '';
+    }
+  }
+
   return (
     <section className="series-creator" aria-labelledby="series-creator-heading">
       <aside className="series-creator__library">
@@ -110,30 +159,57 @@ export function SeriesCreator({ scenarios, series, idToken, onChange, onStatus }
         </div>
         {series.map(item => (
           <button key={item.id} type="button" className={`editor__puzzle-row${item.id === selectedId ? ' editor__puzzle-row--active' : ''}`} onClick={() => select(item.id)}>
-            <strong>{item.name}</strong><span>{item.scenarioIds.length} steps · position {(item.order ?? 0) + 1} · {item.published === false ? 'Disabled' : 'Enabled'}</span>
+            <strong>{item.name}</strong><span>{item.scenarioIds.length} steps · position {(item.order ?? 0) + 1} · {item.published !== false ? 'Everyone' : item.adminEnabled ? 'Admins' : 'Creator only'}</span>
           </button>
         ))}
       </aside>
 
       <div className="series-creator__form">
-        <div className="editor__panel-heading"><div><span className="editor__eyebrow">Series Creator</span><h2 id="series-creator-heading">{creating ? 'Create Series' : 'Edit Series'}</h2></div></div>
+        <div className="editor__panel-heading"><div><span className="editor__eyebrow">Series Creator</span><h2 id="series-creator-heading">{creating ? 'Create Series' : 'Edit Series'}</h2><p>Series membership and play order are managed here. Each puzzle can belong to one series only.</p></div></div>
         <div className="series-creator__fields">
           <label>Series id<input value={draft.id} disabled={!creating} placeholder="rookie-cup" onChange={event => setDraft(current => ({ ...current, id: event.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '-') }))} /></label>
           <label>Title<input value={draft.name} onChange={event => setDraft(current => ({ ...current, name: event.target.value }))} /></label>
+          <label>Series label<input value={draft.label ?? ''} placeholder="League" maxLength={40} onChange={event => setDraft(current => ({ ...current, label: event.target.value || undefined }))} /></label>
           <label className="series-creator__wide">Description<textarea value={draft.description} onChange={event => setDraft(current => ({ ...current, description: event.target.value }))} /></label>
           <label>First team<select value={(draft.teams ?? ['human', 'orc'])[0]} onChange={event => updateTeam(0, event.target.value as Team)}><option value="human">Human</option><option value="orc">Orc</option></select></label>
           <label>Second team<select value={(draft.teams ?? ['human', 'orc'])[1]} onChange={event => updateTeam(1, event.target.value as Team)}><option value="human">Human</option><option value="orc">Orc</option></select></label>
           <label>Objective<select value={draft.objective ?? 'touchdown'} onChange={() => undefined}><option value="touchdown">Touchdown</option></select></label>
           <label>List position<input type="number" min="1" value={(draft.order ?? 0) + 1} onChange={event => setDraft(current => ({ ...current, order: Math.max(0, Number(event.target.value) - 1) }))} /></label>
-          <label>Logo key<input value={draft.logo ?? ''} placeholder="nuffle-shuffle" onChange={event => setDraft(current => ({ ...current, logo: event.target.value || undefined }))} /></label>
-          <label className="editor__checkbox"><input type="checkbox" checked={draft.published !== false} onChange={event => setDraft(current => ({ ...current, published: event.target.checked }))} />Enabled for players</label>
+          <div className="series-creator__logo">
+            <span>Series logo</span>
+            <div className="series-creator__logo-control">
+              {logoSource ? <img src={logoSource} alt="Series logo preview" /> : <span className="series-creator__logo-placeholder">No logo</span>}
+              <div className="series-creator__logo-actions">
+                <input
+                  ref={logoInputRef}
+                  hidden
+                  type="file"
+                  aria-label="Choose series logo file"
+                  accept={AVATAR_ALLOWED_TYPES.join(',')}
+                  onChange={event => { void uploadLogo(event.target.files?.[0]); }}
+                />
+                <button className="btn btn--secondary" type="button" disabled={logoBusy} onClick={() => logoInputRef.current?.click()}>{logoBusy ? 'Processing…' : 'Upload logo'}</button>
+                {draft.logo ? <button className="btn btn--ghost" type="button" onClick={() => setDraft(current => ({ ...current, logo: undefined }))}>Remove</button> : null}
+              </div>
+            </div>
+            {logoError ? <small className="editor__error" role="alert">{logoError}</small> : <small>PNG, JPEG or WebP; cropped square automatically.</small>}
+          </div>
+          <label className="editor__checkbox"><input type="checkbox" checked={draft.published !== false} onChange={event => setDraft(current => ({ ...current, published: event.target.checked }))} />Enabled for everyone</label>
+          <label className="editor__checkbox"><input type="checkbox" checked={draft.adminEnabled === true} onChange={event => setDraft(current => ({ ...current, adminEnabled: event.target.checked }))} />Enabled for admins</label>
         </div>
 
         <section className="series-creator__steps" aria-labelledby="series-steps-heading">
           <div className="editor__panel-heading"><div><span className="editor__eyebrow">Play order</span><h3 id="series-steps-heading">Steps</h3></div></div>
           <div className="series-creator__add-step">
-            <select value={stepToAdd} onChange={event => setStepToAdd(event.target.value)}><option value="">Choose a puzzle…</option>{availableSteps.map(scenario => <option key={scenario.id} value={scenario.id}>{scenario.name}</option>)}</select>
-            <button className="btn btn--secondary" type="button" disabled={!stepToAdd} onClick={() => { setDraft(current => ({ ...current, scenarioIds: [...current.scenarioIds, stepToAdd] })); setStepToAdd(''); }}>Add Step</button>
+            <select aria-label="Puzzle to add" value={stepToAdd} onChange={event => setStepToAdd(event.target.value)}>
+              <option value="">Choose a puzzle…</option>
+              {stepOptions.map(({ scenario, owner }) => (
+                <option key={scenario.id} value={scenario.id} disabled={Boolean(owner)}>
+                  {scenario.name}{owner ? ` — already in ${owner.name}` : ''}
+                </option>
+              ))}
+            </select>
+            <button className="btn btn--secondary" type="button" disabled={!stepToAdd || Boolean(selectedStep?.owner)} onClick={addStep}>Add Step</button>
           </div>
           <ol className="editor__series-list">
             {draft.scenarioIds.map((id, index) => {
@@ -141,8 +217,13 @@ export function SeriesCreator({ scenarios, series, idToken, onChange, onStatus }
               return <li key={id}><span><strong>{index + 1}. {scenario?.name ?? id}</strong><small>{id}</small></span><span className="editor__series-actions"><button type="button" disabled={index === 0} onClick={() => moveStep(index, -1)}>↑</button><button type="button" disabled={index === draft.scenarioIds.length - 1} onClick={() => moveStep(index, 1)}>↓</button><button type="button" onClick={() => setDraft(current => ({ ...current, scenarioIds: current.scenarioIds.filter(item => item !== id) }))}>Remove</button></span></li>;
             })}
           </ol>
+          {validationErrors.length > 0 ? (
+            <ul className="editor__errors" aria-label="Series validation errors">
+              {validationErrors.map(error => <li key={error}>{error}</li>)}
+            </ul>
+          ) : null}
         </section>
-        <div className="series-creator__footer"><button className="btn btn--primary" disabled={saving} onClick={() => { void persist(); }}>Save Series</button><button className="btn btn--ghost" disabled={saving} onClick={() => { void remove(); }}>Delete Series</button></div>
+        <div className="series-creator__footer"><button className="btn btn--primary" disabled={saving || validationErrors.length > 0} onClick={() => { void persist(); }}>Save Series</button><button className="btn btn--ghost" disabled={saving} onClick={() => { void remove(); }}>Delete Series</button></div>
       </div>
     </section>
   );

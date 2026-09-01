@@ -9,7 +9,6 @@ describe('GameToolsMenu', () => {
     render(
       <GameToolsMenu
         onRestart={vi.fn()}
-        onReport={vi.fn()}
       />,
     );
 
@@ -17,21 +16,20 @@ describe('GameToolsMenu', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Game tools' }));
     expect(screen.getByRole('menu', { name: 'Game tools' })).toBeTruthy();
     expect(screen.getByRole('menuitem', { name: 'Restart turn' })).toBeTruthy();
-    expect(screen.getByRole('menuitem', { name: 'Report a problem' })).toBeTruthy();
+    expect(screen.queryByRole('menuitem', { name: 'Report a problem' })).toBeNull();
   });
 
   it('runs an action and closes the menu', () => {
-    const onReport = vi.fn();
+    const onRestart = vi.fn();
     render(
       <GameToolsMenu
-        onRestart={vi.fn()}
-        onReport={onReport}
+        onRestart={onRestart}
       />,
     );
 
     fireEvent.click(screen.getByRole('button', { name: 'Game tools' }));
-    fireEvent.click(screen.getByRole('menuitem', { name: 'Report a problem' }));
-    expect(onReport).toHaveBeenCalledOnce();
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Restart turn' }));
+    expect(onRestart).toHaveBeenCalledOnce();
     expect(screen.queryByRole('menu')).toBeNull();
   });
 
@@ -41,7 +39,6 @@ describe('GameToolsMenu', () => {
       <GameToolsMenu
         onTutorialGuide={onTutorialGuide}
         onRestart={vi.fn()}
-        onReport={vi.fn()}
       />,
     );
 

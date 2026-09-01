@@ -8,6 +8,8 @@ import {
   normalizeScenario,
   normalizeSeries,
   normalizeSeriesCollection,
+  seriesMembershipErrors,
+  updateSeriesAssignment,
   validateScenario,
 } from '../shared/scenarioValidation.js';
 
@@ -77,8 +79,8 @@ async function writeSeries(series) {
 }
 
 /**
- * The published view players get. Local dev has no draft/published split — the
- * editor writes straight to these JSON files — so this is the same read
+ * The enabled view players get. The editor writes straight to these JSON files,
+ * so this is the same read
  * filtered to `published !== false`, with series ids narrowed to scenarios that
  * actually survive that filter (otherwise Series Play would silently skip a
  * puzzle mid-run). Exported so /api/progress can reuse it.
@@ -144,7 +146,7 @@ export function registerEditorRoutes(app) {
 
   // Public read endpoint mirroring netlify/functions/scenarios.js.
   app.get('/api/scenarios', async (_req, res) => {
-    res.set('Cache-Control', 'public, max-age=60');
+    res.set('Cache-Control', 'public, max-age=0, must-revalidate');
     jsonResponse(res, 200, await readPublicScenarios());
   });
 
@@ -196,6 +198,8 @@ export function registerEditorRoutes(app) {
     if (creating && existing.some(item => item.id === series.id)) return jsonResponse(res, 409, { errors: ['Series id already exists'] });
     const missing = series.scenarioIds.filter(id => !scenarioIds.has(id));
     if (missing.length) return jsonResponse(res, 400, { errors: missing.map(id => `Missing scenario: ${id}`) });
+    const membershipErrors = seriesMembershipErrors(series, existing, scenarios);
+    if (membershipErrors.length) return jsonResponse(res, 409, { errors: membershipErrors });
     await writeSeries(series);
     jsonResponse(res, creating ? 201 : 200, series);
   }
@@ -218,19 +222,15 @@ export function registerEditorRoutes(app) {
     const [scenarios, existing] = await Promise.all([readScenarios(), readSeries()]);
     if (!scenarios.some(item => item.id === scenarioId)) return jsonResponse(res, 404, { errors: ['Scenario not found'] });
     if (seriesId && !existing.some(item => item.id === seriesId)) return jsonResponse(res, 404, { errors: ['Series not found'] });
-    const saved = existing.map(item => {
-      const without = item.scenarioIds.filter(id => id !== scenarioId);
-      return item.id === seriesId ? { ...item, scenarioIds: [...without, scenarioId] } : { ...item, scenarioIds: without };
-    });
+    const { series: saved, errors } = updateSeriesAssignment(existing, scenarioId, seriesId, scenarios);
+    if (errors.length) return jsonResponse(res, 409, { errors });
+    if (saved === existing) return jsonResponse(res, 200, existing);
     await Promise.all(saved.map(writeSeries));
     jsonResponse(res, 200, saved);
   }));
 
-  // Local dev writes straight to the scenario/series JSON files players read,
-  // so there's no separate draft/published split here — this endpoint exists
-  // only so the client can call the same publish() action in both
-  // environments. See netlify/functions/editor-publish.js for the Netlify
-  // equivalent, which actually copies Blobs draft state to a published key.
+  // Compatibility endpoint for older cached clients. Saves are already live,
+  // so there is no separate publish operation in either environment.
   app.post('/api/editor/publish', async (req, res) => withAdmin(req, res, async () => {
     const [scenarios, series] = await Promise.all([readScenarios(), readSeries()]);
     jsonResponse(res, 200, { scenarios, series });

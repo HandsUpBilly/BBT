@@ -54,9 +54,37 @@ test.describe('two-player comparison', () => {
 
     const panels = page.locator('.side-col--right .panel');
     for (const index of [0, 1]) {
-      await expect(panels.nth(index).locator('.panel__stat')).toHaveCount(4);
+      const stats = panels.nth(index).locator('.panel__stat');
+      await expect(stats).toHaveCount(5);
       await expect(panels.nth(index).locator('.panel__name')).toBeVisible();
+
+      const statBoxes = await Promise.all(
+        Array.from({ length: 5 }, (_, statIndex) => boxOf(stats.nth(statIndex))),
+      );
+      expect(
+        Math.max(...statBoxes.map(box => box.top)) - Math.min(...statBoxes.map(box => box.top)),
+        'all five stats share one scan line',
+      ).toBeLessThan(2);
     }
+  });
+
+  test('uses one compact matchup dossier instead of two full portrait cards', async ({ page }) => {
+    await declareBlock(page);
+    await page.locator('.square[data-square="6F"]').hover();
+
+    const matchup = page.locator('.player-matchup');
+    const panels = matchup.locator('.panel');
+    await expect(matchup).toBeVisible();
+    await expect(matchup.locator('.player-matchup__divider')).toHaveText('VS');
+
+    for (const index of [0, 1]) {
+      const portrait = await boxOf(panels.nth(index).locator('.panel__portrait-wrap'));
+      expect(portrait.width, 'compact portrait width').toBeLessThanOrEqual(58);
+      expect(portrait.height, 'compact portrait height').toBeLessThanOrEqual(58);
+    }
+
+    const matchupBox = await boxOf(matchup);
+    expect(matchupBox.height, 'matchup dossier height').toBeLessThan(330);
   });
 
   test('the pair fits the rail without moving the board', async ({ page }) => {
