@@ -38,6 +38,7 @@ import { BrandLogo } from './BrandLogo';
 import { SettingsScreen } from './SettingsScreen';
 import { HelpScreen } from './HelpScreen';
 import { TutorialObjectiveCard } from './TutorialObjectiveCard';
+import { attacksTopEndZone } from './teamPresentation';
 import { TutorialContextCaption } from './TutorialContextCaption';
 import { TutorialConceptGuideDialog } from './TutorialConceptGuideDialog';
 import { ParallelUniversesIntroDialog } from './ParallelUniversesIntroDialog';
@@ -749,6 +750,7 @@ export default function App() {
         trackAnalytics('interaction', { name: 'contact-dialog', outcome: 'opened' });
         setContactOpen(true);
       }}
+      onReport={openReport}
       onSignOut={handleSignOut}
     />
   );
@@ -861,7 +863,7 @@ export default function App() {
       && state.pathPreview.some(step => key(step.pos) === key(state.ballPosition!));
     const carriesBall = Boolean(selected?.hasBall || picksUpBall);
     const scores = carriesBall
-      && (selected?.team === 'human' ? row === 0 : row === 25);
+      && Boolean(selected && (attacksTopEndZone(selected.team) ? row === 0 : row === 25));
     const samePreview = activeArmedMove && key(activeArmedMove.destination) === k;
 
     if (samePreview) {

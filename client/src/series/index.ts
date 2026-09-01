@@ -38,9 +38,20 @@ export const defaultSeries: SeriesDefinition = allSeries.find(series => series.i
   id: 'default', name: 'Default Series', description: '', scenarioIds: [], teams: ['human', 'orc'], objective: 'touchdown', order: 0,
 };
 
+/** Series matchup settings are authoritative for every puzzle in that run. */
+export function applySeriesTeams(series: SeriesDefinition, scenario: Scenario): Scenario {
+  const teams = series.teams ?? scenario.teams ?? ['human', 'orc'];
+  return {
+    ...scenario,
+    teams: [...teams],
+    activeTeam: teams.includes(scenario.activeTeam) ? scenario.activeTeam : teams[0],
+  };
+}
+
 export function resolveSeriesScenarios(series: SeriesDefinition, scenarios: Scenario[]): Scenario[] {
   const byId = new Map(scenarios.map(scenario => [scenario.id, scenario]));
   return series.scenarioIds
     .map(id => byId.get(id))
-    .filter((scenario): scenario is Scenario => Boolean(scenario));
+    .filter((scenario): scenario is Scenario => Boolean(scenario))
+    .map(scenario => applySeriesTeams(series, scenario));
 }

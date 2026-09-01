@@ -3,6 +3,7 @@ import type { ProgressData } from './api';
 import type { LeaderboardEntry, Scenario, SeriesDefinition, SeriesLeaderboardEntry } from './types';
 import { BrandLogo } from './BrandLogo';
 import { seriesLogoSource } from './seriesLogo';
+import { teamPluralLabel } from './teamPresentation';
 import { UI_COPY } from './uiCopy';
 import './ScenarioSelect.css';
 
@@ -221,7 +222,7 @@ export function ScenarioSelect({
                   <span className="series-row__eyebrow">{String(index + 1).padStart(2, '0')} {item.label ?? 'Series'}</span>
                   <h2 className="series-row__title">{item.name}</h2>
                   <p className="series-row__desc">{item.description}</p>
-                  <div className="series-row__meta">{(item.teams ?? ['human', 'orc']).map(team => team === 'human' ? 'Humans' : 'Orcs').join(' vs ')} · {objectiveLabel(item.objective)} · {stepCount} {stepCount === 1 ? 'step' : 'steps'}</div>
+                  <div className="series-row__meta">{(item.teams ?? ['human', 'orc']).map(teamPluralLabel).join(' vs ')} · {objectiveLabel(item.objective)} · {stepCount} {stepCount === 1 ? 'step' : 'steps'}</div>
                   <div className="series-row__meta">{formatProgress(seriesProgress)}</div>
                 </div>
                 <div className="series-row__actions">

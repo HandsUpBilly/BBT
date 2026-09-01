@@ -1,11 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import { scenarios } from '../scenarios';
+import type { SeriesDefinition } from '../types';
 import {
   FEATURED_SERIES_LOGO,
   FEATURED_SERIES_LABEL,
   FEATURED_SERIES_NAME,
   defaultSeries,
   normalizeSeriesDefinition,
+  applySeriesTeams,
   resolveSeriesScenarios,
 } from '.';
 
@@ -40,5 +42,18 @@ describe('Tutorial series', () => {
     });
     expect(normalized.logo).toBe(FEATURED_SERIES_LOGO);
     expect(normalized.label).toBe(FEATURED_SERIES_LABEL);
+  });
+
+  it('uses the selected series teams for every puzzle in the run', () => {
+    const scenario = scenarios[0];
+    const series: SeriesDefinition = {
+      ...defaultSeries,
+      teams: ['black-orc', 'imperial-nobility'],
+      scenarioIds: [scenario.id],
+    };
+
+    expect(applySeriesTeams(series, scenario).teams).toEqual(['black-orc', 'imperial-nobility']);
+    expect(resolveSeriesScenarios(series, scenarios)[0].teams).toEqual(['black-orc', 'imperial-nobility']);
+    expect(resolveSeriesScenarios(series, scenarios)[0].activeTeam).toBe('black-orc');
   });
 });

@@ -16,6 +16,8 @@ interface Props {
 const CRESTS: Record<Team, string> = {
   human: '/human-crest.png',
   orc:   '/orc-crest.png',
+  'black-orc': '/orc-crest.png',
+  'imperial-nobility': '/human-crest.png',
 };
 
 type StatKey = 'ma' | 'st' | 'ag' | 'pa' | 'av';
@@ -34,6 +36,20 @@ const STAT_ICONS: Record<Team, Record<StatKey, string>> = {
     ag: '/stat-icons/orc-ag.webp',
     pa: '/stat-icons/orc-pa.webp',
     av: '/stat-icons/orc-av.webp',
+  },
+  'black-orc': {
+    ma: '/stat-icons/orc-ma.webp',
+    st: '/stat-icons/orc-st.webp',
+    ag: '/stat-icons/orc-ag.webp',
+    pa: '/stat-icons/orc-pa.webp',
+    av: '/stat-icons/orc-av.webp',
+  },
+  'imperial-nobility': {
+    ma: '/stat-icons/human-ma.webp',
+    st: '/stat-icons/human-st.webp',
+    ag: '/stat-icons/human-ag.webp',
+    pa: '/stat-icons/human-pa.webp',
+    av: '/stat-icons/human-av.webp',
   },
 };
 

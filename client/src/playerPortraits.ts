@@ -3,12 +3,16 @@ import type { Team } from './types';
 export const DEFAULT_PLAYER_ROLE: Record<Team, string> = {
   human: 'lineman',
   orc: 'blocker',
+  'black-orc': 'black-orc',
+  'imperial-nobility': 'retainer',
 };
 
 /** Every role the puzzle editor allows, kept beside its portrait mapping. */
 export const PLAYER_ROLES: Record<Team, readonly string[]> = {
   human: ['thrower', 'catcher', 'lineman', 'blitzer', 'halfling', 'ogre', 'blocker', 'guard', 'tackle'],
   orc: ['thrower', 'catcher', 'lineman', 'blocker', 'blitzer', 'big-un', 'goblin', 'troll', 'black-orc'],
+  'black-orc': ['goblin', 'black-orc', 'troll'],
+  'imperial-nobility': ['retainer', 'thrower', 'bodyguard', 'noble-blitzer', 'ogre'],
 };
 
 const PLAYER_PORTRAITS: Record<Team, Record<string, string>> = {
@@ -33,6 +37,18 @@ const PLAYER_PORTRAITS: Record<Team, Record<string, string>> = {
     'big-un': '/big-un-gritty.webp',
     goblin: '/goblin-gritty.webp',
     troll: '/troll-v3-gritty.webp',
+  },
+  'black-orc': {
+    goblin: '/goblin-gritty.webp',
+    'black-orc': '/black-orc-gritty.webp',
+    troll: '/troll-v3-gritty.webp',
+  },
+  'imperial-nobility': {
+    retainer: '/human-lineman-gritty.webp',
+    thrower: '/human-thrower-gritty.webp',
+    bodyguard: '/human-blocker-gritty.webp',
+    'noble-blitzer': '/human-blitzer-gritty.webp',
+    ogre: '/ogre-gritty.webp',
   },
 };
 

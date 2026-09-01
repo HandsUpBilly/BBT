@@ -10,7 +10,7 @@ export interface CareerSkillGroup {
 
 type CareerAccess = Readonly<Record<string, { primary: readonly SkillGroup[]; secondary: readonly SkillGroup[] }>>;
 
-// BB2025 Human and Orc positional access. The letters in the roster data map
+// BB2025 positional access. The letters in the roster data map
 // to these six skill groups (A/D/G/M/P/S in the rulebook; we use F internally
 // for Strength because it is its French roster-data code).
 const CAREER_ACCESS: Readonly<Record<Team, CareerAccess>> = {
@@ -29,6 +29,18 @@ const CAREER_ACCESS: Readonly<Record<Team, CareerAccess>> = {
     'big-un': { primary: ['general', 'strength'], secondary: ['agility', 'devious'] },
     goblin: { primary: ['agility', 'devious'], secondary: ['general', 'passing', 'strength'] },
     troll: { primary: ['strength'], secondary: ['general', 'agility', 'passing'] },
+  },
+  'black-orc': {
+    goblin: { primary: ['agility', 'devious'], secondary: ['general', 'passing', 'strength'] },
+    'black-orc': { primary: ['general', 'strength'], secondary: ['agility', 'devious'] },
+    troll: { primary: ['strength'], secondary: ['agility', 'general', 'passing'] },
+  },
+  'imperial-nobility': {
+    retainer: { primary: ['general'], secondary: ['agility', 'strength'] },
+    thrower: { primary: ['general', 'passing'], secondary: ['agility', 'strength'] },
+    bodyguard: { primary: ['general', 'strength'], secondary: ['agility'] },
+    'noble-blitzer': { primary: ['agility', 'general'], secondary: ['passing', 'strength'] },
+    ogre: { primary: ['strength'], secondary: ['agility', 'general'] },
   },
 };
 

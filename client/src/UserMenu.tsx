@@ -11,6 +11,7 @@ interface Props {
   onSettings?: () => void;
   onAbout?: () => void;
   onContact?: () => void;
+  onReport?: () => void;
   onSignOut?: () => void;
 }
 
@@ -20,7 +21,7 @@ function Avatar({ name, avatar, large }: { name: string; avatar?: string; large?
   return <PlayerAvatar name={name} src={avatar} className={className} fallbackClassName="user-menu__avatar--fallback" />;
 }
 
-export function UserMenu({ name, avatar, country, onHelp, onSettings, onAbout, onContact, onSignOut }: Props) {
+export function UserMenu({ name, avatar, country, onHelp, onSettings, onAbout, onContact, onReport, onSignOut }: Props) {
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
@@ -114,6 +115,19 @@ export function UserMenu({ name, avatar, country, onHelp, onSettings, onAbout, o
               }}
             >
               Contact us
+            </button>
+          )}
+          {onReport && (
+            <button
+              className="user-menu__item"
+              role="menuitem"
+              onClick={() => {
+                close();
+                triggerRef.current?.focus();
+                onReport();
+              }}
+            >
+              Report an issue
             </button>
           )}
           {onSignOut && (
