@@ -40,9 +40,9 @@ Gameplay pitch rendering maps those into a landscape display. Do not assume the
 editor pitch and gameplay pitch use the same visual orientation.
 
 The gameplay pitch resolves the puzzle's two roster choices onto those fixed
-ends. Each end zone uses that roster's palette and a large, low-contrast team
-emblem; Human-derived teams own the row-0 presentation and Orc-derived teams
-own row 25. This is presentation only and does not change touchdown detection.
+ends. Each end zone uses that roster's palette; Human-derived teams own the
+row-0 presentation and Orc-derived teams own row 25. This is presentation only
+and does not change touchdown detection.
 
 ## Core State
 

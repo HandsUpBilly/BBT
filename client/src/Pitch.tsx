@@ -15,7 +15,7 @@ import { DEFAULT_PLAYER_ROLE, playerPortraitFor } from './playerPortraits';
 import { BlockFaceGraphic } from './BlockDiceGraphic';
 import { BLOCK_FACE_LABELS } from './blockFacePresentation';
 import { BallIcon as GrittyBallIcon } from './BallIcon';
-import { resolveEndZoneTeams, teamIconSource, teamLabel } from './teamPresentation';
+import { resolveEndZoneTeams, teamLabel } from './teamPresentation';
 import './Pitch.css';
 
 function BallIcon({ ghost, loose }: { ghost?: boolean; loose?: boolean }) {
@@ -981,21 +981,9 @@ export function Pitch({
         {showCoordinates && <div className="pitch__row-labels" aria-hidden="true">{rowLabels}</div>}
 
         {/* The field */}
-        <div className="pitch__grid" style={gridStyle} role="group" aria-label="Pitch">
-          {squares}
-          <img
-            className="pitch__endzone-emblem pitch__endzone-emblem--top"
-            src={teamIconSource(endZoneTeams.top)}
-            alt=""
-            aria-hidden="true"
-          />
-          <img
-            className="pitch__endzone-emblem pitch__endzone-emblem--bottom"
-            src={teamIconSource(endZoneTeams.bottom)}
-            alt=""
-            aria-hidden="true"
-          />
-          {passTrajectories.length > 0 && (
+          <div className="pitch__grid" style={gridStyle} role="group" aria-label="Pitch">
+            {squares}
+            {passTrajectories.length > 0 && (
             <svg
               className="pitch__pass-trajectories"
               viewBox={`0 0 ${visibleCols} ${visibleRows}`}

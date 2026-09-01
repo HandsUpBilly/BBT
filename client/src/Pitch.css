@@ -426,40 +426,6 @@
 .square--endzone-human.square--light,
 .square--endzone-orc.square--light { background-color: var(--endzone-light); }
 
-.pitch__endzone-emblem {
-  position: absolute;
-  z-index: 1;
-  width: 11.5%;
-  height: 20%;
-  object-fit: contain;
-  opacity: 0.16;
-  filter: saturate(0.85) contrast(1.08) drop-shadow(0 1px 2px rgba(0, 0, 0, 0.6));
-  pointer-events: none;
-}
-
-.pitch--landscape .pitch__endzone-emblem {
-  top: 50%;
-  transform: translate(-50%, -50%);
-}
-
-.pitch--landscape .pitch__endzone-emblem--top { left: 5.75%; }
-.pitch--landscape .pitch__endzone-emblem--bottom { left: 94.25%; }
-
-.pitch--portrait .pitch__endzone-emblem {
-  left: 50%;
-  width: 20%;
-  height: 11.5%;
-  transform: translate(-50%, -50%);
-}
-
-.pitch--portrait .pitch__endzone-emblem--top { top: 5.75%; }
-.pitch--portrait .pitch__endzone-emblem--bottom { top: 94.25%; }
-
-.pitch--plain .pitch__endzone-emblem {
-  opacity: 0.12;
-  filter: grayscale(0.25) contrast(1.15);
-}
-
 /* ── Pitch markings ──────────────────────────────────────────────────────
    The three marking lines are facts about the pitch — the two end-zone
    boundaries, the two wide-zone lines, and halfway. Only the edge each one is
