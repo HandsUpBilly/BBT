@@ -428,17 +428,7 @@ export function blockOutcomeProbabilities(
   return result;
 }
 
-/**
- * Up to 3 on-pitch, unoccupied squares the defender could be pushed into,
- * directly away from the attacker (the BB "push chart" arc). Diagonal hits
- * push along the diagonal plus the two orthogonal flank squares; orthogonal
- * hits push straight back plus the two diagonal flank squares.
- */
-export function pushBackCandidates(
-  attackerPos: Position,
-  defenderPos: Position,
-  allPiecePositions: Position[],
-): Position[] {
+function pushBackArc(attackerPos: Position, defenderPos: Position): Position[] {
   const dx = Math.sign(defenderPos.col - attackerPos.col);
   const dy = Math.sign(defenderPos.row - attackerPos.row);
 
@@ -451,15 +441,60 @@ export function pushBackCandidates(
     offsets = [[dx, 0], [dx, -1], [dx, 1]];
   }
 
-  const blocked = new Set(allPiecePositions.map(key));
   const result: Position[] = [];
   for (const [ox, oy] of offsets) {
     const sq: Position = { col: defenderPos.col + ox, row: defenderPos.row + oy };
     if (sq.col < 0 || sq.col >= COLS || sq.row < 0 || sq.row >= ROWS) continue;
-    if (blocked.has(key(sq))) continue;
     result.push(sq);
   }
   return result;
+}
+
+function chainCanReachEmpty(
+  attackerPos: Position,
+  defenderPos: Position,
+  blocked: Set<string>,
+  visitedStates: Set<string>,
+): boolean {
+  // Direction matters: the same occupied square has a different three-square
+  // push arc depending on which neighbouring square pushed into it. Treat that
+  // directed pair as the graph node, and inspect each node at most once so a
+  // crowded pitch cannot explode into exponentially repeated searches.
+  const stateKey = `${key(attackerPos)}>${key(defenderPos)}`;
+  if (visitedStates.has(stateKey)) return false;
+  visitedStates.add(stateKey);
+
+  const arc = pushBackArc(attackerPos, defenderPos);
+  if (arc.some(square => !blocked.has(key(square)))) return true;
+
+  for (const square of arc) {
+    if (chainCanReachEmpty(defenderPos, square, blocked, visitedStates)) return true;
+  }
+  return false;
+}
+
+/**
+ * Legal destinations from the BB push arc. An empty square must be used when
+ * one exists. If all three on-pitch choices are occupied, return only occupied
+ * squares whose occupant can itself be chain-pushed along a route that
+ * eventually reaches an empty square.
+ */
+export function pushBackCandidates(
+  attackerPos: Position,
+  defenderPos: Position,
+  allPiecePositions: Position[],
+): Position[] {
+  const blocked = new Set(allPiecePositions.map(key));
+  const arc = pushBackArc(attackerPos, defenderPos);
+  const empty = arc.filter(square => !blocked.has(key(square)));
+  if (empty.length > 0) return empty;
+
+  return arc.filter(square => chainCanReachEmpty(
+    defenderPos,
+    square,
+    blocked,
+    new Set(),
+  ));
 }
 
 /**

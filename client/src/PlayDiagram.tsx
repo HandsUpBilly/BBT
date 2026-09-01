@@ -20,6 +20,7 @@ interface DiagramLogEntry {
   receiverName?: string;
   isBlitz?: boolean;
   diceCount?: 1 | 2 | 3;
+  pushes?: Array<{ from: Position; to: Position }>;
 }
 
 function point(position: Position): { x: number; y: number } {
@@ -63,6 +64,7 @@ export function PlayDiagram({ scenario, actionLog }: Props) {
   const markerPrefix = useId().replaceAll(':', '');
   const movementMarker = `${markerPrefix}-movement-arrow`;
   const ballMarker = `${markerPrefix}-ball-arrow`;
+  const pushMarker = `${markerPrefix}-push-arrow`;
   const routes = buildMovementRoutes(actionLog);
   const passes = actionLog.filter(entry => entry.kind === 'pass');
   const handoffs = actionLog.filter(entry => entry.kind === 'handoff');
@@ -94,6 +96,9 @@ export function PlayDiagram({ scenario, actionLog }: Props) {
           </marker>
           <marker id={ballMarker} viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
             <path d="M 0 0 L 8 4 L 0 8" className="play-diagram__arrowhead play-diagram__arrowhead--ball" />
+          </marker>
+          <marker id={pushMarker} viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M 0 0 L 8 4 L 0 8" className="play-diagram__arrowhead play-diagram__arrowhead--push" />
           </marker>
         </defs>
 
@@ -186,6 +191,22 @@ export function PlayDiagram({ scenario, actionLog }: Props) {
                 <line className="play-diagram__route play-diagram__route--block" x1={from.x} y1={from.y} x2={to.x} y2={to.y} />
                 <circle className="play-diagram__block-mark" cx={to.x} cy={to.y} r="8" />
                 <text className="play-diagram__block-dice" x={to.x} y={to.y + 3}>{entry.diceCount ?? '?'}</text>
+                {entry.pushes?.map((push, pushIndex) => {
+                  const pushFrom = point(push.from);
+                  const pushTo = point(push.to);
+                  return (
+                    <line
+                      key={`push-${pushIndex}`}
+                      className="play-diagram__route play-diagram__route--push"
+                      data-route-kind="push"
+                      x1={pushFrom.x}
+                      y1={pushFrom.y}
+                      x2={pushTo.x}
+                      y2={pushTo.y}
+                      markerEnd={`url(#${pushMarker})`}
+                    />
+                  );
+                })}
               </g>
             );
           })}

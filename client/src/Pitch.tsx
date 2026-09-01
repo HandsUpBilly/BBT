@@ -1,6 +1,6 @@
 import { memo, useCallback, useMemo } from 'react';
 import type { CSSProperties } from 'react';
-import type { GameState, Team, BlockOutcomeFace, BlockLogEntry, Position } from './types';
+import type { GameState, Team, BlockOutcomeFace, Position } from './types';
 import { key, neighbours } from './bfs';
 import { buildMovementTrailMap, buildMovementStartMarkers, trailPolylinePoints } from './movementTrail';
 import type { PathTrail } from './movementTrail';
@@ -15,6 +15,7 @@ import { DEFAULT_PLAYER_ROLE, playerPortraitFor } from './playerPortraits';
 import { BlockFaceGraphic } from './BlockDiceGraphic';
 import { BLOCK_FACE_LABELS } from './blockFacePresentation';
 import { BallIcon as GrittyBallIcon } from './BallIcon';
+import { resolveEndZoneTeams, teamLabel } from './teamPresentation';
 import './Pitch.css';
 
 function BallIcon({ ghost, loose }: { ghost?: boolean; loose?: boolean }) {
@@ -266,8 +267,8 @@ interface SquareProps {
   focusable: boolean;
   onSquareClick: (col: number, row: number) => void;
   onPieceClick: (col: number, row: number, anchor: MenuAnchor) => void;
-  onSquareHover: (col: number, row: number) => void;
-  onSquareLeave: () => void;
+  onSquareHover: (col: number, row: number, directHover?: boolean) => void;
+  onSquareLeave: (directHover?: boolean) => void;
 }
 
 /**
@@ -312,10 +313,14 @@ const Square = memo(function Square({
         // pointer position to anchor to.
         activateFromSquare(e.currentTarget);
       }}
-      onFocus={() => onSquareHover(pCol, pRow)}
-      onBlur={onSquareLeave}
-      onMouseEnter={() => onSquareHover(pCol, pRow)}
-      onMouseLeave={onSquareLeave}
+      onFocus={() => onSquareHover(pCol, pRow, true)}
+      onBlur={() => onSquareLeave(true)}
+      onPointerEnter={event => {
+        if (event.pointerType !== 'touch') onSquareHover(pCol, pRow, true);
+      }}
+      onPointerLeave={event => {
+        if (event.pointerType !== 'touch') onSquareLeave(true);
+      }}
       data-square={name}
       data-col={pCol}
       data-row={pRow}
@@ -406,8 +411,8 @@ interface Props {
   state: GameState;
   onSquareClick: (col: number, row: number) => void;
   onPieceClick: (col: number, row: number, anchor: MenuAnchor) => void;
-  onSquareHover: (col: number, row: number) => void;
-  onSquareLeave: () => void;
+  onSquareHover: (col: number, row: number, directHover?: boolean) => void;
+  onSquareLeave: (directHover?: boolean) => void;
   /**
    * Which screen axis the pitch's long side runs along. Portrait puts the end
    * zones top and bottom, which roughly doubles the square size on a phone —
@@ -419,6 +424,8 @@ interface Props {
   tokenStyle?: TokenStyle;
   pitchSurface?: PitchSurface;
   showCoordinates?: boolean;
+  /** The matchup whose colours and emblems own the two end zones. */
+  teams?: readonly [Team, Team];
   /**
    * Where pieces stand in the other live branches of a block, drawn faintly
    * over the viewed board. Only pieces that actually differ are included —
@@ -459,9 +466,11 @@ const NO_BRANCH_GHOSTS: readonly BranchGhostView[] = [];
 export function Pitch({
   state, onSquareClick, onPieceClick, onSquareHover, onSquareLeave,
   orientation = 'landscape', tokenStyle = 'portrait', pitchSurface = 'grass', showCoordinates = true,
-  branchGhosts, moveDecision,
+  teams, branchGhosts, moveDecision,
 }: Props) {
   const portrait = orientation === 'portrait';
+  const stateTeams = Array.from(new Set(state.pieces.map(piece => piece.team)));
+  const endZoneTeams = resolveEndZoneTeams(teams ?? stateTeams);
 
   // Resolve each ghost against the viewed board, which is where the piece's
   // team, role and skills come from — a ghost only records where it stands.
@@ -567,22 +576,26 @@ export function Pitch({
     return map;
   }, [state.actionLog]);
 
-  // Squares a push touched this turn: origin (the defender's pre-push
-  // square, `entry.to`) and destination (`entry.pushTo`). Same actionLog-
+  // Squares a push touched this turn. Modern entries retain every chain link;
+  // legacy entries use the original defender's `to` -> `pushTo` pair. Same actionLog-
   // derived, auto-clears-on-cancel convention as the trail/dice/block-outcome
   // maps above — a square pushed through more than once keeps every glow it
   // was part of, since origin and destination read differently.
   const pushOriginKeys = useMemo(() => {
     const keys = new Set<string>();
     for (const entry of state.actionLog) {
-      if (entry.kind === 'block' && entry.pushTo) keys.add(key(entry.to));
+      if (entry.kind !== 'block') continue;
+      if (entry.pushes?.length) entry.pushes.forEach(push => keys.add(key(push.from)));
+      else if (entry.pushTo) keys.add(key(entry.to));
     }
     return keys;
   }, [state.actionLog]);
   const pushDestinationKeys = useMemo(() => {
     const keys = new Set<string>();
     for (const entry of state.actionLog) {
-      if (entry.kind === 'block' && entry.pushTo) keys.add(key(entry.pushTo));
+      if (entry.kind !== 'block') continue;
+      if (entry.pushes?.length) entry.pushes.forEach(push => keys.add(key(push.to)));
+      else if (entry.pushTo) keys.add(key(entry.pushTo));
     }
     return keys;
   }, [state.actionLog]);
@@ -663,12 +676,16 @@ export function Pitch({
   // isn't mistaken for a throw — see pushOriginKeys/pushDestinationKeys above
   // for why the origin square can also be carrying that block's resolved-face
   // marker.
-  const pushIndicators = state.actionLog
-    .filter((entry): entry is BlockLogEntry & { pushTo: Position } => entry.kind === 'block' && !!entry.pushTo)
-    .map((entry, index) => ({
-      key: `${entry.pieceName}-${entry.receiverName}-push-${index}`,
-      path: passTrajectoryPath(entry.to, entry.pushTo, portrait, acrossStart, downStart),
+  const pushIndicators = state.actionLog.flatMap((entry, entryIndex) => {
+    if (entry.kind !== 'block') return [];
+    const pushes = entry.pushes?.length
+      ? entry.pushes
+      : entry.pushTo ? [{ pieceId: entry.receiverName, from: entry.to, to: entry.pushTo }] : [];
+    return pushes.map((push, pushIndex) => ({
+      key: `${entry.pieceName}-${entry.receiverName}-push-${entryIndex}-${pushIndex}`,
+      path: passTrajectoryPath(push.from, push.to, portrait, acrossStart, downStart),
     }));
+  });
 
   // Labels follow the axis, not the orientation: the letter always names the
   // state col and the number always names the state row.
@@ -727,6 +744,11 @@ export function Pitch({
       // since which edge that is depends on the orientation.
       const isHumanEndZone = pRow === 0;
       const isOrcEndZone   = pRow === STATE_ROWS - 1;
+      const endZoneTeam = isHumanEndZone
+        ? endZoneTeams.top
+        : isOrcEndZone
+          ? endZoneTeams.bottom
+          : null;
 
       // Wide-zone lines: 4 squares in from each touchline.
       const isWideZone  = pCol === 4 || pCol === 11;
@@ -768,6 +790,7 @@ export function Pitch({
         (pCol + pRow) % 2 === 0 ? 'square--light' : 'square--dark',
         isHumanEndZone ? 'square--endzone-human' : '',
         isOrcEndZone   ? 'square--endzone-orc'   : '',
+        endZoneTeam ? `square--endzone-team-${endZoneTeam}` : '',
         isWideZone     ? 'square--wide-zone'     : '',
         isScrimmage    ? 'square--scrimmage'     : '',
         isReachable    ? 'square--reachable'     : '',
@@ -852,6 +875,7 @@ export function Pitch({
             : '',
           isPushOrigin ? 'pushed from here' : '',
           isPushDestination ? 'pushed to here' : '',
+          endZoneTeam ? `${teamLabel(endZoneTeam)} end zone` : '',
           ].filter(Boolean).join(', ')}
           pieceTeam={piece?.team ?? null}
           pieceRole={piece?.role}
@@ -969,9 +993,9 @@ export function Pitch({
         {showCoordinates && <div className="pitch__row-labels" aria-hidden="true">{rowLabels}</div>}
 
         {/* The field */}
-        <div className="pitch__grid" style={gridStyle} role="group" aria-label="Pitch">
-          {squares}
-          {passTrajectories.length > 0 && (
+          <div className="pitch__grid" style={gridStyle} role="group" aria-label="Pitch">
+            {squares}
+            {passTrajectories.length > 0 && (
             <svg
               className="pitch__pass-trajectories"
               viewBox={`0 0 ${visibleCols} ${visibleRows}`}

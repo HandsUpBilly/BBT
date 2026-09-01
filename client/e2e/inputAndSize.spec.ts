@@ -115,6 +115,16 @@ test.describe('interaction follows hover capability', () => {
     await expect(page.locator('.square--path')).toHaveCount(0);
   });
 
+  test('a real mouse inspects players even when the hybrid device query says no hover', async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== 'desktop-touch', 'Surface-style hybrid regression');
+    expect((await capabilities(page)).hover).toBe(false);
+
+    await page.locator('.square:has(.piece)').first().hover({ force: true });
+
+    await expect(page.locator('.side-col--right .panel:not(.panel--empty)')).toBeVisible();
+    await expect(page.locator('.side-col--right .panel__name')).not.toBeEmpty();
+  });
+
   test('waypoints stay open until the plotted endpoint is clicked again', async ({ page }) => {
     test.skip(!(await capabilities(page)).hover, 'requires a hovering pointer');
 

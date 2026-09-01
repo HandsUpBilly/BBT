@@ -1,5 +1,8 @@
 import { defineConfig, devices } from '@playwright/test';
 
+const baseURL = process.env.E2E_BASE_URL ?? 'http://localhost:5173';
+const devPort = new URL(baseURL).port || '5173';
+
 /**
  * Mobile layout harness.
  *
@@ -28,7 +31,7 @@ export default defineConfig({
   timeout: 60_000,
   reporter: process.env.CI ? 'line' : 'list',
   use: {
-    baseURL: 'http://localhost:5173',
+    baseURL,
     trace: 'retain-on-failure',
   },
   projects: [
@@ -108,8 +111,8 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: 'npm run dev',
-    url: 'http://localhost:5173',
+    command: `npm run dev -- --port ${devPort} --strictPort`,
+    url: baseURL,
     reuseExistingServer: !process.env.CI,
     timeout: 120_000,
   },

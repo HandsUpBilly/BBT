@@ -4,13 +4,11 @@ import './GameToolsMenu.css';
 interface Props {
   onTutorialGuide?: () => void;
   onRestart: () => void;
-  onReport?: () => void;
 }
 
 export function GameToolsMenu({
   onTutorialGuide,
   onRestart,
-  onReport,
 }: Props) {
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
@@ -62,11 +60,6 @@ export function GameToolsMenu({
           <button type="button" role="menuitem" onClick={() => run(onRestart)}>
             Restart turn
           </button>
-          {onReport && (
-            <button type="button" role="menuitem" onClick={() => run(onReport)}>
-              Report a problem
-            </button>
-          )}
         </div>
       )}
     </div>

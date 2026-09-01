@@ -173,6 +173,10 @@ test('sanitizes the saved play log used by ranking diagrams', () => {
     to: { col: 6, row: 9 },
     isBlitz: true,
     diceCount: 2,
+    pushes: [
+      { pieceId: 'ignored', from: { col: 6, row: 9 }, to: { col: 6, row: 8 } },
+      { from: { col: 99, row: -1 }, to: { col: 6, row: 7 }, junk: true },
+    ],
   }];
 
   const score = validateScoreSubmission({
@@ -192,6 +196,10 @@ test('sanitizes the saved play log used by ranking diagrams', () => {
     to: { col: 6, row: 9 },
     isBlitz: true,
     diceCount: 2,
+    pushes: [
+      { from: { col: 6, row: 9 }, to: { col: 6, row: 8 } },
+      { from: { col: 0, row: 0 }, to: { col: 6, row: 7 } },
+    ],
   }]);
 });
 

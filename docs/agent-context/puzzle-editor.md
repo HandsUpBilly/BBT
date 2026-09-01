@@ -260,10 +260,12 @@ Templates may carry a `names` pool, used by `generatedPlayerName` instead of the
 team-wide pool — Halflings, Ogres, Goblins, and Trolls each have their own.
 
 The original Human and Orc roles in `playerPortraits.ts` retain dedicated
-gritty portrait art. Black Orc and Imperial Nobility positions use the closest
-existing gritty positional portrait as a safe fallback until team-specific art
-is added. Unknown roles outside the editor roster still fall back to the team
-default.
+gritty portrait art. Imperial Nobility positions also have dedicated role art,
+using the team's burnished-gold, burgundy, ivory, and ostrich-plume visual
+language; their Thrower is deliberately bare-headed and carries the ball. Black
+Orc positions use the closest existing Orc portrait as a safe fallback until
+team-specific art is added. Unknown roles outside the editor roster still fall
+back to the team default.
 
 ### Career skills
 

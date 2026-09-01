@@ -174,6 +174,25 @@ describe('lockstep authoring', () => {
     expect(branchStrip(pushed).every(e => e.status !== 'needs-attention')).toBe(true);
   });
 
+  it('authors a chain push across sibling universes without disturbing the in-place branch', () => {
+    const screen = orcBlocker({ id: 'screen', position: { col: 7, row: 8 } });
+    const left = orcBlocker({ id: 'left', position: { col: 6, row: 8 } });
+    const right = orcBlocker({ id: 'right', position: { col: 8, row: 8 } });
+    let run = choosePush(blockRun([screen, left, right]), { col: 7, row: 8 }, undefined);
+
+    expect(viewedLine(run).state.pendingBlockResolution?.pushes).toHaveLength(1);
+    expect(entry(run, 'Down in place')?.status).toBe('authoring');
+
+    run = choosePush(run, { col: 7, row: 7 }, false);
+    for (const label of ['Pushed + Down', 'Pushed']) {
+      const line = Object.values(run.lines).find(candidate => candidate.label === label)!;
+      expect(line.state.pieces.find(piece => piece.id === 'defender')?.position)
+        .toEqual({ col: 7, row: 8 });
+      expect(line.state.pieces.find(piece => piece.id === 'screen')?.position)
+        .toEqual({ col: 7, row: 7 });
+    }
+  });
+
   it('stops before entering a square that would force a later dodge', () => {
     let run = choosePush(blockRun([runner()]), { col: 7, row: 8 }, false);
     run = clickSquare(run, { col: 6, row: 10 }); // select the runner

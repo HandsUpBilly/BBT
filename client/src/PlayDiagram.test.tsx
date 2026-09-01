@@ -61,6 +61,10 @@ const actionLog: ActionLogEntry[] = [
       'defender-stumbles': 1 / 6, 'defender-down': 1 / 6,
     },
     acceptedFaces: ['push'], resolvedFace: 'push', dodgeTarget: null, isGfi: false,
+    pushes: [
+      { pieceId: 'defender', from: { col: 6, row: 10 }, to: { col: 6, row: 11 } },
+      { pieceId: 'screen', from: { col: 6, row: 11 }, to: { col: 6, row: 12 } },
+    ],
     actionProb: 1 / 6, cumulativeProb: 2 / 27,
   },
 ];
@@ -101,6 +105,7 @@ describe('PlayDiagram', () => {
     expect(container.querySelectorAll('[data-route-kind="pass"]')).toHaveLength(1);
     expect(container.querySelectorAll('[data-route-kind="handoff"]')).toHaveLength(0);
     expect(container.querySelectorAll('[data-route-kind="block"]')).toHaveLength(1);
+    expect(container.querySelectorAll('[data-route-kind="push"]')).toHaveLength(2);
     expect(container.querySelector('.play-diagram__ball')).not.toBeNull();
 
     // The diagram follows the live landscape pitch: state rows increase to

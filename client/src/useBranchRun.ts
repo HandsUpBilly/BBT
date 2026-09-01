@@ -107,7 +107,7 @@ export function useBranchRun(initialState: GameState) {
     handleBlockTarget: useCallback((col: number, row: number) => {
       setRun(prev => chooseBlockTarget(prev, { col, row }));
     }, []),
-    handlePushChoice: useCallback((col: number, row: number, followUp: boolean) => {
+    handlePushChoice: useCallback((col: number, row: number, followUp?: boolean) => {
       setRun(prev => choosePush(prev, { col, row }, followUp));
     }, []),
 

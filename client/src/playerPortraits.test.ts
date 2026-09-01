@@ -26,4 +26,19 @@ describe('playerPortraitFor', () => {
     expect(portraits).toHaveLength(8);
     expect(portraits.every(portrait => portrait.endsWith('-gritty.webp'))).toBe(true);
   });
+
+  it('uses dedicated artwork for every Imperial Nobility role', () => {
+    const portraits = PLAYER_ROLES['imperial-nobility'].map(role =>
+      playerPortraitFor('imperial-nobility', role),
+    );
+
+    expect(portraits).toEqual([
+      '/imperial-retainer-gritty.webp',
+      '/imperial-thrower-gritty.webp',
+      '/imperial-bodyguard-gritty.webp',
+      '/imperial-noble-blitzer-gritty.webp',
+      '/imperial-ogre-gritty.webp',
+    ]);
+    expect(new Set(portraits)).toHaveLength(portraits.length);
+  });
 });

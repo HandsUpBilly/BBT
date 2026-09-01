@@ -1,5 +1,6 @@
 import type { PlayerPiece, Team } from './types';
 import { playerPortraitFor } from './playerPortraits';
+import { teamIconSource } from './teamPresentation';
 import './PlayerPanel.css';
 
 interface Props {
@@ -12,13 +13,6 @@ interface Props {
    */
   role?: 'acting' | 'target';
 }
-
-const CRESTS: Record<Team, string> = {
-  human: '/human-crest.png',
-  orc:   '/orc-crest.png',
-  'black-orc': '/orc-crest.png',
-  'imperial-nobility': '/human-crest.png',
-};
 
 type StatKey = 'ma' | 'st' | 'ag' | 'pa' | 'av';
 
@@ -137,7 +131,7 @@ export function PlayerPanel({ piece, side, role }: Props) {
       {/* Crest watermark */}
       <img
         className="panel__crest"
-        src={CRESTS[piece.team]}
+        src={teamIconSource(piece.team)}
         alt="crest"
         draggable={false}
       />

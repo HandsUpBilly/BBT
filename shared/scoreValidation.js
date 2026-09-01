@@ -119,6 +119,12 @@ function sanitizePlayLog(playLog) {
     if (entry.kind === 'block') {
       sanitized.isBlitz = Boolean(entry.isBlitz);
       sanitized.diceCount = DICE_COUNTS.has(entry.diceCount) ? entry.diceCount : 1;
+      if (Array.isArray(entry.pushes)) {
+        sanitized.pushes = entry.pushes.slice(0, 26).map(push => ({
+          from: sanitizedPlayPosition(push?.from),
+          to: sanitizedPlayPosition(push?.to),
+        }));
+      }
     }
     return sanitized;
   });

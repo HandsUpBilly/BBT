@@ -10,6 +10,29 @@ const noop = () => undefined;
 const state = makeState([humanBlocker({ role: 'lineman' })]);
 
 describe('Pitch token style', () => {
+  it('recognises real mouse hover without trusting a device-wide media query', () => {
+    const onSquareHover = vi.fn();
+    const onSquareLeave = vi.fn();
+    const { container } = render(
+      <Pitch
+        state={state}
+        onSquareClick={noop}
+        onPieceClick={noop}
+        onSquareHover={onSquareHover}
+        onSquareLeave={onSquareLeave}
+      />,
+    );
+    const occupiedSquare = container.querySelector<HTMLElement>('.piece')!.closest<HTMLElement>('[data-square]')!;
+
+    fireEvent.pointerEnter(occupiedSquare, { pointerType: 'touch' });
+    expect(onSquareHover).not.toHaveBeenCalled();
+
+    fireEvent.pointerEnter(occupiedSquare, { pointerType: 'mouse' });
+    expect(onSquareHover).toHaveBeenCalledWith(7, 10, true);
+    fireEvent.pointerLeave(occupiedSquare, { pointerType: 'mouse' });
+    expect(onSquareLeave).toHaveBeenCalledWith(true);
+  });
+
   it('defaults to the portrait class and hides the role code', () => {
     const { container } = render(
       <Pitch state={state} onSquareClick={noop} onPieceClick={noop} onSquareHover={noop} onSquareLeave={noop} />,
@@ -90,6 +113,25 @@ describe('Pitch token style', () => {
     expect(container.querySelector('.pitch__col-labels')).toBeNull();
     expect(container.querySelector('[data-square="10H"]')).toBeTruthy();
   });
+
+  it('uses the matchup teams for end-zone colours and emblems', () => {
+    const { container } = render(
+      <Pitch
+        state={state}
+        teams={['black-orc', 'imperial-nobility']}
+        onSquareClick={noop}
+        onPieceClick={noop}
+        onSquareHover={noop}
+        onSquareLeave={noop}
+      />,
+    );
+
+    const top = container.querySelector('[data-row="0"][data-col="7"]');
+    const bottom = container.querySelector('[data-row="25"][data-col="7"]');
+    expect(top?.classList.contains('square--endzone-team-imperial-nobility')).toBe(true);
+    expect(bottom?.classList.contains('square--endzone-team-black-orc')).toBe(true);
+    expect(container.querySelector('.pitch__endzone-emblem')).toBeNull();
+  });
 });
 
 describe('Pitch roll dice', () => {
@@ -161,6 +203,11 @@ describe('Pitch block dice marker', () => {
       outcomeProbs: { 'attacker-down': 0, 'both-down': 0, push: 1, 'defender-stumbles': 0, 'defender-down': 0 },
       acceptedFaces: ['push'],
       resolvedFace: 'push',
+      pushTo: { col: 7, row: 8 },
+      pushes: [
+        { pieceId: defender.id, from: defender.position, to: { col: 7, row: 8 } },
+        { pieceId: 'screen', from: { col: 7, row: 8 }, to: { col: 7, row: 7 } },
+      ],
       actionProb: 1,
       cumulativeProb: 1,
       dodgeTarget: null,
@@ -179,6 +226,7 @@ describe('Pitch block dice marker', () => {
     expect(marker?.querySelectorAll('.block-die-icon')).toHaveLength(2);
     expect(marker?.getAttribute('title')).toBe('Block: Push Back');
     expect(square?.getAttribute('aria-label')).toContain('block result: Push Back');
+    expect(container.querySelectorAll('.pitch__push-indicator')).toHaveLength(2);
   });
 
   it('clears once the block entry is rolled back out of the action log', () => {

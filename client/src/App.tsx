@@ -28,7 +28,6 @@ import { ActionLogMenu } from './ActionLogMenu';
 import { GameToolsMenu } from './GameToolsMenu';
 import { AppFooter } from './AppFooter';
 import { SuccessChanceReadout } from './SuccessChanceReadout';
-import { ReportProblemButton } from './ReportProblemButton';
 import { ReportProblemModal } from './ReportProblemModal';
 import { ContactModal } from './ContactModal';
 import { AboutDialog } from './AboutDialog';
@@ -78,7 +77,7 @@ import type {
   PublicPlayerProfile, SeriesDefinition, SeriesLeaderboardEntry, SeriesPuzzleResult,
 } from './types';
 import { key } from './bfs';
-import { useCompactLayout, useHoverCapable, usePhoneToolbarLayout, usePortraitViewport } from './useMediaQuery';
+import { useCompactLayout, useHoverCapable, usePortraitViewport } from './useMediaQuery';
 import {
   initializeAnalytics,
   newAnalyticsId,
@@ -433,6 +432,7 @@ export default function App() {
     () => scenarioData.series.find(item => item.id === seriesRun?.seriesId) ?? scenarioData.series[0],
     [scenarioData.series, seriesRun?.seriesId],
   );
+  const isTutorialSeries = activeSeries?.label?.trim().toLowerCase() === 'tutorial';
   const seriesScenarios = useMemo(
     () => activeSeries ? resolveSeriesScenarios(activeSeries, scenarioData.scenarios) : [],
     [activeSeries, scenarioData.scenarios],
@@ -498,7 +498,6 @@ export default function App() {
   // The third, pointer precision, decides hit-target sizes and is answered
   // entirely in CSS — no component needs to branch on it.
   const compact = useCompactLayout();
-  const phoneToolbar = usePhoneToolbarLayout();
   const hoverCapable = useHoverCapable();
   const portraitViewport = usePortraitViewport();
   // Rotating the board is worth it whenever the viewport is tall and narrow,
@@ -891,6 +890,23 @@ export default function App() {
       state.ballPosition, state.pathPreview, activeArmedMove, hoverCapable,
       finishMove, hookSquareHover]);
 
+  const choosePushTarget = useCallback((col: number, row: number): boolean => {
+    if (!state.pendingBlockResolution) return false;
+    const targetKey = key({ col, row });
+    if (!state.pushTargetKeys.has(targetKey)) return true;
+    const occupied = state.pieces.some(piece => key(piece.position) === targetKey);
+    if (occupied) {
+      // This is one link in a chain push, not the final destination. The
+      // follow-up decision belongs only after the chain reaches empty turf.
+      handlePushChoice(col, row, undefined);
+    } else if (state.pendingBlockResolution.offerFollowUp) {
+      setPendingPushSquare({ col, row });
+    } else {
+      handlePushChoice(col, row, false);
+    }
+    return true;
+  }, [handlePushChoice, state.pendingBlockResolution, state.pieces, state.pushTargetKeys]);
+
   // Route square clicks: targeting modes take priority over normal movement
   const handleSquareClick = useCallback((col: number, row: number) => {
     if (state.isHandoffTargeting) {
@@ -903,13 +919,8 @@ export default function App() {
       }
     } else if (state.isBlockTargeting) {
       handleBlockTarget(col, row);
-    } else if (state.pendingBlockResolution) {
-      if (!state.pushTargetKeys.has(key({ col, row }))) return;
-      if (state.pendingBlockResolution.offerFollowUp) {
-        setPendingPushSquare({ col, row });
-      } else {
-        handlePushChoice(col, row, false);
-      }
+    } else if (choosePushTarget(col, row)) {
+      return;
     } else {
       const routeTip = state.committedPath[state.committedPath.length - 1];
       if (movementContext && routeTip && key(routeTip) === key({ col, row }) && !state.pendingBlock) {
@@ -921,9 +932,8 @@ export default function App() {
       hookSquareClick(col, row);
     }
   }, [state.isHandoffTargeting, state.handoffTargets, state.isPassTargeting, state.passReceiverKeys,
-      state.isBlockTargeting, state.pendingBlockResolution,
-      state.pushTargetKeys, state.committedPath, state.pendingBlock, movementContext,
-      handleBlockTarget, handlePushChoice,
+      state.isBlockTargeting, state.committedPath, state.pendingBlock, movementContext,
+      handleBlockTarget, choosePushTarget,
       hookSquareClick, previewBeforeCommit, finishMove]);
 
   // Escape cancels the current activation. Dialogs handle their own Escape via
@@ -954,6 +964,8 @@ export default function App() {
     const k = key({ col, row });
     const piece = state.pieces.find(p => key(p.position) === k);
     if (!piece) return;
+
+    if (choosePushTarget(col, row)) return;
 
     // The opening card is orientation, not a recurring coach step. Once the
     // player starts inspecting the board it stays collapsed for this attempt.
@@ -1043,7 +1055,7 @@ export default function App() {
       state.isBlockTargeting, state.blockTargets, state.pendingBlockIsBlitz, state.blitzTargetId,
       state.committedPath, movementContext,
       hookSquareClick, handleBlockTarget, handleCancelSelection,
-      previewBeforeCommit, finishMove, disarm, hoverCapable, compact]);
+      previewBeforeCommit, finishMove, disarm, hoverCapable, compact, choosePushTarget]);
 
   const handleMenuAction = useCallback((actionKey: string, moveFirst: boolean) => {
     if (!pieceMenu) return;
@@ -1090,24 +1102,29 @@ export default function App() {
     if (compact) setMobileInfoOpen(true);
   }, [compact]);
 
-  const handleSquareHover = useCallback((col: number, row: number) => {
-    // A tap can emit a synthetic mouseenter, so only genuine hover-capable
-    // inputs drive this preview. Freeze only the scoring preview or the final
-    // route while the pointer travels to the confirmation controls.
-    if (!hoverCapable) return;
+  const handleSquareHover = useCallback((col: number, row: number, directHover = false) => {
+    // Surface-class hybrid devices can report `(any-hover: none)` even while
+    // dispatching real mouse or hovering-pen pointer events. Pitch marks those
+    // direct events explicitly; touch never reaches this path, so it cannot
+    // recreate the synthetic-mouseenter problem this guard originally solved.
+    if (!hoverCapable && !directHover) return;
     if (activeArmedMove || activeFinishedMove) return;
     // Update movement preview in game state
     hookSquareHover(col, row);
     const k = key({ col, row });
     const piece = state.pieces.find(p => key(p.position) === k);
     setHoveredPiece(piece ?? null);
-  }, [hoverCapable, activeArmedMove, activeFinishedMove, hookSquareHover, state.pieces]);
-  const handleSquareLeave = useCallback(() => {
-    if (!hoverCapable) return;
+    if (compact && directHover && piece) setMobileInfoOpen(true);
+  }, [hoverCapable, activeArmedMove, activeFinishedMove, hookSquareHover, state.pieces, compact]);
+  const handleSquareLeave = useCallback((directHover = false) => {
+    if (!hoverCapable && !directHover) return;
     if (activeArmedMove || activeFinishedMove) return;
     hookSquareLeave();
-    setHoveredPiece(null);
-  }, [hoverCapable, activeArmedMove, activeFinishedMove, hookSquareLeave]);
+    // A compact layout has no persistent side rail. Keep the last genuinely
+    // hovered card in its open sheet so moving the pointer off the tiny token
+    // does not immediately erase the stats the player just requested.
+    if (!compact || !directHover) setHoveredPiece(null);
+  }, [hoverCapable, activeArmedMove, activeFinishedMove, hookSquareLeave, compact]);
 
   // Record every completed run in the local attempt history.
   //
@@ -1498,11 +1515,12 @@ export default function App() {
         {archiveControls}
         <TutorialPuzzleChooser
           seriesName={activeSeries?.name ?? 'Series'}
+          isTutorial={isTutorialSeries}
           scenarios={seriesScenarios}
           completedScenarioIds={completedScenarioIds}
           recaps={tutorialRecaps}
           onChoose={scenario => {
-            if (completedScenarioIds.has(scenario.id)) setPendingTutorialReplay(scenario);
+            if (completedScenarioIds.has(scenario.id) && isTutorialSeries) setPendingTutorialReplay(scenario);
             else chooseSeriesPuzzle(scenario);
           }}
           onLeaderboard={scenario => goLeaderboard(scenario, 'series-select')}
@@ -1521,8 +1539,8 @@ export default function App() {
         )}
         {confirmLeaveSeries && (
           <ConfirmDialog
-            title="Leave tutorial series?"
-            message="Your completed drills in this series run will be lost."
+            title={isTutorialSeries ? 'Leave tutorial series?' : 'Leave series?'}
+            message={`Your completed ${isTutorialSeries ? 'drills' : 'matches'} in this series run will be lost.`}
             confirmLabel="Leave"
             cancelLabel="Keep Choosing"
             onConfirm={confirmLeaveSeriesYes}
@@ -1762,9 +1780,9 @@ export default function App() {
         ? 'BLITZ: Select the target. Press Esc to cancel.'
         : 'BLOCK: Select an adjacent opponent. Press Esc to cancel.')
     : state.pendingBlockResolution
-    ? (state.pendingBlockResolution.offerFollowUp
-        ? 'PUSH BACK: Choose a square. Defender Down allows a Follow-up.'
-        : 'PUSH BACK: Choose a square.')
+    ? (state.pendingBlockResolution.pushes?.length
+        ? `CHAIN PUSH: Move the next player. ${state.pendingBlockResolution.pushes.length} push${state.pendingBlockResolution.pushes.length === 1 ? '' : 'es'} queued.`
+        : 'PUSH BACK: Choose a square. Occupied choices begin a chain push.')
     : state.pendingHandoff
     ? `HAND-OFF DECLARED: Move up to ${state.remainingMa} MA, then select the receiver. Press Esc to cancel.`
     : state.pendingPass
@@ -1879,7 +1897,6 @@ export default function App() {
                 : undefined
             }
             onRestart={handleRestartTurn}
-            onReport={phoneToolbar ? openReport : undefined}
           />
         ) : (
           <>
@@ -1912,7 +1929,6 @@ export default function App() {
 
         <ActionLogMenu log={state.actionLog} />
 
-        {!phoneToolbar && <ReportProblemButton variant="hud" onClick={openReport} />}
       </header>
 
       <BranchStrip
@@ -1950,6 +1966,7 @@ export default function App() {
             tokenStyle={prefs.tokenStyle ?? 'portrait'}
             pitchSurface={prefs.pitchSurface ?? 'grass'}
             showCoordinates={prefs.showCoordinates ?? true}
+            teams={activeScenario?.teams}
             branchGhosts={branchedBoards.ghosts}
             moveDecision={activeTransfer ? {
               position: activeTransfer.position,
@@ -2040,7 +2057,7 @@ export default function App() {
           error={submitError}
           continueLabel={
             completedSeriesPuzzlesAfterCurrent < seriesScenarios.length
-              ? 'Choose Next Tutorial'
+              ? (isTutorialSeries ? 'Choose Next Tutorial' : 'Choose Next Match')
               : 'Finish Series'
           }
         />
@@ -2061,7 +2078,7 @@ export default function App() {
           onReviewBoard={() => setReviewingCompletedBoard(true)}
           continueLabel={
             completedSeriesPuzzlesAfterCurrent < seriesScenarios.length
-              ? 'Choose Next Tutorial'
+              ? (isTutorialSeries ? 'Choose Next Tutorial' : 'Choose Next Match')
               : 'Finish Series'
           }
         />
@@ -2201,7 +2218,7 @@ export default function App() {
         );
       })()}
 
-      {/* Push-back follow-up choice (Defender Down only) */}
+      {/* Follow-up is chosen only after every link in a possible chain push. */}
       {pendingPushSquare && (
         <ConfirmDialog
           title="Follow up?"
