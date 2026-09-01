@@ -145,13 +145,61 @@ function StateCard({
   );
 }
 
-function compactTrackStyle(outcomeCount: number): CSSProperties {
-  const width = outcomeCount * BRANCH_TRACK_WIDTH
-    + Math.max(0, outcomeCount - 1) * BRANCH_TRACK_GAP;
+function treeGridStyle(leafColumns: number): CSSProperties {
+  const width = leafColumns * BRANCH_TRACK_WIDTH
+    + Math.max(0, leafColumns - 1) * BRANCH_TRACK_GAP;
   return {
-    gridTemplateColumns: `repeat(${outcomeCount}, ${BRANCH_TRACK_WIDTH}px)`,
+    gridTemplateColumns: `repeat(${leafColumns}, ${BRANCH_TRACK_WIDTH}px)`,
     width: `${width}px`,
   };
+}
+
+function placementStyle(startColumn: number, columnSpan: number): CSSProperties {
+  return { gridColumn: `${startColumn + 1} / span ${columnSpan}` };
+}
+
+function placementWidth(columnSpan: number): number {
+  return columnSpan * BRANCH_TRACK_WIDTH
+    + Math.max(0, columnSpan - 1) * BRANCH_TRACK_GAP;
+}
+
+function guideStyle(
+  placement: ReturnType<typeof branchTreeStripGrid>['strips'][number]['blocks'][number],
+): CSSProperties {
+  const firstState = placement.states[0];
+  const lastState = placement.states[placement.states.length - 1];
+  const columnPitch = BRANCH_TRACK_WIDTH + BRANCH_TRACK_GAP;
+  const firstCentre = (firstState.startColumn - placement.startColumn) * columnPitch
+    + placementWidth(firstState.columnSpan) / 2;
+  const lastCentre = (lastState.startColumn - placement.startColumn) * columnPitch
+    + placementWidth(lastState.columnSpan) / 2;
+  return {
+    ...placementStyle(placement.startColumn, placement.columnSpan),
+    '--branch-guide-left': `${firstCentre}px`,
+    '--branch-guide-right': `${placementWidth(placement.columnSpan) - lastCentre}px`,
+  } as CSSProperties;
+}
+
+function blockMatchups(blocks: BranchTreeBlockView[]) {
+  return [...new Map(blocks.map(block => [
+    `${block.blockLabel}:${block.diceCount}`,
+    block,
+  ])).values()];
+}
+
+function BlockMatchup({ block }: { block: BranchTreeBlockView }) {
+  const [attacker, defender] = block.blockLabel.split(' ⚔ ');
+  return (
+    <div className="branch-strip-row__matchup" aria-label={`${block.blockLabel}, ${block.diceCount} ${block.diceCount === 1 ? 'die' : 'dice'}`}>
+      <span className="branch-strip-row__players">
+        <strong>{attacker}</strong>
+        {defender ? <><small>blocked</small><strong>{defender}</strong></> : null}
+      </span>
+      <span className="branch-strip-row__dice-count">
+        {block.diceCount} {block.diceCount === 1 ? 'die' : 'dice'}
+      </span>
+    </div>
+  );
 }
 
 /** One block depth per row, with each Block's immediate outcomes kept compact. */
@@ -263,55 +311,55 @@ export function BranchStrip({
       <div className="branch-tree-nav__scroll">
         {layout && layout.leafColumns > 0 ? (
           <div className="branch-tree-strips">
-            {layout.strips.map(strip => (
+            {layout.strips.map((strip, stripIndex) => {
+              const gridStyle = treeGridStyle(layout.leafColumns);
+              const matchups = blockMatchups(strip.blocks.map(placement => placement.block));
+              return (
                 <section
                   className="branch-strip-row"
                   key={strip.blockNumber}
                   aria-label={`Block ${strip.blockNumber} states`}
                 >
-                  <header className="branch-strip-row__label">Block {strip.blockNumber}</header>
-                  <div className="branch-strip-row__content">
-                    <div className="branch-strip-row__blocks">
-                      {strip.blocks.map(placement => {
-                        const trackStyle = compactTrackStyle(placement.states.length);
-                        return (
-                          <section
-                            className="branch-strip-row__block"
+                  <header className="branch-strip-row__label">
+                    <strong>Block {strip.blockNumber}</strong>
+                    {matchups.map(block => <BlockMatchup key={`${block.blockLabel}:${block.diceCount}`} block={block} />)}
+                  </header>
+                  <div className="branch-strip-row__content" style={{ width: gridStyle.width }}>
+                    {stripIndex > 0 && (
+                      <div className="branch-strip-row__guides" style={gridStyle} aria-hidden="true">
+                        {strip.blocks.map(placement => (
+                          <span
+                            className="branch-strip-row__guide"
                             key={`${placement.block.id}-${placement.startColumn}`}
-                            style={{ width: trackStyle.width }}
-                            data-column-start={placement.startColumn}
-                            data-column-span={placement.columnSpan}
-                          >
-                            <header className="branch-strip-row__block-group">
-                              <span>{placement.block.blockLabel}</span>
-                              <small>{placement.block.diceCount} {placement.block.diceCount === 1 ? 'die' : 'dice'}</small>
-                            </header>
-                            <ul className="branch-strip-row__states" style={trackStyle}>
-                              {placement.states.map(statePlacement => (
-                                <li
-                                  className="branch-strip-state"
-                                  key={statePlacement.state.id}
-                                  data-branch-id={statePlacement.state.id}
-                                  data-column-start={statePlacement.startColumn}
-                                  data-column-span={statePlacement.columnSpan}
-                                >
-                                  <StateCard
-                                    state={statePlacement.state}
-                                    onSelect={onSelect}
-                                    onReset={onReset}
-                                    onRequestReset={setPendingReset}
-                                    onRequestConcede={setPendingConcede}
-                                  />
-                                </li>
-                              ))}
-                            </ul>
-                          </section>
-                        );
-                      })}
-                    </div>
+                            style={guideStyle(placement)}
+                          />
+                        ))}
+                      </div>
+                    )}
+                    <ul className="branch-strip-row__states" style={gridStyle}>
+                      {strip.blocks.flatMap(placement => placement.states.map(statePlacement => (
+                        <li
+                          className="branch-strip-state"
+                          key={statePlacement.state.id}
+                          style={placementStyle(statePlacement.startColumn, statePlacement.columnSpan)}
+                          data-branch-id={statePlacement.state.id}
+                          data-column-start={statePlacement.startColumn}
+                          data-column-span={statePlacement.columnSpan}
+                        >
+                          <StateCard
+                            state={statePlacement.state}
+                            onSelect={onSelect}
+                            onReset={onReset}
+                            onRequestReset={setPendingReset}
+                            onRequestConcede={setPendingConcede}
+                          />
+                        </li>
+                      )))}
+                    </ul>
                   </div>
                 </section>
-              ))}
+              );
+            })}
           </div>
         ) : (
           <p className="branch-tree-nav__empty">
