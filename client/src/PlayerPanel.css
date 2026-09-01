@@ -92,6 +92,14 @@
   box-shadow: inset 3px 0 0 var(--team-orc);
 }
 
+.side-col--comparing .panel--black-orc {
+  box-shadow: inset 3px 0 0 var(--team-black-orc);
+}
+
+.side-col--comparing .panel--imperial-nobility {
+  box-shadow: inset 3px 0 0 var(--team-imperial-nobility);
+}
+
 .side-col--comparing .panel__role-tag {
   grid-column: 1 / -1;
   min-height: 20px;
@@ -241,6 +249,14 @@
 .panel--orc {
   box-shadow: inset 3px 0 0 var(--team-orc);
 }
+
+.panel--black-orc {
+  box-shadow: inset 3px 0 0 var(--team-black-orc);
+}
+
+.panel--imperial-nobility {
+  box-shadow: inset 3px 0 0 var(--team-imperial-nobility);
+}
 .panel--empty {
   border-color: var(--color-border-subtle);
   justify-content: center;
@@ -263,6 +279,14 @@
 
 .panel--orc .panel__portrait-wrap {
   background: var(--team-orc-deep);
+}
+
+.panel--black-orc .panel__portrait-wrap {
+  background: var(--team-black-orc-deep);
+}
+
+.panel--imperial-nobility .panel__portrait-wrap {
+  background: var(--team-imperial-nobility-deep);
 }
 
 .panel__portrait {

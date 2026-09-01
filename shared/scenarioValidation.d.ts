@@ -1,13 +1,13 @@
-import type { Objective, Scenario, ScenarioPieceDef, SeriesDefinition } from '../client/src/types';
+import type { Objective, Scenario, ScenarioPieceDef, SeriesDefinition, Team } from '../client/src/types';
 
 export declare const SCENARIO_ID_RE: RegExp;
 export declare const PITCH: { maxCol: number; maxRow: number };
 export declare const STAT_RANGE: { min: number; max: number };
 export declare const STAT_KEYS: readonly ('ma' | 'st' | 'ag' | 'pa' | 'av')[];
-export declare const TEAMS: readonly ('human' | 'orc')[];
+export declare const TEAMS: readonly Team[];
 export declare const OBJECTIVES: readonly Objective[];
-export declare const ROSTER_LIMITS: Readonly<Record<'human' | 'orc', Readonly<Record<string, { max: number; label: string }>>>>;
-export declare function rosterLimitFor(team: 'human' | 'orc', role?: string): { max: number; label: string } | undefined;
+export declare const ROSTER_LIMITS: Readonly<Record<Team, Readonly<Record<string, { max: number; label: string }>>>>;
+export declare function rosterLimitFor(team: Team, role?: string): { max: number; label: string } | undefined;
 export declare function scenarioRosterErrors(scenario: Pick<Scenario, 'pieces'>): string[];
 
 export declare function normalizeScenario(input: unknown): Scenario & { pieces: ScenarioPieceDef[] };

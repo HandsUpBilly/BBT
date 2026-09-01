@@ -86,6 +86,23 @@ describe('PuzzleEditor unsaved changes', { timeout: 15_000 }, () => {
     expect(secondTeam.value).toBe('human');
   });
 
+  it('offers Black Orc and Imperial Nobility rosters and scopes the palette to them', async () => {
+    renderEditor();
+    await screen.findByDisplayValue('Saved Puzzle');
+
+    fireEvent.change(screen.getByLabelText('Team 1 roster'), { target: { value: 'black-orc' } });
+    fireEvent.change(screen.getByLabelText('Team 2 roster'), { target: { value: 'imperial-nobility' } });
+
+    const activeTeam = screen.getByLabelText('Active team') as HTMLSelectElement;
+    expect(Array.from(activeTeam.options).map(option => option.value)).toEqual(['black-orc', 'imperial-nobility']);
+    expect(screen.getByRole('heading', { name: 'Black Orcs' })).toBeTruthy();
+    expect(screen.getByRole('heading', { name: 'Imperial Nobility' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: /Goblin Bruiser/ })).toBeTruthy();
+    expect(screen.getByRole('button', { name: /Noble Blitzer/ })).toBeTruthy();
+    expect(screen.queryByRole('button', { name: /Human Catcher/ })).toBeNull();
+    expect(screen.queryByRole('button', { name: /Orc Blitzer/ })).toBeNull();
+  });
+
   it('adds and removes applicable implemented career skills while keeping future skills unavailable', async () => {
     renderEditor();
     await screen.findByDisplayValue('Saved Puzzle');

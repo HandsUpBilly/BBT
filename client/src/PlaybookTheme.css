@@ -495,6 +495,16 @@
   box-shadow: inset 3px 0 0 var(--team-orc);
 }
 
+.app--game .panel--black-orc {
+  border-color: #2a2f2b;
+  box-shadow: inset 3px 0 0 var(--team-black-orc);
+}
+
+.app--game .panel--imperial-nobility {
+  border-color: #2a2f2b;
+  box-shadow: inset 3px 0 0 var(--team-imperial-nobility);
+}
+
 /* Unpopulated side panel (no piece hovered/selected): drop back to the nested
    surface so it reads as an empty slot rather than a card. */
 .app--game .panel--empty {
@@ -510,6 +520,8 @@
 
 .app--game .panel--human .panel__portrait-wrap { background: var(--team-human-deep); }
 .app--game .panel--orc .panel__portrait-wrap { background: var(--team-orc-deep); }
+.app--game .panel--black-orc .panel__portrait-wrap { background: var(--team-black-orc-deep); }
+.app--game .panel--imperial-nobility .panel__portrait-wrap { background: var(--team-imperial-nobility-deep); }
 
 .app--game .panel__portrait--legacy,
 .app--game .piece__portrait--legacy {
@@ -1283,8 +1295,12 @@
 
 .app--admin .editor-piece--human { background: var(--team-human-deep); }
 .app--admin .editor-piece--orc { background: var(--team-orc-deep); }
+.app--admin .editor-piece--black-orc { background: var(--team-black-orc-deep); }
+.app--admin .editor-piece--imperial-nobility { background: var(--team-imperial-nobility-deep); }
 .app--admin .palette-piece--human { background: rgba(18, 60, 102, 0.55); }
 .app--admin .palette-piece--orc { background: rgba(106, 31, 24, 0.55); }
+.app--admin .palette-piece--black-orc { background: rgba(52, 69, 31, 0.6); }
+.app--admin .palette-piece--imperial-nobility { background: rgba(89, 68, 118, 0.6); }
 
 .app--admin .editor__errors {
   color: #cf9b90;

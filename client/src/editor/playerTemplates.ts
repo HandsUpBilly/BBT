@@ -12,8 +12,7 @@ import type { ScenarioPieceDef, Team } from '../types';
  *   av  the printed target minus 1, matching the pieces already in the
  *       scenarios (AV 9+ → 8). Display-only — armour is never rolled.
  *
- * Roster source: https://bbtactics.com/human-teams/ and
- * https://bbtactics.com/orc-teams/ (BB2025).
+ * Roster source: the BB2025 team sheets collected at bbtactics.com.
  */
 export interface PlayerTemplate {
   key: string;
@@ -83,6 +82,26 @@ const TROLL_NAMES = [
   'Brakk Stonegut',
   'Ugthar Slabjaw',
   'Wurm Boulderfist',
+];
+
+const BLACK_ORC_NAMES = [
+  'Morgut Ironskull',
+  'Drazh Necksnappa',
+  'Uzgul Grimtusk',
+  'Kragga Chainfist',
+  'Borzag Blackhide',
+  'Grishnak Redmaw',
+];
+
+const IMPERIAL_NAMES = [
+  'Leopold von Draken',
+  'Alaric Goldcrest',
+  'Otto Eisenhelm',
+  'Mathias Falken',
+  'Konrad Hochmark',
+  'Lukas Silberhand',
+  'Rudolf Drachenfels',
+  'Viktor Sternbach',
 ];
 
 export const PLAYER_TEMPLATES: PlayerTemplate[] = [
@@ -254,10 +273,122 @@ export const PLAYER_TEMPLATES: PlayerTemplate[] = [
     ],
     names: TROLL_NAMES,
   },
+  {
+    key: 'black-orc-goblin-bruiser',
+    team: 'black-orc',
+    role: 'goblin',
+    label: 'Goblin Bruiser',
+    namePrefix: 'Goblin Bruiser',
+    ma: 6,
+    st: 2,
+    ag: 3,
+    pa: 4,
+    av: 7,
+    skills: ['Dodge', 'Right Stuff', 'Stunty', 'Thick Skull'],
+    names: GOBLIN_NAMES,
+  },
+  {
+    key: 'black-orc-blocker',
+    team: 'black-orc',
+    role: 'black-orc',
+    label: 'Black Orc',
+    namePrefix: 'Black Orc',
+    ma: 4,
+    st: 4,
+    ag: 2,
+    pa: 5,
+    av: 9,
+    skills: ['Brawler', 'Grab'],
+    names: BLACK_ORC_NAMES,
+  },
+  {
+    key: 'black-orc-trained-troll',
+    team: 'black-orc',
+    role: 'troll',
+    label: 'Trained Troll',
+    namePrefix: 'Trained Troll',
+    ma: 4,
+    st: 5,
+    ag: 1,
+    pa: 5,
+    av: 9,
+    skills: ['Always Hungry', 'Mighty Blow', 'Projectile Vomit', 'Really Stupid', 'Regeneration', 'Throw Team Mate'],
+    names: TROLL_NAMES,
+  },
+  {
+    key: 'imperial-retainer',
+    team: 'imperial-nobility',
+    role: 'retainer',
+    label: 'Imperial Retainer',
+    namePrefix: 'Imperial Retainer',
+    ma: 6,
+    st: 3,
+    ag: 3,
+    pa: 4,
+    av: 7,
+    skills: ['Fend'],
+    names: IMPERIAL_NAMES,
+  },
+  {
+    key: 'imperial-thrower',
+    team: 'imperial-nobility',
+    role: 'thrower',
+    label: 'Imperial Thrower',
+    namePrefix: 'Imperial Thrower',
+    ma: 6,
+    st: 3,
+    ag: 3,
+    pa: 2,
+    av: 8,
+    skills: ['Give and Go', 'Pass', 'Pro'],
+    names: IMPERIAL_NAMES,
+  },
+  {
+    key: 'imperial-bodyguard',
+    team: 'imperial-nobility',
+    role: 'bodyguard',
+    label: 'Bodyguard',
+    namePrefix: 'Bodyguard',
+    ma: 5,
+    st: 3,
+    ag: 3,
+    pa: 4,
+    av: 8,
+    skills: ['Stand Firm', 'Wrestle'],
+    names: IMPERIAL_NAMES,
+  },
+  {
+    key: 'imperial-noble-blitzer',
+    team: 'imperial-nobility',
+    role: 'noble-blitzer',
+    label: 'Noble Blitzer',
+    namePrefix: 'Noble Blitzer',
+    ma: 7,
+    st: 3,
+    ag: 3,
+    pa: 4,
+    av: 8,
+    skills: ['Block', 'Catch', 'Pro'],
+    names: IMPERIAL_NAMES,
+  },
+  {
+    key: 'imperial-ogre',
+    team: 'imperial-nobility',
+    role: 'ogre',
+    label: 'Ogre',
+    namePrefix: 'Ogre',
+    ma: 5,
+    st: 5,
+    ag: 2,
+    pa: 5,
+    av: 9,
+    skills: ['Bone Head', 'Loner (3+)', 'Mighty Blow', 'Thick Skull', 'Throw Team Mate'],
+    names: OGRE_NAMES,
+  },
 ];
 
 export function generatedPlayerName(template: PlayerTemplate, index: number): string {
-  const names = template.names ?? (template.team === 'human' ? HUMAN_NAMES : ORC_NAMES);
+  const names = template.names ?? (template.team === 'human' || template.team === 'imperial-nobility' ? HUMAN_NAMES : ORC_NAMES);
   const base = names[index % names.length];
   const cycle = Math.floor(index / names.length);
   return cycle === 0 ? base : `${base} ${cycle + 1}`;

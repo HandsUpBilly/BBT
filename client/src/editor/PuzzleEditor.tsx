@@ -9,13 +9,13 @@ import { nextScenarioId, validateScenarioDraft } from './editorValidation';
 import { PLAYER_TEMPLATES, generatedPlayerName, templateToPiece } from './playerTemplates';
 import { careerSkillGroupsFor, IMPLEMENTED_CAREER_SKILLS } from './careerSkills';
 import { playerPortraitFor } from '../playerPortraits';
+import { TEAMS as AVAILABLE_TEAMS, teamLabel, teamPluralLabel } from '../teamPresentation';
 import { SeriesCreator } from './SeriesCreator';
 import { STAT_KEYS, STAT_RANGE, PITCH, rosterLimitFor } from '../../../shared/scenarioValidation.js';
 import './PuzzleEditor.css';
 
 const COLS = PITCH.maxCol + 1;
 const ROWS = PITCH.maxRow + 1;
-const AVAILABLE_TEAMS: Team[] = ['human', 'orc'];
 type InspectorSection = 'roster' | 'player' | 'review';
 
 const STAT_LABELS: Record<string, string> = {
@@ -371,7 +371,7 @@ export function PuzzleEditor({ onBack, onPlay, onReport, previewScenario, idToke
     const usage = rosterUsage(draft, template.team, template.role);
     if (!usage.allowed) {
       setStatus(usage.teamCount >= 11
-        ? `${template.team === 'human' ? 'Human' : 'Orc'} team already has 11 players on the pitch.`
+        ? `${teamLabel(template.team)} team already has 11 players on the pitch.`
         : `${usage.limit?.label ?? template.label} limit reached (${usage.limit?.max ?? 0}).`);
       return;
     }
@@ -617,19 +617,19 @@ export function PuzzleEditor({ onBack, onPlay, onReport, previewScenario, idToke
             <label>
               Team 1 roster
               <select value={involvedTeams[0]} onChange={event => updateInvolvedTeam(0, event.target.value as Team)}>
-                {AVAILABLE_TEAMS.map(team => <option key={team} value={team}>{team === 'human' ? 'Human' : 'Orc'}</option>)}
+                {AVAILABLE_TEAMS.map(team => <option key={team} value={team}>{teamLabel(team)}</option>)}
               </select>
             </label>
             <label>
               Team 2 roster
               <select value={involvedTeams[1]} onChange={event => updateInvolvedTeam(1, event.target.value as Team)}>
-                {AVAILABLE_TEAMS.map(team => <option key={team} value={team}>{team === 'human' ? 'Human' : 'Orc'}</option>)}
+                {AVAILABLE_TEAMS.map(team => <option key={team} value={team}>{teamLabel(team)}</option>)}
               </select>
             </label>
             <label>
               Active team
               <select value={draft.activeTeam} onChange={event => setMetadata('activeTeam', event.target.value as Team)}>
-                {involvedTeams.map(team => <option key={team} value={team}>{team === 'human' ? 'Human' : 'Orc'}</option>)}
+                {involvedTeams.map(team => <option key={team} value={team}>{teamLabel(team)}</option>)}
               </select>
             </label>
             <label>
@@ -753,7 +753,7 @@ export function PuzzleEditor({ onBack, onPlay, onReport, previewScenario, idToke
             <h2 id="roster-heading">Player Roster</h2>
             {involvedTeams.map(team => (
               <div key={team} className="editor-tool__group">
-                <h3>{team === 'human' ? 'Humans' : 'Orcs'}</h3>
+                <h3>{teamPluralLabel(team)}</h3>
                 {groupTemplates(team).map(template => {
                   const usage = rosterUsage(draft, template.team, template.role);
                   return (
@@ -828,7 +828,8 @@ export function PuzzleEditor({ onBack, onPlay, onReport, previewScenario, idToke
                       updatePiece(selectedPiece.id, { team, role });
                     }}
                   >
-                    {involvedTeams.map(team => <option key={team} value={team}>{team === 'human' ? 'Human' : 'Orc'}</option>)}
+                    {!involvedTeams.includes(selectedPiece.team) && <option value={selectedPiece.team}>{teamLabel(selectedPiece.team)} (not in matchup)</option>}
+                    {involvedTeams.map(team => <option key={team} value={team}>{teamLabel(team)}</option>)}
                   </select>
                 </label>
                 <label>

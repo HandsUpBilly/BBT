@@ -118,6 +118,14 @@ test('enforces BB2025 positional and on-pitch roster limits', () => {
   assert.deepEqual(scenarioRosterErrors({ pieces: [{ team: 'orc', role: 'catcher' }] }), [
     'Orc roster does not allow role: catcher',
   ]);
+
+  assert.deepEqual(scenarioRosterErrors({
+    pieces: Array.from({ length: 7 }, () => ({ team: 'black-orc', role: 'black-orc' })),
+  }), ['Black Orc roster allows at most 6 Black Orcs (currently 7)']);
+
+  assert.deepEqual(scenarioRosterErrors({
+    pieces: Array.from({ length: 5 }, () => ({ team: 'imperial-nobility', role: 'bodyguard' })),
+  }), ['Imperial Nobility roster allows at most 4 Bodyguards (currently 5)']);
 });
 
 test('seriesMembershipErrors identifies an invalid roster in an assigned puzzle', () => {
@@ -157,6 +165,24 @@ test('normalizes the two puzzle teams and validates roster membership', () => {
 
   const invalid = { ...scenario, teams: ['human', 'human'] };
   assert.ok(validateScenario(invalid).some(error => error.includes('two different teams')));
+});
+
+test('preserves Black Orc and Imperial Nobility puzzle teams', () => {
+  const scenario = normalizeScenario({
+    id: 'new-matchup',
+    name: 'New Matchup',
+    description: 'Two new rosters.',
+    activeTeam: 'imperial-nobility',
+    teams: ['imperial-nobility', 'black-orc'],
+    pieces: [
+      { id: 'noble', team: 'imperial-nobility', role: 'noble-blitzer', name: 'Alaric', ma: 7, st: 3, ag: 3, pa: 4, av: 8, skills: ['Block'], position: { col: 7, row: 10 }, hasBall: true },
+      { id: 'bruiser', team: 'black-orc', role: 'goblin', name: 'Snik', ma: 6, st: 2, ag: 3, pa: 4, av: 7, skills: ['Dodge'], position: { col: 7, row: 8 }, hasBall: false },
+    ],
+  });
+
+  assert.deepEqual(scenario.teams, ['imperial-nobility', 'black-orc']);
+  assert.equal(scenario.activeTeam, 'imperial-nobility');
+  assert.deepEqual(validateScenario(scenario), []);
 });
 
 test('normalizers preserve explicit admin visibility without enabling it by default', () => {

@@ -2,7 +2,7 @@ import type { PathStep, BlockOutcomeFace } from './bfs';
 
 export type { BlockOutcomeFace };
 
-export type Team = 'human' | 'orc';
+export type Team = 'human' | 'orc' | 'black-orc' | 'imperial-nobility';
 export type Objective = 'touchdown';
 
 /**

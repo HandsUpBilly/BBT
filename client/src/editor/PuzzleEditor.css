@@ -606,6 +606,8 @@
 
 .editor-piece--human { background: var(--team-human-deep); }
 .editor-piece--orc { background: var(--team-orc-deep); }
+.editor-piece--black-orc { background: var(--team-black-orc-deep); }
+.editor-piece--imperial-nobility { background: var(--team-imperial-nobility-deep); }
 
 .editor-ball {
   position: absolute;
@@ -800,6 +802,8 @@
 
 .palette-piece--human { background: rgba(18, 60, 102, 0.48); }
 .palette-piece--orc { background: rgba(106, 31, 24, 0.48); }
+.palette-piece--black-orc { background: rgba(52, 69, 31, 0.56); }
+.palette-piece--imperial-nobility { background: rgba(89, 68, 118, 0.56); }
 
 .editor__errors {
   margin: 0;
