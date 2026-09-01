@@ -1,10 +1,10 @@
-import { editorStore, readPublishedScenarios, readPublishedSeries, toPublicView } from './editorStore.js';
+import { editorStore, readDraftScenarios, readDraftSeries, toPublicView } from './editorStore.js';
 
 // Public, unauthenticated read endpoint — this is what the deployed game client
 // fetches at runtime to get the current puzzle set, instead of the build-time
-// import.meta.glob bundle used in local dev. Only serves the published Blobs
-// state (see editor-publish.js), never drafts, so in-progress admin edits never
-// reach players until explicitly published.
+// import.meta.glob bundle used in local dev. Saved editor data is the live
+// source of truth; the per-puzzle and per-series enabled flags decide what is
+// visible to players.
 export default async function handler(req) {
   if (req.method !== 'GET') {
     return new Response(JSON.stringify({ errors: ['Method not allowed'] }), {
@@ -15,17 +15,16 @@ export default async function handler(req) {
 
   const store = editorStore();
   const [scenarios, series] = await Promise.all([
-    readPublishedScenarios(store),
-    readPublishedSeries(store),
+    readDraftScenarios(store),
+    readDraftSeries(store),
   ]);
 
   return new Response(JSON.stringify(toPublicView(scenarios, series)), {
     status: 200,
     headers: {
       'Content-Type': 'application/json',
-      // Every page load hits this. A short cache keeps a publish visible within
-      // a minute while removing a Blobs read from the critical path.
-      'Cache-Control': 'public, max-age=60',
+      // Admin saves should be visible when the app returns to the home screen.
+      'Cache-Control': 'public, max-age=0, must-revalidate',
     },
   });
 }

@@ -29,12 +29,16 @@ Editor features:
 - place ball on a player or loose on the ground,
 - save over existing / save as new,
 - select the puzzle objective (Touchdown is the only current value),
-- assign a saved puzzle to one series from a dropdown,
-- independently enable/disable puzzles globally and opt them into Free Play,
-- publish draft changes (behind a confirmation),
+- independently enable puzzles for everyone and/or admins, and opt them into
+  Free Play,
+- save changes directly to the player-visible source of truth; enabled flags
+  determine what appears outside Admin Mode,
 - create, edit, and delete multiple series in the separate Series Creator,
-- set each series title, description, two teams, logo, objective, list position, and player-facing enabled state,
-- add, remove, and reorder its puzzle steps,
+- set each series title, short category label, description, two teams, uploaded
+  logo, objective, list position, and everyone/admin enabled states,
+- add, remove, and reorder its puzzle steps; this is the single owner of series
+  membership, each puzzle can belong to only one series, and assigned puzzles
+  must satisfy BB2025 roster limits,
 - play draft and return to designer.
 
 The Statistics section shows anonymous player-performance aggregates from the
@@ -53,9 +57,12 @@ The two admin surfaces also include their own client-side workbench tools:
 
 - Puzzle Creator can search by puzzle id, name, or description and filter the
   list to enabled, disabled, or in-series puzzles without changing drafts.
-- Series drafts are edited independently from the open puzzle. Puzzle-series
-  reassignment is a single server operation, preventing half-applied moves in
-  eventually consistent Blob storage.
+- Series drafts are edited independently from the open puzzle. Puzzles already
+  owned by another series remain visible in the step chooser but are disabled
+  and name their owner. Shared validation rejects duplicate membership,
+  repeated steps, and enabled series with no playable steps.
+- Admin Console owns the Report a problem launcher; player-facing home,
+  archive, and game screens do not show it.
 - Statistics can search its per-puzzle table, sort every displayed metric, and
   download the anonymous per-puzzle summary as CSV. The export contains the
   same aggregate data already visible on-screen—never names, ids, or move logs.
@@ -107,16 +114,13 @@ analytics, editor drafts, and browser-local attempt history untouched.
   silently. The Save panel also exposes **Discard Unsaved Changes**, which
   confirms before restoring the open puzzle to its last saved draft without a
   network request. A never-saved puzzle resets to a fresh blank draft.
-- **Publish confirmation.** Publish is the one irreversible, player-facing
-  action, so it asks first.
-- **Publish is blocked while the open draft has unsaved edits.** `Publish
-  Drafts` only copies what the server already has in its draft store — it has
-  no idea about in-progress edits still sitting in client state. Toggling
-  "Enabled for players" (or any other field) and clicking Publish without an
-  intervening Save silently published the *previous* saved state, so a puzzle
-  an admin believed they'd just enabled stayed `published: false` and never
-  appeared on Single Plays. The "Publish Drafts" button is now disabled
-  whenever `hasUnsavedChanges` is true, forcing Save first.
+- **Save is live.** There is no second Publish step. Saving a puzzle or series
+  updates the live data immediately. `published !== false` enables it for
+  everyone; `adminEnabled: true` additionally enables it in the confirmed-admin
+  home view when it is not public. With both off it remains Creator-only.
+  Returning home refetches this
+  data, and the public endpoint requires cache revalidation so enabled changes
+  are not hidden for a minute.
 - **Piece ids commit on blur**, not per keystroke — editing them live meant every
   intermediate value (including the empty string) briefly became the real id.
 
@@ -130,8 +134,9 @@ analytics, editor drafts, and browser-local attempt history untouched.
 - `DELETE /api/editor/scenarios/:scenarioId`
 - `POST /api/editor/series`
 - `PUT` / `DELETE /api/editor/series/:seriesId`
-- `PUT /api/editor/series-assignment`
-- `POST /api/editor/publish`
+- `PUT /api/editor/series-assignment` (compatibility path for older clients;
+  current UI saves membership through Series Creator)
+- `POST /api/editor/publish` (legacy cached-client compatibility; now a no-op)
 - `GET /api/editor/statistics`
 - `GET /api/editor/analytics`
 - `GET` / `POST` / `DELETE /api/editor/admins`
@@ -146,11 +151,12 @@ Deleting a scenario also removes its id from every series JSON file.
 
 ## Production Editor
 
-Netlify production persists editor drafts in Netlify Blobs:
+Netlify production persists saved editor data in Netlify Blobs:
 
-- `netlify/functions/editor-scenarios.js` handles scenario draft create/update/delete.
-- `netlify/functions/editor-series.js` handles the draft series collection and atomic puzzle assignment.
-- `netlify/functions/editor-publish.js` copies draft scenarios/series to the published keys.
+- `netlify/functions/editor-scenarios.js` handles scenario create/update/delete.
+- `netlify/functions/editor-series.js` handles the series collection and exclusive puzzle membership.
+- `netlify/functions/editor-publish.js` remains a no-op compatibility endpoint
+  for an older cached editor UI.
 - `netlify/functions/editor-statistics.js` reads the full leaderboard Blobs and
   returns anonymous aggregates built by `shared/statistics.js`.
 - `netlify/functions/editor-analytics.js` reads retained game-session summaries
@@ -160,11 +166,15 @@ Netlify production persists editor drafts in Netlify Blobs:
   emails in a separate protected Blobs store.
 - `netlify/functions/editor-rankings.js` counts and clears retained puzzle and
   series ranking boards; all operations are admin-gated.
-- `netlify/functions/scenarios.js` serves published scenarios/series to players.
+- `netlify/functions/scenarios.js` serves enabled saved scenarios/series to players.
 
-Draft saves are not player-visible until an admin clicks Publish Drafts.
-Deleting a draft scenario also removes it from every draft series; publishing is
-still required before players see that deletion.
+Saving is immediately player-visible when the item is enabled. Deleting a
+scenario also removes it from every series in the same operation.
+
+Admin-only visibility is not implemented by sending hidden records through the
+public response. Confirmed admins fetch the protected editor collection and the
+client narrows it to public-or-admin-enabled records. `/api/scenarios` continues
+to serve only everyone-enabled records and narrows series steps accordingly.
 
 ## Creator Workbench Layout
 
@@ -173,15 +183,15 @@ stack of editor cards:
 
 - **Puzzle Library** on the left owns search, filtering, selection, creation,
   and duplication.
-- **Board Setup** in the centre owns puzzle metadata, objective, series
-  assignment, Free Play availability, and the pitch. The pitch is
+- **Board Setup** in the centre owns puzzle metadata, objective, Free Play
+  availability, and the pitch. The pitch is
   the primary working surface and keeps its native 15-by-26 orientation.
 - **Creator Tools** on the right switches between Roster, Player, and Review.
   Selecting a player on the pitch opens the Player tool automatically.
 
 The separate **Series Creator** has a series library and a focused form for
-identity/list metadata plus an ordered step editor. It does not require a
-puzzle to remain open while campaign structure is edited.
+identity/list metadata plus the authoritative ordered membership editor. It
+does not require a puzzle to remain open while campaign structure is edited.
 
 Save Puzzle is kept in the persistent creator header. Publishing remains a
 separate action and is still disabled while any puzzle or series edits are
@@ -267,6 +277,21 @@ Client and server share `shared/scenarioValidation.js`, so the editor's live
 error list is exactly what the server will enforce. The client previously had
 its own looser validator (no stat ranges, no team checks), which meant a
 designer could see a clean list and still get a 400 on save.
+
+Roster validation uses the BB2025 Human and Orc team sheets. Both teams may
+field at most 11 players in a puzzle. Human caps are 3 Halflings, 2 Catchers, 2
+Throwers, 2 Blitzers, and 1 Ogre; Orc caps are 4 Goblins, 2 Throwers, 2
+Blitzers, 2 Big Un Blockers, and 1 Troll. Linemen remain bounded by the
+11-player on-pitch limit. The roster palette displays current/cap counts and
+disables a positional at its cap; the Review panel and both scenario save APIs
+enforce the same rules. Series Creator also checks every assigned puzzle and
+blocks a series save when a step has an illegal roster.
+
+The BB2025 reduction from four to two Orc Blitzers made the old
+`scenario-004` roster illegal. One Blitzer was deliberately converted to an Orc
+Lineman without moving the piece. Production-only scenarios such as a puzzle
+with two Trolls are not silently rewritten: Admin Mode names the error and the
+author must choose which player to convert.
 
 ## Auth
 

@@ -181,7 +181,7 @@ public avatars).
   shows the last completed run's neutral action sequence and final probability;
   it does not compare the line with an optimum.
 - **The compact game HUD keeps every control inside the viewport.** Account
-  remains near the front. Zoom, restart, and reporting share the `GameToolsMenu`
+  remains near the front. Tutorial guidance and restart share the `GameToolsMenu`
   trigger, while the Key and action log retain their own triggers. Compact
   dropdowns use viewport-fixed geometry so no parent can clip them. The empty
   100% success readout leaves the row until a roll puts probability at risk.
@@ -203,14 +203,19 @@ when they carry rules information rather than joining sentences.
 Puzzle Creator only after `/api/editor/access` confirms the current Google
 identity against the server's effective administrator list. The response is a
 boolean capability; administrator emails are never exposed to the client.
+When that capability is confirmed, the home screen loads public plus
+admin-enabled puzzles and series from the protected editor endpoint. Ordinary
+players use `/api/scenarios`, which never contains admin-only records.
 
 - Series tab shows **Tutorial**, the default series row from
   `client/src/series/default.json`. Starting it opens the drill chooser rather
   than forcing a fixed first puzzle.
 - Free Play explains that its matches can be played individually. Its compact
   filter separates matches drawn from a series from future one-off specials.
-  Each match card names its source; the current unrestricted board is marked
-  as the final puzzle from the Tutorial.
+  Each match card derives its source from actual series membership. A puzzle in
+  a Tutorial-labelled series gets the Tutorial badge and final-puzzle guidance;
+  another series shows its own name, and a standalone puzzle has no origin
+  badge or Tutorial claim.
 - Do not reintroduce per-screen scenario title override maps. Scenario
   `name`/`description` JSON is the source of truth.
 
@@ -576,10 +581,9 @@ binaries.
 
 ## Issue and Feature Reporting
 
-Identified players can report an Issue or Feature request through the reusable
-`ReportProblemButton` and `ReportProblemModal`. The floating launcher appears
-on home/archive screens; a compact launcher appears in the game HUD. Admin
-Mode intentionally has no report launcher.
+Administrators can report an Issue or Feature request through the reusable
+`ReportProblemButton` and `ReportProblemModal`. The launcher lives in Admin
+Console rather than on player-facing home, archive, or game screens.
 
 `App.tsx` owns the dialog state and passes the active app/scenario context,
 the identity display name, and optional Google token. The reporter name is
@@ -617,13 +621,10 @@ instead:
   configuration surfaces as a 503 with a clear error, same pattern as
   `GITHUB_ISSUES_TOKEN` missing for reports.
 
-## Issue and Feature Reporting
+## Report Launcher Styling
 
 The report launcher is a subdued flag icon with an accessible label and title;
-it expands to a 44px hit target on coarse pointers without gaining visual
-weight. On the home screen it sits beside a deliberately larger account
-trigger in a group anchored 10–12px from the masthead's top-right corner.
-Archive screens use the same control group in the fixed top-right position.
+it sits with the Admin Console header actions, separate from player controls.
 `__BBT_VERSION__` comes from the root package version at build time without a
 commit-derived suffix (or uses `VITE_APP_VERSION` unchanged when supplied). It
 is displayed in About.

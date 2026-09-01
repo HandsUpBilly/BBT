@@ -6,11 +6,22 @@ const scenarios = [
   { id: 'scenario-001', published: true },
   { id: 'scenario-002' }, // published is optional; undefined means published
   { id: 'scenario-003', published: false },
+  { id: 'scenario-004', published: false, adminEnabled: true },
 ];
 
 test('toPublicView keeps only scenarios that are not explicitly unpublished', () => {
   const { scenarios: published } = toPublicView(scenarios, { scenarioIds: [] });
   assert.deepEqual(published.map(s => s.id), ['scenario-001', 'scenario-002']);
+});
+
+test('toPublicView never exposes admin-only scenarios or series', () => {
+  const result = toPublicView(scenarios, [
+    { id: 'public', scenarioIds: ['scenario-001', 'scenario-004'] },
+    { id: 'admin-only', published: false, adminEnabled: true, scenarioIds: ['scenario-004'] },
+  ]);
+  assert.deepEqual(result.scenarios.map(item => item.id), ['scenario-001', 'scenario-002']);
+  assert.deepEqual(result.series.map(item => item.id), ['public']);
+  assert.deepEqual(result.series[0].scenarioIds, ['scenario-001']);
 });
 
 test('toPublicView narrows series.scenarioIds to the published set, preserving order', () => {

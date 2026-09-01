@@ -1,6 +1,7 @@
 {
   "id": "default",
   "name": "Humans vs Orcs: The Nuffle Shuffle",
+  "label": "Tutorial",
   "logo": "nuffle-shuffle",
   "description": "Six drills cover Movement, Dodging, Hand-offs, Passing, Blocking, Pickups, and Parallel Universes. Score a touchdown in each drill.",
   "published": true,

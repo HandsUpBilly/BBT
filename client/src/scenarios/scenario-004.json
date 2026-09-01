@@ -40,10 +40,10 @@
     {
       "id": "orc3",
       "team": "orc",
-      "role": "blitzer",
+      "role": "lineman",
       "name": "Vrak Bonecruncher",
-      "ma": 6, "st": 3, "ag": 3, "pa": 4, "av": 9,
-      "skills": ["Block", "Break Tackle"],
+      "ma": 5, "st": 3, "ag": 3, "pa": 4, "av": 9,
+      "skills": [],
       "position": { "col": 7, "row": 6 },
       "hasBall": false
     },

@@ -531,6 +531,7 @@
 }
 
 .challenge-tile__index {
+  margin-left: auto;
   color: var(--color-text-muted);
   padding-bottom: 6px;
   border-bottom: 1px solid var(--color-border);

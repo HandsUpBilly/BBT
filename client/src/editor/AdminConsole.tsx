@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { ConfirmDialog } from '../ConfirmDialog';
 import { PlayerAvatar } from '../PlayerAvatar';
 import { playerAvatarUrl } from '../playerProfile';
+import { ReportProblemButton } from '../ReportProblemButton';
 import {
   addAdmin,
   fetchAdminAccess,
@@ -18,7 +19,7 @@ import type {
 } from './editorApi';
 import './AdminConsole.css';
 
-interface Props { idToken: string | null; onBack: () => void; }
+interface Props { idToken: string | null; onBack: () => void; onReport: () => void; }
 
 interface PendingRankingReset {
   target: RankingResetTarget;
@@ -26,7 +27,7 @@ interface PendingRankingReset {
   count: number;
 }
 
-export function AdminConsole({ idToken, onBack }: Props) {
+export function AdminConsole({ idToken, onBack, onReport }: Props) {
   const [access, setAccess] = useState<{
     managedAdmins: string[];
     configuredAdminCount: number;
@@ -114,6 +115,7 @@ export function AdminConsole({ idToken, onBack }: Props) {
         <p className="editor__subtitle">Control administrators, public profiles, and ranking data.</p>
       </div>
       <div className="editor__header-actions">
+        <ReportProblemButton variant="header" onClick={onReport} />
         <button className="btn btn--secondary" onClick={onBack}>Back</button>
         <button className="btn btn--primary" onClick={() => { void load(); }}>Refresh</button>
       </div>

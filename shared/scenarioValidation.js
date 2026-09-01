@@ -22,6 +22,71 @@ export const STAT_KEYS = ['ma', 'st', 'ag', 'pa', 'av'];
 export const TEAMS = ['human', 'orc'];
 export const OBJECTIVES = ['touchdown'];
 
+/** BB2025 team-sheet caps. A puzzle is a single on-pitch state, so each team
+ * may field at most 11 even though its full roster may contain 16 players. */
+export const ROSTER_LIMITS = {
+  human: {
+    lineman: { max: 16, label: 'Human Linemen' },
+    halfling: { max: 3, label: 'Halfling Hopefuls' },
+    catcher: { max: 2, label: 'Human Catchers' },
+    thrower: { max: 2, label: 'Human Throwers' },
+    blitzer: { max: 2, label: 'Human Blitzers' },
+    ogre: { max: 1, label: 'Ogre' },
+  },
+  orc: {
+    lineman: { max: 16, label: 'Orc Linemen' },
+    goblin: { max: 4, label: 'Goblin Linemen' },
+    thrower: { max: 2, label: 'Orc Throwers' },
+    blitzer: { max: 2, label: 'Orc Blitzers' },
+    'big-un': { max: 2, label: 'Big Un Blockers' },
+    troll: { max: 1, label: 'Troll' },
+  },
+};
+
+// Old test fixtures and pre-roster editor drafts used portrait/archetype names
+// as roles. Count those conservatively as their closest real roster position.
+const ROSTER_ROLE_ALIASES = {
+  human: { blocker: 'lineman', guard: 'lineman', tackle: 'lineman' },
+  orc: { blocker: 'big-un', 'black-orc': 'big-un' },
+};
+
+function canonicalRosterRole(team, role) {
+  if (ROSTER_LIMITS[team]?.[role]) return role;
+  return ROSTER_ROLE_ALIASES[team]?.[role];
+}
+
+export function rosterLimitFor(team, role) {
+  const canonical = canonicalRosterRole(team, role);
+  return canonical ? ROSTER_LIMITS[team][canonical] : undefined;
+}
+
+export function scenarioRosterErrors(scenario) {
+  const errors = [];
+  for (const team of TEAMS) {
+    const teamName = team === 'human' ? 'Human' : 'Orc';
+    const pieces = (scenario?.pieces ?? []).filter(piece => piece.team === team);
+    if (pieces.length > 11) {
+      errors.push(`${teamName} team may field at most 11 players (currently ${pieces.length})`);
+    }
+    const counts = new Map();
+    for (const piece of pieces) {
+      const canonical = canonicalRosterRole(team, piece.role);
+      if (!canonical) {
+        errors.push(`${teamName} roster does not allow role: ${piece.role || '(missing)'}`);
+        continue;
+      }
+      counts.set(canonical, (counts.get(canonical) ?? 0) + 1);
+    }
+    for (const [role, count] of counts) {
+      const rule = ROSTER_LIMITS[team][role];
+      if (count > rule.max) {
+        errors.push(`${teamName} roster allows at most ${rule.max} ${rule.label} (currently ${count})`);
+      }
+    }
+  }
+  return [...new Set(errors)];
+}
+
 export function normalizeScenario(input) {
   const source = input && typeof input === 'object' ? input : {};
   return {
@@ -34,6 +99,7 @@ export function normalizeScenario(input) {
     // Play puzzle. Preserve that published Blob data during migration.
     freePlay: source.freePlay === true || (source.freePlay == null && source.id === 'scenario-006'),
     published: source.published !== false,
+    ...(source.adminEnabled === true ? { adminEnabled: true } : {}),
     ballPosition: normalizeBallPosition(source.ballPosition),
     pieces: Array.isArray(source.pieces) ? source.pieces.map(normalizePiece) : [],
   };
@@ -70,22 +136,69 @@ function normalizePiece(piece) {
 
 export function normalizeSeries(input) {
   const source = input && typeof input === 'object' ? input : {};
-  const logo = typeof source.logo === 'string' ? source.logo.trim().slice(0, 80) : '';
+  const label = typeof source.label === 'string' ? source.label.trim().slice(0, 40) : '';
+  const rawLogo = typeof source.logo === 'string' ? source.logo.trim() : '';
+  const logo = rawLogo.startsWith('data:')
+    ? rawLogo.length <= 200_000 && /^data:image\/webp;base64,[a-z0-9+/]+=*$/i.test(rawLogo) ? rawLogo : ''
+    : /^[a-z0-9-]{1,80}$/.test(rawLogo) ? rawLogo : '';
   const id = String(source.id ?? 'default').trim().toLowerCase();
   const teams = Array.isArray(source.teams) ? source.teams.filter(team => TEAMS.includes(team)) : [];
+  const scenarioIds = Array.isArray(source.scenarioIds)
+    ? [...new Set(source.scenarioIds.map(String).filter(Boolean))]
+    : [];
   return {
     id: SCENARIO_ID_RE.test(id) ? id : 'default',
     name: String(source.name ?? 'Default Series').trim() || 'Default Series',
     description: String(source.description ?? '').trim(),
-    scenarioIds: Array.isArray(source.scenarioIds)
-      ? source.scenarioIds.map(String).filter(Boolean)
-      : [],
+    scenarioIds,
+    ...(label ? { label } : {}),
     published: source.published !== false,
+    ...(source.adminEnabled === true ? { adminEnabled: true } : {}),
     teams: [teams[0] ?? 'human', teams[1] ?? (teams[0] === 'orc' ? 'human' : 'orc')],
     objective: OBJECTIVES.includes(source.objective) ? source.objective : 'touchdown',
     order: Number.isInteger(source.order) && source.order >= 0 ? source.order : 0,
     ...(logo ? { logo } : {}),
   };
+}
+
+/**
+ * Series membership is exclusive: one puzzle belongs to at most one series.
+ * Enabled empty series are rejected because they render a player-facing card
+ * that cannot start a run.
+ */
+export function seriesMembershipErrors(series, collection = [], scenarios = []) {
+  const errors = [];
+  if ((series.published !== false || series.adminEnabled === true) && series.scenarioIds.length === 0) {
+    errors.push('An enabled series must contain at least one puzzle');
+  }
+  for (const scenarioId of series.scenarioIds) {
+    const owner = collection.find(item => item.id !== series.id && item.scenarioIds.includes(scenarioId));
+    if (owner) errors.push(`${scenarioId} is already assigned to ${owner.name}`);
+    const scenario = scenarios.find(item => item.id === scenarioId);
+    if (scenario) {
+      errors.push(...scenarioRosterErrors(scenario).map(error => `${scenario.name || scenario.id}: ${error}`));
+    }
+  }
+  return errors;
+}
+
+/** Compatibility mutation for older editor clients. New clients edit series
+ * membership through Series Creator, but this keeps the legacy endpoint safe:
+ * selecting the current owner is a no-op and assigning across series is never
+ * an implicit move. */
+export function updateSeriesAssignment(collection, scenarioId, targetSeriesId, scenarios = []) {
+  const currentOwner = collection.find(item => item.scenarioIds.includes(scenarioId));
+  if (currentOwner?.id === targetSeriesId) return { series: collection, errors: [] };
+  if (currentOwner && targetSeriesId) {
+    return { series: collection, errors: [`${scenarioId} is already assigned to ${currentOwner.name}`] };
+  }
+
+  const series = collection.map(item => {
+    const without = item.scenarioIds.filter(id => id !== scenarioId);
+    return item.id === targetSeriesId ? { ...item, scenarioIds: [...without, scenarioId] } : { ...item, scenarioIds: without };
+  });
+  const errors = [...new Set(series.flatMap(item => seriesMembershipErrors(item, series, scenarios)))];
+  return errors.length ? { series: collection, errors } : { series, errors: [] };
 }
 
 /** Accepts both the legacy single-series object and the new ordered collection. */
@@ -171,6 +284,8 @@ export function validateScenario(scenario, existingIds = new Set(), options = {}
   if (carriers > 1) errors.push('Only one player can carry the ball');
   if (carriers === 1 && scenario.ballPosition) errors.push('Ball can be carried or loose, not both');
   if (carriers === 0 && !scenario.ballPosition) errors.push('Place the ball on a player or on the ground');
+
+  errors.push(...scenarioRosterErrors(scenario));
 
   return [...new Set(errors)];
 }

@@ -718,16 +718,15 @@ so the theme remains predictable without specificity escalation or
 
 ### Goal
 
-Let any player who has passed the existing identity gate report an issue or
-request a feature from the game. A report is submitted as a GitHub issue to
+Let an administrator report an issue or request a feature from Admin Console.
+A report is submitted as a GitHub issue to
 `HandsUpBilly/BBT`; if that delivery cannot be completed, the player can
 download a ready-to-file Markdown report instead.
 
 ### Requirements
 
-- Provide a visible **Report a problem** button on player-facing, non-editor
-  screens. It must be available from the home screen and while playing a
-  puzzle, without obscuring essential game controls.
+- Provide a visible **Report a problem** button in Admin Console. Do not place
+  the launcher on player-facing home, archive, or puzzle screens.
 - Clicking the button opens an accessible modal dialog that:
   - requires a category: **Issue** or **Feature request**;
   - requires a short title and a description;
@@ -2095,7 +2094,7 @@ NETLIFY_TOKEN / NETLIFY_AUTH_TOKEN
 
 # Puzzle Editor / Creator Plan
 
-**Status:** Shipped. Including the piece inspector (stats, skills, team, role), puzzle-list metadata, and the missing-series-id warning, all of which were outstanding for a while. Local dev writes JSON files; Netlify uses Blobs drafts plus an explicit Publish.
+**Status:** Shipped. Including the piece inspector (stats, skills, team, role), puzzle-list metadata, and the missing-series-id warning, all of which were outstanding for a while. Local dev writes JSON files; Netlify saves live editor state in Blobs, with enabled flags controlling player visibility.
 
 ## Purpose
 
@@ -5781,8 +5780,22 @@ blocks the pitch.
 **Status: Shipped**
 
 Puzzle and series authoring are separate admin workflows. Puzzles carry an
-extensible objective and an independent Free Play flag, and can be assigned to
-one series through an atomic assignment action. Series are ordered records with
-two teams, a logo, title/description, objective, list position, and ordered
-puzzle steps. The runtime and draft/published stores accept the legacy single
-series object and migrate it to the multi-series collection on read.
+extensible objective and an independent Free Play flag. Series Creator is the
+single owner of series membership and play order: each puzzle can belong to at
+most one series, already-owned puzzles are unavailable in other series, and an
+enabled series cannot be saved without a step. Series are ordered records with
+two teams, an uploaded logo, title/description, short category label, objective,
+list position, and ordered puzzle steps. Save is live, with no separate Publish step; enabled
+flags control player visibility. The runtime store accepts the legacy single
+series object and migrates it to the multi-series collection on read.
+
+Puzzle and Series Creator enforce BB2025 Human/Orc positional caps through the
+shared scenario validator. The palette shows usage and disables capped roles;
+series saves are blocked if any assigned step has an illegal roster. One excess
+Orc Blitzer in the bundled dodge puzzle was converted to a Lineman to bring the
+shipped series into the 2025 two-Blitzer limit.
+
+Puzzles and series have separate **Enabled for everyone** and **Enabled for
+admins** controls. Everyone-enabled content uses the public scenarios endpoint;
+confirmed admins receive the public/admin union from the protected editor read.
+With both controls off, saved content remains Creator-only.

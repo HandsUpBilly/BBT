@@ -1,4 +1,4 @@
-import { SCENARIO_ID_RE, normalizeSeries } from '../../shared/scenarioValidation.js';
+import { SCENARIO_ID_RE, normalizeSeries, seriesMembershipErrors, updateSeriesAssignment } from '../../shared/scenarioValidation.js';
 import { editorStore, readDraftScenarios, readDraftSeries, writeDraftSeries } from './editorStore.js';
 import { AdminAuthError, authErrorResponse, requireAdminGoogleUser } from './auth.js';
 
@@ -43,10 +43,9 @@ export default async function handler(req) {
     const scenarios = await readDraftScenarios(store);
     if (!scenarios.some(item => item.id === scenarioId)) return jsonResponse(404, { errors: ['Scenario not found'] });
     if (targetSeriesId && !existing.some(item => item.id === targetSeriesId)) return jsonResponse(404, { errors: ['Series not found'] });
-    const saved = existing.map(item => {
-      const without = item.scenarioIds.filter(id => id !== scenarioId);
-      return item.id === targetSeriesId ? { ...item, scenarioIds: [...without, scenarioId] } : { ...item, scenarioIds: without };
-    });
+    const { series: saved, errors } = updateSeriesAssignment(existing, scenarioId, targetSeriesId, scenarios);
+    if (errors.length) return jsonResponse(409, { errors });
+    if (saved === existing) return jsonResponse(200, existing);
     await writeDraftSeries(store, saved);
     return jsonResponse(200, saved);
   }
@@ -77,6 +76,8 @@ export default async function handler(req) {
   if (missing.length) {
     return jsonResponse(400, { errors: missing.map(id => `Missing scenario: ${id}`) });
   }
+  const membershipErrors = seriesMembershipErrors(series, existing, scenarios);
+  if (membershipErrors.length) return jsonResponse(409, { errors: membershipErrors });
 
   const saved = existing.some(item => item.id === series.id)
     ? existing.map(item => item.id === series.id ? series : item)

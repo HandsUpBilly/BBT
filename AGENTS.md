@@ -233,28 +233,33 @@ Keep durable shipped behavior in these docs. Keep plans in `spec.md` — every
 section there carries a **Status** line, so check it before treating a section
 as outstanding work.
 
-## Puzzle Editor: Draft vs. Published Scenarios
+## Puzzle Editor: Saved and Player-Visible Scenarios
 
-On Netlify, the editor reads/writes **draft** scenario/series state in Netlify
-Blobs (`editor-scenarios.js`, `editor-series.js`, `editorStore.js`). Draft saves
-never reach players directly.
+On Netlify, the editor reads/writes scenario/series state in Netlify Blobs
+(`editor-scenarios.js`, `editor-series.js`, `editorStore.js`). Save is the live
+action; there is no separate publish step. The `published` field is retained as
+the per-item **Enabled for players** flag.
 
-Players' clients fetch the **published** state at runtime from the public
+Players' clients fetch enabled saved state at runtime from the public
 `GET /api/scenarios` endpoint — see `client/src/scenarios/runtime.ts`. If that
-fetch fails, the app falls back to the build-time static bundle.
+fetch fails, the app falls back to the build-time static bundle. Returning to
+the home screen refetches, and the endpoint requires cache revalidation so a
+save is not hidden behind the former one-minute cache.
 
-The editor's **Publish** button copies draft → published Blobs keys. It is an
-explicit action (now behind a confirmation dialog) so an admin can stage several
-edits before making them live.
+Scenario and series visibility has two independent authoring flags:
+`published !== false` means **Enabled for everyone**, while
+`adminEnabled === true` means **Enabled for admins**. Public content naturally
+appears to admins too. Confirmed admins load the union from the protected
+`GET /api/editor/scenarios` endpoint; `/api/scenarios` must continue to exclude
+admin-only and Creator-only records so unpublished work is never leaked.
 
-Published views narrow `series.scenarioIds` to scenarios that survive the
+Player-facing views narrow `series.scenarioIds` to scenarios that survive the
 `published !== false` filter — otherwise disabling a puzzle still listed in the
 series would silently shorten a series run mid-play.
 
-Local dev has no draft/published split: `server/editor.js` writes straight to
-`client/src/scenarios/*.json`, and its `/api/editor/publish` route is a no-op
-confirmation kept only so the client's publish button works identically in both
-environments.
+Local dev writes straight to `client/src/scenarios/*.json`. Both local and
+Netlify `/api/editor/publish` routes remain admin-gated no-op compatibility
+paths for older cached clients.
 
 ## Leaderboard Notes
 
