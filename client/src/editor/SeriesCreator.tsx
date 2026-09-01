@@ -194,8 +194,19 @@ export function SeriesCreator({ scenarios, series, idToken, onChange, onStatus }
             </div>
             {logoError ? <small className="editor__error" role="alert">{logoError}</small> : <small>PNG, JPEG or WebP; cropped square automatically.</small>}
           </div>
-          <label className="editor__checkbox"><input type="checkbox" checked={draft.published !== false} onChange={event => setDraft(current => ({ ...current, published: event.target.checked }))} />Enabled for everyone</label>
-          <label className="editor__checkbox"><input type="checkbox" checked={draft.adminEnabled === true} onChange={event => setDraft(current => ({ ...current, adminEnabled: event.target.checked }))} />Enabled for admins</label>
+          <fieldset className="editor__toggle-group series-creator__wide">
+            <legend>Availability</legend>
+            <label className="editor__toggle">
+              <input type="checkbox" aria-label="Enabled for everyone" checked={draft.published !== false} onChange={event => setDraft(current => ({ ...current, published: event.target.checked }))} />
+              <span className="editor__toggle-track" aria-hidden="true" />
+              <span aria-hidden="true">Everyone</span>
+            </label>
+            <label className="editor__toggle">
+              <input type="checkbox" aria-label="Enabled for admins" checked={draft.adminEnabled === true} onChange={event => setDraft(current => ({ ...current, adminEnabled: event.target.checked }))} />
+              <span className="editor__toggle-track" aria-hidden="true" />
+              <span aria-hidden="true">Admins</span>
+            </label>
+          </fieldset>
         </div>
 
         <section className="series-creator__steps" aria-labelledby="series-steps-heading">

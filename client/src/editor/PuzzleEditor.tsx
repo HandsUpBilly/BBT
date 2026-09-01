@@ -606,30 +606,39 @@ export function PuzzleEditor({ onBack, onPlay, onReport, previewScenario, idToke
                 <option value="touchdown">Touchdown</option>
               </select>
             </label>
-            <label className="editor__checkbox">
-              <input
-                type="checkbox"
-                checked={draft.published !== false}
-                onChange={event => setMetadata('published', event.target.checked)}
-              />
-              Enabled for everyone
-            </label>
-            <label className="editor__checkbox">
-              <input
-                type="checkbox"
-                checked={draft.adminEnabled === true}
-                onChange={event => setMetadata('adminEnabled', event.target.checked)}
-              />
-              Enabled for admins
-            </label>
-            <label className="editor__checkbox">
-              <input
-                type="checkbox"
-                checked={draft.freePlay === true}
-                onChange={event => setMetadata('freePlay', event.target.checked)}
-              />
-              Also enabled for Free Play
-            </label>
+            <fieldset className="editor__toggle-group">
+              <legend>Availability</legend>
+              <label className="editor__toggle">
+                <input
+                  type="checkbox"
+                  aria-label="Enabled for everyone"
+                  checked={draft.published !== false}
+                  onChange={event => setMetadata('published', event.target.checked)}
+                />
+                <span className="editor__toggle-track" aria-hidden="true" />
+                <span aria-hidden="true">Everyone</span>
+              </label>
+              <label className="editor__toggle">
+                <input
+                  type="checkbox"
+                  aria-label="Enabled for admins"
+                  checked={draft.adminEnabled === true}
+                  onChange={event => setMetadata('adminEnabled', event.target.checked)}
+                />
+                <span className="editor__toggle-track" aria-hidden="true" />
+                <span aria-hidden="true">Admins</span>
+              </label>
+              <label className="editor__toggle">
+                <input
+                  type="checkbox"
+                  aria-label="Also enabled for Free Play"
+                  checked={draft.freePlay === true}
+                  onChange={event => setMetadata('freePlay', event.target.checked)}
+                />
+                <span className="editor__toggle-track" aria-hidden="true" />
+                <span aria-hidden="true">Free Play</span>
+              </label>
+            </fieldset>
             <label className="editor__metadata-desc">
               Description
               <textarea value={draft.description} onChange={event => setMetadata('description', event.target.value)} />
