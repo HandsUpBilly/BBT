@@ -145,11 +145,16 @@ function StateCard({
   );
 }
 
-function columnStyle(startColumn: number, columnSpan: number): CSSProperties {
-  return { gridColumn: `${startColumn + 1} / span ${columnSpan}` };
+function compactTrackStyle(outcomeCount: number): CSSProperties {
+  const width = outcomeCount * BRANCH_TRACK_WIDTH
+    + Math.max(0, outcomeCount - 1) * BRANCH_TRACK_GAP;
+  return {
+    gridTemplateColumns: `repeat(${outcomeCount}, ${BRANCH_TRACK_WIDTH}px)`,
+    width: `${width}px`,
+  };
 }
 
-/** One block depth per row, with descendants aligned beneath their parent state. */
+/** One block depth per row, with each Block's immediate outcomes kept compact. */
 export function BranchStrip({
   branches, tree, deadWeight, score, spotlight = false,
   onDismissSpotlight,
@@ -258,14 +263,7 @@ export function BranchStrip({
       <div className="branch-tree-nav__scroll">
         {layout && layout.leafColumns > 0 ? (
           <div className="branch-tree-strips">
-            {layout.strips.map(strip => {
-              const gridWidth = layout.leafColumns * BRANCH_TRACK_WIDTH
-                + Math.max(0, layout.leafColumns - 1) * BRANCH_TRACK_GAP;
-              const gridStyle: CSSProperties = {
-                gridTemplateColumns: `repeat(${layout.leafColumns}, ${BRANCH_TRACK_WIDTH}px)`,
-                width: `${gridWidth}px`,
-              };
-              return (
+            {layout.strips.map(strip => (
                 <section
                   className="branch-strip-row"
                   key={strip.blockNumber}
@@ -273,42 +271,47 @@ export function BranchStrip({
                 >
                   <header className="branch-strip-row__label">Block {strip.blockNumber}</header>
                   <div className="branch-strip-row__content">
-                    <div className="branch-strip-row__groups" style={gridStyle}>
-                      {strip.blocks.map(placement => (
-                        <div
-                          className="branch-strip-row__block-group"
-                          key={`${placement.block.id}-${placement.startColumn}`}
-                          style={columnStyle(placement.startColumn, placement.columnSpan)}
-                        >
-                          <span>{placement.block.blockLabel}</span>
-                          <small>{placement.block.diceCount} {placement.block.diceCount === 1 ? 'die' : 'dice'}</small>
-                        </div>
-                      ))}
+                    <div className="branch-strip-row__blocks">
+                      {strip.blocks.map(placement => {
+                        const trackStyle = compactTrackStyle(placement.states.length);
+                        return (
+                          <section
+                            className="branch-strip-row__block"
+                            key={`${placement.block.id}-${placement.startColumn}`}
+                            style={{ width: trackStyle.width }}
+                            data-column-start={placement.startColumn}
+                            data-column-span={placement.columnSpan}
+                          >
+                            <header className="branch-strip-row__block-group">
+                              <span>{placement.block.blockLabel}</span>
+                              <small>{placement.block.diceCount} {placement.block.diceCount === 1 ? 'die' : 'dice'}</small>
+                            </header>
+                            <ul className="branch-strip-row__states" style={trackStyle}>
+                              {placement.states.map(statePlacement => (
+                                <li
+                                  className="branch-strip-state"
+                                  key={statePlacement.state.id}
+                                  data-branch-id={statePlacement.state.id}
+                                  data-column-start={statePlacement.startColumn}
+                                  data-column-span={statePlacement.columnSpan}
+                                >
+                                  <StateCard
+                                    state={statePlacement.state}
+                                    onSelect={onSelect}
+                                    onReset={onReset}
+                                    onRequestReset={setPendingReset}
+                                    onRequestConcede={setPendingConcede}
+                                  />
+                                </li>
+                              ))}
+                            </ul>
+                          </section>
+                        );
+                      })}
                     </div>
-                    <ul className="branch-strip-row__states" style={gridStyle}>
-                      {strip.blocks.flatMap(placement => placement.states.map(statePlacement => (
-                        <li
-                          className="branch-strip-state"
-                          key={statePlacement.state.id}
-                          style={columnStyle(statePlacement.startColumn, statePlacement.columnSpan)}
-                          data-branch-id={statePlacement.state.id}
-                          data-column-start={statePlacement.startColumn}
-                          data-column-span={statePlacement.columnSpan}
-                        >
-                          <StateCard
-                            state={statePlacement.state}
-                            onSelect={onSelect}
-                            onReset={onReset}
-                            onRequestReset={setPendingReset}
-                            onRequestConcede={setPendingConcede}
-                          />
-                        </li>
-                      )))}
-                    </ul>
                   </div>
                 </section>
-              );
-            })}
+              ))}
           </div>
         ) : (
           <p className="branch-tree-nav__empty">

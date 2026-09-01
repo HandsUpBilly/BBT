@@ -145,11 +145,16 @@ describe('BranchStrip game tree', () => {
     expect(screen.queryByText('Universe 1.1 — Pushed + Down')).toBeNull();
     expect(screen.queryByText('Universe 1.2 — Pushed')).toBeNull();
     expect(container.querySelector('[data-branch-id="L2"]')?.querySelectorAll('.branch-chip__die')).toHaveLength(2);
-    const firstHeaderGrid = rows[0].querySelector('.branch-strip-row__groups') as HTMLElement;
-    const firstStateGrid = rows[0].querySelector('.branch-strip-row__states') as HTMLElement;
-    expect(firstStateGrid.style.gridTemplateColumns).toBe('repeat(2, 328px)');
-    expect(firstHeaderGrid.style.width).toBe('662px');
-    expect(firstStateGrid.style.width).toBe(firstHeaderGrid.style.width);
+    const firstBlock = rows[0].querySelector('.branch-strip-row__block') as HTMLElement;
+    const firstStateGrid = firstBlock.querySelector('.branch-strip-row__states') as HTMLElement;
+    const secondBlock = rows[1].querySelector('.branch-strip-row__block') as HTMLElement;
+    const secondStateGrid = secondBlock.querySelector('.branch-strip-row__states') as HTMLElement;
+    expect(firstBlock.style.width).toBe('328px');
+    expect(firstStateGrid.style.gridTemplateColumns).toBe('repeat(1, 328px)');
+    expect(secondBlock.style.width).toBe('662px');
+    expect(secondStateGrid.style.gridTemplateColumns).toBe('repeat(2, 328px)');
+    expect(secondStateGrid.style.width).toBe(secondBlock.style.width);
+    expect(secondBlock.querySelector('.branch-strip-row__block-group')?.parentElement).toBe(secondBlock);
 
     // The first state is structural history. Only the two current leaves can
     // select a board, so the tree cannot be used to rewind authored play.
