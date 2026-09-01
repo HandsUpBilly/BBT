@@ -30,7 +30,8 @@ describe('ScenarioSelect Free Play', () => {
     expect(screen.getByRole('img', { name: `${defaultSeries.name} logo` }).getAttribute('src')).toBe(uploadedLogo);
     expect(screen.getByText('01 Tutorial')).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Play' })).toBeTruthy();
-    expect(screen.getByText(/Touchdown · 6 steps/)).toBeTruthy();
+    expect(screen.getByText('Humans vs Orcs')).toBeTruthy();
+    expect(screen.queryByText(/Touchdown|steps?/)).toBeNull();
   });
 
   it('uses each series label and its actual list position', () => {
@@ -56,7 +57,8 @@ describe('ScenarioSelect Free Play', () => {
 
     expect(screen.getByText('01 League')).toBeTruthy();
     expect(screen.getByText('02 Cup')).toBeTruthy();
-    expect(screen.getByText(/Touchdown · 1 step$/)).toBeTruthy();
+    expect(screen.getAllByText('Humans vs Orcs')).toHaveLength(2);
+    expect(screen.queryByText(/Touchdown|steps?/)).toBeNull();
     expect(screen.getAllByRole('button', { name: 'Play' })).toHaveLength(2);
   });
 
