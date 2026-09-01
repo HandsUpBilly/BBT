@@ -90,6 +90,28 @@ describe('Pitch token style', () => {
     expect(container.querySelector('.pitch__col-labels')).toBeNull();
     expect(container.querySelector('[data-square="10H"]')).toBeTruthy();
   });
+
+  it('uses the matchup teams for end-zone colours and emblems', () => {
+    const { container } = render(
+      <Pitch
+        state={state}
+        teams={['black-orc', 'imperial-nobility']}
+        onSquareClick={noop}
+        onPieceClick={noop}
+        onSquareHover={noop}
+        onSquareLeave={noop}
+      />,
+    );
+
+    const top = container.querySelector('[data-row="0"][data-col="7"]');
+    const bottom = container.querySelector('[data-row="25"][data-col="7"]');
+    expect(top?.classList.contains('square--endzone-team-imperial-nobility')).toBe(true);
+    expect(bottom?.classList.contains('square--endzone-team-black-orc')).toBe(true);
+    expect(container.querySelector('.pitch__endzone-emblem--top')?.getAttribute('src'))
+      .toBe('/imperial-noble-blitzer-gritty.webp');
+    expect(container.querySelector('.pitch__endzone-emblem--bottom')?.getAttribute('src'))
+      .toBe('/orc-black-orc.png');
+  });
 });
 
 describe('Pitch roll dice', () => {

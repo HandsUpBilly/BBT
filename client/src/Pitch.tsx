@@ -15,6 +15,7 @@ import { DEFAULT_PLAYER_ROLE, playerPortraitFor } from './playerPortraits';
 import { BlockFaceGraphic } from './BlockDiceGraphic';
 import { BLOCK_FACE_LABELS } from './blockFacePresentation';
 import { BallIcon as GrittyBallIcon } from './BallIcon';
+import { resolveEndZoneTeams, teamIconSource, teamLabel } from './teamPresentation';
 import './Pitch.css';
 
 function BallIcon({ ghost, loose }: { ghost?: boolean; loose?: boolean }) {
@@ -419,6 +420,8 @@ interface Props {
   tokenStyle?: TokenStyle;
   pitchSurface?: PitchSurface;
   showCoordinates?: boolean;
+  /** The matchup whose colours and emblems own the two end zones. */
+  teams?: readonly [Team, Team];
   /**
    * Where pieces stand in the other live branches of a block, drawn faintly
    * over the viewed board. Only pieces that actually differ are included —
@@ -459,9 +462,11 @@ const NO_BRANCH_GHOSTS: readonly BranchGhostView[] = [];
 export function Pitch({
   state, onSquareClick, onPieceClick, onSquareHover, onSquareLeave,
   orientation = 'landscape', tokenStyle = 'portrait', pitchSurface = 'grass', showCoordinates = true,
-  branchGhosts, moveDecision,
+  teams, branchGhosts, moveDecision,
 }: Props) {
   const portrait = orientation === 'portrait';
+  const stateTeams = Array.from(new Set(state.pieces.map(piece => piece.team)));
+  const endZoneTeams = resolveEndZoneTeams(teams ?? stateTeams);
 
   // Resolve each ghost against the viewed board, which is where the piece's
   // team, role and skills come from — a ghost only records where it stands.
@@ -727,6 +732,11 @@ export function Pitch({
       // since which edge that is depends on the orientation.
       const isHumanEndZone = pRow === 0;
       const isOrcEndZone   = pRow === STATE_ROWS - 1;
+      const endZoneTeam = isHumanEndZone
+        ? endZoneTeams.top
+        : isOrcEndZone
+          ? endZoneTeams.bottom
+          : null;
 
       // Wide-zone lines: 4 squares in from each touchline.
       const isWideZone  = pCol === 4 || pCol === 11;
@@ -768,6 +778,7 @@ export function Pitch({
         (pCol + pRow) % 2 === 0 ? 'square--light' : 'square--dark',
         isHumanEndZone ? 'square--endzone-human' : '',
         isOrcEndZone   ? 'square--endzone-orc'   : '',
+        endZoneTeam ? `square--endzone-team-${endZoneTeam}` : '',
         isWideZone     ? 'square--wide-zone'     : '',
         isScrimmage    ? 'square--scrimmage'     : '',
         isReachable    ? 'square--reachable'     : '',
@@ -852,6 +863,7 @@ export function Pitch({
             : '',
           isPushOrigin ? 'pushed from here' : '',
           isPushDestination ? 'pushed to here' : '',
+          endZoneTeam ? `${teamLabel(endZoneTeam)} end zone` : '',
           ].filter(Boolean).join(', ')}
           pieceTeam={piece?.team ?? null}
           pieceRole={piece?.role}
@@ -971,6 +983,18 @@ export function Pitch({
         {/* The field */}
         <div className="pitch__grid" style={gridStyle} role="group" aria-label="Pitch">
           {squares}
+          <img
+            className="pitch__endzone-emblem pitch__endzone-emblem--top"
+            src={teamIconSource(endZoneTeams.top)}
+            alt=""
+            aria-hidden="true"
+          />
+          <img
+            className="pitch__endzone-emblem pitch__endzone-emblem--bottom"
+            src={teamIconSource(endZoneTeams.bottom)}
+            alt=""
+            aria-hidden="true"
+          />
           {passTrajectories.length > 0 && (
             <svg
               className="pitch__pass-trajectories"
