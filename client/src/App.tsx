@@ -749,6 +749,7 @@ export default function App() {
         trackAnalytics('interaction', { name: 'contact-dialog', outcome: 'opened' });
         setContactOpen(true);
       }}
+      onReport={openReport}
       onSignOut={handleSignOut}
     />
   );

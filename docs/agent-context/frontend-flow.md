@@ -55,9 +55,11 @@ identity is otherwise retained as a stable account key and for the server-side
 admin email allowlist. Signing out clears Google auth if
 signed in, otherwise clears the guest alias.
 
-The account menu opens **Help & rules**, **About**, and **Settings** beside Log
-Out. Help is a full archive-style screen with Getting started, Actions, and
-Parallel Universes tabs. Its code-native diagrams explain confirmation controls,
+The account menu opens **Help & rules**, **About**, **Settings**, **Contact us**,
+and **Report an issue** beside Log Out. The report entry opens the same issue
+dialog used by the dedicated gameplay and Admin Console launchers. Help is a
+full archive-style screen with Getting started, Actions, and Parallel Universes
+tabs. Its code-native diagrams explain confirmation controls,
 hierarchical universe numbers, branch strips, and lockstep replay without
 depending on a particular puzzle screenshot. Like Settings, `App.tsx` records
 `helpReturnMode`, so opening Help from the game HUD preserves the puzzle and
@@ -587,9 +589,10 @@ binaries.
 
 ## Issue and Feature Reporting
 
-Administrators can report an Issue or Feature request through the reusable
-`ReportProblemButton` and `ReportProblemModal`. The launcher lives in Admin
-Console rather than on player-facing home, archive, or game screens.
+Players and administrators can report an Issue or Feature request through the
+reusable `ReportProblemButton` and `ReportProblemModal`. The account menu makes
+the dialog available wherever `UserMenu` appears; gameplay and Admin Console
+also retain their dedicated launchers.
 
 `App.tsx` owns the dialog state and passes the active app/scenario context,
 the identity display name, and optional Google token. The reporter name is
