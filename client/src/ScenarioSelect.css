@@ -290,7 +290,6 @@
   border-radius: var(--radius-card);
   box-shadow: none;
   transition:
-    transform var(--transition-standard),
     background var(--transition-standard),
     border-color var(--transition-standard);
 }
@@ -364,7 +363,6 @@
     ),
     var(--color-surface-3);
   border-color: var(--color-border-strong);
-  transform: translateY(-2px);
 }
 
 .series-row__body {
