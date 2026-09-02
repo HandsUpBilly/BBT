@@ -173,6 +173,23 @@ test('a verified Google picture is available for explicit profile selection', as
   assert.equal(user.picture, 'https://lh3.googleusercontent.com/a/photo');
 });
 
+test('provider-neutral sessions can submit scores but cannot administer the editor', async () => {
+  const auth = createGoogleAuth({
+    verifyIdToken: null,
+    verifySessionToken: async token => ({
+      provider: 'email', providerUserId: `email-${token}`, email: 'admin@x.com',
+    }),
+    adminEmails: 'admin@x.com',
+    allowUnauthenticated: false,
+  });
+  const user = await auth.verifyOptionalGoogleUser(headers({ authorization: 'Bearer session' }));
+  assert.equal(user.provider, 'email');
+  await assert.rejects(
+    () => auth.requireAdminGoogleUser(headers({ authorization: 'Bearer session' })),
+    error => error instanceof AdminAuthError && error.status === 403,
+  );
+});
+
 test('a rejected verification surfaces as an AuthError, not the raw failure', async () => {
   const verifyIdToken = async () => { throw new Error('jwt malformed'); };
   const auth = createGoogleAuth({ verifyIdToken, adminEmails: '', allowUnauthenticated: true });

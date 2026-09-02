@@ -74,6 +74,11 @@ Set these in Netlify's UI under **Site configuration → Environment variables**
 |---|---|---|
 | `VITE_GOOGLE_CLIENT_ID` | Build | Client-side Google Sign-In, baked into the Vite bundle |
 | `GOOGLE_CLIENT_ID` | Functions | Server-side verification of Google ID tokens (`netlify/functions/auth.js`) |
+| `AUTH_SESSION_SECRET` | Functions | At least 32 random characters used to sign Turn 16 sessions and Discord OAuth state. Keep stable and secret. |
+| `AUTH_APP_URL` | Functions | Public site origin used after email/Discord login, e.g. `https://turn-16.com` (no path). |
+| `DISCORD_CLIENT_ID` | Functions | Discord application client ID. |
+| `DISCORD_CLIENT_SECRET` | Functions | Discord application secret. Server-only. |
+| `DISCORD_REDIRECT_URI` | Functions | Exact registered callback URL, e.g. `https://turn-16.com/api/auth/discord/callback`. |
 | `NETLIFY_SITE_ID` (or `SITE_ID`) | Functions | Netlify Blobs site scoping |
 | `NETLIFY_TOKEN` (or `NETLIFY_AUTH_TOKEN`) | Functions | Netlify Blobs auth |
 | `ADMIN_EMAILS` | Functions | Optional comma-separated deployment administrators, combined with the permanent owner and Managed Administrators for `/api/editor/*` access |
@@ -81,6 +86,7 @@ Set these in Netlify's UI under **Site configuration → Environment variables**
 | `RESEND_API_KEY` | Functions | [Resend](https://resend.com) API key used to send Contact form messages. Server-only — never a `VITE_` variable. |
 | `CONTACT_EMAIL_TO` | Functions | The real inbox a contact message is delivered to. Server-only; never appears in the client bundle. |
 | `CONTACT_EMAIL_FROM` | Functions | The verified sending address (e.g. `contact@turn-16.com`) — the domain must be verified with Resend (SPF/DKIM records added at your DNS host). |
+| `AUTH_EMAIL_FROM` | Functions | Optional verified sender for login emails. Falls back to `CONTACT_EMAIL_FROM`. |
 | `EDITOR_ALLOW_UNAUTHENTICATED` | Functions | Set to `false` to make an empty effective administrator list fail closed with 503. Defaults to unrestricted. **Production should set this** — see below. |
 
 `EDITOR_ALLOW_UNAUTHENTICATED=false` is worth setting on the production site.
@@ -104,6 +110,18 @@ https://<your-site-name>.netlify.app
 ```
 
 Add any custom domain the same way.
+
+### Discord and email login config
+
+Create a Discord application in the Developer Portal and add the exact
+`DISCORD_REDIRECT_URI` under **OAuth2 → Redirects**. Turn 16 requests only the
+`identify` and `email` scopes. Discord and email login stay hidden until all
+variables required for that provider are present.
+
+Generate `AUTH_SESSION_SECRET` once, keep it stable, and scope `AUTH_APP_URL`
+and `DISCORD_REDIRECT_URI` to each deployed environment. Login emails use the
+existing Resend account and verified domain; `AUTH_EMAIL_FROM` may be something
+like `Turn 16 <login@contact.turn-16.com>`.
 
 ### Deploy
 

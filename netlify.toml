@@ -62,6 +62,13 @@
   to     = "/.netlify/functions/contact"
   status = 200
 
+# Provider-neutral authentication: Google credential exchange, Discord OAuth,
+# and scanner-safe email magic links all share one server-side entry point.
+[[redirects]]
+  from   = "/api/auth/*"
+  to     = "/.netlify/functions/identity-auth/:splat"
+  status = 200
+
 # Anonymous first-party engagement batches. The admin read remains separately
 # authenticated below.
 [[redirects]]

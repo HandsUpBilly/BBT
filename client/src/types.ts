@@ -347,7 +347,7 @@ export interface LeaderboardEntry {
   moves: RiskyMove[];
   playLog?: PlayLogEntry[];
   userId?: string;
-  authProvider?: 'google';
+  authProvider?: 'google' | 'discord' | 'email';
   /** Public decoration resolved at read time; never persisted in the score. */
   profile?: PublicPlayerProfile;
 }
@@ -380,6 +380,6 @@ export interface SeriesLeaderboardEntry {
   date: string;
   puzzles: SeriesPuzzleResult[];
   userId?: string;
-  authProvider?: 'google';
+  authProvider?: 'google' | 'discord' | 'email';
   profile?: PublicPlayerProfile;
 }

@@ -1,11 +1,9 @@
 import { expect, test } from '@playwright/test';
-import { hasHorizontalOverflow } from './helpers';
+import { hasHorizontalOverflow, signInAsGuest } from './helpers';
 
 async function openTutorialChooser(page: import('@playwright/test').Page) {
   await page.goto('/');
-  await page.getByRole('button', { name: /play as guest/i }).click();
-  await page.locator('.identity-gate__input').fill('Tutorial Coach Tester');
-  await page.getByRole('button', { name: /^continue$/i }).click();
+  await signInAsGuest(page, 'Tutorial Coach Tester');
   await page.getByRole('button', { name: 'Tutorial', exact: true }).click();
 }
 

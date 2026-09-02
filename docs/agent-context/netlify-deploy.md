@@ -56,12 +56,13 @@ All configured in `netlify.toml`, in this order:
 
 | Path | Function | Auth |
 |---|---|---|
-| `/api/leaderboard/*` | `leaderboard` | Optional Google (guest allowed) |
-| `/api/series-leaderboard` | `series-leaderboard` | Optional Google (guest allowed) |
+| `/api/leaderboard/*` | `leaderboard` | Optional signed-in identity (guest allowed) |
+| `/api/series-leaderboard` | `series-leaderboard` | Optional signed-in identity (guest allowed) |
 | `/api/progress` | `progress` | Public |
 | `/api/reports` | `reports` | Optional Google, rate-limited |
 | `/api/analytics` | `analytics` | Public, game-event batches only, rate-limited |
-| `/api/profile` | `profile` | **Verified Google user**, writes rate-limited |
+| `/api/profile` | `profile` | **Verified signed-in user**, writes rate-limited |
+| `/api/auth/*` | `identity-auth` | Public login flow; email requests rate-limited |
 | `/api/avatar/*` | `avatar` | Public, current selected avatar only |
 | `/api/editor/statistics` | `editor-statistics` | **Admin only** |
 | `/api/editor/analytics` | `editor-analytics` | **Admin only** |
@@ -149,6 +150,15 @@ Required for Google login:
 
 - `VITE_GOOGLE_CLIENT_ID` (build) — client-side Sign-In
 - `GOOGLE_CLIENT_ID` (functions) — server-side token verification
+
+Required for Discord and email login:
+
+- `AUTH_SESSION_SECRET` — stable random secret of at least 32 characters
+- `AUTH_APP_URL` — public site origin receiving the completed login
+- `DISCORD_CLIENT_ID`, `DISCORD_CLIENT_SECRET`, `DISCORD_REDIRECT_URI` — the
+  callback URI must exactly match a redirect registered in Discord
+- `RESEND_API_KEY` plus `AUTH_EMAIL_FROM` or `CONTACT_EMAIL_FROM` — the sender
+  must use a Resend-verified domain
 
 Required for Netlify Blobs (leaderboards + editor drafts):
 

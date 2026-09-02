@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { hasHorizontalOverflow, startGame } from './helpers';
+import { hasHorizontalOverflow, signInAsGuest, startGame } from './helpers';
 
 async function openHelp(page: import('@playwright/test').Page) {
   await page.getByRole('button', { name: /player menu for/i }).click();
@@ -9,9 +9,7 @@ async function openHelp(page: import('@playwright/test').Page) {
 
 test('Help & rules illustrates Parallel Universes without overflowing the phone', async ({ page }) => {
   await page.goto('/');
-  await page.getByRole('button', { name: /play as guest/i }).click();
-  await page.locator('.identity-gate__input').fill('Help Screen Tester');
-  await page.getByRole('button', { name: /^continue$/i }).click();
+  await signInAsGuest(page, 'Help Screen Tester');
   await openHelp(page);
 
   await page.getByRole('tab', { name: 'Parallel Universes' }).click();

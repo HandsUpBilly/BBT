@@ -1,11 +1,9 @@
 import { test, expect } from '@playwright/test';
-import { boxOf, hasHorizontalOverflow } from './helpers';
+import { boxOf, hasHorizontalOverflow, signInAsGuest } from './helpers';
 
 test.beforeEach(async ({ page }) => {
   await page.goto('/');
-  await page.getByRole('button', { name: /play as guest/i }).click();
-  await page.locator('.identity-gate__input').fill('Settings Preview Tester');
-  await page.getByRole('button', { name: /^continue$/i }).click();
+  await signInAsGuest(page, 'Settings Preview Tester');
   await page.getByRole('button', { name: /player menu for/i }).click();
   await page.getByRole('menuitem', { name: 'Settings' }).click();
   await page.getByRole('heading', { name: 'Settings' }).waitFor();

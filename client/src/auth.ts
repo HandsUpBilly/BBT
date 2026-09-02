@@ -2,6 +2,8 @@ import { createContext, useContext } from 'react';
 
 export interface GoogleCredentialPayload {
   sub?: string;
+  provider?: 'google' | 'discord' | 'email';
+  purpose?: string;
   name?: string;
   email?: string;
   picture?: string;
@@ -45,7 +47,7 @@ export function isTokenExpired(token: string | null, now = Date.now()): boolean 
 
 export interface AuthUser {
   id: string;
-  provider: 'google';
+  provider: 'google' | 'discord' | 'email';
   email?: string;
   /** Offered as a public-avatar choice; never selected automatically. */
   picture?: string;
@@ -55,11 +57,17 @@ export interface AuthContextValue {
   currentUser: AuthUser | null;
   /** null once the cached Google token has expired — never send a dead token. */
   idToken: string | null;
-  /** True when a Google user is still cached but their token has lapsed. */
+  /** True when a signed-in user is still cached but their token has lapsed. */
   sessionExpired: boolean;
-  isConfigured: boolean;
+  providers: { google: boolean; discord: boolean; email: boolean };
   /** Mounts Google's click-to-sign-in control into the supplied element. */
   mountSignInButton: (container: HTMLElement) => Promise<void>;
+  startDiscordSignIn: () => void;
+  sendMagicLink: (email: string) => Promise<void>;
+  completeMagicLink: () => Promise<void>;
+  pendingMagicLink: boolean;
+  authError: string | null;
+  clearAuthError: () => void;
   signOut: () => void;
 }
 

@@ -11,7 +11,9 @@ Primary files:
 
 ## Identity
 
-The app uses Google Identity Services plus guest names.
+The app uses Google Identity Services, Discord OAuth, passwordless email, and
+guest names. Signed-in providers receive a stable provider-specific user id;
+the public alias remains separate from the provider profile.
 
 Google flow:
 
@@ -40,6 +42,35 @@ Google flow:
 - Cached auth session uses localStorage key `bbt.auth.v1`.
 - A signed-in player must choose a public alias, stored per Google subject in
   `bbt.googleAliases.v1`. That alias is used for leaderboards and reports.
+- New Google logins exchange the Google credential for a signed Turn 16
+  session. If `AUTH_SESSION_SECRET` is absent, the endpoint deliberately falls
+  back to the existing raw-Google-token session so a partial deployment does
+  not disable Google login.
+
+Discord flow:
+
+- `/api/auth/discord/start` signs OAuth state and binds it to a short-lived,
+  HttpOnly SameSite cookie before redirecting to Discord.
+- The callback verifies both values, exchanges the code server-side, and
+  returns the Turn 16 session in the URL fragment. The client removes that
+  fragment immediately. Turn 16 requests only `identify` and `email`.
+- Discord identities use a hashed provider id; the Discord account id and
+  email never appear in public leaderboard data.
+
+Email flow:
+
+- `/api/auth/email/start` sends a 15-minute link through the existing Resend
+  account. Requests are rate-limited and only a SHA-256 hash of the random
+  token is stored.
+- Opening the link does not consume it. The login dialog requires a deliberate
+  confirmation click, preventing ordinary mail-security link scanners from
+  using it before the player.
+- Verification atomically marks the token consumed before issuing a session.
+  Email identities use a one-way hashed id, not the address.
+
+Turn 16 sessions are HMAC-signed, expire after seven days, and use the existing
+Bearer-token client path. Administrator allowlisting remains Google-only even
+though rankings and public profiles accept every verified signed-in provider.
 
 ### Token expiry
 
