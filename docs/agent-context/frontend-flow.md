@@ -591,11 +591,12 @@ together dropped one from the log while the cumulative still counted it.
 
 ### Regression coverage
 
-`client/e2e/` holds a Playwright harness across ten device profiles. jsdom has
-no layout engine, so vitest cannot catch any of this. Run it with
-`npm run test:e2e` after `npx playwright install`; it is deliberately **not**
-part of `npm run verify`, which must pass on a clean checkout without browser
-binaries.
+`client/e2e/` holds a focused Playwright harness plus an opt-in scheduled
+coverage matrix. jsdom has no layout engine, so vitest cannot catch measured
+geometry. Use the smallest area command from
+`docs/agent-context/testing-and-pr-workflow.md`; `npm run test:e2e` is only the
+10-case smoke gate, while `test:e2e:full` is reserved for scheduled/release
+coverage. Playwright remains deliberately outside `npm run verify`.
 
 ## Issue and Feature Reporting
 

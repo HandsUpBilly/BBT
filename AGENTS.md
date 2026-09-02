@@ -132,6 +132,26 @@ There is no hosted CI, so `npm run verify` is the only signal before opening a
 PR. Note that `lint`, `tsc`, and the tests all pass on a module-resolution break
 that fails the deploy — `check:functions` is the step that catches it.
 
+**Verification cadence:** do not run `verify` after every edit or every user
+request. During implementation, run a single related Vitest file or
+`npm --prefix client run test:related -- <changed source files>` when feedback
+is useful. Run `npm run verify` once, at the end, when the user asks for a PR or
+the change is otherwise ready to hand off. If the user is batching a sequence
+of changes, wait for their explicit PR/verification signal.
+
+**Always report verification transparently.** Every implementation handoff and
+PR summary must include a short `Checks` section that lists:
+
+- every check actually run and whether it passed or failed;
+- any relevant check deliberately not run (especially `verify` and Playwright),
+  with the reason;
+- failures or warnings that remain, without presenting a partial run as a full
+  pass.
+
+Use exact script names and case counts when available. Distinguish configuration
+validation such as Playwright `--list` from executing the tests themselves.
+Never say “all tests pass” unless the complete applicable suite actually ran.
+
 ### Layout regressions need the Playwright harness
 
 `npm run verify` does **not** run it. vitest runs in jsdom, which has no layout
@@ -140,15 +160,19 @@ regression. `client/e2e/` asserts on measured geometry against real browsers:
 
 ```bash
 npx playwright install                    # once — fetches Chromium and WebKit
-npm --prefix client run test:e2e          # full nine-device matrix
-npm --prefix client run test:e2e:mobile   # the four phone profiles
+npm --prefix client run test:e2e          # 10-case desktop + phone smoke gate
+npm --prefix client run test:e2e:layout   # focused geometry/input boundaries
+npm --prefix client run test:e2e:full     # opt-in scheduled/release matrix
 ```
 
 It is out of `verify` deliberately: the specs need browser binaries `npm
 install` does not fetch, so a clean checkout would fail for a reason unrelated
-to the change under test. Run it by hand when touching game-screen layout,
-`Pitch.tsx`, or anything behind a `(pointer: coarse)` media query. Full notes in
-`docs/agent-context/testing-and-pr-workflow.md`.
+to the change under test. **Do not run Playwright merely because code changed.**
+Run one focused E2E command only when the change materially depends on browser
+geometry, viewport, input capability, or a multi-screen browser flow. Never run
+`test:e2e:full` as routine PR validation; reserve it for an explicit request,
+release qualification, or a scheduled daily job. Full notes and the command
+selection table are in `docs/agent-context/testing-and-pr-workflow.md`.
 
 ## TypeScript / JavaScript
 
