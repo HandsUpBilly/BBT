@@ -327,6 +327,42 @@ describe('Loose Ball on the Goal Line', () => {
         .toEqual([null, 3]);
     }
   });
+
+  it('keeps identical pickup rolls and the completed touchdowns in lockstep', () => {
+    let run = startRun(makeScenarioState(looseBallScenario as Scenario));
+    run = declareBlock(run, 'cedric', false);
+    run = chooseBlockTarget(run, { col: 6, row: 6 });
+    run = splitOnBlock(run);
+    run = choosePush(run, { col: 5, row: 5 }, true);
+    run = clickSquare(run, { col: 7, row: 7 });
+    run = clickSquare(run, { col: 7, row: 5 });
+    run = clickSquare(run, { col: 7, row: 0 });
+
+    expect(branchStrip(run).every(branch => branch.status === 'scored')).toBe(true);
+    expect(branchSummaryGroups(run)).toEqual([
+      expect.objectContaining({ merged: true, status: 'scored' }),
+    ]);
+  });
+
+  it('breaks lockstep when a standing marker changes the pickup target', () => {
+    const runnerPiece = humanThrower({ id: 'pickup-runner', position: { col: 5, row: 8 } });
+    const state = {
+      ...declaredBlock([runnerPiece]),
+      ballPosition: { col: 6, row: 8 },
+    };
+    let run = splitOnBlock(startRun(state));
+    run = choosePush(run, { col: 7, row: 8 }, false);
+    run = selectBranch(run, entry(run, 'Pushed')!.id);
+    run = clickSquare(run, { col: 5, row: 8 });
+    run = clickSquare(run, { col: 6, row: 8 });
+
+    const viewedPickup = viewedLine(run).state.actionLog.findLast(log =>
+      log.kind === 'move' && log.pickupTarget !== null);
+    expect(viewedPickup).toMatchObject({ kind: 'move', pickupTarget: 4 });
+    expect(entry(run, 'Pushed')?.status).toBe('authoring');
+    expect(entry(run, 'Pushed + Down')?.status).toBe('needs-attention');
+    expect(entry(run, 'Down in place')?.status).toBe('needs-attention');
+  });
 });
 
 describe('declarations across a group', () => {
@@ -347,26 +383,26 @@ describe('declarations across a group', () => {
     return entry && 'catchTarget' in entry ? entry.catchTarget : undefined;
   }
 
-  it('recomputes catch targets per branch instead of copying the authored roll', () => {
+  it('breaks lockstep instead of silently changing a catch target', () => {
     const run = handedOff();
 
-    // Only "Pushed" leaves a defender standing next to the receiver, so only
-    // that branch's catch is marked. Same click, three different rolls.
-    const pushed = catchTargetIn(run, 'Pushed')!;
+    // Only "Pushed" leaves a defender standing next to the receiver. The
+    // authored safe catch is therefore not committed in that branch.
+    const pushed = catchTargetIn(run, 'Pushed');
     const pushedDown = catchTargetIn(run, 'Pushed + Down')!;
     const inPlace = catchTargetIn(run, 'Down in place')!;
 
-    expect(pushed).toBeGreaterThan(pushedDown);
+    expect(pushed).toBeUndefined();
     expect(pushedDown).toBe(inPlace);
+    expect(entry(run, 'Pushed')?.status).toBe('needs-attention');
   });
 
-  it('costs the marked branch more probability off one authored hand off', () => {
+  it('keeps the unchanged hand-off branches together', () => {
     const run = handedOff();
 
-    // Both branches are reached on two faces of six, so their weights differ
-    // only by what the hand off cost — dearer where the defender is standing.
-    expect(entry(run, 'Pushed')!.weight)
-      .toBeLessThan(entry(run, 'Pushed + Down')!.weight);
+    const pushedDown = Object.values(run.lines).find(line => line.label === 'Pushed + Down')!;
+    const inPlace = Object.values(run.lines).find(line => line.label === 'Down in place')!;
+    expect(pushedDown.lockstepId).toBe(inPlace.lockstepId);
   });
 
   it('flags branches where the declared action is not available', () => {

@@ -121,9 +121,10 @@ select a second rules path. Internally the implementation retains its branch
 types/files: a block creates one playable universe per distinct live resulting
 board, turnover mass is dead, and every universe must score or be conceded
 before the run completes. Legal actions replay across lockstep siblings only
-while they add no more rolls than the action authored on the viewed board. If a
-sibling would introduce another dodge, Rush, pickup, or other roll, none of
-that action is recorded there: it leaves lockstep as **Needs a plan** at the
+while they require the same dice as the action authored on the viewed board.
+An unchanged pickup, dodge, Rush, catch, or pass therefore stays in lockstep;
+a different target number or skill reroll breaks it. If a sibling would
+introduce different dice, none of that action is recorded there: it leaves lockstep as **Needs a plan** at the
 pre-action state. Movement also looks one step ahead: when a replayed route
 would enter an extra opposing tackle zone, the sibling keeps the safe prefix
 but stops before that marked square, instead of waiting until the following

@@ -11,10 +11,10 @@
  *
  * `replayClick` produces a candidate lockstep replay: apply the click the
  * player just made to a sibling branch and say plainly whether it still means
- * the same thing there. The group author then also compares `addedRollCount`
+ * the same thing there. The group author then also compares `addedRollSignature`
  * against the viewed action before accepting that candidate. Both checks are
- * explicit because silently changing either the action or its roll count in a
- * sibling would make the whole model untrustworthy.
+ * explicit because silently changing either the action or the dice it needs in
+ * a sibling would make the whole model untrustworthy.
  */
 
 import type { ActionLogEntry, GameState, PlayerPiece, Position } from './types';
@@ -131,6 +131,34 @@ function entryRollCount(entry: ActionLogEntry): number {
 }
 
 /**
+ * Describe the individual dice introduced by one log entry.
+ *
+ * A count alone is not enough for lockstep: a 3+ pickup and a 4+ pickup are
+ * both one roll, but they are different plans. Conversely, an unchanged 3+
+ * pickup must remain in lockstep even though it is a dice-bearing move.
+ */
+function entryRollSignature(entry: ActionLogEntry): string[] {
+  if (entry.kind === 'move') {
+    const rolls: string[] = [];
+    if (entry.dodgeTarget !== null) {
+      rolls.push(`dodge:${entry.dodgeTarget}:${entry.dodgeSkillReroll ? 'skill' : 'plain'}`);
+    }
+    if (entry.isGfi) rolls.push('rush:2');
+    if (entry.pickupTarget !== null && entry.pickupTarget !== undefined) {
+      rolls.push(`pickup:${entry.pickupTarget}`);
+    }
+    return rolls;
+  }
+  if (entry.kind === 'handoff' || entry.kind === 'pass-catch') {
+    return [`catch:${entry.catchTarget}`];
+  }
+  if (entry.kind === 'pass') {
+    return [`pass:${entry.passTarget}`];
+  }
+  return [`block:${entry.diceCount}:${entry.picker}`];
+}
+
+/**
  * Count only rolls introduced by one state transition.
  *
  * Movement can stack a dodge, Rush and pickup on one square, so counting
@@ -142,6 +170,27 @@ export function addedRollCount(before: GameState, after: GameState): number {
   return after.actionLog
     .slice(before.actionLog.length)
     .reduce((total, entry) => total + entryRollCount(entry), 0);
+}
+
+/** The ordered dice requirements introduced by one state transition. */
+export function addedRollSignature(before: GameState, after: GameState): string[] {
+  if (after.actionLog.length <= before.actionLog.length) return [];
+  return after.actionLog
+    .slice(before.actionLog.length)
+    .flatMap(entryRollSignature);
+}
+
+/** True when replaying an action introduces exactly the same dice. */
+export function addedRollsMatch(
+  viewedBefore: GameState,
+  viewedAfter: GameState,
+  siblingBefore: GameState,
+  siblingAfter: GameState,
+): boolean {
+  const viewedRolls = addedRollSignature(viewedBefore, viewedAfter);
+  const siblingRolls = addedRollSignature(siblingBefore, siblingAfter);
+  return viewedRolls.length === siblingRolls.length
+    && viewedRolls.every((roll, index) => roll === siblingRolls[index]);
 }
 
 function selectedPiecePosition(state: GameState): Position | null {

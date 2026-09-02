@@ -40,7 +40,11 @@ import {
 import { blockBoardStates, type BlockBoardState, type BlockResolution } from './blockBranching';
 import { branchSummary, type BranchSummary, type LineNode } from './blockBranchTree';
 import { key } from './bfs';
-import { addedRollCount, positionBeforeExtraTackleZone, replayClick } from './branchReplay';
+import {
+  addedRollsMatch,
+  positionBeforeExtraTackleZone,
+  replayClick,
+} from './branchReplay';
 import { summarizeActionLog } from './riskyMoves';
 
 /** One authored segment: a board plus how it relates to the rest of the run. */
@@ -174,8 +178,8 @@ export function selectBranch(run: BranchRun, id: string): BranchRun {
  * branch's lockstep group.
  *
  * `apply` runs on the viewed board; `replay` decides whether a sibling can
- * follow. A legal replay is still refused if it introduces more rolls than the
- * viewed action. Movement also anticipates the next dodge: if the sibling's
+ * follow. A legal replay is still refused if it introduces different dice from
+ * the viewed action. Movement also anticipates the next dodge: if the sibling's
  * route would finish in an extra tackle zone, it keeps only the safe prefix and
  * stops before entering that square. Refused siblings get their own lockstep
  * id, so later actions no longer touch them.
@@ -188,7 +192,7 @@ function authorAcrossGroup(
     before: GameState,
     replayed: GameState,
     viewedAfter: GameState,
-    allowedAddedRolls: number,
+    viewedBefore: GameState,
   ) => GameState | null,
 ): BranchRun {
   const viewed = viewedLine(run);
@@ -196,15 +200,13 @@ function authorAcrossGroup(
 
   const nextViewedState = apply(viewed.state);
   if (nextViewedState === viewed.state) return run;
-  const allowedAddedRolls = addedRollCount(viewed.state, nextViewedState);
-
   const updates: RunLine[] = [{ ...viewed, state: nextViewedState, needsAttention: false }];
   let seq = run.seq;
 
   for (const sibling of lockstepGroup(run, viewed)) {
     const replayed = replay(sibling.state);
     const stopped = replayed
-      ? stopBeforeDivergence?.(sibling.state, replayed, nextViewedState, allowedAddedRolls) ?? null
+      ? stopBeforeDivergence?.(sibling.state, replayed, nextViewedState, viewed.state) ?? null
       : null;
     if (stopped) {
       updates.push({
@@ -215,9 +217,9 @@ function authorAcrossGroup(
       });
       continue;
     }
-    const addsNoExtraRolls = replayed
-      && addedRollCount(sibling.state, replayed) <= allowedAddedRolls;
-    if (replayed && addsNoExtraRolls) {
+    const hasMatchingRolls = replayed
+      && addedRollsMatch(viewed.state, nextViewedState, sibling.state, replayed);
+    if (replayed && hasMatchingRolls) {
       updates.push({ ...sibling, state: replayed });
     } else {
       // Out of lockstep from here on: its own group, and flagged so the branch
@@ -248,7 +250,7 @@ export function clickSquare(run: BranchRun, pos: Position): BranchRun {
       const result = replayClick(state, pos, intent);
       return result.ok ? result.state : null;
     },
-    (before, replayed, viewedAfter, allowedAddedRolls) => {
+    (before, replayed, viewedAfter, viewedBefore) => {
       if (intent !== 'commit-move') return null;
       const stop = positionBeforeExtraTackleZone(before, replayed, viewedAfter);
       if (!stop) return null;
@@ -260,7 +262,7 @@ export function clickSquare(run: BranchRun, pos: Position): BranchRun {
       if (!activePosition || key(activePosition) === key(stop)) return before;
 
       const prefix = replayClick(before, stop, intent);
-      return prefix.ok && addedRollCount(before, prefix.state) <= allowedAddedRolls
+      return prefix.ok && addedRollsMatch(viewedBefore, viewedAfter, before, prefix.state)
         ? prefix.state
         : before;
     },
