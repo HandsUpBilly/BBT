@@ -126,97 +126,150 @@
   scrollbar-width: thin;
 }
 
-.branch-tree-strips { width: max-content; min-width: 100%; }
+.branch-tree-strips {
+  width: max-content;
+  min-width: 100%;
+  padding: 4px 0;
+}
 
 .branch-strip-row {
   display: grid;
-  grid-template-columns: 74px minmax(0, 1fr);
-  align-items: stretch;
+  grid-template-columns: 188px minmax(0, 1fr);
+  align-items: center;
+  column-gap: 10px;
   min-width: 100%;
-  padding: 8px;
+  padding: 8px 10px;
   box-sizing: border-box;
 }
 
-.branch-strip-row + .branch-strip-row { border-top: 1px solid var(--color-border-subtle); }
+.branch-strip-row + .branch-strip-row { padding-top: 22px; }
 
 .branch-strip-row__label {
   position: sticky;
   left: 0;
-  z-index: 3;
-  align-self: stretch;
-  padding: 7px 8px 0 2px;
+  z-index: 4;
+  display: grid;
+  align-self: center;
+  gap: 7px;
+  padding: 6px 10px 6px 2px;
   background: var(--color-surface-sunken);
   font-size: 0.7rem;
 }
 
-.branch-strip-row__content { min-width: 0; }
-
-.branch-strip-row__blocks {
-  display: flex;
-  align-items: flex-start;
-  gap: 6px;
-  width: max-content;
+.branch-strip-row__label > strong {
+  color: var(--color-text-strong);
+  font-size: 0.72rem;
 }
 
-.branch-strip-row__block {
-  flex: 0 0 auto;
+.branch-strip-row__matchup {
+  display: grid;
+  gap: 3px;
   min-width: 0;
-}
-
-/* Left-aligned, not space-between: a many-outcome Block can still be wider
-   than a narrow viewport, so the dice count stays beside the matchup label
-   instead of being pinned to an off-screen far edge. */
-.branch-strip-row__block-group {
-  position: relative;
-  display: flex;
-  gap: 8px;
-  width: 100%;
-  min-width: 0;
-  padding: 4px 8px;
+  padding-left: 8px;
+  border-left: 2px solid var(--color-accent-border);
   color: var(--color-text-muted);
-  background: var(--color-surface-3);
-  border-top: 1px solid var(--color-accent-border);
-  border-radius: 5px 5px 0 0;
-  font-size: 0.66rem;
+  font-family: var(--font-body);
+  letter-spacing: 0;
+  text-transform: none;
 }
 
-.branch-strip-row + .branch-strip-row .branch-strip-row__block-group::before {
-  content: '';
-  position: absolute;
-  bottom: 100%;
-  left: 50%;
-  height: 9px;
-  border-left: 1px solid var(--color-border-selected);
+.branch-strip-row__players {
+  display: grid;
+  gap: 1px;
+  min-width: 0;
 }
 
-.branch-strip-row__block-group span {
+.branch-strip-row__players strong {
   overflow: hidden;
+  color: var(--color-text);
+  font-size: 0.7rem;
+  font-weight: 600;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.branch-strip-row__block-group small { flex: 0 0 auto; color: var(--color-text-disabled); }
+.branch-strip-row__players small,
+.branch-strip-row__dice-count {
+  color: var(--color-text-disabled);
+  font-size: 0.61rem;
+}
 
+.branch-strip-row__dice-count {
+  font-family: var(--font-display);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.branch-strip-row__content {
+  position: relative;
+  min-width: 0;
+}
+
+.branch-strip-row__guides,
 .branch-strip-row__states {
   display: grid;
-  gap: 6px;
-  margin: 4px 0 0;
+  column-gap: 6px;
+}
+
+.branch-strip-row__guides {
+  position: absolute;
+  inset: -14px 0 auto;
+  height: 18px;
+}
+
+.branch-strip-row__guide {
+  position: relative;
+  height: 18px;
+}
+
+.branch-strip-row__guide::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 50%;
+  height: 10px;
+  border-left: 1px solid var(--color-border-selected);
+}
+
+.branch-strip-row__guide::after {
+  content: '';
+  position: absolute;
+  top: 9px;
+  right: var(--branch-guide-right);
+  left: var(--branch-guide-left);
+  border-top: 1px solid var(--color-border-selected);
+}
+
+.branch-strip-row__states {
+  row-gap: 6px;
+  margin: 0;
   padding: 0;
   list-style: none;
 }
 
 .branch-strip-state {
-  width: 100%;
+  position: relative;
+  display: flex;
+  justify-content: center;
   min-width: 0;
 }
 
-/* Each outcome fills one fixed track. Immediate outcomes from the same Block
-   therefore sit edge-to-edge with only the six-pixel track gutter, and their
-   shared header inherits the exact combined width of those tracks. */
+.branch-strip-row + .branch-strip-row .branch-strip-state::before {
+  content: '';
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  height: 5px;
+  border-left: 1px solid var(--color-border-selected);
+}
+
+/* Leaves fill one fixed track. Parents keep that same card width but sit in a
+   grid area spanning every leaf below them, so they stay centred over their
+   descendants while the final row remains tightly packed. */
 .branch-strip-state__actions {
   display: flex;
   align-items: stretch;
-  width: 100%;
+  width: 328px;
   min-width: 0;
   height: 100%;
 }
@@ -354,7 +407,8 @@ button.branch-chip:hover { background: var(--color-surface-hover); }
   .branch-strip__alert,
   .branch-strip__dead { overflow: hidden; text-overflow: ellipsis; }
   .branch-tree-nav__scroll { max-height: min(30vh, 280px); }
-  .branch-strip-row { grid-template-columns: 62px minmax(0, 1fr); padding: 6px; }
+  .branch-strip-row { grid-template-columns: 150px minmax(0, 1fr); column-gap: 8px; padding: 6px 8px; }
+  .branch-strip-row__players strong { font-size: 0.66rem; }
   .branch-chip__reset,
   .branch-chip__rewind,
   .branch-chip__concede { min-width: 44px; }

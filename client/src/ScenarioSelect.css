@@ -290,7 +290,6 @@
   border-radius: var(--radius-card);
   box-shadow: none;
   transition:
-    transform var(--transition-standard),
     background var(--transition-standard),
     border-color var(--transition-standard);
 }
@@ -364,7 +363,6 @@
     ),
     var(--color-surface-3);
   border-color: var(--color-border-strong);
-  transform: translateY(-2px);
 }
 
 .series-row__body {
@@ -397,12 +395,21 @@
 }
 
 .series-row__meta,
+.series-row__matchup,
 .challenge-tile__meta,
 .challenge-section__summary {
   color: var(--color-text-muted);
   font-family: var(--font-display);
   font-variant-numeric: tabular-nums;
   font-weight: 600;
+}
+
+.series-row__matchup {
+  margin-top: 4px;
+  color: var(--color-text);
+  font-size: clamp(0.95rem, 1.4vw, 1.08rem);
+  letter-spacing: 0.045em;
+  text-transform: uppercase;
 }
 
 .series-row__meta {
