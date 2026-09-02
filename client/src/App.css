@@ -300,11 +300,11 @@ body,
   justify-content: center;
   gap: 11px;
   width: 100%;
-  min-height: 48px;
-  padding: 8px 18px;
+  min-height: 40px;
+  padding: 4px 18px;
   color: var(--color-text-strong);
-  background: #0c110f;
-  border: 1px solid #465049;
+  background: #131314;
+  border: 1px solid #8e918f;
   border-radius: var(--radius-input);
   font-family: var(--font-display);
   font-size: 1rem;
@@ -316,8 +316,8 @@ body,
 
 .identity-login__provider:hover,
 .identity-login__provider:focus-visible {
-  background: #151b17;
-  border-color: #737d75;
+  background: #1b1c1d;
+  border-color: #b0b4b1;
   outline: none;
 }
 
@@ -342,9 +342,9 @@ body,
   fill: #747fef;
 }
 
-.identity-login__discord-mark circle { fill: #0c110f; }
+.identity-login__discord-mark circle { fill: #131314; }
 .identity-login__provider:hover .identity-login__discord-mark circle,
-.identity-login__provider:focus-visible .identity-login__discord-mark circle { fill: #151b17; }
+.identity-login__provider:focus-visible .identity-login__discord-mark circle { fill: #1b1c1d; }
 
 .identity-login__email-mark {
   display: grid;
@@ -407,7 +407,7 @@ body,
   display: grid;
   place-items: center;
   width: 100%;
-  min-height: 48px;
+  min-height: 40px;
   min-width: 0;
   overflow: hidden;
   background: transparent;
