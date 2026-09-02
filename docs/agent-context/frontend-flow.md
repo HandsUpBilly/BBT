@@ -44,8 +44,11 @@ Identity can be:
   for compatibility).
 
 The landing art exposes one compact **Log in** action. It opens a focus-trapped
-choice dialog containing Google's SDK-rendered sign-in control, Discord OAuth,
-a passwordless email field, and **Play as guest**. Choosing any route without an existing alias
+choice dialog containing a single equal-width provider stack: Google's
+SDK-rendered dark control, Discord OAuth, and a passwordless email option.
+Choosing email reveals its field in place instead of competing with the
+provider buttons; **Play as guest** remains a quieter local route below them.
+Choosing any route without an existing alias
 continues to a full-width public-alias field inside the same dialog. Escape,
 the Close action, and the backdrop dismiss the choice and return focus to the
 landing button.
