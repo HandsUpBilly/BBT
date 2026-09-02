@@ -407,9 +407,9 @@ body,
   min-height: 48px;
   min-width: 0;
   overflow: hidden;
-  background: #0c110f;
-  border: 1px solid #465049;
-  border-radius: var(--radius-input);
+  background: transparent;
+  border: 0;
+  border-radius: 4px;
   color-scheme: dark;
 }
 

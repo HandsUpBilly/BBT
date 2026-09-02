@@ -146,8 +146,9 @@ test('the signed-out screen uses one launcher and equal-width login choices', as
   expect(Math.abs(google.width - discord.width), 'Google and Discord widths').toBeLessThanOrEqual(1);
   expect(Math.abs(discord.width - email.width), 'Discord and email widths').toBeLessThanOrEqual(1);
   expect(Math.abs(google.height - discord.height), 'Google and Discord heights').toBeLessThanOrEqual(1);
-  expect(await page.locator('.identity-login__google-button').evaluate(element => (
-    getComputedStyle(element).backgroundColor
-  ))).not.toBe('rgb(255, 255, 255)');
+  expect(await page.locator('.identity-login__google-button').evaluate(element => {
+    const style = getComputedStyle(element);
+    return { backgroundColor: style.backgroundColor, borderWidth: style.borderWidth };
+  })).toEqual({ backgroundColor: 'rgba(0, 0, 0, 0)', borderWidth: '0px' });
   expect(await hasHorizontalOverflow(page)).toBe(false);
 });
