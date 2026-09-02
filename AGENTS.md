@@ -180,6 +180,10 @@ Never hand-edit `netlify/functions/scenarioSeed.js`.
 | `PORT` | `server/index.js` | Express port (default: `3001`) |
 | `GOOGLE_CLIENT_ID` | `shared/googleAuth.js` | Server-side ID token verification |
 | `VITE_GOOGLE_CLIENT_ID` | `AuthProvider.tsx` | Client-side Google Sign-In |
+| `AUTH_SESSION_SECRET` | Auth functions | 32+ character secret signing Turn 16 sessions and Discord OAuth state |
+| `AUTH_APP_URL` | Auth functions | Public origin receiving email/Discord login redirects |
+| `DISCORD_CLIENT_ID` / `DISCORD_CLIENT_SECRET` | Auth functions | Discord OAuth application credentials |
+| `DISCORD_REDIRECT_URI` | Auth functions | Exact Discord callback URL registered for the deployment |
 | `NETLIFY_SITE_ID` / `SITE_ID` | Netlify functions | Netlify Blobs site ID |
 | `NETLIFY_TOKEN` / `NETLIFY_AUTH_TOKEN` | Netlify functions | Netlify Blobs auth |
 | `ADMIN_EMAILS` | `shared/googleAuth.js` | Optional comma-separated deployment administrators, unioned with the permanent owner and managed-admin list — see "Editor auth policy" below |
@@ -188,6 +192,7 @@ Never hand-edit `netlify/functions/scenarioSeed.js`.
 | `RESEND_API_KEY` | `shared/resendEmail.js` | Resend API key for the Contact form. Server-only — never a `VITE_` var |
 | `CONTACT_EMAIL_TO` | `shared/resendEmail.js` | Destination inbox for contact messages. Never shown to the client — keeps the real address out of the bundle |
 | `CONTACT_EMAIL_FROM` | `shared/resendEmail.js` | Verified sending address (e.g. `contact@turn-16.com`) — must match a domain verified with Resend |
+| `AUTH_EMAIL_FROM` | `shared/authEmail.js` | Optional verified sender for magic links; falls back to `CONTACT_EMAIL_FROM` |
 | `VITE_APP_VERSION` | `vite.config.ts` | Optional release-version override shown in About and attached to reports |
 | `VITE_DEPLOYED_AT` | `vite.config.ts` | Optional ISO timestamp overriding the About dialog's build-time deployment stamp |
 

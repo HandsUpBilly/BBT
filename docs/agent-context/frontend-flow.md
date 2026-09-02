@@ -38,24 +38,25 @@ to `home` for non-admins as defence in depth.
 
 Identity can be:
 
-- Google user from `useAuth()`, who must choose a public alias before entering
-  the app.
+- Google, Discord, or verified-email user from `useAuth()`, who must choose a
+  public alias before entering the app.
 - Guest alias from localStorage key `bbt.guestName.v1` (the legacy key remains
   for compatibility).
 
 The landing art exposes one compact **Log in** action. It opens a focus-trapped
-choice dialog containing Google's SDK-rendered sign-in control and an equally
-wide **Play as guest** option. Choosing either route without an existing alias
+choice dialog containing Google's SDK-rendered sign-in control, Discord OAuth,
+a passwordless email field, and **Play as guest**. Choosing any route without an existing alias
 continues to a full-width public-alias field inside the same dialog. Escape,
 the Close action, and the backdrop dismiss the choice and return focus to the
 landing button.
 
 `UserMenu` and leaderboards display the player-chosen public alias, never a
-Google profile name. A signed-in player may explicitly choose their verified
+provider profile name. A Google-signed-in player may explicitly choose their verified
 Google picture as the public avatar; it is not selected automatically. Google
 identity is otherwise retained as a stable account key and for the server-side
-admin email allowlist. Signing out clears Google auth if
-signed in, otherwise clears the guest alias.
+admin email allowlist. Discord and email accounts receive private hashed keys;
+administrator access remains Google-only. Signing out clears signed-in auth or,
+for a guest, the guest alias.
 
 The account menu opens **Help & rules**, **About**, **Settings**, **Contact us**,
 and **Report an issue** beside Log Out. The report entry opens the same issue

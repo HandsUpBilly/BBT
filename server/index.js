@@ -57,6 +57,7 @@ import {
 import { registerAnalyticsRoutes } from './analytics.js';
 import { registerPlayerProfileRoutes } from './profiles.js';
 import { enrichEntriesWithProfiles } from './profileStore.js';
+import { registerIdentityRoutes } from './identityRoutes.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const app = express();
@@ -75,6 +76,7 @@ function statisticsWindow(value) {
 }
 
 app.use(express.json({ limit: '256kb' }));
+registerIdentityRoutes(app);
 registerAnalyticsRoutes(app);
 registerEditorRoutes(app);
 registerPlayerProfileRoutes(app);

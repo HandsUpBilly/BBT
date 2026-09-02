@@ -16,6 +16,7 @@ import {
   withPermanentAdminEmails,
 } from '../../shared/googleAuth.js';
 import { readManagedAdmins } from './adminStore.js';
+import { sessionUserFromPayload, verifyAuthToken } from '../../shared/sessionAuth.js';
 
 export { AuthError, AdminAuthError, entryAuthFields };
 
@@ -23,8 +24,13 @@ export { AuthError, AdminAuthError, entryAuthFields };
 // EDITOR_ALLOW_UNAUTHENTICATED=false also makes an otherwise-empty effective
 // list fail closed. A non-empty list requires a verified matching account.
 const googleClientId = process.env.GOOGLE_CLIENT_ID;
+const verifyGoogleIdToken = makeGoogleTokenVerifier(OAuth2Client, googleClientId);
+const sessionSecret = process.env.AUTH_SESSION_SECRET;
 const auth = createGoogleAuth({
-  verifyIdToken: makeGoogleTokenVerifier(OAuth2Client, googleClientId),
+  verifyIdToken: verifyGoogleIdToken,
+  verifySessionToken: sessionSecret
+    ? async token => sessionUserFromPayload(await verifyAuthToken(token, sessionSecret))
+    : null,
   adminEmails: googleClientId
     ? withPermanentAdminEmails(process.env.ADMIN_EMAILS)
     : process.env.ADMIN_EMAILS,
@@ -46,7 +52,20 @@ export function requireVerifiedGoogleUser(req) {
   return auth.requireVerifiedGoogleUser(headerReader(req));
 }
 
+export function requireVerifiedGoogleIdentity(req) {
+  return auth.requireVerifiedGoogleIdentity(headerReader(req));
+}
+
 export const configuredAdminCount = auth.adminEmailCount;
+
+export async function verifyGoogleCredential(credential) {
+  if (!verifyGoogleIdToken) throw new AuthError('Google sign-in is not configured');
+  try {
+    return await verifyGoogleIdToken(credential);
+  } catch {
+    throw new AuthError('Invalid Google identity token');
+  }
+}
 
 export function authErrorResponse(error) {
   const status = error instanceof AdminAuthError ? error.status : 401;

@@ -1,6 +1,6 @@
 import { readdir, readFile, writeFile, mkdir, unlink } from 'fs/promises';
 import { join, basename } from 'path';
-import { AdminAuthError, configuredAdminCount, requireAdminGoogleUser, requireVerifiedGoogleUser } from './auth.js';
+import { AdminAuthError, configuredAdminCount, requireAdminGoogleUser, requireVerifiedGoogleIdentity } from './auth.js';
 import { addManagedAdmin, normalizeAdminEmail, removeManagedAdmin } from '../shared/adminManagement.js';
 import { readAdminAudit, readManagedAdmins, saveManagedAdminsWithAudit } from './adminStore.js';
 import {
@@ -46,7 +46,7 @@ async function withAdmin(req, res, handler) {
 async function withAdminManager(req, res, handler) {
   try {
     const user = await requireAdminGoogleUser(req);
-    return handler(user ?? await requireVerifiedGoogleUser(req));
+    return handler(user ?? await requireVerifiedGoogleIdentity(req));
   } catch (error) {
     if (error instanceof AdminAuthError) return jsonResponse(res, error.status, { errors: [error.message] });
     throw error;

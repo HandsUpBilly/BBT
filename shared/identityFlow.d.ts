@@ -1,0 +1,10 @@
+export const MAGIC_LINK_LIFETIME_MS: number;
+export function authConfiguration(env?: Record<string, string | undefined>): { google: boolean; discord: boolean; email: boolean };
+export function issueIdentitySession(identity: { provider: 'google' | 'discord' | 'email'; subject: string; email?: string; picture?: string }, secret: string): Promise<{ token: string; user: { id: string; provider: 'google' | 'discord' | 'email'; email?: string; picture?: string } }>;
+export function makeDiscordAuthorization(options: { clientId: string; redirectUri: string; secret: string; nonce: string }): Promise<string>;
+export function verifyDiscordState(state: string, cookieNonce: string | null, secret: string): Promise<void>;
+export function exchangeDiscordCode(options: { code: string; clientId: string; clientSecret: string; redirectUri: string; fetchImpl?: typeof fetch }): Promise<{ provider: 'discord'; subject: string; email?: string; picture?: string }>;
+export function createMagicLinkRecord(email: unknown, now?: number): { token: string; record: { email: string; expiresAt: number; consumed: boolean } };
+export function validateMagicLinkRecord(record: unknown, now?: number): string;
+export function cookieValue(cookieHeader: string | null | undefined, name: string): string | null;
+export function safeAppUrl(value: string): string;

@@ -90,6 +90,10 @@ export const REPORT_RATE_LIMIT = { limit: 5, windowMs: 60 * 60 * 1000 };
  * a transactional-email API credit and lands in a real inbox. */
 export const CONTACT_RATE_LIMIT = { limit: 5, windowMs: 60 * 60 * 1000 };
 
+/** Login emails cost a transactional-email credit and can be used to annoy a
+ * recipient, so repeated requests from one caller stay deliberately tight. */
+export const MAGIC_LINK_RATE_LIMIT = { limit: 5, windowMs: 60 * 60 * 1000 };
+
 /**
  * Leaderboard/series submissions are unauthenticated and each one triggers a
  * Blobs read-modify-write; loose enough not to interfere with a player

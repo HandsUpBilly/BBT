@@ -187,14 +187,23 @@ interface SeriesRunState {
 }
 
 interface IdentityGateProps {
-  authConfigured: boolean;
-  googleSignedIn: boolean;
+  providers: { google: boolean; discord: boolean; email: boolean };
+  signedIn: boolean;
+  pendingMagicLink: boolean;
+  authError: string | null;
   mountGoogleSignInButton: (container: HTMLElement) => Promise<void>;
+  onDiscord: () => void;
+  onSendMagicLink: (email: string) => Promise<void>;
+  onCompleteMagicLink: () => Promise<void>;
+  onClearAuthError: () => void;
   onAlias: (alias: string) => void;
 }
 
-function IdentityGate({ authConfigured, googleSignedIn, mountGoogleSignInButton, onAlias }: IdentityGateProps) {
-  const [loginOpen, setLoginOpen] = useState(false);
+function IdentityGate({
+  providers, signedIn, pendingMagicLink, authError, mountGoogleSignInButton,
+  onDiscord, onSendMagicLink, onCompleteMagicLink, onClearAuthError, onAlias,
+}: IdentityGateProps) {
+  const [loginOpen, setLoginOpen] = useState(signedIn || pendingMagicLink || Boolean(authError));
 
   return (
     <div className="identity-gate">
@@ -213,9 +222,15 @@ function IdentityGate({ authConfigured, googleSignedIn, mountGoogleSignInButton,
       </div>
       {loginOpen && (
         <LoginDialog
-          authConfigured={authConfigured}
-          googleSignedIn={googleSignedIn}
+          providers={providers}
+          signedIn={signedIn}
+          pendingMagicLink={pendingMagicLink}
+          authError={authError}
           mountGoogleSignInButton={mountGoogleSignInButton}
+          onDiscord={onDiscord}
+          onSendMagicLink={onSendMagicLink}
+          onCompleteMagicLink={onCompleteMagicLink}
+          onClearAuthError={onClearAuthError}
           onAlias={onAlias}
           onClose={() => setLoginOpen(false)}
         />
@@ -226,7 +241,11 @@ function IdentityGate({ authConfigured, googleSignedIn, mountGoogleSignInButton,
 
 export default function App() {
   useEffect(() => initializeAnalytics(), []);
-  const { currentUser, idToken, sessionExpired, isConfigured: authConfigured, mountSignInButton, signOut } = useAuth();
+  const {
+    currentUser, idToken, sessionExpired, providers, mountSignInButton,
+    startDiscordSignIn, sendMagicLink, completeMagicLink, pendingMagicLink,
+    authError, clearAuthError, signOut,
+  } = useAuth();
   // Forced on everywhere except the real production deploy — see
   // __BBT_FORCE_ADMIN_NAV__ in vite.config.ts. This only affects nav
   // visibility; the server still enforces the actual admin allowlist on
@@ -286,7 +305,7 @@ export default function App() {
   const avatar = publicAvatar ?? prefs.avatar;
   const avatarIsLocalOnly = Boolean(currentUser && !publicAvatar && prefs.avatar);
   const updatePublicProfile = useCallback(async (patch: PlayerProfilePatch) => {
-    if (!currentUser || !idToken) throw new Error('Sign in with Google to update your public profile.');
+    if (!currentUser || !idToken) throw new Error('Sign in to update your public profile.');
     const profile = await saveOwnProfile(patch, idToken);
     setProfileState({ userId: currentUser.id, profile });
     if (Object.hasOwn(patch, 'avatar')) setPrefs({ avatar: undefined });
@@ -1400,9 +1419,15 @@ export default function App() {
     return (
       <div className="app app--home app--landing app--playbook">
         <IdentityGate
-          authConfigured={authConfigured}
-          googleSignedIn={Boolean(currentUser)}
+          providers={providers}
+          signedIn={Boolean(currentUser)}
+          pendingMagicLink={pendingMagicLink}
+          authError={authError}
           mountGoogleSignInButton={mountSignInButton}
+          onDiscord={startDiscordSignIn}
+          onSendMagicLink={sendMagicLink}
+          onCompleteMagicLink={completeMagicLink}
+          onClearAuthError={clearAuthError}
           onAlias={currentUser ? setGoogleAlias : setGuestAlias}
         />
         <AppFooter />

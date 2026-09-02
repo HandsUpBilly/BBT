@@ -1,6 +1,6 @@
 import { addManagedAdmin, normalizeAdminEmail, removeManagedAdmin } from '../../shared/adminManagement.js';
 import { readAdminAudit, readManagedAdmins, saveManagedAdminsWithAudit } from './adminStore.js';
-import { AdminAuthError, authErrorResponse, configuredAdminCount, requireAdminGoogleUser, requireVerifiedGoogleUser } from './auth.js';
+import { AdminAuthError, authErrorResponse, configuredAdminCount, requireAdminGoogleUser, requireVerifiedGoogleIdentity } from './auth.js';
 
 function jsonResponse(status, body) {
   return new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } });
@@ -8,7 +8,7 @@ function jsonResponse(status, body) {
 
 async function requireManager(req) {
   const admin = await requireAdminGoogleUser(req);
-  return admin ?? requireVerifiedGoogleUser(req);
+  return admin ?? requireVerifiedGoogleIdentity(req);
 }
 
 function emailFromRequest(url) {

@@ -110,9 +110,9 @@ function normalizeCountry(value) {
   return country;
 }
 
-/** Validates and applies a partial profile update for one verified Google user. */
+/** Validates and applies a partial profile update for one verified signed-in user. */
 export function updatePlayerProfile(existing, user, input, now = new Date().toISOString()) {
-  if (!user?.providerUserId) throw new PlayerProfileValidationError('A verified Google account is required');
+  if (!user?.providerUserId) throw new PlayerProfileValidationError('A verified account is required');
   if (!input || typeof input !== 'object' || Array.isArray(input)) {
     throw new PlayerProfileValidationError('Invalid player profile');
   }

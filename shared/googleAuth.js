@@ -85,7 +85,7 @@ export function makeGoogleTokenVerifier(OAuth2Client, clientId) {
  *   ADMIN_EMAILS means no restriction; deployments can explicitly pass false
  *   to fail closed instead.
  */
-export function createGoogleAuth({ verifyIdToken, adminEmails, allowUnauthenticated = true, getManagedAdminEmails }) {
+export function createGoogleAuth({ verifyIdToken, verifySessionToken, adminEmails, allowUnauthenticated = true, getManagedAdminEmails }) {
   const allowlist = parseAdminEmails(adminEmails);
 
   // Visible at cold start so an accidentally-cleared/typo'd ADMIN_EMAILS in
@@ -102,7 +102,18 @@ export function createGoogleAuth({ verifyIdToken, adminEmails, allowUnauthentica
   async function verifyOptionalGoogleUser(getHeader) {
     const token = bearerToken(getHeader);
     if (!token) return null;
-    if (!verifyIdToken) throw new AuthError('Google sign-in is not configured');
+
+    if (verifySessionToken) {
+      try {
+        const sessionUser = await verifySessionToken(token);
+        if (sessionUser?.providerUserId && sessionUser?.provider) return sessionUser;
+      } catch {
+        // Google credentials are JWTs too. Fall through so cached credentials
+        // remain valid while clients move to Turn 16 sessions.
+      }
+    }
+
+    if (!verifyIdToken) throw new AuthError('Sign-in is not configured');
 
     let payload;
     try {
@@ -142,6 +153,12 @@ export function createGoogleAuth({ verifyIdToken, adminEmails, allowUnauthentica
     return user;
   }
 
+  async function requireVerifiedGoogleIdentity(getHeader) {
+    const user = await requireVerifiedGoogleUser(getHeader);
+    if (user.provider !== 'google') throw new AdminAuthError('Administrator access requires Google sign-in', 403);
+    return user;
+  }
+
   /**
    * Requires a verified Google identity on the admin allowlist.
    *
@@ -155,7 +172,7 @@ export function createGoogleAuth({ verifyIdToken, adminEmails, allowUnauthentica
       if (allowUnauthenticated) return null;
       throw new AdminAuthError('Editor access is not configured on this deployment', 503);
     }
-    const user = await requireVerifiedGoogleUser(getHeader);
+    const user = await requireVerifiedGoogleIdentity(getHeader);
     if (!activeAllowlist.has(user.email.toLowerCase())) throw new AdminAuthError('Admin access required', 403);
     return user;
   }
@@ -164,6 +181,7 @@ export function createGoogleAuth({ verifyIdToken, adminEmails, allowUnauthentica
     verifyOptionalGoogleUser,
     requireAdminGoogleUser,
     requireVerifiedGoogleUser,
+    requireVerifiedGoogleIdentity,
     adminEmailCount: allowlist.size,
   };
 }
