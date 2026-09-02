@@ -10,9 +10,20 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "test": "vitest run",
-    "test:e2e": "playwright test",
-    "test:e2e:graphics": "playwright test e2e/layout.spec.ts e2e/legend.spec.ts e2e/actionLog.spec.ts e2e/mobileControls.spec.ts e2e/blockDialog.spec.ts",
-    "test:e2e:mobile": "playwright test --project=galaxy-s8 --project=iphone-se --project=iphone-14 --project=iphone-14-landscape"
+    "test:changed": "vitest run --changed",
+    "test:related": "vitest related --run",
+    "test:e2e": "npm run test:e2e:smoke",
+    "test:e2e:smoke": "playwright test --grep @smoke --project=desktop --project=iphone-se",
+    "test:e2e:layout": "playwright test e2e/layout.spec.ts --project=desktop --project=iphone-se --project=iphone-14-landscape --project=desktop-touch",
+    "test:e2e:input": "playwright test e2e/inputAndSize.spec.ts --project=desktop --project=iphone-se --project=desktop-touch",
+    "test:e2e:overlays": "playwright test e2e/legend.spec.ts e2e/actionLog.spec.ts e2e/mobileControls.spec.ts e2e/blockDialog.spec.ts --project=desktop --project=iphone-se --project=iphone-14-landscape",
+    "test:e2e:home": "playwright test e2e/home.spec.ts e2e/helpScreen.spec.ts e2e/settings.spec.ts --project=desktop --project=iphone-se",
+    "test:e2e:branches": "playwright test e2e/branchReviewLayout.spec.ts e2e/playerComparison.spec.ts --project=desktop --project=iphone-se",
+    "test:e2e:tutorial": "playwright test e2e/tutorialGuide.spec.ts --project=desktop --project=iphone-se",
+    "test:e2e:admin": "playwright test e2e/puzzleCreatorLayout.spec.ts --project=desktop --project=iphone-se --project=ipad-mini",
+    "test:e2e:mobile": "playwright test --project=iphone-se",
+    "test:e2e:graphics": "npm run test:e2e:layout && npm run test:e2e:overlays",
+    "test:e2e:full": "playwright test --config=playwright.full.config.ts"
   },
   "dependencies": {
     "@fontsource/barlow-condensed": "^5.2.8",

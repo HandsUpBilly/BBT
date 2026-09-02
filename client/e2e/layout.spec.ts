@@ -17,7 +17,7 @@ test.describe('game screen layout', () => {
     await startGame(page);
   });
 
-  test('no pitch square is clipped out of view', async ({ page }) => {
+  test('@smoke no pitch square is clipped out of view', async ({ page }) => {
     const clipped = await clippedSquares(page);
     expect(
       clipped.count,
@@ -26,7 +26,7 @@ test.describe('game screen layout', () => {
     ).toBe(0);
   });
 
-  test('the page does not scroll sideways', async ({ page }) => {
+  test('@smoke the page does not scroll sideways', async ({ page }) => {
     expect(await hasHorizontalOverflow(page)).toBe(false);
   });
 
@@ -152,7 +152,7 @@ test.describe('game screen layout', () => {
 });
 
 test.describe('modals fit the viewport', () => {
-  test('no dialog overflows the screen edge', async ({ page }) => {
+  test('@smoke no dialog overflows the screen edge', async ({ page }) => {
     await startGame(page);
     const viewport = page.viewportSize()!;
 

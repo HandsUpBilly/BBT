@@ -9,7 +9,10 @@
     "generate:seed": "node scripts/generate-scenario-seed.mjs",
     "start": "cd server && node index.js",
     "lint": "cd client && npm run lint",
-    "test": "node --test shared/*.test.js netlify/tests/*.test.js && cd client && npm test",
+    "test:shared": "node --test shared/*.test.js",
+    "test:functions": "node --test netlify/tests/*.test.js",
+    "test:client": "npm --prefix client test",
+    "test": "npm run test:shared && npm run test:functions && npm run test:client",
     "check:functions": "node scripts/check-function-bundles.mjs",
     "verify": "npm run lint && npm test && npm run build && npm run check:functions"
   }

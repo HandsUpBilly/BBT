@@ -109,12 +109,12 @@ test.describe('home account controls', () => {
   });
 });
 
-test('the signed-out footer stays at the bottom of the page', async ({ page }) => {
+test('@smoke the signed-out footer stays at the bottom of the page', async ({ page }) => {
   await page.goto('/');
   expectFooterAtPageBottom(await footerPlacement(page));
 });
 
-test('the guest alias form gives the name field useful writing room', async ({ page }) => {
+test('@smoke the guest alias form gives the name field useful writing room', async ({ page }) => {
   await page.goto('/');
   await page.getByRole('button', { name: /play as guest/i }).click();
 

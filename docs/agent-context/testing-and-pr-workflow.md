@@ -27,7 +27,10 @@ Individually:
 
 ```bash
 npm run lint             # eslint over client/
-npm test                 # node --test over shared/ and netlify/tests/, then vitest over client/
+npm run test:shared      # shared node:test suites only
+npm run test:functions   # Netlify node:test suites only
+npm run test:client      # client vitest suites only
+npm test                 # all three groups above
 npm run build            # regenerates the scenario seed, then tsc -b && vite build
 npm run check:functions  # bundles the Netlify functions as the deploy does
 ```
@@ -38,30 +41,86 @@ module-resolution break that still fails the deploy — a package imported from
 resolve above the repo root, so a stray `node_modules` in a parent directory
 can't hide the problem locally.
 
-## Mobile Layout Harness (Playwright)
+### Development cadence
+
+Do not run the aggregate suite after every edit or every user request. During
+implementation, choose the narrowest useful check:
 
 ```bash
-npx playwright install     # once — fetches Chromium and WebKit
-npm --prefix client run test:e2e          # full eleven-device matrix
-npm --prefix client run test:e2e:graphics # faster layout, panel, and modal gate
-npm --prefix client run test:e2e:mobile   # the four phone profiles
+npm --prefix client run test:related -- src/useGameState.ts
+npm --prefix client run test:changed
+npm run test:shared
+npm run test:functions
+```
+
+Run `npm run verify` once when a change is ready for a PR or final handoff. If
+the user is batching a sequence of changes, wait for their explicit PR or
+verification signal. A failing focused check should first be investigated in
+that same scope; it is not a reason to launch every E2E project.
+
+### Verification report contract
+
+Every implementation handoff and PR summary includes a compact `Checks`
+section. Report commands, outcomes, and omissions separately:
+
+```text
+Checks
+- PASS — npm --prefix client run test:related -- src/useGameState.ts (18 tests)
+- PASS — npm run lint
+- NOT RUN — npm run verify; waiting for the requested PR checkpoint
+- NOT RUN — Playwright; no browser geometry or input behaviour changed
+```
+
+Use `PASS`, `FAIL`, or `NOT RUN`; include test counts and duration when the
+runner provides them. A check that only enumerates tests is reported as
+`PASS (configuration only) — ... --list`, never as a test pass. If a command
+runs several stages and stops early, identify the completed and failed stages
+instead of summarising the whole command as passed. Do not claim “all tests
+pass” unless the complete applicable suite ran successfully.
+
+## Focused Browser Harness (Playwright)
+
+```bash
+npx playwright install                       # once — fetches browser binaries
+npm --prefix client run test:e2e             # 10-case smoke gate
+npm --prefix client run test:e2e:layout      # board geometry
+npm --prefix client run test:e2e:input       # touch/mouse sizing
+npm --prefix client run test:e2e:overlays    # menus, log, controls, block dialog
+npm --prefix client run test:e2e:home        # identity gate and account screens
+npm --prefix client run test:e2e:branches    # game-tree and player comparison
+npm --prefix client run test:e2e:tutorial    # tutorial guide
+npm --prefix client run test:e2e:admin       # puzzle creator
+npm --prefix client run test:e2e:mobile      # all specs on one representative phone
+npm --prefix client run test:e2e:full        # scheduled/release matrix only
 ```
 
 `client/e2e/` asserts on measured geometry: square size, tap targets, HUD
 budget, no clipping, no horizontal overflow, the plot-confirm contract, and
-that the toolbar panels (`legend.spec.ts`, `actionLog.spec.ts`) fit their
-viewport and do not resize the board when opened.
+that toolbar panels fit their viewport without resizing the board.
 
-Use `test:e2e:graphics` for routine visual-layout work. It runs the core board
-geometry, pitch key, action log, compact controls, and block-dialog specs over
-the complete configured device matrix. Use `test:e2e` for the comprehensive
-interaction and layout run.
+Choose one command by the risk introduced, not by habit:
+
+| Change area | Browser check |
+|---|---|
+| Rules, probability, validation, API, data, or copy | None; use a focused unit test |
+| Pitch or game-screen geometry | `test:e2e:layout` |
+| Pointer, hover, touch, or control sizing | `test:e2e:input` |
+| Legend, action log, compact controls, block dialog | `test:e2e:overlays` |
+| Login, home, help, settings | `test:e2e:home` |
+| Branch review or player cards | `test:e2e:branches` |
+| Tutorial flow | `test:e2e:tutorial` |
+| Puzzle creator | `test:e2e:admin` |
+| Small general browser confidence check | `test:e2e` |
+
+Do not run Playwright merely because frontend code changed. Use it only when
+the change materially depends on real browser geometry, viewport, input
+capability, or a multi-screen browser flow.
 
 **Not wired into `npm run verify`, deliberately.** The specs need browser
 binaries that `npm install` does not fetch, so including them would fail a
-clean checkout for a reason unrelated to the change under test. Run them by
-hand when touching game-screen layout, `Pitch.tsx`, or anything under a
-`(pointer: coarse)` media query.
+clean checkout for a reason unrelated to the change under test. Run the
+matching focused command by hand for those risks. The full matrix is not
+routine PR validation.
 
 Why it exists: vitest runs in jsdom, which has no layout engine and measures
 every box as 0×0. It cannot catch a single sizing regression. When the harness
@@ -70,7 +129,7 @@ was added it found 11.2px pitch squares, a 420px dialog on a 360px screen, and
 
 Notes:
 
-- Workers are capped and the timeout raised to 60s. Nine projects share one
+- Workers are capped and the timeout raised to 60s. Projects share one
   Vite dev server, and uncapped workers contend on it hard enough to time out
   `startGame()` and report failures that pass when run serially.
 - Address squares by `data-square` ("13G"), not `aria-label` — the label gains
@@ -78,6 +137,30 @@ Notes:
 - "Did the piece move?" is not a valid commit assertion. A piece keeps its
   board position for the whole activation and is relocated only when the
   activation is finalised. Assert on spent MA and `.square--path`.
+
+### Scheduled/release matrix
+
+The old config multiplied roughly 65 test declarations by 11 browser projects,
+scheduling about 715 cases. Many then performed setup before discovering a
+runtime `test.skip`, so they still consumed time without adding coverage.
+
+`playwright.full.config.ts` uses a coverage matrix instead. Desktop and iPhone
+SE are the broad representatives; Galaxy S8, landscape phone, tablet, desktop
+touch, and the wide mobile-browser viewport run only the specs that can expose
+their particular boundary. It currently schedules 232 cases instead of about
+715 (68% fewer), preserving distinct geometry and input risks while removing
+redundant mid-sized portrait-phone repetition.
+
+The complete matrix is suitable for a daily job or explicit release check:
+
+```bash
+npm --prefix client run test:e2e:full
+```
+
+If a CI runner needs a shorter wall-clock time, split the same deterministic
+matrix across jobs with Playwright sharding, for example `-- --shard=1/2` and
+`-- --shard=2/2`. Do not promote a focused failure into this full run merely to
+collect more output.
 
 For docs-only changes, build/lint/test are not usually necessary, but at least
 check `git diff --stat` and file paths.

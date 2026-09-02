@@ -15,7 +15,7 @@ test.describe('Puzzle Creator workbench', () => {
 
   test.beforeEach(async ({ page }, testInfo) => {
     test.skip(
-      !['iphone-14', 'ipad-mini', 'desktop'].includes(testInfo.project.name),
+      !['iphone-se', 'ipad-mini', 'desktop'].includes(testInfo.project.name),
       'The creator workbench is covered at phone, tablet, and desktop widths.',
     );
     await openPuzzleCreator(page);
