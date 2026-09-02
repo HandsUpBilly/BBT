@@ -426,6 +426,11 @@ body,
   max-width: 100% !important;
 }
 
+/* Google's standard button reserves a 26px logo rail inside its centred label area. */
+.identity-login__google-button [role='button'] span:first-of-type:not([id]) {
+  transform: translateX(-13px);
+}
+
 .identity-login__divider {
   height: 1px;
   background: var(--color-border-subtle);
