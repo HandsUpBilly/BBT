@@ -32,6 +32,7 @@ import { ReportProblemModal } from './ReportProblemModal';
 import { ContactModal } from './ContactModal';
 import { AboutDialog } from './AboutDialog';
 import { ReleaseNotesDialog } from './ReleaseNotesDialog';
+import { LoginDialog } from './LoginDialog';
 import { releaseNotes } from './releaseNotes';
 import { BrandLogo } from './BrandLogo';
 import { SettingsScreen } from './SettingsScreen';
@@ -193,99 +194,32 @@ interface IdentityGateProps {
 }
 
 function IdentityGate({ authConfigured, googleSignedIn, mountGoogleSignInButton, onAlias }: IdentityGateProps) {
-  const [guestMode, setGuestMode] = useState(false);
-  const [alias, setAlias] = useState('');
-  const [googleSignInFailed, setGoogleSignInFailed] = useState(false);
-  const googleButtonRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const container = googleButtonRef.current;
-    if (!authConfigured || !container || googleSignedIn) return;
-    let cancelled = false;
-    let resizeObserver: ResizeObserver | null = null;
-    const actions = container.parentElement;
-
-    void mountGoogleSignInButton(container)
-      .then(() => {
-        if (cancelled) return;
-        const iframe = container.querySelector('iframe');
-        if (!iframe) return;
-
-        const syncActionWidth = () => {
-          const style = window.getComputedStyle(iframe);
-          const horizontalMargins = (Number.parseFloat(style.marginLeft) || 0)
-            + (Number.parseFloat(style.marginRight) || 0);
-          const googleVisibleWidth = iframe.getBoundingClientRect().width + horizontalMargins;
-          const containerWidth = container.getBoundingClientRect().width;
-          actions?.style.setProperty(
-            '--identity-action-width',
-            `${Math.round(Math.max(containerWidth, googleVisibleWidth))}px`,
-          );
-        };
-
-        syncActionWidth();
-        resizeObserver = new ResizeObserver(syncActionWidth);
-        resizeObserver.observe(iframe);
-      })
-      .catch(() => {
-        if (!cancelled) setGoogleSignInFailed(true);
-      });
-    return () => {
-      cancelled = true;
-      resizeObserver?.disconnect();
-      actions?.style.removeProperty('--identity-action-width');
-      container.replaceChildren();
-    };
-  }, [authConfigured, googleSignedIn, mountGoogleSignInButton]);
-
-  function submitAlias() {
-    const trimmed = alias.trim();
-    if (!trimmed) return;
-    onAlias(trimmed);
-  }
-
-  const showAliasEntry = googleSignedIn || guestMode;
+  const [loginOpen, setLoginOpen] = useState(false);
 
   return (
     <div className="identity-gate">
       <div className="identity-gate__shell">
         <h1 className="identity-gate__title">Turn 16</h1>
-        <div className={`identity-gate__panel${showAliasEntry ? ' identity-gate__panel--alias' : ''}`}>
-          {!googleSignedIn && (
-            <div className="identity-gate__actions">
-              {authConfigured && !googleSignInFailed
-                ? <div ref={googleButtonRef} className="identity-gate__google-button" />
-                : <button className="btn btn--primary" disabled>Google Login Unavailable</button>}
-              <button className="btn btn--secondary" onClick={() => setGuestMode(true)}>
-                Play As Guest
-              </button>
-            </div>
-          )}
-
-          {showAliasEntry && (
-            <div className="identity-gate__guest">
-              <label className="identity-gate__label" htmlFor="player-alias">Choose your public alias</label>
-              <p className="identity-gate__alias-help">This is the name shown on leaderboards and reports.</p>
-              <div className="identity-gate__guest-row">
-                <input
-                  id="player-alias"
-                  className="identity-gate__input"
-                  type="text"
-                  maxLength={32}
-                  placeholder="e.g. Endzone Expert"
-                  value={alias}
-                  onChange={e => setAlias(e.target.value)}
-                  onKeyDown={e => e.key === 'Enter' && submitAlias()}
-                  autoFocus
-                />
-                <button className="btn btn--primary" disabled={!alias.trim()} onClick={submitAlias}>
-                  Continue
-                </button>
-              </div>
-            </div>
-          )}
+        <div className="identity-gate__panel">
+          <button
+            type="button"
+            className="btn btn--primary identity-gate__login"
+            aria-haspopup="dialog"
+            onClick={() => setLoginOpen(true)}
+          >
+            Log in
+          </button>
         </div>
       </div>
+      {loginOpen && (
+        <LoginDialog
+          authConfigured={authConfigured}
+          googleSignedIn={googleSignedIn}
+          mountGoogleSignInButton={mountGoogleSignInButton}
+          onAlias={onAlias}
+          onClose={() => setLoginOpen(false)}
+        />
+      )}
     </div>
   );
 }

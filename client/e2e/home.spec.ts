@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { boxOf, hasHorizontalOverflow } from './helpers';
+import { boxOf, hasHorizontalOverflow, signInAsGuest } from './helpers';
 
 async function footerPlacement(page: import('@playwright/test').Page) {
   return page.locator('.app-footer').evaluate((footer) => {
@@ -24,9 +24,7 @@ function expectFooterAtPageBottom(footer: Awaited<ReturnType<typeof footerPlacem
 test.describe('home account controls', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/');
-    await page.getByRole('button', { name: /play as guest/i }).click();
-    await page.locator('.identity-gate__input').fill('E2E Tester');
-    await page.getByRole('button', { name: /^continue$/i }).click();
+    await signInAsGuest(page, 'E2E Tester');
   });
 
   test('the account trigger is prominent and anchored in the masthead corner', async ({ page }) => {
@@ -116,17 +114,30 @@ test('the signed-out footer stays at the bottom of the page', async ({ page }) =
 
 test('the guest alias form gives the name field useful writing room', async ({ page }) => {
   await page.goto('/');
+  await page.getByRole('button', { name: /^log in$/i }).click();
   await page.getByRole('button', { name: /play as guest/i }).click();
 
-  const panel = await boxOf(page.locator('.identity-gate__panel--alias'));
-  const input = await boxOf(page.locator('.identity-gate__input'));
+  const panel = await boxOf(page.locator('.identity-login__dialog'));
+  const input = await boxOf(page.locator('.identity-login__input'));
   const viewportWidth = page.viewportSize()?.width ?? 0;
 
   if (viewportWidth > 560) {
-    expect(panel.width, 'expanded alias panel width').toBeGreaterThanOrEqual(400);
-    expect(input.width, 'desktop alias input width').toBeGreaterThanOrEqual(240);
+    expect(panel.width, 'alias dialog width').toBeGreaterThanOrEqual(400);
+    expect(input.width, 'desktop alias input width').toBeGreaterThanOrEqual(330);
   } else {
     expect(input.width, 'mobile alias input width').toBeGreaterThanOrEqual(panel.width - 40);
   }
   expect(await hasHorizontalOverflow(page)).toBe(false);
+});
+
+test('the signed-out screen uses one launcher and equal-width login choices', async ({ page }) => {
+  await page.goto('/');
+  await expect(page.getByRole('button', { name: /^log in$/i })).toBeVisible();
+  await expect(page.getByRole('button', { name: /play as guest/i })).toBeHidden();
+
+  await page.getByRole('button', { name: /^log in$/i }).click();
+  const options = page.locator('.identity-login__option');
+  const first = await boxOf(options.first());
+  const last = await boxOf(options.last());
+  expect(Math.abs(first.width - last.width), 'login option widths').toBeLessThanOrEqual(1);
 });

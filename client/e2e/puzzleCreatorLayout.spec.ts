@@ -1,11 +1,9 @@
 import { test, expect, type Page } from '@playwright/test';
-import { boxOf, hasHorizontalOverflow } from './helpers';
+import { boxOf, hasHorizontalOverflow, signInAsGuest } from './helpers';
 
 async function openPuzzleCreator(page: Page) {
   await page.goto('/');
-  await page.getByRole('button', { name: /play as guest/i }).click();
-  await page.locator('.identity-gate__input').fill('Creator Layout QA');
-  await page.getByRole('button', { name: /^continue$/i }).click();
+  await signInAsGuest(page, 'Creator Layout QA');
   await page.getByRole('button', { name: 'Admin' }).click();
   await page.locator('.editor__layout').waitFor({ state: 'visible' });
 }

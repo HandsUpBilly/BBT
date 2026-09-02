@@ -43,10 +43,12 @@ Identity can be:
 - Guest alias from localStorage key `bbt.guestName.v1` (the legacy key remains
   for compatibility).
 
-The landing action panel stays compact while it contains only the Google and
-guest buttons, then expands when the public-alias form appears so the name
-field has useful writing room. On phone widths the field and Continue button
-stack within the existing landing-page gutters.
+The landing art exposes one compact **Log in** action. It opens a focus-trapped
+choice dialog containing Google's SDK-rendered sign-in control and an equally
+wide **Play as guest** option. Choosing either route without an existing alias
+continues to a full-width public-alias field inside the same dialog. Escape,
+the Close action, and the backdrop dismiss the choice and return focus to the
+landing button.
 
 `UserMenu` and leaderboards display the player-chosen public alias, never a
 Google profile name. A signed-in player may explicitly choose their verified

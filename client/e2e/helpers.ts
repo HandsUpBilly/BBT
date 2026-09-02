@@ -48,6 +48,13 @@ export async function boxOf(locator: Locator): Promise<Box> {
   });
 }
 
+export async function signInAsGuest(page: Page, playerName: string): Promise<void> {
+  await page.getByRole('button', { name: /^log in$/i }).click();
+  await page.getByRole('button', { name: /play as guest/i }).click();
+  await page.locator('.identity-login__input').fill(playerName);
+  await page.getByRole('button', { name: /^continue$/i }).click();
+}
+
 /**
  * Sign in as a guest and start the featured series, leaving the page on the
  * game screen with the pitch rendered.
@@ -58,11 +65,7 @@ export async function boxOf(locator: Locator): Promise<Box> {
 export async function startGame(page: Page, playerName = 'E2E Tester'): Promise<void> {
   await page.goto('/');
 
-  await page.getByRole('button', { name: /play as guest/i }).click();
-
-  const nameInput = page.locator('.identity-gate__input');
-  await nameInput.fill(playerName);
-  await page.getByRole('button', { name: /^continue$/i }).click();
+  await signInAsGuest(page, playerName);
 
   await page.getByRole('button', { name: /^(start series|tutorial|play)$/i }).click();
   await page.getByRole('button', { name: /^(play this drill|play)$/i }).first().click();
@@ -92,9 +95,7 @@ export async function startScenario(
 ): Promise<void> {
   await page.goto('/');
 
-  await page.getByRole('button', { name: /play as guest/i }).click();
-  await page.locator('.identity-gate__input').fill(playerName);
-  await page.getByRole('button', { name: /^continue$/i }).click();
+  await signInAsGuest(page, playerName);
 
   await page.getByRole('tab', { name: /single plays|free play/i }).click();
   await page.locator('.challenge-tile', { hasText: scenarioName })
