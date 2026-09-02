@@ -134,7 +134,7 @@ function LockstepPicture() {
         <rect x="355" y="89" width="104" height="62" rx="9" fill="none" stroke="#d9854e" strokeWidth="4" strokeDasharray="7 5" />
         <text x="259" y="232" className="help-screen__svg-label" textAnchor="middle">COPIED UNTIL THE BOARD CHANGES</text>
       </svg>
-      <figcaption>Lockstep copies a shared plan while it stays legal. A branch stops before entering a square that would create a forced dodge next.</figcaption>
+      <figcaption>Lockstep copies a shared plan while it stays legal and needs the same dice. A branch stops before entering a square that would create a different forced dodge next.</figcaption>
     </figure>
   );
 }

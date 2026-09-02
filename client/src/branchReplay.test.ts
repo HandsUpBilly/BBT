@@ -3,6 +3,8 @@ import type { GameState } from './types';
 import { applyClick, classifyClick } from './useGameState';
 import {
   addedRollCount,
+  addedRollSignature,
+  addedRollsMatch,
   boardHash,
   groupByBoard,
   positionBeforeExtraTackleZone,
@@ -172,6 +174,30 @@ describe('addedRollCount', () => {
 
     expect(addedRollCount(proneBranch, safe)).toBe(0);
     expect(addedRollCount(standingBranch, risky)).toBe(2);
+  });
+
+  it('distinguishes matching pickup dice from a changed pickup target', () => {
+    const looseBall = { col: 7, row: 11 };
+    const unmarked = select(makeState([
+      humanThrower({ position: { col: 5, row: 11 } }),
+    ], 'human', looseBall), 5, 11);
+    const alsoUnmarked = select(makeState([
+      humanThrower({ position: { col: 5, row: 11 } }),
+      orcBlocker({ position: { col: 9, row: 12 } }),
+    ], 'human', looseBall), 5, 11);
+    const marked = select(makeState([
+      humanThrower({ position: { col: 5, row: 11 } }),
+      orcBlocker({ position: { col: 8, row: 11 } }),
+    ], 'human', looseBall), 5, 11);
+    const unmarkedAfter = applyClick(unmarked, looseBall);
+    const alsoUnmarkedAfter = applyClick(alsoUnmarked, looseBall);
+    const markedAfter = applyClick(marked, looseBall);
+
+    expect(addedRollSignature(unmarked, unmarkedAfter)).toEqual(['pickup:3']);
+    expect(addedRollSignature(alsoUnmarked, alsoUnmarkedAfter)).toEqual(['pickup:3']);
+    expect(addedRollSignature(marked, markedAfter)).toEqual(['pickup:4']);
+    expect(addedRollsMatch(unmarked, unmarkedAfter, alsoUnmarked, alsoUnmarkedAfter)).toBe(true);
+    expect(addedRollsMatch(unmarked, unmarkedAfter, marked, markedAfter)).toBe(false);
   });
 });
 
