@@ -131,13 +131,23 @@ test('@smoke the guest alias form gives the name field useful writing room', asy
 });
 
 test('the signed-out screen uses one launcher and equal-width login choices', async ({ page }) => {
+  await page.route('**/api/auth/config', route => route.fulfill({
+    contentType: 'application/json',
+    body: JSON.stringify({ google: true, discord: true, email: true }),
+  }));
   await page.goto('/');
   await expect(page.getByRole('button', { name: /^log in$/i })).toBeVisible();
   await expect(page.getByRole('button', { name: /play as guest/i })).toBeHidden();
 
   await page.getByRole('button', { name: /^log in$/i }).click();
-  const options = page.locator('.identity-login__option');
-  const first = await boxOf(options.first());
-  const last = await boxOf(options.last());
-  expect(Math.abs(first.width - last.width), 'login option widths').toBeLessThanOrEqual(1);
+  const google = await boxOf(page.locator('.identity-login__google-button'));
+  const discord = await boxOf(page.getByRole('button', { name: 'Log in with Discord' }));
+  const email = await boxOf(page.getByRole('button', { name: 'Log in with email' }));
+  expect(Math.abs(google.width - discord.width), 'Google and Discord widths').toBeLessThanOrEqual(1);
+  expect(Math.abs(discord.width - email.width), 'Discord and email widths').toBeLessThanOrEqual(1);
+  expect(Math.abs(google.height - discord.height), 'Google and Discord heights').toBeLessThanOrEqual(1);
+  expect(await page.locator('.identity-login__google-button').evaluate(element => (
+    getComputedStyle(element).backgroundColor
+  ))).not.toBe('rgb(255, 255, 255)');
+  expect(await hasHorizontalOverflow(page)).toBe(false);
 });

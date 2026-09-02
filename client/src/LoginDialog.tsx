@@ -29,6 +29,7 @@ export function LoginDialog({
   onClose,
 }: Props) {
   const [guestMode, setGuestMode] = useState(false);
+  const [emailMode, setEmailMode] = useState(false);
   const [alias, setAlias] = useState('');
   const [email, setEmail] = useState('');
   const [emailSent, setEmailSent] = useState(false);
@@ -42,7 +43,7 @@ export function LoginDialog({
 
   useEffect(() => {
     const container = googleButtonRef.current;
-    if (!providers.google || !container || signedIn || guestMode || pendingMagicLink) return;
+    if (!providers.google || !container || signedIn || guestMode || emailMode || pendingMagicLink) return;
     let cancelled = false;
     void mountGoogleSignInButton(container).catch(() => {
       if (!cancelled) setGoogleSignInFailed(true);
@@ -51,7 +52,7 @@ export function LoginDialog({
       cancelled = true;
       container.replaceChildren();
     };
-  }, [providers.google, signedIn, guestMode, pendingMagicLink, mountGoogleSignInButton]);
+  }, [providers.google, signedIn, guestMode, emailMode, pendingMagicLink, mountGoogleSignInButton]);
 
   function submitAlias() {
     const trimmed = alias.trim();
@@ -116,32 +117,40 @@ export function LoginDialog({
         ) : !showAliasEntry ? (
           <>
             <header className="identity-login__header">
-              <span className="identity-login__kicker">Player access</span>
-              <h2 id="identity-login-title">Choose how to play</h2>
-              <p id="identity-login-description">Sign in to keep your profile and rankings across devices, or play as a guest on this device.</p>
+              <h2 id="identity-login-title">Log in</h2>
+              <p id="identity-login-description">Keep your profile and rankings across devices.</p>
             </header>
 
             <div className="identity-login__options">
               {error && <p className="identity-login__error" role="alert">{error}</p>}
-              {providers.google && !googleSignInFailed && <div ref={googleButtonRef} className="identity-login__google-button" />}
-              {providers.discord && (
-                <button type="button" className="btn identity-login__option identity-login__discord" onClick={onDiscord}>
-                  <svg className="identity-login__discord-mark" viewBox="0 0 24 24" aria-hidden="true">
-                    <path d="M7.2 7.6A15 15 0 0 1 10 6.8l.4.8a10 10 0 0 1 3.2 0l.4-.8a15 15 0 0 1 2.8.8c1.8 2.6 2.3 5.1 2 7.6a11 11 0 0 1-3.5 1.8l-.8-1.1c.5-.2 1-.5 1.4-.8a9 9 0 0 1-7.8 0c.4.3.9.6 1.4.8L8.7 17a11 11 0 0 1-3.5-1.8c-.3-2.5.2-5 2-7.6Z" />
-                    <circle cx="9.4" cy="12.2" r="1.15" />
-                    <circle cx="14.6" cy="12.2" r="1.15" />
-                  </svg>
-                  Continue with Discord
-                </button>
-              )}
-              {providers.email && (
-                emailSent ? (
+              {!emailMode ? (
+                <div className="identity-login__provider-list">
+                  {providers.google && !googleSignInFailed && <div ref={googleButtonRef} className="identity-login__google-button" />}
+                  {providers.discord && (
+                    <button type="button" className="identity-login__provider" onClick={onDiscord}>
+                      <svg className="identity-login__provider-mark identity-login__discord-mark" viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M7.2 7.6A15 15 0 0 1 10 6.8l.4.8a10 10 0 0 1 3.2 0l.4-.8a15 15 0 0 1 2.8.8c1.8 2.6 2.3 5.1 2 7.6a11 11 0 0 1-3.5 1.8l-.8-1.1c.5-.2 1-.5 1.4-.8a9 9 0 0 1-7.8 0c.4.3.9.6 1.4.8L8.7 17a11 11 0 0 1-3.5-1.8c-.3-2.5.2-5 2-7.6Z" />
+                        <circle cx="9.4" cy="12.2" r="1.15" />
+                        <circle cx="14.6" cy="12.2" r="1.15" />
+                      </svg>
+                      <span>Log in with Discord</span>
+                    </button>
+                  )}
+                  {providers.email && (
+                    <button type="button" className="identity-login__provider" onClick={() => setEmailMode(true)}>
+                      <span className="identity-login__provider-mark identity-login__email-mark" aria-hidden="true">@</span>
+                      <span>Log in with email</span>
+                    </button>
+                  )}
+                </div>
+              ) : emailSent ? (
                   <div className="identity-login__sent" role="status">
                     <strong>Check your inbox</strong>
                     <span>The link expires in 15 minutes. You can close this dialog.</span>
                   </div>
                 ) : (
                   <div className="identity-login__email">
+                    <button type="button" className="identity-login__back" onClick={() => setEmailMode(false)}>Back to login options</button>
                     <label className="identity-login__label" htmlFor="login-email">Email address</label>
                     <div className="identity-login__email-row">
                       <input
@@ -159,10 +168,13 @@ export function LoginDialog({
                       </button>
                     </div>
                   </div>
-                )
               )}
-              <div className="identity-login__divider"><span>or</span></div>
-              <button type="button" className="btn btn--secondary identity-login__option" onClick={() => setGuestMode(true)}>Play as guest</button>
+              {!emailMode && (
+                <>
+                  <div className="identity-login__divider"><span>or continue locally</span></div>
+                  <button type="button" className="identity-login__guest" onClick={() => setGuestMode(true)}>Play as guest</button>
+                </>
+              )}
             </div>
           </>
         ) : (
