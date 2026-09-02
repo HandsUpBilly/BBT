@@ -143,9 +143,12 @@ test('the signed-out screen uses one launcher and equal-width login choices', as
   const google = await boxOf(page.locator('.identity-login__google-button'));
   const discord = await boxOf(page.getByRole('button', { name: 'Log in with Discord' }));
   const email = await boxOf(page.getByRole('button', { name: 'Log in with email' }));
+  const emailMark = await boxOf(page.locator('.identity-login__email-mark'));
   expect(Math.abs(google.width - discord.width), 'Google and Discord widths').toBeLessThanOrEqual(1);
   expect(Math.abs(discord.width - email.width), 'Discord and email widths').toBeLessThanOrEqual(1);
   expect(Math.abs(google.height - discord.height), 'Google and Discord heights').toBeLessThanOrEqual(1);
+  expect(emailMark.left - email.left, 'email icon uses the provider icon rail').toBeGreaterThanOrEqual(16);
+  expect(emailMark.left - email.left, 'email icon uses the provider icon rail').toBeLessThanOrEqual(20);
   expect(await page.locator('.identity-login__google-button').evaluate(element => {
     const style = getComputedStyle(element);
     return { backgroundColor: style.backgroundColor, borderWidth: style.borderWidth };
