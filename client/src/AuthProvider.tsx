@@ -162,7 +162,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     googleId.initialize({ client_id: GOOGLE_CLIENT_ID, callback: response => { void exchangeGoogleCredential(response.credential); } });
     container.replaceChildren();
     googleId.renderButton(container, {
-      theme: 'outline', size: 'large', text: 'signin_with', shape: 'rectangular',
+      theme: 'filled_black', size: 'large', text: 'signin_with', shape: 'rectangular',
       width: Math.max(220, Math.floor(container.getBoundingClientRect().width)),
     });
   }, [exchangeGoogleCredential, providers.google]);

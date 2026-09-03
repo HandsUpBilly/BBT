@@ -207,12 +207,14 @@ body,
 
 .identity-login__dialog {
   position: relative;
-  width: min(430px, 100%);
-  padding: 32px;
+  /* 478px leaves an exact 400px provider rail after padding, matching the
+     maximum width supported by Google's rendered button. */
+  width: min(478px, 100%);
+  padding: 36px 38px 32px;
   color: var(--color-text);
   background:
-    linear-gradient(145deg, rgba(197, 75, 45, 0.08), transparent 42%),
-    var(--color-surface-2);
+    linear-gradient(180deg, rgba(255, 255, 255, 0.025), transparent 34%),
+    #101512;
   border: 1px solid var(--color-border-strong);
   border-top: 2px solid var(--color-accent);
   border-radius: var(--radius-panel);
@@ -241,8 +243,10 @@ body,
 
 .identity-login__header {
   display: grid;
-  gap: 9px;
-  padding-right: 44px;
+  justify-items: center;
+  gap: 10px;
+  padding: 0 44px;
+  text-align: center;
 }
 
 .identity-login__kicker {
@@ -258,25 +262,24 @@ body,
   margin: 0;
   color: var(--color-text-strong);
   font-family: var(--font-display);
-  font-size: clamp(1.7rem, 6vw, 2.2rem);
+  font-size: clamp(2rem, 7vw, 2.65rem);
   font-weight: 600;
-  line-height: 1;
-  text-transform: uppercase;
+  line-height: 1.05;
 }
 
 .identity-login__header p {
   max-width: 38ch;
   margin: 0;
   color: var(--color-text-muted);
-  font-size: 0.86rem;
+  font-size: 0.94rem;
   line-height: 1.5;
 }
 
 .identity-login__options,
 .identity-login__alias {
   display: grid;
-  gap: 12px;
-  margin-top: 24px;
+  gap: 16px;
+  margin-top: 28px;
 }
 
 .identity-login__option,
@@ -285,31 +288,70 @@ body,
   min-height: 44px;
 }
 
-.identity-login__discord {
+.identity-login__provider-list {
+  display: grid;
+  gap: 12px;
+}
+
+.identity-login__provider {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 10px;
-  color: #fff;
-  background: #5865f2;
-  border-color: #7480f5;
+  gap: 11px;
+  width: 100%;
+  min-height: 48px;
+  padding: 8px 18px;
+  color: var(--color-text-strong);
+  background: #0c110f;
+  border: 1px solid #465049;
+  border-radius: var(--radius-input);
+  font-family: var(--font-display);
+  font-size: 1rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  cursor: pointer;
+  transition: border-color 140ms ease, background-color 140ms ease, transform 100ms ease;
 }
 
-.identity-login__discord:hover,
-.identity-login__discord:focus-visible {
-  background: #6874f4;
+.identity-login__provider:hover,
+.identity-login__provider:focus-visible {
+  background: #151b17;
+  border-color: #737d75;
+  outline: none;
+}
+
+.identity-login__provider:focus-visible {
+  box-shadow: 0 0 0 2px rgba(197, 75, 45, 0.32);
+}
+
+.identity-login__provider:active {
+  transform: translateY(1px);
+}
+
+.identity-login__provider-mark {
+  flex: 0 0 22px;
 }
 
 .identity-login__discord-mark {
   width: 22px;
   height: 22px;
   overflow: visible;
-  fill: currentColor;
+  fill: #747fef;
 }
 
-.identity-login__discord-mark circle { fill: #5865f2; }
-.identity-login__discord:hover .identity-login__discord-mark circle,
-.identity-login__discord:focus-visible .identity-login__discord-mark circle { fill: #6874f4; }
+.identity-login__discord-mark circle { fill: #0c110f; }
+.identity-login__provider:hover .identity-login__discord-mark circle,
+.identity-login__provider:focus-visible .identity-login__discord-mark circle { fill: #151b17; }
+
+.identity-login__email-mark {
+  display: grid;
+  place-items: center;
+  color: var(--color-accent);
+  font-family: var(--font-display);
+  font-size: 1.35rem;
+  font-weight: 600;
+  line-height: 1;
+}
 
 .identity-login__email {
   display: grid;
@@ -361,15 +403,24 @@ body,
 .identity-login__google-button {
   display: grid;
   place-items: center;
+  width: 100%;
+  min-height: 48px;
   min-width: 0;
+  overflow: hidden;
+  background: #0c110f;
+  border: 1px solid #465049;
+  border-radius: var(--radius-input);
+  color-scheme: dark;
 }
 
 .identity-login__google-button > div {
   width: 100% !important;
+  min-width: 100% !important;
 }
 
 .identity-login__google-button iframe {
-  max-width: none;
+  width: 100% !important;
+  max-width: 100% !important;
 }
 
 .identity-login__divider {
@@ -377,8 +428,9 @@ body,
   grid-template-columns: 1fr auto 1fr;
   align-items: center;
   gap: 10px;
-  color: var(--color-text-disabled);
-  font-size: 0.68rem;
+  color: #929a94;
+  font-size: 0.66rem;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
 }
 
@@ -387,6 +439,40 @@ body,
   height: 1px;
   content: '';
   background: var(--color-border-subtle);
+}
+
+.identity-login__guest,
+.identity-login__back {
+  justify-self: center;
+  padding: 4px 8px;
+  color: #e18a74;
+  background: transparent;
+  border: 0;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.identity-login__guest {
+  min-height: 40px;
+  font-family: var(--font-display);
+  font-size: 1rem;
+}
+
+.identity-login__back {
+  justify-self: start;
+  margin: 0 0 4px -8px;
+  font-size: 0.78rem;
+}
+
+.identity-login__guest:hover,
+.identity-login__guest:focus-visible,
+.identity-login__back:hover,
+.identity-login__back:focus-visible {
+  color: #f0ab99;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+  outline: none;
 }
 
 .identity-login__label {
@@ -411,6 +497,10 @@ body,
 @media (max-width: 480px) {
   .identity-login__dialog {
     padding: 26px 20px 22px;
+  }
+
+  .identity-login__header {
+    padding-inline: 28px;
   }
 
   .identity-login__email-row {

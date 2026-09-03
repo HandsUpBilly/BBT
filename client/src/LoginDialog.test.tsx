@@ -30,15 +30,16 @@ describe('LoginDialog', () => {
   it('offers Google, Discord, email, and guest access inside a labelled modal', async () => {
     renderDialog();
 
-    expect(screen.getByRole('dialog', { name: 'Choose how to play' })).toBeTruthy();
+    expect(screen.getByRole('dialog', { name: 'Log in' })).toBeTruthy();
     expect(await screen.findByRole('button', { name: 'Sign in with Google' })).toBeTruthy();
-    expect(screen.getByRole('button', { name: 'Continue with Discord' })).toBeTruthy();
-    expect(screen.getByRole('textbox', { name: 'Email address' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Log in with Discord' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Log in with email' })).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Play as guest' })).toBeTruthy();
   });
 
   it('sends a magic link and shows a neutral inbox confirmation', async () => {
     const { props } = renderDialog();
+    fireEvent.click(screen.getByRole('button', { name: 'Log in with email' }));
     fireEvent.change(screen.getByRole('textbox', { name: 'Email address' }), { target: { value: 'coach@example.com' } });
     fireEvent.click(screen.getByRole('button', { name: 'Email link' }));
     await waitFor(() => expect(props.onSendMagicLink).toHaveBeenCalledWith('coach@example.com'));
