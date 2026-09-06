@@ -27,6 +27,25 @@ function cloneScenario(scenario: Scenario): Scenario {
   return structuredClone(scenario);
 }
 
+/**
+ * Bundles the live draft data (scenarios + series) as one JSON file, keyed by
+ * ID so each entry maps 1:1 onto a checked-in `client/src/scenarios/<id>.json`
+ * or `client/src/series/<id>.json` file for reconciliation.
+ */
+function downloadEditorExport(scenarios: Scenario[], series: SeriesDefinition[]): void {
+  const byId = <T extends { id: string }>(items: T[]): Record<string, T> =>
+    Object.fromEntries(items.map(item => [item.id, item]));
+
+  const payload = { scenarios: byId(scenarios), series: byId(series) };
+  const json = JSON.stringify(payload, null, 2);
+  const url = URL.createObjectURL(new Blob([json], { type: 'application/json;charset=utf-8' }));
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = 'turn-16-editor-export.json';
+  link.click();
+  URL.revokeObjectURL(url);
+}
+
 function emptyScenario(existingIds: string[]): Scenario {
   return {
     id: nextScenarioId(existingIds),
@@ -557,7 +576,16 @@ export function PuzzleEditor({ onBack, onPlay, onReport, previewScenario, idToke
               <span className="editor__panel-number">01</span>
               <h2>Puzzle Library</h2>
             </div>
-            <button className="btn btn--secondary" onClick={createNew}>New</button>
+            <div className="editor__panel-header-actions">
+              <button
+                className="btn btn--secondary"
+                onClick={() => downloadEditorExport(scenarios, series)}
+                title="Download every puzzle and series as one JSON file"
+              >
+                Download all
+              </button>
+              <button className="btn btn--secondary" onClick={createNew}>New</button>
+            </div>
           </div>
           <div className="editor__puzzle-tools">
             <input
