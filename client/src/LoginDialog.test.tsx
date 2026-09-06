@@ -35,6 +35,7 @@ describe('LoginDialog', () => {
     expect(screen.getByRole('button', { name: 'Log in with Discord' })).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Log in with email' })).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Play as guest' })).toBeTruthy();
+    expect(screen.queryByText('or continue locally')).toBeNull();
   });
 
   it('sends a magic link and shows a neutral inbox confirmation', async () => {

@@ -9,12 +9,18 @@ interface StoredAuth { user: AuthUser; idToken: string }
 interface SessionResponse { user: AuthUser; token: string }
 interface GoogleCredentialResponse { credential?: string }
 interface GoogleAccountsId {
-  initialize(config: { client_id: string; callback: (response: GoogleCredentialResponse) => void }): void;
+  initialize(config: {
+    client_id: string;
+    callback: (response: GoogleCredentialResponse) => void;
+    use_fedcm_for_button?: boolean;
+  }): void;
   renderButton(parent: HTMLElement, options: {
-    theme: 'outline' | 'filled_blue' | 'filled_black';
+    type: 'standard' | 'icon';
+    theme: 'outline' | 'filled_blue' | 'filled_black' | 'outline_dark';
     size: 'large' | 'medium' | 'small';
-    text: 'signin_with';
+    text: 'signin_with' | 'signup_with' | 'continue_with' | 'signin';
     shape: 'rectangular';
+    logo_alignment?: 'left' | 'center';
     width?: number;
   }): void;
   disableAutoSelect(): void;
@@ -159,10 +165,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await loadGoogleScript();
     const googleId = window.google?.accounts?.id;
     if (!googleId) return;
-    googleId.initialize({ client_id: GOOGLE_CLIENT_ID, callback: response => { void exchangeGoogleCredential(response.credential); } });
+    googleId.initialize({
+      client_id: GOOGLE_CLIENT_ID,
+      callback: response => { void exchangeGoogleCredential(response.credential); },
+      use_fedcm_for_button: false,
+    });
     container.replaceChildren();
     googleId.renderButton(container, {
-      theme: 'filled_black', size: 'large', text: 'signin_with', shape: 'rectangular',
+      type: 'standard', theme: 'outline_dark', size: 'large', text: 'signin_with', shape: 'rectangular',
+      logo_alignment: 'left',
       width: Math.max(220, Math.floor(container.getBoundingClientRect().width)),
     });
   }, [exchangeGoogleCredential, providers.google]);

@@ -171,7 +171,7 @@ export function LoginDialog({
               )}
               {!emailMode && (
                 <>
-                  <div className="identity-login__divider"><span>or continue locally</span></div>
+                  <div className="identity-login__divider" aria-hidden="true" />
                   <button type="button" className="identity-login__guest" onClick={() => setGuestMode(true)}>Play as guest</button>
                 </>
               )}

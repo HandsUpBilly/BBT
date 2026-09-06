@@ -294,16 +294,17 @@ body,
 }
 
 .identity-login__provider {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 11px;
   width: 100%;
-  min-height: 48px;
-  padding: 8px 18px;
+  min-height: 40px;
+  padding: 4px 18px;
   color: var(--color-text-strong);
-  background: #0c110f;
-  border: 1px solid #465049;
+  background: #131314;
+  border: 1px solid #8e918f;
   border-radius: var(--radius-input);
   font-family: var(--font-display);
   font-size: 1rem;
@@ -315,8 +316,8 @@ body,
 
 .identity-login__provider:hover,
 .identity-login__provider:focus-visible {
-  background: #151b17;
-  border-color: #737d75;
+  background: #1b1c1d;
+  border-color: #b0b4b1;
   outline: none;
 }
 
@@ -329,6 +330,8 @@ body,
 }
 
 .identity-login__provider-mark {
+  position: absolute;
+  left: 18px;
   flex: 0 0 22px;
 }
 
@@ -339,9 +342,9 @@ body,
   fill: #747fef;
 }
 
-.identity-login__discord-mark circle { fill: #0c110f; }
+.identity-login__discord-mark circle { fill: #131314; }
 .identity-login__provider:hover .identity-login__discord-mark circle,
-.identity-login__provider:focus-visible .identity-login__discord-mark circle { fill: #151b17; }
+.identity-login__provider:focus-visible .identity-login__discord-mark circle { fill: #1b1c1d; }
 
 .identity-login__email-mark {
   display: grid;
@@ -404,12 +407,12 @@ body,
   display: grid;
   place-items: center;
   width: 100%;
-  min-height: 48px;
+  min-height: 40px;
   min-width: 0;
   overflow: hidden;
-  background: #0c110f;
-  border: 1px solid #465049;
-  border-radius: var(--radius-input);
+  background: transparent;
+  border: 0;
+  border-radius: 4px;
   color-scheme: dark;
 }
 
@@ -423,21 +426,13 @@ body,
   max-width: 100% !important;
 }
 
-.identity-login__divider {
-  display: grid;
-  grid-template-columns: 1fr auto 1fr;
-  align-items: center;
-  gap: 10px;
-  color: #929a94;
-  font-size: 0.66rem;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+/* Google's standard button reserves a 26px logo rail inside its centred label area. */
+.identity-login__google-button [role='button'] span:first-of-type:not([id]) {
+  transform: translateX(-13px);
 }
 
-.identity-login__divider::before,
-.identity-login__divider::after {
+.identity-login__divider {
   height: 1px;
-  content: '';
   background: var(--color-border-subtle);
 }
 

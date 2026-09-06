@@ -143,11 +143,20 @@ test('the signed-out screen uses one launcher and equal-width login choices', as
   const google = await boxOf(page.locator('.identity-login__google-button'));
   const discord = await boxOf(page.getByRole('button', { name: 'Log in with Discord' }));
   const email = await boxOf(page.getByRole('button', { name: 'Log in with email' }));
+  const emailMark = await boxOf(page.locator('.identity-login__email-mark'));
   expect(Math.abs(google.width - discord.width), 'Google and Discord widths').toBeLessThanOrEqual(1);
   expect(Math.abs(discord.width - email.width), 'Discord and email widths').toBeLessThanOrEqual(1);
   expect(Math.abs(google.height - discord.height), 'Google and Discord heights').toBeLessThanOrEqual(1);
-  expect(await page.locator('.identity-login__google-button').evaluate(element => (
+  expect(email.height, 'provider controls use Google\'s rendered button height').toBeGreaterThanOrEqual(39);
+  expect(email.height, 'provider controls use Google\'s rendered button height').toBeLessThanOrEqual(41);
+  expect(await page.getByRole('button', { name: 'Log in with email' }).evaluate(element => (
     getComputedStyle(element).backgroundColor
-  ))).not.toBe('rgb(255, 255, 255)');
+  ))).toBe('rgb(19, 19, 20)');
+  expect(emailMark.left - email.left, 'email icon uses the provider icon rail').toBeGreaterThanOrEqual(16);
+  expect(emailMark.left - email.left, 'email icon uses the provider icon rail').toBeLessThanOrEqual(20);
+  expect(await page.locator('.identity-login__google-button').evaluate(element => {
+    const style = getComputedStyle(element);
+    return { backgroundColor: style.backgroundColor, borderWidth: style.borderWidth };
+  })).toEqual({ backgroundColor: 'rgba(0, 0, 0, 0)', borderWidth: '0px' });
   expect(await hasHorizontalOverflow(page)).toBe(false);
 });
