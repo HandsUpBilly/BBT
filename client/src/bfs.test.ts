@@ -255,13 +255,13 @@ describe('push-back candidates', () => {
     expect(squares).toContainEqual(at(5, 4));
   });
 
-  it('drops occupied and off-pitch squares', () => {
+  it('drops occupied squares and retains off-pitch crowd-surf destinations', () => {
     const blocked = pushBackCandidates(at(5, 6), at(5, 5), [at(5, 6), at(5, 5), at(5, 4)]);
     expect(blocked).not.toContainEqual(at(5, 4));
 
-    // Defender on the top edge: every push square would be off the pitch.
+    // Defender on the top edge: each legal direction sends them into the crowd.
     const offPitch = pushBackCandidates(at(5, 1), at(5, 0), [at(5, 1), at(5, 0)]);
-    expect(offPitch).toHaveLength(0);
+    expect(offPitch).toEqual([at(5, -1), at(4, -1), at(6, -1)]);
   });
 
   it('offers occupied players only when every immediate push square is occupied', () => {
@@ -277,12 +277,12 @@ describe('push-back candidates', () => {
     expect(squares).toContainEqual(at(6, 4));
   });
 
-  it('does not offer an occupied route that can never reach empty turf', () => {
+  it('allows a fully occupied chain to terminate at the crowd', () => {
     const solidPitch = Array.from({ length: 15 * 26 }, (_, index) =>
       at(index % 15, Math.floor(index / 15)),
     );
     const squares = pushBackCandidates(at(5, 2), at(5, 1), solidPitch);
 
-    expect(squares).toHaveLength(0);
+    expect(squares).toHaveLength(3);
   });
 });

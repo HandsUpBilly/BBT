@@ -34,7 +34,7 @@ Editor features:
 - move players by drag,
 - place ball on a player or loose on the ground,
 - save over existing / save as new,
-- select the puzzle objective (Touchdown is the only current value),
+- select the puzzle objective (Touchdown or Crowd surf),
 - independently enable puzzles for everyone and/or admins, and opt them into
   Free Play,
 - save changes directly to the player-visible source of truth; enabled flags

@@ -3,7 +3,7 @@ import type { PathStep, BlockOutcomeFace } from './bfs';
 export type { BlockOutcomeFace };
 
 export type Team = 'human' | 'orc' | 'black-orc' | 'imperial-nobility';
-export type Objective = 'touchdown';
+export type Objective = 'touchdown' | 'crowd-surf';
 
 /**
  * Portrait pitch coordinates — the orientation scenario JSON and the rules
@@ -185,7 +185,8 @@ export type ActionLogEntry = MoveLogEntry | HandoffLogEntry | PassLogEntry | Pas
 /** A puzzle is a single turn: you are either still playing it or you scored. */
 export type GamePhase =
   | 'playing'
-  | 'touchdown';
+  | 'touchdown'
+  | 'crowd-surf';
 
 export type AppMode =
   | 'home'
@@ -212,6 +213,7 @@ export interface ActivationSnapshot {
 export interface GameState {
   pieces: PlayerPiece[];
   activeTeam: Team;
+  objective: Objective;
   selectedPieceId: string | null;
   // All squares reachable within remaining MA (for click validation)
   reachableKeys: Set<string>;

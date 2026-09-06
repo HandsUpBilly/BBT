@@ -38,6 +38,10 @@ test('accepts a well-formed scenario', () => {
   assert.deepEqual(validateScenario(validScenario()), []);
 });
 
+test('preserves crowd surf as a selectable objective', () => {
+  assert.equal(validScenario({ objective: 'crowd-surf' }).objective, 'crowd-surf');
+});
+
 test('rejects malformed ids', () => {
   for (const id of ['Scenario-1', '-leading', 'has space', '', 'UPPER']) {
     assert.equal(SCENARIO_ID_RE.test(id), false, `${id} should be rejected`);

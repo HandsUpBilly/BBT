@@ -45,7 +45,7 @@ function diceRollSummary(outcomes: BranchStripEntry['outcomes']): string {
  * The breakdown is the point: a single percentage hides which branch cost what,
  * and that is exactly the thing the player is here to learn. The submission
  * carries the branch tree alongside the score so the server can recompute it —
- * a policy score is a sum over the branches that reach a touchdown, not the
+ * a policy score is a sum over the branches that meet the puzzle objective, not the
  * product of one line's rolls.
  *
  * Every branch row is a way in: clicking one swaps this same dialog to that

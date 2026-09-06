@@ -31,6 +31,7 @@ export function SubmitModal({ scenario, actionLog, onSubmit, onDismiss, seriesMo
   // A scored run needs an explicit Submit, Continue or Skip choice, so Escape
   // does not dismiss it. The hook still traps focus and restores the launcher.
   const dialogRef = useModalFocus<HTMLDivElement>();
+  const isCrowdSurf = scenario.objective === 'crowd-surf';
 
   // onSubmit may be async (it hits the network). Track it so the button can't
   // be double-fired, and clear the flag when a failure comes back so the
@@ -51,13 +52,17 @@ export function SubmitModal({ scenario, actionLog, onSubmit, onDismiss, seriesMo
         tabIndex={-1}
       >
         <header className="submit-modal__masthead">
-          <h2 id={titleId} className="submit-modal__visually-hidden">Touchdown!</h2>
-          <img
-            className="submit-modal__masthead-art"
-            src={touchdownLockup}
-            alt=""
-            decoding="async"
-          />
+          <h2 id={titleId} className={isCrowdSurf ? 'submit-modal__objective-title' : 'submit-modal__visually-hidden'}>
+            {isCrowdSurf ? 'Crowd surf!' : 'Touchdown!'}
+          </h2>
+          {!isCrowdSurf && (
+            <img
+              className="submit-modal__masthead-art"
+              src={touchdownLockup}
+              alt=""
+              decoding="async"
+            />
+          )}
         </header>
 
         <div className="submit-modal__content">

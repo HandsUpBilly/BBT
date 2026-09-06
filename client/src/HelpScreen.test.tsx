@@ -10,7 +10,7 @@ describe('HelpScreen', () => {
 
     expect(screen.getByRole('heading', { name: 'Find the strongest sequence' })).toBeTruthy();
     expect(screen.getByText(/highest probability of meeting the puzzle's stated objective/i)).toBeTruthy();
-    expect(screen.getByText(/successful foul, a crowd surf/i)).toBeTruthy();
+    expect(screen.getByText(/crowd surf—pushing an opposing player off the pitch/i)).toBeTruthy();
     const decisionPicture = screen.getByRole('img', { name: /plotted movement route/i });
     expect(decisionPicture).toBeTruthy();
     const routeMarker = decisionPicture.querySelector('#help-route-arrow');

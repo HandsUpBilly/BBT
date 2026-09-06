@@ -190,7 +190,7 @@ export function HelpScreen({ onBack }: Props) {
           </ol>
           <aside className="help-screen__callout">
             <strong>The objective can change.</strong>
-            <span>Today's puzzles ask for a touchdown. Future puzzles may ask for a successful foul, a crowd surf, or another one-turn outcome.</span>
+            <span>Puzzles can ask for a touchdown or a crowd surf—pushing an opposing player off the pitch. Future puzzles may add other one-turn outcomes.</span>
           </aside>
         </article>
       )}

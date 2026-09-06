@@ -20,7 +20,7 @@ export const STAT_RANGE = { min: 1, max: 12 };
 export const STAT_KEYS = ['ma', 'st', 'ag', 'pa', 'av'];
 
 export const TEAMS = ['human', 'orc', 'black-orc', 'imperial-nobility'];
-export const OBJECTIVES = ['touchdown'];
+export const OBJECTIVES = ['touchdown', 'crowd-surf'];
 
 /** BB2025 team-sheet caps. A puzzle is a single on-pitch state, so each team
  * may field at most 11 even though its full roster may contain 16 players. */

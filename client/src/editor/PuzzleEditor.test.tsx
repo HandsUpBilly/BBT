@@ -290,6 +290,20 @@ describe('PuzzleEditor unsaved changes', { timeout: 15_000 }, () => {
     });
   });
 
+  it('saves crowd surf as the puzzle objective', async () => {
+    const fetchMock = renderEditor();
+    await screen.findByDisplayValue('Saved Puzzle');
+
+    fireEvent.change(screen.getByRole('combobox', { name: 'Objective' }), {
+      target: { value: 'crowd-surf' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Save Puzzle' }));
+
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/editor/scenarios/scenario-001', expect.objectContaining({ method: 'PUT' })));
+    const scenarioCall = fetchMock.mock.calls.find(([url]) => url === '/api/editor/scenarios/scenario-001');
+    expect(JSON.parse(String(scenarioCall?.[1]?.body))).toMatchObject({ objective: 'crowd-surf' });
+  });
+
   it('shows puzzles owned by another series but does not let them be added again', async () => {
     const secondScenario = { ...savedScenario, id: 'scenario-002', name: 'Already Owned' };
     renderEditor([savedScenario, secondScenario], [

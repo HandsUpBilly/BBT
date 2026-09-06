@@ -389,6 +389,66 @@ describe('Block outcome resolution', () => {
     ]);
   });
 
+  it('crowd-surfs an opponent and completes a crowd-surf objective', () => {
+    const state = {
+      ...makeState([
+        blocker({ position: { col: 7, row: 1 } }),
+        orc({ position: { col: 7, row: 0 } }),
+      ]),
+      objective: 'crowd-surf' as const,
+    };
+    const { result } = renderHook(() => useGameState(state));
+
+    act(() => result.current.handleBlockAction('human1', false));
+    act(() => result.current.handleBlockTarget(7, 0));
+    act(() => result.current.handleBlockOutcomeChoice(['push'], 'push'));
+
+    expect(result.current.state.pushTargetKeys).toContain('7,-1');
+    act(() => result.current.handlePushChoice(7, -1, false));
+
+    expect(result.current.state.pieces.some(piece => piece.id === 'orc1')).toBe(false);
+    expect(result.current.state.phase).toBe('crowd-surf');
+  });
+
+  it('does not complete a crowd-surf objective when a chain pushes a team-mate off the pitch', () => {
+    const state = {
+      ...makeState([
+        blocker({ position: { col: 7, row: 2 } }),
+        orc({ position: { col: 7, row: 1 } }),
+        blocker({ id: 'human-chain', position: { col: 7, row: 0 } }),
+        orc({ id: 'left-chain', position: { col: 6, row: 0 } }),
+        orc({ id: 'right-chain', position: { col: 8, row: 0 } }),
+      ]),
+      objective: 'crowd-surf' as const,
+    };
+    const { result } = renderHook(() => useGameState(state));
+
+    act(() => result.current.handleBlockAction('human1', false));
+    act(() => result.current.handleBlockTarget(7, 1));
+    act(() => result.current.handleBlockOutcomeChoice(['push'], 'push'));
+    act(() => result.current.handlePushChoice(7, 0, undefined));
+    act(() => result.current.handlePushChoice(7, -1, false));
+
+    expect(result.current.state.pieces.some(piece => piece.id === 'human-chain')).toBe(false);
+    expect(result.current.state.phase).toBe('playing');
+  });
+
+  it('allows a crowd surf during a touchdown puzzle without treating it as the win condition', () => {
+    const state = makeState([
+      blocker({ position: { col: 7, row: 1 } }),
+      orc({ position: { col: 7, row: 0 } }),
+    ]);
+    const { result } = renderHook(() => useGameState(state));
+
+    act(() => result.current.handleBlockAction('human1', false));
+    act(() => result.current.handleBlockTarget(7, 0));
+    act(() => result.current.handleBlockOutcomeChoice(['push'], 'push'));
+    act(() => result.current.handlePushChoice(7, -1, false));
+
+    expect(result.current.state.pieces.some(piece => piece.id === 'orc1')).toBe(false);
+    expect(result.current.state.phase).toBe('playing');
+  });
+
   it('push: supports a long chain and knocks down only the original defender', () => {
     const state = makeState([
       blocker(),

@@ -202,7 +202,10 @@ dice tie-break.
   deselect. Without it, `clearSelection` wiped `blitzResumeId` and reset
   `remainingMa` to 0, so reselecting the same piece granted a fresh full MA
   pool (#191).
-- Push outcomes require a legal push-back square. All three push-back results
+- Push outcomes require a legal push-back square. Off-pitch squares in the
+  three-square push arc are legal and remove the pushed player into the crowd.
+  A crowd-surf objective scores only when the removed player is an opponent;
+  surfing a team-mate through a chain push does not score. All three push-back results
   (Push, Defender Stumbles, Defender Down) offer the attacker a follow-up into
   the vacated square, since the attacker stays standing in each case.
 - A push must use an empty square from its three-square push arc when one is
@@ -226,8 +229,8 @@ Deliberate, and worth knowing before "fixing" them:
 
 - Guard is not modelled, so a marked player with Guard cannot assist.
 - No armour or injury rolls; `down` is the only knocked-over state.
-- Crowd pushes remain out of scope. A chain route that cannot ultimately reach
-  an on-pitch empty square is not offered.
+- Throw-ins after a ball carrier is crowd-surfed are not simulated; the loose
+  ball remains on the carrier's final in-bounds square.
 - Failed rolls aren't simulated — the model tracks the probability of the whole
   line succeeding, so play continues as though every roll passed.
 

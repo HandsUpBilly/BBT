@@ -77,7 +77,7 @@ import type {
   AppMode, GameState, PlayerPiece, Position, Scenario, LeaderboardEntry,
   PublicPlayerProfile, SeriesDefinition, SeriesLeaderboardEntry, SeriesPuzzleResult,
 } from './types';
-import { key } from './bfs';
+import { fromKey, key } from './bfs';
 import { useCompactLayout, useHoverCapable, usePortraitViewport } from './useMediaQuery';
 import {
   initializeAnalytics,
@@ -814,7 +814,7 @@ export default function App() {
     const picksUpBall = state.ballPosition !== null
       && state.pathPreview.some(step => key(step.pos) === key(state.ballPosition!));
     const carriesBall = Boolean(selected?.hasBall || picksUpBall);
-    const scores = carriesBall
+    const scores = activeScenario?.objective !== 'crowd-surf' && carriesBall
       && Boolean(selected && (attacksTopEndZone(selected.team) ? row === 0 : row === 25));
     const samePreview = activeArmedMove && key(activeArmedMove.destination) === k;
 
@@ -840,7 +840,7 @@ export default function App() {
     setHoveredPiece(piece ?? null);
     return true;
   }, [movementContext, state.reachableKeys, state.pieces, state.selectedPieceId,
-      state.ballPosition, state.pathPreview, activeArmedMove, hoverCapable,
+      state.ballPosition, state.pathPreview, activeScenario?.objective, activeArmedMove, hoverCapable,
       finishMove, hookSquareHover]);
 
   const choosePushTarget = useCallback((col: number, row: number): boolean => {
@@ -1099,7 +1099,7 @@ export default function App() {
   const viewedBranchId = branchedBoards.run.viewedId;
   const showStalledRunDialog = isScoringRunStalled(state);
   const showUnfinishedBranchesDialog = branchedBoards.hasSplit
-    && state.phase === 'touchdown'
+    && state.phase !== 'playing'
     && unresolvedBranchList.length > 0
     && !acknowledgedBranchTouchdowns.has(viewedBranchId);
   useEffect(() => {
@@ -1726,6 +1726,10 @@ export default function App() {
   const blitzTarget = state.blitzTargetId
     ? state.pieces.find(piece => piece.id === state.blitzTargetId) ?? null
     : null;
+  const crowdSurfTarget = [...state.pushTargetKeys]
+    .map(fromKey)
+    .find(position => position.col < 0 || position.col >= 15 || position.row < 0 || position.row >= 26)
+    ?? null;
   const activationStatus = activeTransfer?.kind === 'handoff'
     ? 'HAND-OFF READY: Confirm the receiver or choose another.'
     : activeTransfer?.kind === 'pass'
@@ -1793,8 +1797,22 @@ export default function App() {
     : 0;
   const statusLine = (
     <div className="hud__status">
-      {compact && seriesCounter && <>{seriesCounter}{' '}</>}
-      {activationStatus}
+      <span>{compact && seriesCounter && <>{seriesCounter}{' '}</>}{activationStatus}</span>
+      {crowdSurfTarget && (
+        <button
+          type="button"
+          className="hud__crowd-surf"
+          onClick={() => {
+            if (state.pendingBlockResolution?.offerFollowUp) {
+              setPendingPushSquare(crowdSurfTarget);
+            } else {
+              handlePushChoice(crowdSurfTarget.col, crowdSurfTarget.row, false);
+            }
+          }}
+        >
+          Push into crowd
+        </button>
+      )}
     </div>
   );
   const activeTutorialConcepts = activeScenario ? tutorialConceptsForScenario(activeScenario.id) : [];
@@ -2054,7 +2072,7 @@ export default function App() {
           </button>
         </div>
       )}
-      {!branchedBoards.hasSplit && state.phase === 'touchdown' && effectiveAppMode === 'puzzle' && activeScenario && (
+      {!branchedBoards.hasSplit && state.phase !== 'playing' && effectiveAppMode === 'puzzle' && activeScenario && (
         <SubmitModal
           scenario={activeScenario}
           actionLog={state.actionLog}

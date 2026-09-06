@@ -132,6 +132,24 @@ describe('receiving a pass/handoff in the end zone scores a touchdown', () => {
 
     expect(result.current.state.phase).toBe('playing');
   });
+
+  it('does not score a touchdown when the selected objective is crowd surf', () => {
+    const state = {
+      ...makeState([
+        thrower({ position: { col: 7, row: 1 } }),
+        catcher({ position: { col: 7, row: 0 } }),
+      ]),
+      objective: 'crowd-surf' as const,
+    };
+    const { result } = renderHook(() => useGameState(state));
+
+    act(() => result.current.handleHandoffAction('thrower'));
+    act(() => result.current.handleSquareClick(7, 1));
+    act(() => result.current.handleHandoffTarget(7, 0));
+
+    expect(result.current.state.pieces.find(piece => piece.id === 'catcher')?.hasBall).toBe(true);
+    expect(result.current.state.phase).toBe('playing');
+  });
 });
 
 describe('loose ball pickup', () => {
