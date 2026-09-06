@@ -20,7 +20,9 @@ const CAREER_ACCESS: Readonly<Record<Team, CareerAccess>> = {
     catcher: { primary: ['general', 'agility'], secondary: ['devious', 'strength', 'passing'] },
     blitzer: { primary: ['general', 'strength'], secondary: ['agility', 'devious'] },
     halfling: { primary: ['agility'], secondary: ['devious', 'general', 'strength'] },
-    ogre: { primary: ['strength'], secondary: ['agility', 'general'] },
+    // Big guys never gain General/Agility/Passing, on doubles or otherwise —
+    // Mutation is their only secondary access. See the troll entries below.
+    ogre: { primary: ['strength'], secondary: ['mutation'] },
   },
   orc: {
     lineman: { primary: ['general', 'strength'], secondary: ['agility', 'devious'] },
@@ -28,19 +30,19 @@ const CAREER_ACCESS: Readonly<Record<Team, CareerAccess>> = {
     blitzer: { primary: ['general', 'strength'], secondary: ['agility', 'devious'] },
     'big-un': { primary: ['general', 'strength'], secondary: ['agility', 'devious'] },
     goblin: { primary: ['agility', 'devious'], secondary: ['general', 'passing', 'strength'] },
-    troll: { primary: ['strength'], secondary: ['general', 'agility', 'passing'] },
+    troll: { primary: ['strength'], secondary: ['mutation'] },
   },
   'black-orc': {
     goblin: { primary: ['agility', 'devious'], secondary: ['general', 'passing', 'strength'] },
     'black-orc': { primary: ['general', 'strength'], secondary: ['agility', 'devious'] },
-    troll: { primary: ['strength'], secondary: ['agility', 'general', 'passing'] },
+    troll: { primary: ['strength'], secondary: ['mutation'] },
   },
   'imperial-nobility': {
     retainer: { primary: ['general'], secondary: ['agility', 'strength'] },
     thrower: { primary: ['general', 'passing'], secondary: ['agility', 'strength'] },
     bodyguard: { primary: ['general', 'strength'], secondary: ['agility'] },
     'noble-blitzer': { primary: ['agility', 'general'], secondary: ['passing', 'strength'] },
-    ogre: { primary: ['strength'], secondary: ['agility', 'general'] },
+    ogre: { primary: ['strength'], secondary: ['mutation'] },
   },
 };
 
