@@ -22,6 +22,18 @@ describe('career skill access', () => {
     ]);
   });
 
+  it.each([
+    ['human', 'ogre'],
+    ['orc', 'troll'],
+    ['black-orc', 'troll'],
+    ['imperial-nobility', 'ogre'],
+  ] as const)('gives the %s %s only Strength and doubles-only Mutation, never General/Agility/Passing', (team, role) => {
+    expect(careerSkillGroupsFor(team, role)).toEqual([
+      expect.objectContaining({ id: 'strength', tier: 'primary' }),
+      expect.objectContaining({ id: 'mutation', tier: 'secondary' }),
+    ]);
+  });
+
   it('does not invent career access for legacy editor-only roles', () => {
     expect(careerSkillGroupsFor('orc', 'blocker')).toBeNull();
   });
