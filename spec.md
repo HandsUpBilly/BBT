@@ -28,11 +28,13 @@ carries a **Status** line — read it before treating a section as work to do.
 | Block and Blitz Actions | Shipped (with rules simplifications) |
 | BB Tactics — Tabletop Playbook Home Redesign | Shipped |
 | Leaderboard and Report Integrity | **Planned** |
-| Player Config Screen | Phase 1 Shipped, Phase 2 **Planned** |
+| Player Config Screen | Phase 1 and Phase 2 Shipped |
+| Administrative Ranking Resets | Shipped |
 | Block Outcomes as Board-State Branches | Shipped as the standard Parallel Universes block model |
 | Tutorial Series and Parallel Universes Onboarding | Shipped |
 | Step-by-step Tutorial Coach | Superseded |
 | Contextual Tutorial Coach Redesign | Shipped |
+| Multi-Series Creator Workflows | Shipped |
 | Engagement Analytics and Admin Graphs | Shipped |
 | Full-game Rulebook Copy Audit | Shipped |
 | Completed Play Diagram | Shipped |
@@ -4523,8 +4525,11 @@ per player from Settings → Experimental.
 
 ## Non-goals
 
-- Chain pushes, crowd pushes, armour/injury rolls, standing up — all still out,
-  as in the shipped section.
+- Crowd pushes, armour/injury rolls, standing up — all still out, as in the
+  shipped section. Chain pushes are no longer on this list: they shipped
+  (`client/src/App.tsx`, `client/src/branchRun.ts`'s `choosePush`), authored
+  uniformly across sibling branches rather than introducing a new split — see
+  the next bullet.
 - Guard, Frenzy, Juggernaut, Stand Firm — still out. Block, Wrestle, Dodge and
   Tackle are the only skills that affect the face-to-state mapping.
 - No opponent turn. A puzzle is still exactly one turn.
@@ -5777,7 +5782,7 @@ blocks the pitch.
   positions, routes, authored text, player identity, or free-form content.
 # Multi-Series Creator Workflows
 
-**Status: Shipped**
+**Status:** Shipped.
 
 Puzzle and series authoring are separate admin workflows. Puzzles carry an
 extensible objective and an independent Free Play flag. Series Creator is the
