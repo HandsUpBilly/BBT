@@ -80,6 +80,20 @@ function openCreatorTool(name: RegExp) {
 }
 
 describe('PuzzleEditor unsaved changes', { timeout: 15_000 }, () => {
+  it('marks admin-only puzzles and series in their libraries', async () => {
+    const adminPuzzle = { ...savedScenario, published: false, adminEnabled: true };
+    const adminSeries: SeriesDefinition = {
+      id: 'admin-series', name: 'Admin Series', description: '', scenarioIds: [adminPuzzle.id],
+      published: false, adminEnabled: true, teams: ['human', 'orc'], objective: 'touchdown', order: 0,
+    };
+    renderEditor([adminPuzzle], [adminSeries]);
+    await screen.findByDisplayValue('Saved Puzzle');
+
+    expect(screen.getByText('Admin only')).toBeTruthy();
+    openCreatorTool(/^Series Creator$/);
+    expect(screen.getByText('Admin only')).toBeTruthy();
+  });
+
   it('chooses the two involved teams and limits team controls to that pairing', async () => {
     renderEditor([savedScenario], unassignedSeries);
     await screen.findByDisplayValue('Saved Puzzle');

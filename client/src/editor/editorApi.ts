@@ -197,12 +197,3 @@ export async function deleteSeries(seriesId: string, idToken: string | null): Pr
   });
   return parseJsonResponse<SeriesDefinition[]>(response);
 }
-
-export async function updateDefaultSeries(series: SeriesDefinition, idToken: string | null): Promise<SeriesDefinition> {
-  const response = await fetch(`/api/editor/series/${encodeURIComponent(series.id)}`, {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json', ...authHeaders(idToken) },
-    body: JSON.stringify(series),
-  });
-  return parseJsonResponse<SeriesDefinition>(response);
-}
