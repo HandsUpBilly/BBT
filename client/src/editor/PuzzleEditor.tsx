@@ -740,6 +740,25 @@ export function PuzzleEditor({ onBack, onPlay, onReport, previewScenario, idToke
                 </label>
               ))}
             </fieldset>
+            <section className="editor__side-missions" aria-labelledby="side-missions-title">
+              <div className="editor__side-missions-heading">
+                <div>
+                  <span className="editor__side-missions-kicker">Planned</span>
+                  <h3 id="side-missions-title">Side missions</h3>
+                </div>
+                <button type="button" className="btn btn--secondary" disabled>
+                  Add side mission
+                </button>
+              </div>
+              <p>
+                Optional criteria will award a bonus to the overall score. This is a visual placeholder only;
+                side missions are not saved or scored yet.
+              </p>
+              <div className="editor__side-mission-examples" aria-label="Future side mission examples">
+                <span>Touchdown after throwing a team-mate</span>
+                <span>Complete at least one Jump</span>
+              </div>
+            </section>
             <label className="editor__metadata-desc">
               Description
               <textarea value={draft.description} onChange={event => setMetadata('description', event.target.value)} />
