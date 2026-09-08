@@ -1,21 +1,45 @@
 {
   "id": "scenario-006",
-  "name": "Loose Ball on the Goal Line",
-  "description": "OBJECTIVE: Recover the loose ball and score. Block Skullkrak away from the ball, complete the Pickup, then choose the scoring route.",
+  "name": "Things are getting serious",
+  "description": "Bonecruncher's hit jarred the ball loose five squares short of the line, and Skullkrak is guarding it. Knock him away, scoop it up, then pick your route home - Swiftfoot's legs, Quickstep waiting across the paint, or Quickhand breaking from the slot.",
   "activeTeam": "human",
+  "teams": [
+    "human",
+    "orc"
+  ],
   "objective": "touchdown",
+  "enabledActions": [
+    "move",
+    "handoff",
+    "pass",
+    "block",
+    "blitz"
+  ],
   "freePlay": true,
   "published": true,
-  "ballPosition": { "col": 7, "row": 5 },
+  "ballPosition": {
+    "col": 7,
+    "row": 5
+  },
   "pieces": [
     {
       "id": "aldric",
       "team": "human",
       "role": "thrower",
       "name": "Aldric Swiftfoot",
-      "ma": 6, "st": 3, "ag": 3, "pa": 3, "av": 8,
-      "skills": ["Pass", "Sure Hands"],
-      "position": { "col": 7, "row": 7 },
+      "ma": 6,
+      "st": 3,
+      "ag": 3,
+      "pa": 3,
+      "av": 8,
+      "skills": [
+        "Pass",
+        "Sure Hands"
+      ],
+      "position": {
+        "col": 7,
+        "row": 7
+      },
       "hasBall": false
     },
     {
@@ -23,9 +47,19 @@
       "team": "human",
       "role": "blitzer",
       "name": "Cedric Linebreaker",
-      "ma": 7, "st": 3, "ag": 3, "pa": 4, "av": 8,
-      "skills": ["Block", "Tackle"],
-      "position": { "col": 6, "row": 7 },
+      "ma": 7,
+      "st": 3,
+      "ag": 3,
+      "pa": 4,
+      "av": 8,
+      "skills": [
+        "Block",
+        "Tackle"
+      ],
+      "position": {
+        "col": 6,
+        "row": 7
+      },
       "hasBall": false
     },
     {
@@ -33,9 +67,16 @@
       "team": "human",
       "role": "lineman",
       "name": "Hugo Ironlace",
-      "ma": 6, "st": 3, "ag": 3, "pa": 4, "av": 8,
+      "ma": 6,
+      "st": 3,
+      "ag": 3,
+      "pa": 4,
+      "av": 8,
       "skills": [],
-      "position": { "col": 5, "row": 7 },
+      "position": {
+        "col": 5,
+        "row": 7
+      },
       "hasBall": false
     },
     {
@@ -43,9 +84,16 @@
       "team": "human",
       "role": "lineman",
       "name": "Bramm Surehands",
-      "ma": 6, "st": 3, "ag": 3, "pa": 4, "av": 8,
+      "ma": 6,
+      "st": 3,
+      "ag": 3,
+      "pa": 4,
+      "av": 8,
       "skills": [],
-      "position": { "col": 8, "row": 7 },
+      "position": {
+        "col": 8,
+        "row": 7
+      },
       "hasBall": false
     },
     {
@@ -53,9 +101,16 @@
       "team": "human",
       "role": "lineman",
       "name": "Dieter Longstride",
-      "ma": 6, "st": 3, "ag": 3, "pa": 4, "av": 8,
+      "ma": 6,
+      "st": 3,
+      "ag": 3,
+      "pa": 4,
+      "av": 8,
       "skills": [],
-      "position": { "col": 8, "row": 6 },
+      "position": {
+        "col": 8,
+        "row": 6
+      },
       "hasBall": false
     },
     {
@@ -63,9 +118,19 @@
       "team": "human",
       "role": "catcher",
       "name": "Sera Quickhand",
-      "ma": 8, "st": 3, "ag": 3, "pa": 4, "av": 7,
-      "skills": ["Catch", "Dodge"],
-      "position": { "col": 9, "row": 4 },
+      "ma": 8,
+      "st": 3,
+      "ag": 3,
+      "pa": 4,
+      "av": 7,
+      "skills": [
+        "Catch",
+        "Dodge"
+      ],
+      "position": {
+        "col": 9,
+        "row": 4
+      },
       "hasBall": false
     },
     {
@@ -73,9 +138,19 @@
       "team": "human",
       "role": "catcher",
       "name": "Franz Quickstep",
-      "ma": 8, "st": 3, "ag": 3, "pa": 4, "av": 7,
-      "skills": ["Catch", "Dodge"],
-      "position": { "col": 0, "row": 0 },
+      "ma": 8,
+      "st": 3,
+      "ag": 3,
+      "pa": 4,
+      "av": 7,
+      "skills": [
+        "Catch",
+        "Dodge"
+      ],
+      "position": {
+        "col": 0,
+        "row": 0
+      },
       "hasBall": false
     },
     {
@@ -83,9 +158,21 @@
       "team": "orc",
       "role": "big-un",
       "name": "Throg Chainbellow",
-      "ma": 5, "st": 4, "ag": 2, "pa": 6, "av": 9,
-      "skills": ["Mighty Blow", "Taunt", "Thick Skull", "Unsteady"],
-      "position": { "col": 4, "row": 6 },
+      "ma": 5,
+      "st": 4,
+      "ag": 2,
+      "pa": 6,
+      "av": 9,
+      "skills": [
+        "Mighty Blow",
+        "Taunt",
+        "Thick Skull",
+        "Unsteady"
+      ],
+      "position": {
+        "col": 4,
+        "row": 6
+      },
       "hasBall": false
     },
     {
@@ -93,9 +180,21 @@
       "team": "orc",
       "role": "big-un",
       "name": "Nobgul Linebasher",
-      "ma": 5, "st": 4, "ag": 2, "pa": 6, "av": 9,
-      "skills": ["Mighty Blow", "Taunt", "Thick Skull", "Unsteady"],
-      "position": { "col": 5, "row": 6 },
+      "ma": 5,
+      "st": 4,
+      "ag": 2,
+      "pa": 6,
+      "av": 9,
+      "skills": [
+        "Mighty Blow",
+        "Taunt",
+        "Thick Skull",
+        "Unsteady"
+      ],
+      "position": {
+        "col": 5,
+        "row": 6
+      },
       "hasBall": false
     },
     {
@@ -103,9 +202,16 @@
       "team": "orc",
       "role": "lineman",
       "name": "Muzgash Skullkrak",
-      "ma": 5, "st": 3, "ag": 3, "pa": 4, "av": 9,
+      "ma": 5,
+      "st": 3,
+      "ag": 3,
+      "pa": 4,
+      "av": 9,
       "skills": [],
-      "position": { "col": 6, "row": 6 },
+      "position": {
+        "col": 6,
+        "row": 6
+      },
       "hasBall": false
     },
     {
@@ -113,9 +219,16 @@
       "team": "orc",
       "role": "lineman",
       "name": "Dorg Gutripper",
-      "ma": 5, "st": 3, "ag": 3, "pa": 4, "av": 9,
+      "ma": 5,
+      "st": 3,
+      "ag": 3,
+      "pa": 4,
+      "av": 9,
       "skills": [],
-      "position": { "col": 9, "row": 6 },
+      "position": {
+        "col": 9,
+        "row": 6
+      },
       "hasBall": false
     },
     {
@@ -123,9 +236,16 @@
       "team": "orc",
       "role": "lineman",
       "name": "Zug Bloodfang",
-      "ma": 5, "st": 3, "ag": 3, "pa": 4, "av": 9,
+      "ma": 5,
+      "st": 3,
+      "ag": 3,
+      "pa": 4,
+      "av": 9,
       "skills": [],
-      "position": { "col": 10, "row": 6 },
+      "position": {
+        "col": 10,
+        "row": 6
+      },
       "hasBall": false
     },
     {
@@ -133,9 +253,19 @@
       "team": "orc",
       "role": "blitzer",
       "name": "Vrak Bonecruncher",
-      "ma": 6, "st": 3, "ag": 3, "pa": 4, "av": 9,
-      "skills": ["Block", "Break Tackle"],
-      "position": { "col": 10, "row": 3 },
+      "ma": 6,
+      "st": 3,
+      "ag": 3,
+      "pa": 4,
+      "av": 9,
+      "skills": [
+        "Block",
+        "Break Tackle"
+      ],
+      "position": {
+        "col": 10,
+        "row": 3
+      },
       "hasBall": false
     },
     {
@@ -143,9 +273,16 @@
       "team": "orc",
       "role": "lineman",
       "name": "Rukbad Bootsnappa",
-      "ma": 5, "st": 3, "ag": 3, "pa": 4, "av": 9,
+      "ma": 5,
+      "st": 3,
+      "ag": 3,
+      "pa": 4,
+      "av": 9,
       "skills": [],
-      "position": { "col": 1, "row": 3 },
+      "position": {
+        "col": 1,
+        "row": 3
+      },
       "hasBall": false
     },
     {
@@ -153,9 +290,19 @@
       "team": "orc",
       "role": "blitzer",
       "name": "Skrag Headsmash",
-      "ma": 6, "st": 3, "ag": 3, "pa": 4, "av": 9,
-      "skills": ["Block", "Break Tackle"],
-      "position": { "col": 4, "row": 1 },
+      "ma": 6,
+      "st": 3,
+      "ag": 3,
+      "pa": 4,
+      "av": 9,
+      "skills": [
+        "Block",
+        "Break Tackle"
+      ],
+      "position": {
+        "col": 4,
+        "row": 1
+      },
       "hasBall": false
     },
     {
@@ -163,9 +310,16 @@
       "team": "orc",
       "role": "lineman",
       "name": "Grukk Ironjaw",
-      "ma": 5, "st": 3, "ag": 3, "pa": 4, "av": 9,
+      "ma": 5,
+      "st": 3,
+      "ag": 3,
+      "pa": 4,
+      "av": 9,
       "skills": [],
-      "position": { "col": 7, "row": 1 },
+      "position": {
+        "col": 7,
+        "row": 1
+      },
       "hasBall": false
     }
   ]

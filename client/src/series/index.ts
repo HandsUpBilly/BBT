@@ -1,7 +1,7 @@
 import type { Scenario, SeriesDefinition } from '../types';
 const seriesModules = import.meta.glob('./*.json', { eager: true, import: 'default' }) as Record<string, SeriesDefinition>;
 
-export const FEATURED_SERIES_NAME = 'Humans vs Orcs: The Nuffle Shuffle';
+export const FEATURED_SERIES_NAME = 'The Nuffle Shuffle';
 export const FEATURED_SERIES_LOGO = 'nuffle-shuffle';
 export const FEATURED_SERIES_LABEL = 'Tutorial';
 
