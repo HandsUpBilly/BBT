@@ -246,6 +246,12 @@
   gap: 8px;
 }
 
+.editor__panel-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .editor__panel h2,
 .editor__pitch-panel h2,
 .editor-tool h2 {
