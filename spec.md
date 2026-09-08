@@ -28,11 +28,13 @@ carries a **Status** line — read it before treating a section as work to do.
 | Block and Blitz Actions | Shipped (with rules simplifications) |
 | BB Tactics — Tabletop Playbook Home Redesign | Shipped |
 | Leaderboard and Report Integrity | **Planned** |
-| Player Config Screen | Phase 2 Shipped |
+| Player Config Screen | Phase 1 and Phase 2 Shipped |
+| Administrative Ranking Resets | Shipped |
 | Block Outcomes as Board-State Branches | Shipped as the standard Parallel Universes block model |
 | Tutorial Series and Parallel Universes Onboarding | Shipped |
 | Step-by-step Tutorial Coach | Superseded |
 | Contextual Tutorial Coach Redesign | Shipped |
+| Multi-Series Creator Workflows | Shipped |
 | Engagement Analytics and Admin Graphs | Shipped |
 | Full-game Rulebook Copy Audit | Shipped |
 | Completed Play Diagram | Shipped |
@@ -42,8 +44,6 @@ carries a **Status** line — read it before treating a section as work to do.
 | Pass / Hand-off Confirmation and Illustrated Help | Shipped |
 | Parallel Universe Branch-point Reset | Shipped |
 | Completed-play Review Orientation and Objective Guidance | Shipped |
-| Administrative Ranking Resets | Shipped |
-| Multi-Series Creator Workflows | Shipped |
 
 Durable behavior that has already shipped belongs in `docs/agent-context/`, not
 here. When a plan below ships, move the facts worth keeping into the matching
@@ -4525,7 +4525,11 @@ per player from Settings → Experimental.
 
 ## Non-goals
 
-- Crowd pushes, armour/injury rolls, and standing up are still out. Recursive chain pushes are shipped, as in the shipped section.
+- Crowd pushes, armour/injury rolls, standing up — all still out, as in the
+  shipped section. Chain pushes are no longer on this list: they shipped
+  (`client/src/App.tsx`, `client/src/branchRun.ts`'s `choosePush`), authored
+  uniformly across sibling branches rather than introducing a new split — see
+  the next bullet.
 - Guard, Frenzy, Juggernaut, Stand Firm — still out. Block, Wrestle, Dodge and
   Tackle are the only skills that affect the face-to-state mapping.
 - No opponent turn. A puzzle is still exactly one turn.
