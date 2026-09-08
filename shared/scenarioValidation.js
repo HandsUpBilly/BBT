@@ -21,6 +21,7 @@ export const STAT_KEYS = ['ma', 'st', 'ag', 'pa', 'av'];
 
 export const TEAMS = ['human', 'orc', 'black-orc', 'imperial-nobility'];
 export const OBJECTIVES = ['touchdown', 'crowd-surf'];
+export const SCENARIO_ACTIONS = ['move', 'handoff', 'pass', 'block', 'blitz'];
 
 /** BB2025 team-sheet caps. A puzzle is a single on-pitch state, so each team
  * may field at most 11 even though its full roster may contain 16 players. */
@@ -122,6 +123,9 @@ export function normalizeScenario(input) {
   const secondTeam = configuredTeams.find(team => team !== firstTeam)
     ?? TEAMS.find(team => team !== firstTeam)
     ?? firstTeam;
+  const enabledActions = Array.isArray(source.enabledActions)
+    ? [...new Set(source.enabledActions.filter(action => SCENARIO_ACTIONS.includes(action)))]
+    : [...SCENARIO_ACTIONS];
   return {
     id: String(source.id ?? '').trim(),
     name: String(source.name ?? '').trim(),
@@ -129,6 +133,7 @@ export function normalizeScenario(input) {
     activeTeam,
     teams: [firstTeam, secondTeam],
     objective: OBJECTIVES.includes(source.objective) ? source.objective : 'touchdown',
+    enabledActions,
     // Before this field existed, scenario-006 was the sole hard-coded Free
     // Play puzzle. Preserve that published Blob data during migration.
     freePlay: source.freePlay === true || (source.freePlay == null && source.id === 'scenario-006'),
@@ -137,6 +142,13 @@ export function normalizeScenario(input) {
     ballPosition: normalizeBallPosition(source.ballPosition),
     pieces: Array.isArray(source.pieces) ? source.pieces.map(normalizePiece) : [],
   };
+}
+
+/** Legacy scenarios omit the field, which intentionally means every action. */
+export function enabledScenarioActions(scenario) {
+  return Array.isArray(scenario?.enabledActions)
+    ? [...new Set(scenario.enabledActions.filter(action => SCENARIO_ACTIONS.includes(action)))]
+    : [...SCENARIO_ACTIONS];
 }
 
 function normalizeBallPosition(ballPosition) {

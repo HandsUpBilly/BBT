@@ -2,6 +2,8 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
   SCENARIO_ID_RE,
+  SCENARIO_ACTIONS,
+  enabledScenarioActions,
   missingSeriesScenarioIds,
   normalizeScenario,
   normalizeSeries,
@@ -160,6 +162,13 @@ test('normalizeScenario coerces hostile input rather than throwing', () => {
   assert.equal(scenario.published, true);
   // A completely bogus payload is invalid, not a crash.
   assert.ok(validateScenario(scenario).length > 0);
+});
+
+test('scenario actions default to every player-menu action and reject unknown values', () => {
+  assert.deepEqual(normalizeScenario({}).enabledActions, SCENARIO_ACTIONS);
+  assert.deepEqual(normalizeScenario({ enabledActions: ['pass', 'pass', 'not-an-action'] }).enabledActions, ['pass']);
+  assert.deepEqual(enabledScenarioActions({}), SCENARIO_ACTIONS);
+  assert.deepEqual(enabledScenarioActions({ enabledActions: [] }), []);
 });
 
 test('normalizes the two puzzle teams and validates roster membership', () => {

@@ -75,9 +75,10 @@ import { useAuth } from './auth';
 import { useAdminAccess } from './useAdminAccess';
 import type {
   AppMode, GameState, PlayerPiece, Position, Scenario, LeaderboardEntry,
-  PublicPlayerProfile, SeriesDefinition, SeriesLeaderboardEntry, SeriesPuzzleResult,
+  PublicPlayerProfile, PuzzleAction, SeriesDefinition, SeriesLeaderboardEntry, SeriesPuzzleResult,
 } from './types';
 import { fromKey, key } from './bfs';
+import { enabledScenarioActions } from '../../shared/scenarioValidation.js';
 import { useCompactLayout, useHoverCapable, usePortraitViewport } from './useMediaQuery';
 import {
   initializeAnalytics,
@@ -1012,6 +1013,7 @@ export default function App() {
 
   const handleMenuAction = useCallback((actionKey: string, moveFirst: boolean) => {
     if (!pieceMenu) return;
+    if (!enabledScenarioActions(activeScenario).includes(actionKey as PuzzleAction)) return;
     if (!editorPreviewScenario && activeScenario && tutorialConceptsForScenario(activeScenario.id).length > 0) {
       const used: TutorialConceptId[] = [];
       if (actionKey === 'move') used.push('movement');
@@ -2142,12 +2144,13 @@ export default function App() {
         const canHandoff = (menuPiece.hasBall || state.ballPosition !== null) && !state.passUsed && !menuPiece.activated;
         const canPass    = passActionAvailability(state, menuPiece);
         const { canBlock, canBlitz } = blockActionAvailability(menuPiece, state);
+        const enabledActions = new Set(enabledScenarioActions(activeScenario));
         const menuActions: PieceMenuAction[] = [
-          { label: 'Move',     key: 'move', emphasized: emphasizedActions?.includes('move') },
-          { label: 'Hand-off', key: 'handoff', disabled: !canHandoff, emphasized: emphasizedActions?.includes('handoff') },
-          { label: 'Pass',     key: 'pass',    disabled: !canPass, emphasized: emphasizedActions?.includes('pass') },
-          { label: 'Block',    key: 'block',   disabled: !canBlock, emphasized: emphasizedActions?.includes('block') },
-          { label: 'Blitz',    key: 'blitz',   disabled: !canBlitz, emphasized: emphasizedActions?.includes('blitz') },
+          { label: 'Move',     key: 'move',    disabled: !enabledActions.has('move'), emphasized: emphasizedActions?.includes('move') },
+          { label: 'Hand-off', key: 'handoff', disabled: !enabledActions.has('handoff') || !canHandoff, emphasized: emphasizedActions?.includes('handoff') },
+          { label: 'Pass',     key: 'pass',    disabled: !enabledActions.has('pass') || !canPass, emphasized: emphasizedActions?.includes('pass') },
+          { label: 'Block',    key: 'block',   disabled: !enabledActions.has('block') || !canBlock, emphasized: emphasizedActions?.includes('block') },
+          { label: 'Blitz',    key: 'blitz',   disabled: !enabledActions.has('blitz') || !canBlitz, emphasized: emphasizedActions?.includes('blitz') },
         ];
         return (
           <PieceMenu

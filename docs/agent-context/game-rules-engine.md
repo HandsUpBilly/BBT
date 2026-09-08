@@ -63,6 +63,13 @@ Important `GameState` fields:
 - `blitzUsed`: one blitz resource per team turn
 - `actionLog`: source for score probability and replay summary
 
+## Puzzle Action Availability
+
+A scenario may restrict the five player-menu actions: Move, Hand-off, Pass,
+Block, and Blitz. Omitted `enabledActions` means all five, preserving legacy
+puzzles. Puzzle Creator saves the selected list; disabled choices are disabled
+in the menu and ignored by the action handler as defence in depth.
+
 ## Pass / Handoff Invariants
 
 Receivers may already be activated. Prior bugs filtered receivers by

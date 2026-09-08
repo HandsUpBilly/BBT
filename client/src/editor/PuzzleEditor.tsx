@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { DragEvent } from 'react';
-import type { Scenario, ScenarioPieceDef, SeriesDefinition, Team } from '../types';
+import type { PuzzleAction, Scenario, ScenarioPieceDef, SeriesDefinition, Team } from '../types';
 import { ConfirmDialog } from '../ConfirmDialog';
 import { AdminStatistics } from './AdminStatistics';
 import { AdminConsole } from './AdminConsole';
@@ -13,7 +13,7 @@ import { playerPortraitFor } from '../playerPortraits';
 import { TEAMS as AVAILABLE_TEAMS, teamLabel, teamPluralLabel } from '../teamPresentation';
 import { applySeriesTeams } from '../series';
 import { SeriesCreator } from './SeriesCreator';
-import { STAT_KEYS, STAT_RANGE, PITCH, rosterLimitFor } from '../../../shared/scenarioValidation.js';
+import { enabledScenarioActions, SCENARIO_ACTIONS, STAT_KEYS, STAT_RANGE, PITCH, rosterLimitFor } from '../../../shared/scenarioValidation.js';
 import './PuzzleEditor.css';
 
 const COLS = PITCH.maxCol + 1;
@@ -22,6 +22,9 @@ type InspectorSection = 'roster' | 'player' | 'review';
 
 const STAT_LABELS: Record<string, string> = {
   ma: 'MA', st: 'ST', ag: 'AG', pa: 'PA', av: 'AV',
+};
+const ACTION_LABELS: Record<PuzzleAction, string> = {
+  move: 'Move', handoff: 'Hand-off', pass: 'Pass', block: 'Block', blitz: 'Blitz',
 };
 
 function cloneScenario(scenario: Scenario): Scenario {
@@ -55,6 +58,7 @@ function emptyScenario(existingIds: string[]): Scenario {
     activeTeam: 'human',
     teams: ['human', 'orc'],
     objective: 'touchdown',
+    enabledActions: [...SCENARIO_ACTIONS],
     freePlay: false,
     published: false,
     ballPosition: null,
@@ -297,6 +301,13 @@ export function PuzzleEditor({ onBack, onPlay, onReport, previewScenario, idToke
 
   function setMetadata<K extends keyof Scenario>(keyName: K, value: Scenario[K]) {
     updateDraft(scenario => ({ ...scenario, [keyName]: value }));
+  }
+
+  function toggleAction(action: PuzzleAction) {
+    const enabled = new Set(enabledScenarioActions(draft));
+    if (enabled.has(action)) enabled.delete(action);
+    else enabled.add(action);
+    setMetadata('enabledActions', SCENARIO_ACTIONS.filter(item => enabled.has(item)));
   }
 
   function updatePiece(pieceId: string, patch: Partial<ScenarioPieceDef>) {
@@ -713,6 +724,21 @@ export function PuzzleEditor({ onBack, onPlay, onReport, previewScenario, idToke
                 <span className="editor__toggle-track" aria-hidden="true" />
                 <span aria-hidden="true">Free Play</span>
               </label>
+            </fieldset>
+            <fieldset className="editor__toggle-group editor__action-group">
+              <legend>Allowed actions</legend>
+              {SCENARIO_ACTIONS.map(action => (
+                <label className="editor__toggle" key={action}>
+                  <input
+                    type="checkbox"
+                    aria-label={`Enable ${ACTION_LABELS[action]}`}
+                    checked={enabledScenarioActions(draft).includes(action)}
+                    onChange={() => toggleAction(action)}
+                  />
+                  <span className="editor__toggle-track" aria-hidden="true" />
+                  <span aria-hidden="true">{ACTION_LABELS[action]}</span>
+                </label>
+              ))}
             </fieldset>
             <label className="editor__metadata-desc">
               Description
