@@ -592,7 +592,7 @@ export function PuzzleEditor({ onBack, onPlay, onReport, previewScenario, idToke
                   <span>
                     {teamPluralLabel(displayedScenario.activeTeam)} active,{' '}
                     {scenario.pieces.length} player{scenario.pieces.length === 1 ? '' : 's'},{' '}
-                    {scenario.published !== false ? 'Everyone' : scenario.adminEnabled ? 'Admins' : 'Creator only'}
+                    {scenario.published !== false ? 'Everyone' : scenario.adminEnabled ? <span className="editor__visibility-tag">Admin only</span> : 'Creator only'}
                   </span>
                   <span className={position >= 0 ? 'editor__puzzle-series' : 'editor__puzzle-series editor__puzzle-series--out'}>
                     {position >= 0 ? `${membership?.name} · step ${position + 1}` : 'Not in series'}
