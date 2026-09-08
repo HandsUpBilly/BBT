@@ -45,6 +45,9 @@ editor accepted drafts the server then rejected).
 |---|---|
 | `scenarioValidation.js` | client editor, `server/editor.js`, `editor-scenarios.js`, `editor-series.js`, `netlify/functions/leaderboard.js` |
 | `googleAuth.js` | `server/auth.js`, `netlify/functions/auth.js` |
+| `sessionAuth.js` | `server/auth.js`, `netlify/functions/auth.js`, `server/identityRoutes.js`, `netlify/functions/identity-auth.js` |
+| `identityFlow.js` | `server/identityRoutes.js`, `netlify/functions/identity-auth.js` |
+| `authEmail.js` | both magic-link start routes (server-only) |
 | `reporting.js` | client download fallback, both `/api/reports` implementations |
 | `githubIssues.js` | both `/api/reports` implementations (server-only) |
 | `contactMessage.js` | client `ContactModal.tsx`, both `/api/contact` implementations |
@@ -54,6 +57,7 @@ editor accepted drafts the server then rejected).
 | `rankingReset.js` | destructive ranking-reset target validation in Express and Netlify Functions |
 | `rateLimit.js` | both `/api/reports`, both `/api/contact`, and both leaderboard implementations |
 | `statistics.js` | `server/index.js`, `editor-statistics.js` |
+| `loginTracking.js` | `server/index.js`, `netlify/functions/logins.js`, client `AdminLogins`/statistics |
 | `adminManagement.js` | `server/editor.js`, `server/adminStore.js`, `editor-admins.js`, `netlify/functions/adminStore.js` |
 | `analyticsValidation.js` | `server/analytics.js`, both `/api/analytics` implementations |
 | `analyticsStatistics.js` | `server/analytics.js`, `editor-analytics.js`, client `AdminAnalytics.tsx` |
