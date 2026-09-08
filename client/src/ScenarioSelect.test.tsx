@@ -62,6 +62,38 @@ describe('ScenarioSelect Free Play', () => {
     expect(screen.getAllByRole('button', { name: 'Play' })).toHaveLength(2);
   });
 
+  it('marks admin-only series and single plays for an administrator', () => {
+    const adminPuzzle = {
+      ...scenarios.find(scenario => scenario.id === FREE_PLAY_SCENARIO_ID)!,
+      id: 'admin-play', name: 'Admin Play', published: false, adminEnabled: true,
+    };
+    const adminSeries = {
+      ...defaultSeries, id: 'admin-series', name: 'Admin Series', scenarioIds: [adminPuzzle.id], published: false, adminEnabled: true,
+    };
+    render(
+      <ScenarioSelect
+        scenarios={[adminPuzzle]}
+        series={[adminSeries]}
+        onPlay={vi.fn()}
+        onLeaderboard={vi.fn()}
+        onStartSeries={vi.fn()}
+        onSeriesLeaderboard={vi.fn()}
+        onAdmin={vi.fn()}
+        onHelp={vi.fn()}
+        onSettings={vi.fn()}
+        onAbout={vi.fn()}
+        isAdmin
+        userMenu={<span />}
+      />,
+    );
+
+    expect(screen.getByText('Admin Series')).toBeTruthy();
+    expect(screen.getAllByText('Admin only')).toHaveLength(1);
+
+    fireEvent.click(screen.getByRole('tab', { name: 'Free Play' }));
+    expect(screen.getAllByText('Admin only')).toHaveLength(1);
+  });
+
   it('tints each series row from its two team colours', () => {
     const { container } = render(
       <ScenarioSelect

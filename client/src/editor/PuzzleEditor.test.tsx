@@ -35,7 +35,6 @@ const unassignedSeries: SeriesDefinition[] = [{
   scenarioIds: [],
   published: false,
   teams: ['human', 'orc'],
-  objective: 'touchdown',
   order: 0,
 }];
 
@@ -54,7 +53,6 @@ function renderEditor(scenarios: Scenario[] = [savedScenario], series?: SeriesDe
       description: '',
       scenarioIds: scenarios.filter(scenario => scenario.published !== false).map(scenario => scenario.id),
       teams: ['human', 'orc'],
-      objective: 'touchdown',
       order: 0,
     }],
   };
@@ -80,11 +78,26 @@ function openCreatorTool(name: RegExp) {
 }
 
 describe('PuzzleEditor unsaved changes', { timeout: 15_000 }, () => {
+  it('enables every player-menu action by default and saves an edited action list', async () => {
+    const fetchMock = renderEditor();
+    await screen.findByDisplayValue('Saved Puzzle');
+
+    for (const action of ['Move', 'Hand-off', 'Pass', 'Block', 'Blitz']) {
+      expect(screen.getByLabelText(`Enable ${action}`)).toHaveProperty('checked', true);
+    }
+    fireEvent.click(screen.getByLabelText('Enable Pass'));
+    fireEvent.click(screen.getByRole('button', { name: 'Save Puzzle' }));
+
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/editor/scenarios/scenario-001', expect.objectContaining({ method: 'PUT' })));
+    const save = fetchMock.mock.calls.find((call: unknown[]) => (call[1] as RequestInit | undefined)?.method === 'PUT');
+    expect(JSON.parse(String((save?.[1] as RequestInit).body)).enabledActions).not.toContain('pass');
+  });
+
   it('marks admin-only puzzles and series in their libraries', async () => {
     const adminPuzzle = { ...savedScenario, published: false, adminEnabled: true };
     const adminSeries: SeriesDefinition = {
       id: 'admin-series', name: 'Admin Series', description: '', scenarioIds: [adminPuzzle.id],
-      published: false, adminEnabled: true, teams: ['human', 'orc'], objective: 'touchdown', order: 0,
+      published: false, adminEnabled: true, teams: ['human', 'orc'], order: 0,
     };
     renderEditor([adminPuzzle], [adminSeries]);
     await screen.findByDisplayValue('Saved Puzzle');
@@ -149,7 +162,6 @@ describe('PuzzleEditor unsaved changes', { timeout: 15_000 }, () => {
       description: '',
       scenarioIds: [assignedScenario.id],
       teams: ['black-orc', 'imperial-nobility'],
-      objective: 'touchdown',
       order: 0,
     }]);
     await screen.findByDisplayValue('Saved Puzzle');
@@ -293,11 +305,25 @@ describe('PuzzleEditor unsaved changes', { timeout: 15_000 }, () => {
     });
   });
 
+  it('saves crowd surf as the puzzle objective', async () => {
+    const fetchMock = renderEditor();
+    await screen.findByDisplayValue('Saved Puzzle');
+
+    fireEvent.change(screen.getByRole('combobox', { name: 'Objective' }), {
+      target: { value: 'crowd-surf' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Save Puzzle' }));
+
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/editor/scenarios/scenario-001', expect.objectContaining({ method: 'PUT' })));
+    const scenarioCall = fetchMock.mock.calls.find(([url]) => url === '/api/editor/scenarios/scenario-001');
+    expect(JSON.parse(String(scenarioCall?.[1]?.body))).toMatchObject({ objective: 'crowd-surf' });
+  });
+
   it('shows puzzles owned by another series but does not let them be added again', async () => {
     const secondScenario = { ...savedScenario, id: 'scenario-002', name: 'Already Owned' };
     renderEditor([savedScenario, secondScenario], [
-      { id: 'default', name: 'Tutorial', description: '', scenarioIds: ['scenario-001'], published: true, teams: ['human', 'orc'], objective: 'touchdown', order: 0 },
-      { id: 'advanced', name: 'Advanced', description: '', scenarioIds: ['scenario-002'], published: true, teams: ['human', 'orc'], objective: 'touchdown', order: 1 },
+      { id: 'default', name: 'Tutorial', description: '', scenarioIds: ['scenario-001'], published: true, teams: ['human', 'orc'], order: 0 },
+      { id: 'advanced', name: 'Advanced', description: '', scenarioIds: ['scenario-002'], published: true, teams: ['human', 'orc'], order: 1 },
     ]);
     await screen.findByDisplayValue('Saved Puzzle');
     openCreatorTool(/^Series Creator$/);
@@ -323,7 +349,7 @@ describe('PuzzleEditor unsaved changes', { timeout: 15_000 }, () => {
       activeTeam: 'orc',
     };
     renderEditor([twoTrolls], [
-      { id: 'league', name: 'League', description: '', scenarioIds: ['two-trolls'], published: true, teams: ['human', 'orc'], objective: 'touchdown', order: 0 },
+      { id: 'league', name: 'League', description: '', scenarioIds: ['two-trolls'], published: true, teams: ['human', 'orc'], order: 0 },
     ]);
     await screen.findByDisplayValue('Two Troll Trouble');
     openCreatorTool(/^Series Creator$/);

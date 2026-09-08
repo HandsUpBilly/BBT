@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
-import type { LoginEntry } from '../../../shared/loginTracking.js';
-import { fetchPlayerLogins } from './editorApi';
+import type { AdminLoginEntry } from '../../../shared/loginTracking.js';
+import { fetchPlayerLogins, updateLoginAdmin } from './editorApi';
 
 interface Props { idToken: string | null }
 
@@ -12,7 +12,7 @@ function formatDate(value: string): string {
   return Number.isNaN(date.getTime()) ? 'Unknown' : date.toLocaleString();
 }
 
-function sortValue(entry: LoginEntry, key: SortKey): number | string {
+function sortValue(entry: AdminLoginEntry, key: SortKey): number | string {
   switch (key) {
     case 'name': return entry.name;
     case 'first': return Date.parse(entry.firstLoginAt);
@@ -26,7 +26,7 @@ function escapeCsv(value: string | number): string {
   return /[",\n]/.test(text) ? `"${text.replaceAll('"', '""')}"` : text;
 }
 
-function downloadLoginsCsv(entries: LoginEntry[]): void {
+function downloadLoginsCsv(entries: AdminLoginEntry[]): void {
   const header = ['Handle', 'Signed in', 'First login', 'Last login', 'Login count'];
   const rows = entries.map(entry => [
     entry.name, entry.userId ? 'Yes' : 'No', entry.firstLoginAt, entry.lastLoginAt, entry.loginCount,
@@ -41,12 +41,13 @@ function downloadLoginsCsv(entries: LoginEntry[]): void {
 }
 
 export function AdminLogins({ idToken }: Props) {
-  const [entries, setEntries] = useState<LoginEntry[] | null>(null);
+  const [entries, setEntries] = useState<AdminLoginEntry[] | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string>();
   const [query, setQuery] = useState('');
   const [sortKey, setSortKey] = useState<SortKey>('last');
   const [sortDirection, setSortDirection] = useState<SortDirection>('descending');
+  const [updatingUserId, setUpdatingUserId] = useState<string>();
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -71,6 +72,20 @@ export function AdminLogins({ idToken }: Props) {
     } else {
       setSortKey(nextKey);
       setSortDirection(nextKey === 'name' ? 'ascending' : 'descending');
+    }
+  };
+
+  const setAdministrator = async (entry: AdminLoginEntry) => {
+    if (!entry.userId) return;
+    setUpdatingUserId(entry.userId);
+    setError(undefined);
+    try {
+      await updateLoginAdmin(entry.userId, !entry.isManagedAdmin, idToken);
+      await load();
+    } catch (updateError) {
+      setError(updateError instanceof Error ? updateError.message : 'Could not update administrator access.');
+    } finally {
+      setUpdatingUserId(undefined);
     }
   };
 
@@ -140,6 +155,7 @@ export function AdminLogins({ idToken }: Props) {
                       </button>
                     </th>
                   ))}
+                  <th scope="col">Administrator</th>
                 </tr>
               </thead>
               <tbody>
@@ -152,10 +168,31 @@ export function AdminLogins({ idToken }: Props) {
                     <td>{formatDate(entry.firstLoginAt)}</td>
                     <td>{formatDate(entry.lastLoginAt)}</td>
                     <td>{entry.loginCount}</td>
+                    <td>
+                      {entry.isManagedAdmin ? (
+                        <button
+                          className="btn btn--secondary"
+                          disabled={updatingUserId === entry.userId}
+                          onClick={() => { void setAdministrator(entry); }}
+                        >
+                          {updatingUserId === entry.userId ? 'Updating...' : 'Demote'}
+                        </button>
+                      ) : entry.adminEligible && entry.userId ? (
+                        <button
+                          className="btn btn--secondary"
+                          disabled={updatingUserId === entry.userId}
+                          onClick={() => { void setAdministrator(entry); }}
+                        >
+                          {updatingUserId === entry.userId ? 'Updating...' : 'Promote'}
+                        </button>
+                      ) : (
+                        <span>{entry.userId ? 'Google sign-in required' : 'Guest'}</span>
+                      )}
+                    </td>
                   </tr>
                 ))}
                 {filtered.length === 0 && (
-                  <tr><td colSpan={4} className="admin-statistics__empty">No players match that search.</td></tr>
+                  <tr><td colSpan={5} className="admin-statistics__empty">No players match that search.</td></tr>
                 )}
               </tbody>
             </table>

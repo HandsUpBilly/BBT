@@ -3,6 +3,8 @@
 // handle — it exists specifically to answer "who has played this, and how
 // often" for the admin Statistics screen.
 
+import { normalizeAdminEmail } from './adminManagement.js';
+
 export const LOGIN_LIMITS = { name: 32 };
 
 export class LoginValidationError extends Error {}
@@ -36,18 +38,30 @@ export function recordLogin(entries, { name, user }, now = new Date().toISOStrin
 
   const index = entries.findIndex(matches);
   if (index < 0) {
+    // The address is retained only for a verified Google identity so an
+    // administrator can grant access from the login list. It is never part of
+    // the editor response; see adminLoginEntries below.
+    const adminEmail = user?.provider === 'google' ? normalizeAdminEmail(user.email) : null;
     const entry = {
       name,
       firstLoginAt: now,
       lastLoginAt: now,
       loginCount: 1,
       ...(user ? { userId: user.providerUserId, authProvider: user.provider } : {}),
+      ...(adminEmail ? { adminEmail } : {}),
     };
     return { entries: [...entries, entry], entry };
   }
 
   const existing = entries[index];
-  const entry = { ...existing, name, lastLoginAt: now, loginCount: existing.loginCount + 1 };
+  const adminEmail = user?.provider === 'google' ? normalizeAdminEmail(user.email) : null;
+  const entry = {
+    ...existing,
+    name,
+    lastLoginAt: now,
+    loginCount: existing.loginCount + 1,
+    ...(adminEmail ? { adminEmail } : {}),
+  };
   const next = [...entries];
   next[index] = entry;
   return { entries: next, entry };
@@ -56,4 +70,27 @@ export function recordLogin(entries, { name, user }, now = new Date().toISOStrin
 /** Most recently active player first. */
 export function sortLogins(entries) {
   return [...entries].sort((a, b) => b.lastLoginAt.localeCompare(a.lastLoginAt));
+}
+
+/** Finds the private, verified Google address attached to a login record. */
+export function loginAdminEmail(entries, userId) {
+  const entry = entries.find(item => item.userId === userId);
+  if (!entry || entry.authProvider !== 'google') return null;
+  return normalizeAdminEmail(entry.adminEmail);
+}
+
+/**
+ * Safe editor projection: deliberately redacts the stored email while
+ * exposing enough state for the administrator to grant or revoke access.
+ */
+export function adminLoginEntries(entries, managedAdmins = []) {
+  const adminEmails = new Set(managedAdmins.map(normalizeAdminEmail).filter(Boolean));
+  return sortLogins(entries).map(({ adminEmail, ...entry }) => {
+    const email = entry.authProvider === 'google' ? normalizeAdminEmail(adminEmail) : null;
+    return {
+      ...entry,
+      adminEligible: Boolean(email),
+      isManagedAdmin: Boolean(email && adminEmails.has(email)),
+    };
+  });
 }

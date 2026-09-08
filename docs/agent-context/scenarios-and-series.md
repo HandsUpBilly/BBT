@@ -16,7 +16,7 @@ Primary files:
 - `name`
 - `description`
 - `activeTeam`
-- `objective` (`touchdown` today; the field is deliberately extensible)
+- `objective` (`touchdown` or `crowd-surf`)
 - `freePlay` (whether the puzzle also appears as a standalone match)
 - `published?: boolean`
 - `ballPosition?: Position | null`
@@ -50,6 +50,18 @@ Loose-ball pickup **is** implemented: walking onto the ball's square adds an
 Agility test (`pickupTargetAt`) that folds into the probability chain, and a
 piece can pick up and then pass/hand off in the same activation. A knocked-down
 carrier also drops the ball, creating a new loose ball mid-run.
+
+## Objectives
+
+- `touchdown`: the active team completes the puzzle by carrying, handing off,
+  or passing the ball into its scoring end zone.
+- `crowd-surf`: the active team completes the puzzle by pushing an opposing
+  player off any pitch edge. Surfing a team-mate during a chain push does not
+  satisfy the objective.
+
+Reaching the end zone does not complete a crowd-surf puzzle, and a crowd surf
+does not complete a touchdown puzzle. Both objectives use the same probability
+score and Parallel Universes completion rules.
 
 ## Validation
 

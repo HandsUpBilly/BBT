@@ -142,7 +142,7 @@ export function activeLines(run: BranchRun): RunLine[] {
 
 /** Lines that still need the player to do something before the run is complete. */
 export function unresolvedLines(run: BranchRun): RunLine[] {
-  return activeLines(run).filter(line => line.state.phase !== 'touchdown');
+  return activeLines(run).filter(line => line.state.phase === 'playing');
 }
 
 /** True once every branch is scored, conceded, or dead — i.e. safe to submit. */
@@ -544,7 +544,7 @@ function toTree(run: BranchRun, id: string): LineNode {
 
   const kind = line.conceded
     ? 'conceded'
-    : line.state.phase === 'touchdown' ? 'scored' : 'open';
+    : line.state.phase !== 'playing' ? 'scored' : 'open';
 
   return { id, lineProb: prob, lineDice: 0, outcome: { kind } };
 }
@@ -610,7 +610,7 @@ export function toSubmissionTree(run: BranchRun, lineId: string = run.rootId): S
     return node;
   }
 
-  if (!line.conceded && line.state.phase === 'touchdown') node.outcome = 'scored';
+  if (!line.conceded && line.state.phase !== 'playing') node.outcome = 'scored';
   return node;
 }
 
@@ -813,7 +813,7 @@ export function branchStrip(run: BranchRun): BranchStripEntry[] {
       const summary = weights.get(line.id);
       const status: BranchStripEntry['status'] = line.conceded
         ? 'conceded'
-        : line.state.phase === 'touchdown' ? 'scored'
+        : line.state.phase !== 'playing' ? 'scored'
         : line.needsAttention ? 'needs-attention'
         : 'authoring';
       return {
@@ -902,7 +902,7 @@ export function branchTreeView(run: BranchRun): BranchTreeBlockView | null {
         ? 'continued'
         : child.conceded
           ? 'conceded'
-          : child.state.phase === 'touchdown'
+          : child.state.phase !== 'playing'
             ? 'scored'
             : child.needsAttention
               ? 'needs-attention'

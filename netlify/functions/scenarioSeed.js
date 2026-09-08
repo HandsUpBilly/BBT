@@ -1013,7 +1013,6 @@ export const STATIC_SERIES = [
       "human",
       "orc"
     ],
-    "objective": "touchdown",
     "order": 0,
     "scenarioIds": [
       "scenario-001",

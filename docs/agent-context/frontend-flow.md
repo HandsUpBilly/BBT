@@ -222,6 +222,8 @@ boolean capability; administrator emails are never exposed to the client.
 When that capability is confirmed, the home screen loads public plus
 admin-enabled puzzles and series from the protected editor endpoint. Ordinary
 players use `/api/scenarios`, which never contains admin-only records.
+The administrator's home selectors visibly tag records that are enabled only
+for admins; the tag is never rendered for a non-admin view.
 
 - Series tab shows **Tutorial**, the default series row from
   `client/src/series/default.json`. Starting it opens the drill chooser rather

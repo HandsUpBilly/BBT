@@ -20,6 +20,10 @@ const FREE_PLAY_FILTERS: Array<{ value: FreePlayFilter; label: string }> = [
   { value: 'specials', label: UI_COPY.landing.specialsFilter },
 ];
 
+function isAdminOnly(item: { published?: boolean; adminEnabled?: boolean }): boolean {
+  return item.published === false && item.adminEnabled === true;
+}
+
 interface ScenarioProgress {
   played: boolean;
   bestPercent: number | null;
@@ -216,7 +220,10 @@ export function ScenarioSelect({
                   ) : null}
                 </div>
                 <div className="series-row__body">
-                  <span className="series-row__eyebrow">{String(index + 1).padStart(2, '0')} {item.label ?? 'Series'}</span>
+                  <div className="series-row__eyebrow">
+                    <span>{String(index + 1).padStart(2, '0')} {item.label ?? 'Series'}</span>
+                    {isAdmin && isAdminOnly(item) ? <span className="scenario-select__admin-only-tag">Admin only</span> : null}
+                  </div>
                   <h2 className="series-row__title">{item.name}</h2>
                   <p className="series-row__desc">{item.description}</p>
                   <div className="series-row__matchup">{(item.teams ?? ['human', 'orc']).map(teamPluralLabel).join(' vs ')}</div>
@@ -268,11 +275,14 @@ export function ScenarioSelect({
               return (
                 <div key={s.id} className="challenge-tile">
                   <div className="challenge-tile__header">
-                    {owningSeries ? (
-                      <div className="challenge-tile__origin">
-                        {isTutorial ? UI_COPY.landing.tutorialOrigin : UI_COPY.landing.seriesOrigin(owningSeries.name)}
-                      </div>
-                    ) : null}
+                    <div className="challenge-tile__badges">
+                      {owningSeries ? (
+                        <div className="challenge-tile__origin">
+                          {isTutorial ? UI_COPY.landing.tutorialOrigin : UI_COPY.landing.seriesOrigin(owningSeries.name)}
+                        </div>
+                      ) : null}
+                      {isAdmin && isAdminOnly(s) ? <span className="scenario-select__admin-only-tag">Admin only</span> : null}
+                    </div>
                     <div className="challenge-tile__index" aria-hidden="true">
                       {UI_COPY.landing.playPrefix} {String(index + 1).padStart(2, '0')}
                     </div>

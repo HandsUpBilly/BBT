@@ -34,14 +34,17 @@ Editor features:
 - move players by drag,
 - place ball on a player or loose on the ground,
 - save over existing / save as new,
-- select the puzzle objective (Touchdown is the only current value),
+- select the puzzle objective (Touchdown or Crowd surf),
+- choose the player-menu actions a puzzle allows (Move, Hand-off, Pass, Block,
+  and Blitz); all are enabled by default, including for legacy puzzles,
 - independently enable puzzles for everyone and/or admins, and opt them into
   Free Play,
 - save changes directly to the player-visible source of truth; enabled flags
   determine what appears outside Admin Mode,
 - create, edit, and delete multiple series in the separate Series Creator,
 - set each series title, short category label, description, two teams, uploaded
-  logo, objective, list position, and everyone/admin enabled states,
+  logo, list position, and everyone/admin enabled states; objectives belong to
+  each puzzle, not its series,
 - add, remove, and reorder its puzzle steps; this is the single owner of series
   membership, each puzzle can belong to only one series, and assigned puzzles
   must satisfy BB2025 roster limits and use the series matchup,
@@ -100,6 +103,12 @@ The last 100 managed additions/removals are retained with actor, target, and
 timestamp and shown in the console; removal has an explicit confirmation.
 An unreadable managed-admin store is an access-check failure (503), not an
 empty allowlist, so storage trouble cannot broaden administrator access.
+The Statistics login table can also promote or demote an eligible verified
+Google login without revealing or requiring its email address in the browser.
+The login store retains that private address only for Google logins, and the
+editor API returns only eligibility and managed-admin status. Guests, other
+identity providers, and older Google login records that have not signed in
+since this capability was added cannot be promoted from the table.
 
 Admin Console also lists the public player profiles stored outside leaderboard
 records. It shows the public country/nationality label and current avatar and
@@ -147,6 +156,8 @@ analytics, editor drafts, and browser-local attempt history untouched.
 - `GET /api/editor/statistics`
 - `GET /api/editor/analytics`
 - `GET` / `POST` / `DELETE /api/editor/admins`
+- `GET` / `POST` / `DELETE /api/editor/logins` (`POST`/`DELETE` use an opaque
+  `userId` query parameter to manage an eligible Google login)
 - `GET` / `DELETE /api/editor/rankings`
 
 These write local JSON files under:

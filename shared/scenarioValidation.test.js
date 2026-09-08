@@ -2,6 +2,8 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
   SCENARIO_ID_RE,
+  SCENARIO_ACTIONS,
+  enabledScenarioActions,
   missingSeriesScenarioIds,
   normalizeScenario,
   normalizeSeries,
@@ -36,6 +38,10 @@ function validScenario(overrides = {}) {
 
 test('accepts a well-formed scenario', () => {
   assert.deepEqual(validateScenario(validScenario()), []);
+});
+
+test('preserves crowd surf as a selectable objective', () => {
+  assert.equal(validScenario({ objective: 'crowd-surf' }).objective, 'crowd-surf');
 });
 
 test('rejects malformed ids', () => {
@@ -158,6 +164,13 @@ test('normalizeScenario coerces hostile input rather than throwing', () => {
   assert.ok(validateScenario(scenario).length > 0);
 });
 
+test('scenario actions default to every player-menu action and reject unknown values', () => {
+  assert.deepEqual(normalizeScenario({}).enabledActions, SCENARIO_ACTIONS);
+  assert.deepEqual(normalizeScenario({ enabledActions: ['pass', 'pass', 'not-an-action'] }).enabledActions, ['pass']);
+  assert.deepEqual(enabledScenarioActions({}), SCENARIO_ACTIONS);
+  assert.deepEqual(enabledScenarioActions({ enabledActions: [] }), []);
+});
+
 test('normalizes the two puzzle teams and validates roster membership', () => {
   const scenario = validScenario({ teams: ['orc', 'human'] });
   assert.deepEqual(scenario.teams, ['orc', 'human']);
@@ -195,11 +208,11 @@ test('normalizers preserve explicit admin visibility without enabling it by defa
 test('normalizeSeries supplies future-ready defaults and preserves a valid id', () => {
   assert.deepEqual(normalizeSeries(null), {
     id: 'default', name: 'Default Series', description: '', scenarioIds: [],
-    published: true, teams: ['human', 'orc'], objective: 'touchdown', order: 0,
+    published: true, teams: ['human', 'orc'], order: 0,
   });
   assert.deepEqual(
-    normalizeSeries({ id: 'hacked', name: '  Cup  ', scenarioIds: ['a', '', 'b'] }),
-    { id: 'hacked', name: 'Cup', description: '', scenarioIds: ['a', 'b'], published: true, teams: ['human', 'orc'], objective: 'touchdown', order: 0 },
+    normalizeSeries({ id: 'hacked', name: '  Cup  ', scenarioIds: ['a', '', 'b'], objective: 'touchdown' }),
+    { id: 'hacked', name: 'Cup', description: '', scenarioIds: ['a', 'b'], published: true, teams: ['human', 'orc'], order: 0 },
   );
 });
 
@@ -247,10 +260,10 @@ test('updateSeriesAssignment cannot leave an enabled series with no steps', () =
 
 test('normalizeSeries preserves a bounded series logo key', () => {
   assert.deepEqual(normalizeSeries({ logo: '  nuffle-shuffle  ', scenarioIds: [] }), {
-    id: 'default', name: 'Default Series', description: '', scenarioIds: [], published: true, teams: ['human', 'orc'], objective: 'touchdown', order: 0, logo: 'nuffle-shuffle',
+    id: 'default', name: 'Default Series', description: '', scenarioIds: [], published: true, teams: ['human', 'orc'], order: 0, logo: 'nuffle-shuffle',
   });
   assert.deepEqual(normalizeSeries({ logo: 42, scenarioIds: [] }), {
-    id: 'default', name: 'Default Series', description: '', scenarioIds: [], published: true, teams: ['human', 'orc'], objective: 'touchdown', order: 0,
+    id: 'default', name: 'Default Series', description: '', scenarioIds: [], published: true, teams: ['human', 'orc'], order: 0,
   });
   const uploadedLogo = `data:image/webp;base64,${Buffer.from('series-logo').toString('base64')}`;
   assert.equal(normalizeSeries({ logo: uploadedLogo }).logo, uploadedLogo);

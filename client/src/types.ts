@@ -3,7 +3,8 @@ import type { PathStep, BlockOutcomeFace } from './bfs';
 export type { BlockOutcomeFace };
 
 export type Team = 'human' | 'orc' | 'black-orc' | 'imperial-nobility';
-export type Objective = 'touchdown';
+export type Objective = 'touchdown' | 'crowd-surf';
+export type PuzzleAction = 'move' | 'handoff' | 'pass' | 'block' | 'blitz';
 
 /**
  * Portrait pitch coordinates — the orientation scenario JSON and the rules
@@ -57,6 +58,8 @@ export interface Scenario {
   /** The two opposing rosters available to this puzzle. */
   teams?: [Team, Team];
   objective?: Objective;
+  /** Player-menu actions allowed by this puzzle; omitted means all are allowed. */
+  enabledActions?: PuzzleAction[];
   /** Whether this puzzle is also listed as a standalone Free Play puzzle. */
   freePlay?: boolean;
   /** Visible to everyone when true/omitted; false keeps it out of public data. */
@@ -79,7 +82,6 @@ export interface SeriesDefinition {
   /** Whether confirmed admins can see the series when it is not public. */
   adminEnabled?: boolean;
   teams?: [Team, Team];
-  objective?: Objective;
   /** Zero-based display order on the series selection screen. */
   order?: number;
   /** Uploaded WebP data URL or a legacy built-in artwork key. */
@@ -186,7 +188,8 @@ export type ActionLogEntry = MoveLogEntry | HandoffLogEntry | PassLogEntry | Pas
 /** A puzzle is a single turn: you are either still playing it or you scored. */
 export type GamePhase =
   | 'playing'
-  | 'touchdown';
+  | 'touchdown'
+  | 'crowd-surf';
 
 export type AppMode =
   | 'home'
@@ -213,6 +216,7 @@ export interface ActivationSnapshot {
 export interface GameState {
   pieces: PlayerPiece[];
   activeTeam: Team;
+  objective: Objective;
   selectedPieceId: string | null;
   // All squares reachable within remaining MA (for click validation)
   reachableKeys: Set<string>;

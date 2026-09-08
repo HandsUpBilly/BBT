@@ -7,7 +7,7 @@ import type { GameState } from './types';
  * touchdown objective impossible in this universe.
  */
 export function isScoringRunStalled(state: GameState): boolean {
-  if (state.phase !== 'playing') return false;
+  if (state.phase !== 'playing' || state.objective !== 'touchdown') return false;
   return state.pieces.some(piece =>
     piece.team === state.activeTeam
     && piece.hasBall

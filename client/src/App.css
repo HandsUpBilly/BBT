@@ -651,10 +651,31 @@ body,
 /* Status */
 .hud__status {
   flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 10px;
   font-size: 0.82rem;
   color: var(--color-text-muted);
   min-width: 0;
 }
+
+.hud__status > span { flex: 1; }
+
+.hud__crowd-surf {
+  flex: 0 0 auto;
+  min-height: 34px;
+  padding: 6px 12px;
+  border: 1px solid var(--color-accent-border);
+  border-radius: var(--radius-button);
+  background: var(--color-accent);
+  color: var(--color-text-strong);
+  font: 700 0.76rem/1 var(--font-display);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.hud__crowd-surf:hover { background: var(--color-accent-hover); }
 
 /* ── Inline notices ──────────────────────────────────────────────────────
    Non-blocking status messages (a best-effort submit failed, the Google

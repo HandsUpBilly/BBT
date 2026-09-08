@@ -24,6 +24,7 @@ function makeBlankState(overrides: Partial<GameState> = {}): GameState {
   return {
     pieces: [],
     activeTeam: 'human',
+    objective: 'touchdown',
     selectedPieceId: null,
     reachableKeys: new Set(),
     originPos: null,
@@ -72,6 +73,7 @@ export function makeScenarioState(scenario: Scenario): GameState {
   return makeBlankState({
     pieces: scenario.pieces.map(def => ({ ...def, activated: false, down: def.down ?? false })),
     activeTeam: scenario.activeTeam,
+    objective: scenario.objective ?? 'touchdown',
     scenarioId: scenario.id,
     ballPosition: scenario.ballPosition ?? null,
   });
@@ -620,7 +622,7 @@ function commitMove(prev: GameState, clickedPos: Position): GameState {
   // this same click, or earlier in the same activation) reached the end
   // zone — this finalizes the piece's position/hasBall and clears the
   // loose ball immediately.
-  if (carriesBallThisClick && isTouchdownSquare(clickedPos, piece.team)) {
+  if (prev.objective === 'touchdown' && carriesBallThisClick && isTouchdownSquare(clickedPos, piece.team)) {
     const pieces = prev.pieces.map(p =>
       p.id === piece.id ? { ...p, position: clickedPos, activated: true, hasBall: true } : p
     );
@@ -812,9 +814,10 @@ export function applyPushChoice(prev: GameState, pos: Position, followUp?: boole
 
   const currentPieceId = resolution.chainPieceId ?? resolution.defenderId;
   const currentFrom = resolution.chainFrom ?? resolution.defenderFrom;
+  const isCrowdDestination = pos.col < 0 || pos.col >= 15 || pos.row < 0 || pos.row >= ROWS;
   const push: PushMovement = { pieceId: currentPieceId, from: currentFrom, to: pos };
   const pushes = [...(resolution.pushes ?? []), push];
-  const occupyingPiece = prev.pieces.find(piece =>
+  const occupyingPiece = !isCrowdDestination && prev.pieces.find(piece =>
     piece.id !== currentPieceId && key(piece.position) === targetKey,
   );
 
@@ -845,9 +848,16 @@ export function applyPushChoice(prev: GameState, pos: Position, followUp?: boole
   const attacker = prev.pieces.find(p => p.id === resolution.attackerId);
   const attackerFollowsUp = resolution.offerFollowUp && followUp;
 
-  const destinations = new Map(pushes.map(step => [step.pieceId, step.to]));
+  const surfedPieceIds = new Set(
+    pushes
+      .filter(step => step.to.col < 0 || step.to.col >= 15 || step.to.row < 0 || step.to.row >= ROWS)
+      .map(step => step.pieceId),
+  );
+  const destinations = new Map(
+    pushes.filter(step => !surfedPieceIds.has(step.pieceId)).map(step => [step.pieceId, step.to]),
+  );
 
-  const pushed = prev.pieces.map(p => {
+  const pushed = prev.pieces.filter(p => !surfedPieceIds.has(p.id)).map(p => {
     const destination = destinations.get(p.id);
     if (destination) {
       return {
@@ -867,9 +877,15 @@ export function applyPushChoice(prev: GameState, pos: Position, followUp?: boole
   });
 
   // A pushed-and-downed carrier drops the ball on the square it lands in.
-  const { pieces, ballPosition } = dropBallIfCarrying(
+  const { pieces, ballPosition: droppedBallPosition } = dropBallIfCarrying(
     pushed, prev.ballPosition, resolution.defenderFalls ? [resolution.defenderId] : [],
   );
+  const surfedCarrierPush = pushes.find(step =>
+    surfedPieceIds.has(step.pieceId) && prev.pieces.some(piece => piece.id === step.pieceId && piece.hasBall),
+  );
+  // Throw-ins are outside this one-turn rules model. Keep a surfed carrier's
+  // ball on their last in-bounds square so a non-surf objective never loses it.
+  const ballPosition = surfedCarrierPush?.from ?? droppedBallPosition;
 
   // Record the push destination on the block entry that produced it, so the
   // pushed-from/pushed-to indicator can be derived from actionLog alone —
@@ -911,7 +927,12 @@ export function applyPushChoice(prev: GameState, pos: Position, followUp?: boole
     actionLog,
     pendingBlockResolution: null,
     pushTargetKeys: new Set<string>(),
+    ...(prev.objective === 'crowd-surf'
+      && [...surfedPieceIds].some(id => prev.pieces.some(piece => piece.id === id && piece.team !== prev.activeTeam))
+      ? { phase: 'crowd-surf' as const }
+      : {}),
   };
+  if (nextState.phase !== 'playing') return clearSelection(nextState);
   return resolution.isBlitz
     ? resumeMovementAfterBlitz(nextState, pieces, resolution.attackerId)
     : clearSelection(nextState);
@@ -992,7 +1013,7 @@ export function applyHandoffTarget(prev: GameState, pos: Position): GameState {
   });
 
   // Touchdown: the receiver caught the handoff in the end zone
-  const isTouchdown = isTouchdownSquare(receiver.position, receiver.team);
+  const isTouchdown = prev.objective === 'touchdown' && isTouchdownSquare(receiver.position, receiver.team);
 
   return clearSelection({
     ...prev,
@@ -1095,7 +1116,7 @@ export function applyPassTarget(prev: GameState, pos: Position): GameState {
   });
 
   // Touchdown: the receiver caught the pass in the end zone
-  const isTouchdown = isTouchdownSquare(receiver.position, receiver.team);
+  const isTouchdown = prev.objective === 'touchdown' && isTouchdownSquare(receiver.position, receiver.team);
 
   return clearSelection({
     ...prev,
