@@ -119,6 +119,21 @@ describe('splitOnBlock', () => {
     expect(line.startCumProb).toBe(1);
   });
 
+  it('automatically fails a crowd-surf branch once its final blocker has resolved', () => {
+    const state = {
+      ...declaredBlock(),
+      objective: 'crowd-surf' as const,
+    };
+    const split = splitOnBlock(startRun(state));
+    const pushed = entry(split, 'Pushed')!;
+
+    // The branch cannot score until its pending push is resolved, but once it
+    // is pushed in-bounds the sole Human has spent their activation.
+    expect(entry(split, 'Down in place')?.status).toBe('conceded');
+    const resolved = choosePush(selectBranch(split, pushed.id), { col: 7, row: 8 }, false);
+    expect(entry(resolved, 'Pushed')?.status).toBe('conceded');
+  });
+
   it('records who was blocking whom on the split, not just the dice', () => {
     const run = blockRun();
     const split = Object.values(run.lines).find(l => l.split)!.split!;
