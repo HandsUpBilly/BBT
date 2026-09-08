@@ -35,7 +35,6 @@ const unassignedSeries: SeriesDefinition[] = [{
   scenarioIds: [],
   published: false,
   teams: ['human', 'orc'],
-  objective: 'touchdown',
   order: 0,
 }];
 
@@ -54,7 +53,6 @@ function renderEditor(scenarios: Scenario[] = [savedScenario], series?: SeriesDe
       description: '',
       scenarioIds: scenarios.filter(scenario => scenario.published !== false).map(scenario => scenario.id),
       teams: ['human', 'orc'],
-      objective: 'touchdown',
       order: 0,
     }],
   };
@@ -84,7 +82,7 @@ describe('PuzzleEditor unsaved changes', { timeout: 15_000 }, () => {
     const adminPuzzle = { ...savedScenario, published: false, adminEnabled: true };
     const adminSeries: SeriesDefinition = {
       id: 'admin-series', name: 'Admin Series', description: '', scenarioIds: [adminPuzzle.id],
-      published: false, adminEnabled: true, teams: ['human', 'orc'], objective: 'touchdown', order: 0,
+      published: false, adminEnabled: true, teams: ['human', 'orc'], order: 0,
     };
     renderEditor([adminPuzzle], [adminSeries]);
     await screen.findByDisplayValue('Saved Puzzle');
@@ -149,7 +147,6 @@ describe('PuzzleEditor unsaved changes', { timeout: 15_000 }, () => {
       description: '',
       scenarioIds: [assignedScenario.id],
       teams: ['black-orc', 'imperial-nobility'],
-      objective: 'touchdown',
       order: 0,
     }]);
     await screen.findByDisplayValue('Saved Puzzle');
@@ -296,8 +293,8 @@ describe('PuzzleEditor unsaved changes', { timeout: 15_000 }, () => {
   it('shows puzzles owned by another series but does not let them be added again', async () => {
     const secondScenario = { ...savedScenario, id: 'scenario-002', name: 'Already Owned' };
     renderEditor([savedScenario, secondScenario], [
-      { id: 'default', name: 'Tutorial', description: '', scenarioIds: ['scenario-001'], published: true, teams: ['human', 'orc'], objective: 'touchdown', order: 0 },
-      { id: 'advanced', name: 'Advanced', description: '', scenarioIds: ['scenario-002'], published: true, teams: ['human', 'orc'], objective: 'touchdown', order: 1 },
+      { id: 'default', name: 'Tutorial', description: '', scenarioIds: ['scenario-001'], published: true, teams: ['human', 'orc'], order: 0 },
+      { id: 'advanced', name: 'Advanced', description: '', scenarioIds: ['scenario-002'], published: true, teams: ['human', 'orc'], order: 1 },
     ]);
     await screen.findByDisplayValue('Saved Puzzle');
     openCreatorTool(/^Series Creator$/);
@@ -323,7 +320,7 @@ describe('PuzzleEditor unsaved changes', { timeout: 15_000 }, () => {
       activeTeam: 'orc',
     };
     renderEditor([twoTrolls], [
-      { id: 'league', name: 'League', description: '', scenarioIds: ['two-trolls'], published: true, teams: ['human', 'orc'], objective: 'touchdown', order: 0 },
+      { id: 'league', name: 'League', description: '', scenarioIds: ['two-trolls'], published: true, teams: ['human', 'orc'], order: 0 },
     ]);
     await screen.findByDisplayValue('Two Troll Trouble');
     openCreatorTool(/^Series Creator$/);

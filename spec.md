@@ -5789,8 +5789,8 @@ extensible objective and an independent Free Play flag. Series Creator is the
 single owner of series membership and play order: each puzzle can belong to at
 most one series, already-owned puzzles are unavailable in other series, and an
 enabled series cannot be saved without a step. Series are ordered records with
-two teams, an uploaded logo, title/description, short category label, objective,
-list position, and ordered puzzle steps. Save is live, with no separate Publish step; enabled
+two teams, an uploaded logo, title/description, short category label, list
+position, and ordered puzzle steps. Save is live, with no separate Publish step; enabled
 flags control player visibility. The runtime store accepts the legacy single
 series object and migrates it to the multi-series collection on read.
 

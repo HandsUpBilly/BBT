@@ -41,7 +41,8 @@ Editor features:
   determine what appears outside Admin Mode,
 - create, edit, and delete multiple series in the separate Series Creator,
 - set each series title, short category label, description, two teams, uploaded
-  logo, objective, list position, and everyone/admin enabled states,
+  logo, list position, and everyone/admin enabled states; objectives belong to
+  each puzzle, not its series,
 - add, remove, and reorder its puzzle steps; this is the single owner of series
   membership, each puzzle can belong to only one series, and assigned puzzles
   must satisfy BB2025 roster limits and use the series matchup,

@@ -79,7 +79,6 @@ export interface SeriesDefinition {
   /** Whether confirmed admins can see the series when it is not public. */
   adminEnabled?: boolean;
   teams?: [Team, Team];
-  objective?: Objective;
   /** Zero-based display order on the series selection screen. */
   order?: number;
   /** Uploaded WebP data URL or a legacy built-in artwork key. */
