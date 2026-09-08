@@ -78,6 +78,21 @@ function openCreatorTool(name: RegExp) {
 }
 
 describe('PuzzleEditor unsaved changes', { timeout: 15_000 }, () => {
+  it('enables every player-menu action by default and saves an edited action list', async () => {
+    const fetchMock = renderEditor();
+    await screen.findByDisplayValue('Saved Puzzle');
+
+    for (const action of ['Move', 'Hand-off', 'Pass', 'Block', 'Blitz']) {
+      expect(screen.getByLabelText(`Enable ${action}`)).toHaveProperty('checked', true);
+    }
+    fireEvent.click(screen.getByLabelText('Enable Pass'));
+    fireEvent.click(screen.getByRole('button', { name: 'Save Puzzle' }));
+
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/editor/scenarios/scenario-001', expect.objectContaining({ method: 'PUT' })));
+    const save = fetchMock.mock.calls.find((call: unknown[]) => (call[1] as RequestInit | undefined)?.method === 'PUT');
+    expect(JSON.parse(String((save?.[1] as RequestInit).body)).enabledActions).not.toContain('pass');
+  });
+
   it('marks admin-only puzzles and series in their libraries', async () => {
     const adminPuzzle = { ...savedScenario, published: false, adminEnabled: true };
     const adminSeries: SeriesDefinition = {

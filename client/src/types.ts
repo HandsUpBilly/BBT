@@ -4,6 +4,7 @@ export type { BlockOutcomeFace };
 
 export type Team = 'human' | 'orc' | 'black-orc' | 'imperial-nobility';
 export type Objective = 'touchdown' | 'crowd-surf';
+export type PuzzleAction = 'move' | 'handoff' | 'pass' | 'block' | 'blitz';
 
 /**
  * Portrait pitch coordinates — the orientation scenario JSON and the rules
@@ -57,6 +58,8 @@ export interface Scenario {
   /** The two opposing rosters available to this puzzle. */
   teams?: [Team, Team];
   objective?: Objective;
+  /** Player-menu actions allowed by this puzzle; omitted means all are allowed. */
+  enabledActions?: PuzzleAction[];
   /** Whether this puzzle is also listed as a standalone Free Play puzzle. */
   freePlay?: boolean;
   /** Visible to everyone when true/omitted; false keeps it out of public data. */
