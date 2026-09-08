@@ -676,8 +676,9 @@ export function PuzzleEditor({ onBack, onPlay, onReport, previewScenario, idToke
             </label>
             <label>
               Objective
-              <select value={draft.objective ?? 'touchdown'} onChange={() => undefined}>
+              <select value={draft.objective ?? 'touchdown'} onChange={event => setMetadata('objective', event.target.value as Scenario['objective'])}>
                 <option value="touchdown">Touchdown</option>
+                <option value="crowd-surf">Crowd surf</option>
               </select>
             </label>
             <fieldset className="editor__toggle-group">

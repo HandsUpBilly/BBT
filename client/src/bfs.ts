@@ -444,7 +444,6 @@ function pushBackArc(attackerPos: Position, defenderPos: Position): Position[] {
   const result: Position[] = [];
   for (const [ox, oy] of offsets) {
     const sq: Position = { col: defenderPos.col + ox, row: defenderPos.row + oy };
-    if (sq.col < 0 || sq.col >= COLS || sq.row < 0 || sq.row >= ROWS) continue;
     result.push(sq);
   }
   return result;
@@ -474,8 +473,9 @@ function chainCanReachEmpty(
 }
 
 /**
- * Legal destinations from the BB push arc. An empty square must be used when
- * one exists. If all three on-pitch choices are occupied, return only occupied
+ * Legal destinations from the BB push arc. Off-pitch destinations remain in
+ * the result: choosing one crowd-surfs the displaced player. An empty square
+ * must be used when one exists. If all three on-pitch choices are occupied, return only occupied
  * squares whose occupant can itself be chain-pushed along a route that
  * eventually reaches an empty square.
  */

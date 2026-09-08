@@ -35,6 +35,21 @@ describe('SubmitModal series board review', () => {
     expect(container.querySelector('.action-log-detail--review')).toBeTruthy();
   });
 
+  it('names a crowd-surf victory without showing touchdown artwork', () => {
+    const { container } = render(
+      <SubmitModal
+        scenario={{ ...scenario, objective: 'crowd-surf' }}
+        actionLog={[]}
+        onSubmit={vi.fn()}
+        onDismiss={vi.fn()}
+        seriesMode
+      />,
+    );
+
+    expect(screen.getByRole('dialog', { name: 'Crowd surf!' })).toBeTruthy();
+    expect(container.querySelector('.submit-modal__masthead-art')).toBeNull();
+  });
+
   it('offers board review without submitting or dismissing the result', () => {
     const onSubmit = vi.fn();
     const onDismiss = vi.fn();
