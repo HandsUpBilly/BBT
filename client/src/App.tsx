@@ -2106,6 +2106,7 @@ export default function App() {
       {showStalledRunDialog && (
         <RunOutcomeDialog
           variant="failed"
+          objective={state.objective}
           onRestart={handleRestartTurn}
           onExit={handleExitFailedPuzzle}
         />

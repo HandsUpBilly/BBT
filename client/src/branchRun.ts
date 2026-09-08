@@ -46,6 +46,7 @@ import {
   replayClick,
 } from './branchReplay';
 import { summarizeActionLog } from './riskyMoves';
+import { isScoringRunStalled } from './runOutcome';
 
 /** One authored segment: a board plus how it relates to the rest of the run. */
 export interface RunLine {
@@ -164,6 +165,13 @@ function withLines(run: BranchRun, updates: RunLine[]): BranchRun {
   return { ...run, lines };
 }
 
+/** A crowd-surf branch with no remaining legal block is a dead outcome. */
+function failStalledCrowdSurfLine(line: RunLine): RunLine {
+  return isScoringRunStalled(line.state)
+    ? { ...line, conceded: true, needsAttention: false }
+    : line;
+}
+
 export function selectBranch(run: BranchRun, id: string): BranchRun {
   if (!run.lines[id] || id === run.viewedId) return run;
   // Opening a flagged branch is the player acknowledging it; it stays out of
@@ -200,7 +208,7 @@ function authorAcrossGroup(
 
   const nextViewedState = apply(viewed.state);
   if (nextViewedState === viewed.state) return run;
-  const updates: RunLine[] = [{ ...viewed, state: nextViewedState, needsAttention: false }];
+  const updates: RunLine[] = [failStalledCrowdSurfLine({ ...viewed, state: nextViewedState, needsAttention: false })];
   let seq = run.seq;
 
   for (const sibling of lockstepGroup(run, viewed)) {
@@ -220,7 +228,7 @@ function authorAcrossGroup(
     const hasMatchingRolls = replayed
       && addedRollsMatch(viewed.state, nextViewedState, sibling.state, replayed);
     if (replayed && hasMatchingRolls) {
-      updates.push({ ...sibling, state: replayed });
+      updates.push(failStalledCrowdSurfLine({ ...sibling, state: replayed }));
     } else {
       // Out of lockstep from here on: its own group, and flagged so the branch
       // strip can point the player at it.
@@ -460,7 +468,7 @@ export function splitOnBlock(run: BranchRun): BranchRun {
 
     const children: RunLine[] = resolution.states.map(boardState => {
       const childState = applyBlockBoardState(state, boardState, ctx);
-      return {
+      return failStalledCrowdSurfLine({
         id: `L${seq++}`,
         parentId: parent.id,
         label: BOARD_STATE_LABELS[boardState.kind],
@@ -475,7 +483,7 @@ export function splitOnBlock(run: BranchRun): BranchRun {
         conceded: false,
         needsAttention: false,
         split: null,
-      };
+      });
     });
 
     const split: RunSplit = {

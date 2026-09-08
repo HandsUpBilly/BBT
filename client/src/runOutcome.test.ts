@@ -20,6 +20,28 @@ describe('isScoringRunStalled', () => {
     const state = makeState([humanThrower({ hasBall: true })]);
     expect(isScoringRunStalled(state)).toBe(false);
   });
+
+  it('fails a crowd-surf objective once no active player can block or blitz an opponent', () => {
+    const state = {
+      ...makeState([
+        humanThrower({ hasBall: false, activated: true }),
+        humanThrower({ id: 'orc', team: 'orc', activated: false }),
+      ]),
+      objective: 'crowd-surf' as const,
+    };
+    expect(isScoringRunStalled(state)).toBe(true);
+  });
+
+  it('keeps a crowd-surf objective alive while an unactivated player can blitz', () => {
+    const state = {
+      ...makeState([
+        humanThrower({ hasBall: false }),
+        humanThrower({ id: 'orc', team: 'orc', position: { col: 7, row: 9 } }),
+      ]),
+      objective: 'crowd-surf' as const,
+    };
+    expect(isScoringRunStalled(state)).toBe(false);
+  });
 });
 
 describe('unfinishedBranches', () => {

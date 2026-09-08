@@ -218,6 +218,10 @@ dice tie-break.
 - In a Crowd surf objective, an available off-pitch push resolves immediately:
   the crowd is not a rendered pitch square, so there is no separate **Push into
   crowd** HUD control to press. Other objectives retain that optional control.
+- A Crowd surf universe automatically fails once its board is stable and no
+  standing, unactivated player can legally Block or Blitz an opponent. Pending
+  activations and push choices are never failed early, because they can still
+  be cancelled or resolved into a surf.
 - A push must use an empty square from its three-square push arc when one is
   available. When all available squares are occupied, those occupants become
   selectable and the chosen player is pushed through its own forward arc. This
