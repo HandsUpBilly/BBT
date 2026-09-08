@@ -58,6 +58,10 @@ editor accepted drafts the server then rejected).
 | `analyticsValidation.js` | `server/analytics.js`, both `/api/analytics` implementations |
 | `analyticsStatistics.js` | `server/analytics.js`, `editor-analytics.js`, client `AdminAnalytics.tsx` |
 | `blockWeights.js` | `client/src/blockBranching.ts`, `shared/scoreValidation.js` |
+| `sessionAuth.js` | `server/auth.js`, `netlify/functions/auth.js`, `server/identityRoutes.js`, `netlify/functions/identity-auth.js` |
+| `identityFlow.js` | `server/identityRoutes.js`, `netlify/functions/identity-auth.js` |
+| `authEmail.js` | both magic-link start routes (server-only) |
+| `loginTracking.js` | `server/index.js`, `netlify/functions/logins.js`, client `AdminLogins`/statistics |
 
 They are plain ESM `.js` with hand-written `.d.ts` siblings so TypeScript can
 consume them. **Do not fork these into a package-local copy.** Vite is

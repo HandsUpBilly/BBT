@@ -28,7 +28,7 @@ carries a **Status** line — read it before treating a section as work to do.
 | Block and Blitz Actions | Shipped (with rules simplifications) |
 | BB Tactics — Tabletop Playbook Home Redesign | Shipped |
 | Leaderboard and Report Integrity | **Planned** |
-| Player Config Screen | Phase 1 Shipped, Phase 2 **Planned** |
+| Player Config Screen | Phase 2 Shipped |
 | Block Outcomes as Board-State Branches | Shipped as the standard Parallel Universes block model |
 | Tutorial Series and Parallel Universes Onboarding | Shipped |
 | Step-by-step Tutorial Coach | Superseded |
@@ -42,6 +42,8 @@ carries a **Status** line — read it before treating a section as work to do.
 | Pass / Hand-off Confirmation and Illustrated Help | Shipped |
 | Parallel Universe Branch-point Reset | Shipped |
 | Completed-play Review Orientation and Objective Guidance | Shipped |
+| Administrative Ranking Resets | Shipped |
+| Multi-Series Creator Workflows | Shipped |
 
 Durable behavior that has already shipped belongs in `docs/agent-context/`, not
 here. When a plan below ships, move the facts worth keeping into the matching
@@ -4523,12 +4525,11 @@ per player from Settings → Experimental.
 
 ## Non-goals
 
-- Chain pushes, crowd pushes, armour/injury rolls, standing up — all still out,
-  as in the shipped section.
+- Crowd pushes, armour/injury rolls, and standing up are still out. Recursive chain pushes are shipped, as in the shipped section.
 - Guard, Frenzy, Juggernaut, Stand Firm — still out. Block, Wrestle, Dodge and
   Tackle are the only skills that affect the face-to-state mapping.
 - No opponent turn. A puzzle is still exactly one turn.
-- No branching on push square or follow-up.
+- Push-square and follow-up choices are authored across applicable lockstep branches; they do not create their own probabilistic branches.
 - No branch-count cap and no weight-floor pruning: the score is always exact.
   Merging is the only thing keeping the tree small, and it is enough.
 
@@ -5777,7 +5778,7 @@ blocks the pitch.
   positions, routes, authored text, player identity, or free-form content.
 # Multi-Series Creator Workflows
 
-**Status: Shipped**
+**Status:** Shipped.
 
 Puzzle and series authoring are separate admin workflows. Puzzles carry an
 extensible objective and an independent Free Play flag. Series Creator is the
