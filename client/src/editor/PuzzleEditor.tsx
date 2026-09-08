@@ -7,6 +7,7 @@ import { AdminConsole } from './AdminConsole';
 import { createScenario, deleteScenario, fetchEditorData, updateScenario } from './editorApi';
 import { nextScenarioId, validateScenarioDraft } from './editorValidation';
 import { PLAYER_TEMPLATES, generatedPlayerName, templateToPiece } from './playerTemplates';
+import { agilityTarget, armourTarget, storedAgility, storedArmour, targetLabel } from '../playerStats';
 import { careerSkillGroupsFor, IMPLEMENTED_CAREER_SKILLS } from './careerSkills';
 import { playerPortraitFor } from '../playerPortraits';
 import { TEAMS as AVAILABLE_TEAMS, teamLabel, teamPluralLabel } from '../teamPresentation';
@@ -787,7 +788,7 @@ export function PuzzleEditor({ onBack, onPlay, onReport, previewScenario, idToke
                     />
                     <span className="palette-piece__text">
                       <strong>{template.label}</strong>
-                      <span>{usage.roleCount}/{usage.limit?.max ?? '—'} · MA {template.ma} ST {template.st} AG {template.ag} PA {template.pa} AV {template.av}</span>
+                      <span>{usage.roleCount}/{usage.limit?.max ?? '—'} · MA {template.ma} ST {template.st} AG {targetLabel(agilityTarget(template.ag))} PA {targetLabel(template.pa)} AV {targetLabel(armourTarget(template.av))}</span>
                     </span>
                   </button>
                   );
@@ -864,10 +865,19 @@ export function PuzzleEditor({ onBack, onPlay, onReport, previewScenario, idToke
                         type="number"
                         min={STAT_RANGE.min}
                         max={STAT_RANGE.max}
-                        value={selectedPiece[stat]}
+                        value={stat === 'ag'
+                          ? agilityTarget(selectedPiece.ag)
+                          : stat === 'av'
+                            ? armourTarget(selectedPiece.av)
+                            : selectedPiece[stat]}
                         onChange={event => {
-                          const value = Number(event.target.value);
-                          if (!Number.isFinite(value)) return;
+                          const target = Number(event.target.value);
+                          if (!Number.isFinite(target)) return;
+                          const value = stat === 'ag'
+                            ? storedAgility(target)
+                            : stat === 'av'
+                              ? storedArmour(target)
+                              : target;
                           updatePiece(selectedPiece.id, { [stat]: value } as Partial<ScenarioPieceDef>);
                         }}
                       />
