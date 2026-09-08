@@ -7,6 +7,7 @@ import { AdminConsole } from './AdminConsole';
 import { createScenario, deleteScenario, fetchEditorData, updateScenario } from './editorApi';
 import { nextScenarioId, validateScenarioDraft } from './editorValidation';
 import { PLAYER_TEMPLATES, generatedPlayerName, templateToPiece } from './playerTemplates';
+import { agilityTarget, armourTarget, storedAgility, storedArmour, targetLabel } from '../playerStats';
 import { careerSkillGroupsFor, IMPLEMENTED_CAREER_SKILLS } from './careerSkills';
 import { playerPortraitFor } from '../playerPortraits';
 import { TEAMS as AVAILABLE_TEAMS, teamLabel, teamPluralLabel } from '../teamPresentation';
@@ -25,6 +26,25 @@ const STAT_LABELS: Record<string, string> = {
 
 function cloneScenario(scenario: Scenario): Scenario {
   return structuredClone(scenario);
+}
+
+/**
+ * Bundles the live draft data (scenarios + series) as one JSON file, keyed by
+ * ID so each entry maps 1:1 onto a checked-in `client/src/scenarios/<id>.json`
+ * or `client/src/series/<id>.json` file for reconciliation.
+ */
+function downloadEditorExport(scenarios: Scenario[], series: SeriesDefinition[]): void {
+  const byId = <T extends { id: string }>(items: T[]): Record<string, T> =>
+    Object.fromEntries(items.map(item => [item.id, item]));
+
+  const payload = { scenarios: byId(scenarios), series: byId(series) };
+  const json = JSON.stringify(payload, null, 2);
+  const url = URL.createObjectURL(new Blob([json], { type: 'application/json;charset=utf-8' }));
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = 'turn-16-editor-export.json';
+  link.click();
+  URL.revokeObjectURL(url);
 }
 
 function emptyScenario(existingIds: string[]): Scenario {
@@ -557,7 +577,16 @@ export function PuzzleEditor({ onBack, onPlay, onReport, previewScenario, idToke
               <span className="editor__panel-number">01</span>
               <h2>Puzzle Library</h2>
             </div>
-            <button className="btn btn--secondary" onClick={createNew}>New</button>
+            <div className="editor__panel-header-actions">
+              <button
+                className="btn btn--secondary"
+                onClick={() => downloadEditorExport(scenarios, series)}
+                title="Download every puzzle and series as one JSON file"
+              >
+                Download all
+              </button>
+              <button className="btn btn--secondary" onClick={createNew}>New</button>
+            </div>
           </div>
           <div className="editor__puzzle-tools">
             <input
@@ -592,7 +621,7 @@ export function PuzzleEditor({ onBack, onPlay, onReport, previewScenario, idToke
                   <span>
                     {teamPluralLabel(displayedScenario.activeTeam)} active,{' '}
                     {scenario.pieces.length} player{scenario.pieces.length === 1 ? '' : 's'},{' '}
-                    {scenario.published !== false ? 'Everyone' : scenario.adminEnabled ? 'Admins' : 'Creator only'}
+                    {scenario.published !== false ? 'Everyone' : scenario.adminEnabled ? <span className="editor__visibility-tag">Admin only</span> : 'Creator only'}
                   </span>
                   <span className={position >= 0 ? 'editor__puzzle-series' : 'editor__puzzle-series editor__puzzle-series--out'}>
                     {position >= 0 ? `${membership?.name} · step ${position + 1}` : 'Not in series'}
@@ -787,7 +816,7 @@ export function PuzzleEditor({ onBack, onPlay, onReport, previewScenario, idToke
                     />
                     <span className="palette-piece__text">
                       <strong>{template.label}</strong>
-                      <span>{usage.roleCount}/{usage.limit?.max ?? '—'} · MA {template.ma} ST {template.st} AG {template.ag} PA {template.pa} AV {template.av}</span>
+                      <span>{usage.roleCount}/{usage.limit?.max ?? '—'} · MA {template.ma} ST {template.st} AG {targetLabel(agilityTarget(template.ag))} PA {targetLabel(template.pa)} AV {targetLabel(armourTarget(template.av))}</span>
                     </span>
                   </button>
                   );
@@ -864,10 +893,19 @@ export function PuzzleEditor({ onBack, onPlay, onReport, previewScenario, idToke
                         type="number"
                         min={STAT_RANGE.min}
                         max={STAT_RANGE.max}
-                        value={selectedPiece[stat]}
+                        value={stat === 'ag'
+                          ? agilityTarget(selectedPiece.ag)
+                          : stat === 'av'
+                            ? armourTarget(selectedPiece.av)
+                            : selectedPiece[stat]}
                         onChange={event => {
-                          const value = Number(event.target.value);
-                          if (!Number.isFinite(value)) return;
+                          const target = Number(event.target.value);
+                          if (!Number.isFinite(target)) return;
+                          const value = stat === 'ag'
+                            ? storedAgility(target)
+                            : stat === 'av'
+                              ? storedArmour(target)
+                              : target;
                           updatePiece(selectedPiece.id, { [stat]: value } as Partial<ScenarioPieceDef>);
                         }}
                       />

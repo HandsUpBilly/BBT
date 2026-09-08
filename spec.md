@@ -4533,7 +4533,7 @@ per player from Settings → Experimental.
 - Guard, Frenzy, Juggernaut, Stand Firm — still out. Block, Wrestle, Dodge and
   Tackle are the only skills that affect the face-to-state mapping.
 - No opponent turn. A puzzle is still exactly one turn.
-- No branching on push square or follow-up.
+- Push-square and follow-up choices are authored across applicable lockstep branches; they do not create their own probabilistic branches.
 - No branch-count cap and no weight-floor pruning: the score is always exact.
   Merging is the only thing keeping the tree small, and it is enough.
 
