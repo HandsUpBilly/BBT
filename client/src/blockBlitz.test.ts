@@ -389,7 +389,7 @@ describe('Block outcome resolution', () => {
     ]);
   });
 
-  it('crowd-surfs an opponent and completes a crowd-surf objective', () => {
+  it('implicitly crowd-surfs an opponent and completes a crowd-surf objective', () => {
     const state = {
       ...makeState([
         blocker({ position: { col: 7, row: 1 } }),
@@ -403,14 +403,12 @@ describe('Block outcome resolution', () => {
     act(() => result.current.handleBlockTarget(7, 0));
     act(() => result.current.handleBlockOutcomeChoice(['push'], 'push'));
 
-    expect(result.current.state.pushTargetKeys).toContain('7,-1');
-    act(() => result.current.handlePushChoice(7, -1, false));
-
     expect(result.current.state.pieces.some(piece => piece.id === 'orc1')).toBe(false);
     expect(result.current.state.phase).toBe('crowd-surf');
+    expect(result.current.state.pendingBlockResolution).toBeNull();
   });
 
-  it('does not complete a crowd-surf objective when a chain pushes a team-mate off the pitch', () => {
+  it('implicitly surfs a team-mate through a chain without completing a crowd-surf objective', () => {
     const state = {
       ...makeState([
         blocker({ position: { col: 7, row: 2 } }),
@@ -427,7 +425,6 @@ describe('Block outcome resolution', () => {
     act(() => result.current.handleBlockTarget(7, 1));
     act(() => result.current.handleBlockOutcomeChoice(['push'], 'push'));
     act(() => result.current.handlePushChoice(7, 0, undefined));
-    act(() => result.current.handlePushChoice(7, -1, false));
 
     expect(result.current.state.pieces.some(piece => piece.id === 'human-chain')).toBe(false);
     expect(result.current.state.phase).toBe('playing');

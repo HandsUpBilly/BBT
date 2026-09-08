@@ -215,6 +215,9 @@ dice tie-break.
   surfing a team-mate through a chain push does not score. All three push-back results
   (Push, Defender Stumbles, Defender Down) offer the attacker a follow-up into
   the vacated square, since the attacker stays standing in each case.
+- In a Crowd surf objective, an available off-pitch push resolves immediately:
+  the crowd is not a rendered pitch square, so there is no separate **Push into
+  crowd** HUD control to press. Other objectives retain that optional control.
 - A push must use an empty square from its three-square push arc when one is
   available. When all available squares are occupied, those occupants become
   selectable and the chosen player is pushed through its own forward arc. This
