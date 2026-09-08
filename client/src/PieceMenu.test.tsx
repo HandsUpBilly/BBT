@@ -7,7 +7,7 @@ afterEach(cleanup);
 
 describe('PieceMenu', () => {
   it('shows every player stat alongside the action choices', () => {
-    const piece = humanBlocker({ ma: 6, st: 3, ag: 3, pa: 4, av: 9 });
+    const piece = humanBlocker({ ma: 6, st: 3, ag: 2, pa: 4, av: 9 });
     render(
       <PieceMenu
         piece={piece}
@@ -21,9 +21,9 @@ describe('PieceMenu', () => {
     const stats = screen.getByLabelText(`${piece.name} stats`);
     expect(within(stats).getByText('MA').parentElement?.textContent).toContain('6');
     expect(within(stats).getByText('ST').parentElement?.textContent).toContain('3');
-    expect(within(stats).getByText('AG').parentElement?.textContent).toContain('3+');
+    expect(within(stats).getByText('AG').parentElement?.textContent).toContain('4+');
     expect(within(stats).getByText('PA').parentElement?.textContent).toContain('4+');
-    expect(within(stats).getByText('AV').parentElement?.textContent).toContain('9+');
+    expect(within(stats).getByText('AV').parentElement?.textContent).toContain('10+');
     expect(screen.getAllByRole('checkbox')).toHaveLength(5);
   });
 

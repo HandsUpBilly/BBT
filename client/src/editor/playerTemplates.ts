@@ -12,7 +12,8 @@ import type { ScenarioPieceDef, Team } from '../types';
  *   av  the printed target minus 1, matching the pieces already in the
  *       scenarios (AV 9+ → 8). Display-only — armour is never rolled.
  *
- * Roster source: the BB2025 team sheets collected at bbtactics.com.
+ * Roster source: docs/bb2025-roster-audit.md (audited against the BB2025 team
+ * sheets at dadidimerda.it).
  */
 export interface PlayerTemplate {
   key: string;

@@ -1,6 +1,7 @@
 import type { PlayerPiece, Team } from './types';
 import { playerPortraitFor } from './playerPortraits';
 import { teamIconSource } from './teamPresentation';
+import { agilityTarget, armourTarget, targetLabel } from './playerStats';
 import './PlayerPanel.css';
 
 interface Props {
@@ -51,7 +52,7 @@ interface StatProps {
   team: Team;
   stat: StatKey;
   label: string;
-  value: number;
+  value: string | number;
 }
 
 function StatBadge({ team, stat, label, value }: StatProps) {
@@ -114,9 +115,9 @@ export function PlayerPanel({ piece, side, role }: Props) {
       <div className="panel__stats">
         <StatBadge team={piece.team} stat="ma" label="MA" value={piece.ma} />
         <StatBadge team={piece.team} stat="st" label="ST" value={piece.st} />
-        <StatBadge team={piece.team} stat="ag" label="AG" value={piece.ag} />
-        <StatBadge team={piece.team} stat="pa" label="PA" value={piece.pa} />
-        <StatBadge team={piece.team} stat="av" label="AV" value={piece.av} />
+        <StatBadge team={piece.team} stat="ag" label="AG" value={targetLabel(agilityTarget(piece.ag))} />
+        <StatBadge team={piece.team} stat="pa" label="PA" value={targetLabel(piece.pa)} />
+        <StatBadge team={piece.team} stat="av" label="AV" value={targetLabel(armourTarget(piece.av))} />
       </div>
 
       {/* Skills */}

@@ -40,9 +40,9 @@ describe('PlayerPanel', () => {
 
     expect(value('MA')).toBe('5');
     expect(value('ST')).toBe('4');
-    expect(value('AG')).toBe('3');
-    expect(value('PA')).toBe('4');
-    expect(value('AV')).toBe('9');
+    expect(value('AG')).toBe('3+');
+    expect(value('PA')).toBe('4+');
+    expect(value('AV')).toBe('10+');
   });
 
   it('uses matching dedicated stat icons for both teams, including Passing', () => {

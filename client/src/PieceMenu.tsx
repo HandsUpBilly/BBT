@@ -2,6 +2,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import type { PlayerPiece } from './types';
 import { placeMenuBesideAnchor } from './menuPosition';
 import type { MenuAnchor } from './menuPosition';
+import { agilityTarget, armourTarget, targetLabel } from './playerStats';
 import './PieceMenu.css';
 
 export interface PieceMenuAction {
@@ -129,9 +130,9 @@ export function PieceMenu({ piece, anchor, actions, onAction, onDismiss }: Props
         <span className="piece-menu__stats" aria-label={`${piece.name} stats`}>
           <span><b>MA</b> {piece.ma}</span>
           <span><b>ST</b> {piece.st}</span>
-          <span><b>AG</b> {piece.ag}+</span>
-          <span><b>PA</b> {piece.pa}+</span>
-          <span><b>AV</b> {piece.av}+</span>
+          <span><b>AG</b> {targetLabel(agilityTarget(piece.ag))}</span>
+          <span><b>PA</b> {targetLabel(piece.pa)}</span>
+          <span><b>AV</b> {targetLabel(armourTarget(piece.av))}</span>
         </span>
       </div>
       <div className="piece-menu__actions">
