@@ -1,9 +1,18 @@
 {
   "id": "scenario-003",
   "name": "Swiftfoot's Long Bomb",
-  "description": "OBJECTIVE: Score with Quickhand. Move Swiftfoot clear of the Tackle Zones, then complete the Pass and Catch.",
+  "description": "Ironjaw's boys have shut the ground game down cold. Step clear of their tackle zones and launch a long pass downfield to Quickhand before the whistle blows.",
   "activeTeam": "human",
+  "teams": [
+    "human",
+    "orc"
+  ],
   "objective": "touchdown",
+  "enabledActions": [
+    "move",
+    "handoff",
+    "pass"
+  ],
   "freePlay": false,
   "published": true,
   "ballPosition": null,
@@ -19,8 +28,7 @@
       "pa": 3,
       "av": 8,
       "skills": [
-        "Pass",
-        "Sure Hands"
+        "Block"
       ],
       "position": {
         "col": 7,
@@ -34,9 +42,9 @@
       "role": "catcher",
       "name": "Sera Quickhand",
       "ma": 8,
-      "st": 3,
-      "ag": 3,
-      "pa": 4,
+      "st": 2,
+      "ag": 4,
+      "pa": 5,
       "av": 7,
       "skills": [
         "Catch",
@@ -51,14 +59,16 @@
     {
       "id": "orc1",
       "team": "orc",
-      "role": "lineman",
+      "role": "thrower",
       "name": "Grukk Ironjaw",
-      "ma": 5,
+      "ma": 4,
       "st": 3,
       "ag": 3,
-      "pa": 4,
+      "pa": 6,
       "av": 9,
-      "skills": [],
+      "skills": [
+        "Animosity"
+      ],
       "position": {
         "col": 6,
         "row": 9
@@ -68,14 +78,16 @@
     {
       "id": "orc2",
       "team": "orc",
-      "role": "lineman",
+      "role": "blocker",
       "name": "Muzgash Skullkrak",
-      "ma": 5,
+      "ma": 4,
       "st": 3,
       "ag": 3,
-      "pa": 4,
+      "pa": 6,
       "av": 9,
-      "skills": [],
+      "skills": [
+        "Animosity"
+      ],
       "position": {
         "col": 8,
         "row": 9
@@ -85,16 +97,15 @@
     {
       "id": "orc3",
       "team": "orc",
-      "role": "blitzer",
+      "role": "troll",
       "name": "Vrak Bonecruncher",
       "ma": 6,
       "st": 3,
       "ag": 3,
-      "pa": 4,
+      "pa": 5,
       "av": 9,
       "skills": [
-        "Block",
-        "Break Tackle"
+        "Block"
       ],
       "position": {
         "col": 7,
@@ -105,68 +116,19 @@
     {
       "id": "orc4",
       "team": "orc",
-      "role": "lineman",
+      "role": "blocker",
       "name": "Dorg Gutripper",
-      "ma": 5,
+      "ma": 4,
       "st": 3,
       "ag": 3,
-      "pa": 4,
+      "pa": 6,
       "av": 9,
-      "skills": [],
+      "skills": [
+        "Animosity"
+      ],
       "position": {
         "col": 8,
         "row": 3
-      },
-      "hasBall": false
-    },
-    {
-      "id": "orc-blocker-7",
-      "team": "orc",
-      "role": "lineman",
-      "name": "Skrag Headsmash",
-      "ma": 5,
-      "st": 3,
-      "ag": 3,
-      "pa": 4,
-      "av": 9,
-      "skills": [],
-      "position": {
-        "col": 4,
-        "row": 3
-      },
-      "hasBall": false
-    },
-    {
-      "id": "human-lineman-8",
-      "team": "human",
-      "role": "lineman",
-      "name": "Cedric Linebreaker",
-      "ma": 6,
-      "st": 3,
-      "ag": 3,
-      "pa": 4,
-      "av": 8,
-      "skills": [],
-      "position": {
-        "col": 10,
-        "row": 11
-      },
-      "hasBall": false
-    },
-    {
-      "id": "orc-lineman-9",
-      "team": "orc",
-      "role": "lineman",
-      "name": "Zug Bloodfang",
-      "ma": 5,
-      "st": 3,
-      "ag": 3,
-      "pa": 4,
-      "av": 9,
-      "skills": [],
-      "position": {
-        "col": 11,
-        "row": 10
       },
       "hasBall": false
     }

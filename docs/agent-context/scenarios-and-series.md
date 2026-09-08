@@ -97,12 +97,11 @@ Descriptions use an OBJECTIVE clause followed by the rules needed to read the
 board. Keep this copy factual. Do not prescribe a single solved route unless
 the puzzle itself requires that action.
 
-The default series is player-facing **Humans vs Orcs: The Nuffle Shuffle**, is
+The default series is player-facing **The Nuffle Shuffle**, is
 labelled as a Tutorial in the challenge screen, and uses this rules order:
-`scenario-001`, `scenario-004`, `scenario-002`, `scenario-003`,
-`scenario-005`, `scenario-006` (movement, dodging, handoff, pass, combined
-play, then the unrestricted full-action board). The chooser presents that
-canonical teaching order but permits unfinished drills to be played in any
+`scenario-001`, `scenario-002`, `scenario-003`, `scenario-004`,
+`scenario-005`, `scenario-006`. The chooser presents that authored order but
+permits unfinished drills to be played in any
 order. Completed drills can also be replayed; the new result replaces the
 earlier result in place so the series always contains one result per scenario.
 The chooser returns after every non-final drill and shows a neutral recap of

@@ -117,11 +117,13 @@ describe('ScenarioSelect Free Play', () => {
     expect(row?.style.getPropertyValue('--series-team-b-rgb')).toBe('74 96 43');
   });
 
-  it('lists only the final unrestricted tutorial board', () => {
+  it('separates the final unrestricted tutorial board from a standalone special match', () => {
     const freePlay = scenarios.find(scenario => scenario.id === FREE_PLAY_SCENARIO_ID);
     const guidedDrill = scenarios.find(scenario => scenario.id === 'scenario-001');
+    const specialMatch = scenarios.find(scenario => scenario.id === 'scenario-007');
     expect(freePlay).toBeDefined();
     expect(guidedDrill).toBeDefined();
+    expect(specialMatch).toBeDefined();
 
     render(
       <ScenarioSelect
@@ -151,7 +153,7 @@ describe('ScenarioSelect Free Play', () => {
     expect(screen.queryByText(guidedDrill!.name)).toBeNull();
 
     fireEvent.click(screen.getByRole('button', { name: 'Specials' }));
-    expect(screen.getByText('No special matches are available yet.')).toBeTruthy();
+    expect(screen.getByText(specialMatch!.name)).toBeTruthy();
     expect(screen.queryByText(freePlay!.name)).toBeNull();
 
     fireEvent.click(screen.getByRole('button', { name: 'Series' }));

@@ -12,13 +12,13 @@ import {
 } from '.';
 
 describe('Tutorial series', () => {
-  it('uses the six Tutorial drills in rules order', () => {
+  it('uses the six Tutorial drills in their authored order', () => {
     expect(defaultSeries.name).toBe(FEATURED_SERIES_NAME);
     expect(resolveSeriesScenarios(defaultSeries, scenarios).map(scenario => scenario.id)).toEqual([
       'scenario-001',
-      'scenario-004',
       'scenario-002',
       'scenario-003',
+      'scenario-004',
       'scenario-005',
       'scenario-006',
     ]);
