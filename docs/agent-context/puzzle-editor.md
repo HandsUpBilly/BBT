@@ -101,6 +101,12 @@ The last 100 managed additions/removals are retained with actor, target, and
 timestamp and shown in the console; removal has an explicit confirmation.
 An unreadable managed-admin store is an access-check failure (503), not an
 empty allowlist, so storage trouble cannot broaden administrator access.
+The Statistics login table can also promote or demote an eligible verified
+Google login without revealing or requiring its email address in the browser.
+The login store retains that private address only for Google logins, and the
+editor API returns only eligibility and managed-admin status. Guests, other
+identity providers, and older Google login records that have not signed in
+since this capability was added cannot be promoted from the table.
 
 Admin Console also lists the public player profiles stored outside leaderboard
 records. It shows the public country/nationality label and current avatar and
@@ -148,6 +154,8 @@ analytics, editor drafts, and browser-local attempt history untouched.
 - `GET /api/editor/statistics`
 - `GET /api/editor/analytics`
 - `GET` / `POST` / `DELETE /api/editor/admins`
+- `GET` / `POST` / `DELETE /api/editor/logins` (`POST`/`DELETE` use an opaque
+  `userId` query parameter to manage an eligible Google login)
 - `GET` / `DELETE /api/editor/rankings`
 
 These write local JSON files under:

@@ -6,8 +6,10 @@ import { existsSync } from 'fs';
 import {
   AdminAuthError,
   AuthError,
+  configuredAdminCount,
   entryAuthFields,
   requireAdminGoogleUser,
+  requireVerifiedGoogleIdentity,
   verifyOptionalGoogleUser,
 } from './auth.js';
 import { registerEditorRoutes, readPublicScenarios } from './editor.js';
@@ -49,7 +51,9 @@ import {
   rateLimitKey,
 } from '../shared/rateLimit.js';
 import { buildPlayerStatistics } from '../shared/statistics.js';
-import { LoginValidationError, recordLogin, sortLogins, validateLoginPayload } from '../shared/loginTracking.js';
+import { adminLoginEntries, LoginValidationError, loginAdminEmail, recordLogin, validateLoginPayload } from '../shared/loginTracking.js';
+import { addManagedAdmin, removeManagedAdmin } from '../shared/adminManagement.js';
+import { readManagedAdmins, saveManagedAdminsWithAudit } from './adminStore.js';
 import {
   RankingResetValidationError,
   parseRankingResetTarget,
@@ -321,8 +325,46 @@ app.get('/api/editor/logins', async (req, res) => {
     }
     throw error;
   }
-  res.json(sortLogins(loginEntries));
+  res.json(adminLoginEntries(loginEntries, await readManagedAdmins()));
 });
+
+async function loginAdminManager(req, res) {
+  try {
+    const admin = await requireAdminGoogleUser(req);
+    return admin ?? await requireVerifiedGoogleIdentity(req);
+  } catch (error) {
+    if (error instanceof AdminAuthError) {
+      res.status(error.status).json({ error: error.message, errors: [error.message] });
+      return null;
+    }
+    throw error;
+  }
+}
+
+async function updateLoginAdministrator(req, res, adding) {
+  const user = await loginAdminManager(req, res);
+  if (!user) return;
+  const target = loginAdminEmail(loginEntries, String(req.query.userId ?? ''));
+  if (!target) return res.status(400).json({ errors: ['This login is not a verified Google account.'] });
+
+  const current = await readManagedAdmins();
+  const managedAdmins = adding ? addManagedAdmin(current, target) : removeManagedAdmin(current, target);
+  if (!adding && configuredAdminCount === 0 && managedAdmins.length === 0 && current.length > 0) {
+    return res.status(400).json({ errors: ['Keep at least one managed administrator, or configure ADMIN_EMAILS.'] });
+  }
+  if (!adding && managedAdmins.length === current.length) {
+    return res.status(404).json({ errors: ['That administrator is managed by deployment configuration or does not exist.'] });
+  }
+  const saved = await saveManagedAdminsWithAudit(managedAdmins, {
+    action: adding ? 'added' : 'removed', actor: user.email, target,
+  });
+  res.json({ ...saved, configuredAdminCount });
+}
+
+// The browser supplies only the opaque login id; the private Google address is
+// looked up server-side and is never included in the editor response.
+app.post('/api/editor/logins', (req, res) => updateLoginAdministrator(req, res, true));
+app.delete('/api/editor/logins', (req, res) => updateLoginAdministrator(req, res, false));
 
 // ── Admin player-performance statistics ────────────────────────────────────
 // Uses the full retained personal-best lists, not the truncated public boards.

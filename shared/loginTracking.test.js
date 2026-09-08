@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { LoginValidationError, recordLogin, sortLogins, validateLoginPayload } from './loginTracking.js';
+import { adminLoginEntries, LoginValidationError, loginAdminEmail, recordLogin, sortLogins, validateLoginPayload } from './loginTracking.js';
 
 test('validateLoginPayload trims and length-caps the name', () => {
   assert.deepEqual(validateLoginPayload({ name: '  Coach  ' }), { name: 'Coach' });
@@ -25,7 +25,7 @@ test('recordLogin creates a first entry with count 1', () => {
 });
 
 test('recordLogin matches a signed-in player by userId, not by name', () => {
-  const user = { provider: 'google', providerUserId: 'g-1' };
+  const user = { provider: 'google', providerUserId: 'g-1', email: 'Coach@Example.com' };
   const first = recordLogin([], { name: 'Coach', user }, '2026-08-24T00:00:00.000Z');
   const second = recordLogin(first.entries, { name: 'Coach Renamed', user }, '2026-08-31T00:00:00.000Z');
 
@@ -35,6 +35,7 @@ test('recordLogin matches a signed-in player by userId, not by name', () => {
   assert.equal(second.entry.lastLoginAt, '2026-08-31T00:00:00.000Z');
   assert.equal(second.entry.loginCount, 2);
   assert.equal(second.entry.userId, 'g-1');
+  assert.equal(second.entry.adminEmail, 'coach@example.com');
 });
 
 test('recordLogin matches a guest by name and keeps a separate signed-in entry with the same name', () => {
@@ -65,4 +66,18 @@ test('sortLogins orders most recently active first', () => {
     { name: 'New', firstLoginAt: '2026-08-30T00:00:00.000Z', lastLoginAt: '2026-08-31T00:00:00.000Z', loginCount: 3 },
   ];
   assert.deepEqual(sortLogins(entries).map(entry => entry.name), ['New', 'Old']);
+});
+
+test('admin login records redact email while exposing eligible managed-admin state', () => {
+  const entries = [
+    { name: 'Coach', firstLoginAt: '2026-08-01T00:00:00.000Z', lastLoginAt: '2026-08-02T00:00:00.000Z', loginCount: 2, userId: 'g-1', authProvider: 'google', adminEmail: 'coach@example.com' },
+    { name: 'Guest', firstLoginAt: '2026-08-03T00:00:00.000Z', lastLoginAt: '2026-08-03T00:00:00.000Z', loginCount: 1 },
+  ];
+
+  assert.equal(loginAdminEmail(entries, 'g-1'), 'coach@example.com');
+  assert.equal(loginAdminEmail(entries, 'missing'), null);
+  assert.deepEqual(adminLoginEntries(entries, ['coach@example.com']), [
+    { name: 'Guest', firstLoginAt: '2026-08-03T00:00:00.000Z', lastLoginAt: '2026-08-03T00:00:00.000Z', loginCount: 1, adminEligible: false, isManagedAdmin: false },
+    { name: 'Coach', firstLoginAt: '2026-08-01T00:00:00.000Z', lastLoginAt: '2026-08-02T00:00:00.000Z', loginCount: 2, userId: 'g-1', authProvider: 'google', adminEligible: true, isManagedAdmin: true },
+  ]);
 });
