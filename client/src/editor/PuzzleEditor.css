@@ -401,6 +401,62 @@
 
 .editor__metadata-desc { grid-column: 1 / -1; }
 
+.editor__side-missions {
+  grid-column: 1 / -1;
+  padding: 13px 14px;
+  color: var(--color-text-muted);
+  background: rgba(199, 150, 61, 0.05);
+  border: 1px dashed rgba(199, 150, 61, 0.42);
+  border-radius: var(--radius-input);
+}
+
+.editor__side-missions-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.editor__side-missions-heading h3 {
+  margin: 2px 0 0;
+  color: var(--color-text-strong);
+  font-family: var(--font-display);
+  font-size: 1rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.editor__side-missions-kicker {
+  color: var(--color-warning);
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.editor__side-missions > p {
+  max-width: 76ch;
+  margin: 9px 0 0;
+  font-size: 0.76rem;
+  line-height: 1.5;
+}
+
+.editor__side-mission-examples {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin-top: 10px;
+}
+
+.editor__side-mission-examples span {
+  padding: 5px 8px;
+  color: #c8c4b9;
+  background: #0c100d;
+  border: 1px solid var(--editor-line);
+  border-radius: 2px;
+  font-size: 0.68rem;
+}
+
 .editor__series-team-note {
   grid-column: 1 / -1;
   margin: -2px 0 0;
@@ -983,6 +1039,7 @@
   .editor-tool__group { grid-template-columns: 1fr; }
   .editor__metadata-desc,
   .editor-tool__group h3 { grid-column: 1; }
+  .editor__side-missions-heading { align-items: stretch; flex-direction: column; }
   .editor__inspector-tabs { grid-template-columns: repeat(2, 1fr); }
   .editor__inspector-tab:nth-child(2) { border-right: 0; }
   .editor__inspector-tab:nth-child(-n + 2) { border-bottom: 1px solid var(--editor-line); }

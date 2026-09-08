@@ -37,6 +37,8 @@ Editor features:
 - select the puzzle objective (Touchdown or Crowd surf),
 - choose the player-menu actions a puzzle allows (Move, Hand-off, Pass, Block,
   and Blitz); all are enabled by default, including for legacy puzzles,
+- see a deliberately non-functional **Side missions** placeholder with example
+  bonus criteria; it does not add scenario fields or affect scoring yet,
 - independently enable puzzles for everyone and/or admins, and opt them into
   Free Play,
 - save changes directly to the player-visible source of truth; enabled flags
