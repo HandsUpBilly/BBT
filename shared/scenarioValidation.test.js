@@ -195,11 +195,11 @@ test('normalizers preserve explicit admin visibility without enabling it by defa
 test('normalizeSeries supplies future-ready defaults and preserves a valid id', () => {
   assert.deepEqual(normalizeSeries(null), {
     id: 'default', name: 'Default Series', description: '', scenarioIds: [],
-    published: true, teams: ['human', 'orc'], objective: 'touchdown', order: 0,
+    published: true, teams: ['human', 'orc'], order: 0,
   });
   assert.deepEqual(
-    normalizeSeries({ id: 'hacked', name: '  Cup  ', scenarioIds: ['a', '', 'b'] }),
-    { id: 'hacked', name: 'Cup', description: '', scenarioIds: ['a', 'b'], published: true, teams: ['human', 'orc'], objective: 'touchdown', order: 0 },
+    normalizeSeries({ id: 'hacked', name: '  Cup  ', scenarioIds: ['a', '', 'b'], objective: 'touchdown' }),
+    { id: 'hacked', name: 'Cup', description: '', scenarioIds: ['a', 'b'], published: true, teams: ['human', 'orc'], order: 0 },
   );
 });
 
@@ -247,10 +247,10 @@ test('updateSeriesAssignment cannot leave an enabled series with no steps', () =
 
 test('normalizeSeries preserves a bounded series logo key', () => {
   assert.deepEqual(normalizeSeries({ logo: '  nuffle-shuffle  ', scenarioIds: [] }), {
-    id: 'default', name: 'Default Series', description: '', scenarioIds: [], published: true, teams: ['human', 'orc'], objective: 'touchdown', order: 0, logo: 'nuffle-shuffle',
+    id: 'default', name: 'Default Series', description: '', scenarioIds: [], published: true, teams: ['human', 'orc'], order: 0, logo: 'nuffle-shuffle',
   });
   assert.deepEqual(normalizeSeries({ logo: 42, scenarioIds: [] }), {
-    id: 'default', name: 'Default Series', description: '', scenarioIds: [], published: true, teams: ['human', 'orc'], objective: 'touchdown', order: 0,
+    id: 'default', name: 'Default Series', description: '', scenarioIds: [], published: true, teams: ['human', 'orc'], order: 0,
   });
   const uploadedLogo = `data:image/webp;base64,${Buffer.from('series-logo').toString('base64')}`;
   assert.equal(normalizeSeries({ logo: uploadedLogo }).logo, uploadedLogo);

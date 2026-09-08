@@ -35,7 +35,7 @@ export const allSeries = Object.values(seriesModules)
   .map(normalizeSeriesDefinition)
   .sort((left, right) => (left.order ?? 0) - (right.order ?? 0) || left.name.localeCompare(right.name));
 export const defaultSeries: SeriesDefinition = allSeries.find(series => series.id === 'default') ?? allSeries[0] ?? {
-  id: 'default', name: 'Default Series', description: '', scenarioIds: [], teams: ['human', 'orc'], objective: 'touchdown', order: 0,
+  id: 'default', name: 'Default Series', description: '', scenarioIds: [], teams: ['human', 'orc'], order: 0,
 };
 
 /** Series matchup settings are authoritative for every puzzle in that run. */

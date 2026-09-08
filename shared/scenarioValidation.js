@@ -195,7 +195,6 @@ export function normalizeSeries(input) {
     published: source.published !== false,
     ...(source.adminEnabled === true ? { adminEnabled: true } : {}),
     teams: [firstTeam, secondTeam],
-    objective: OBJECTIVES.includes(source.objective) ? source.objective : 'touchdown',
     order: Number.isInteger(source.order) && source.order >= 0 ? source.order : 0,
     ...(logo ? { logo } : {}),
   };
