@@ -1,6 +1,7 @@
 import { useId, useState } from 'react';
 import { branchSummaryGroups, branchTreeView, type BranchRun, type BranchStripEntry } from './branchRun';
 import type { BranchSummary } from './blockBranchTree';
+import type { PitchOrientation } from './Pitch';
 import type { Scenario } from './types';
 import { useModalFocus } from './useModalFocus';
 import { ActionLogDetail } from './ActionLogDetail';
@@ -13,6 +14,7 @@ import './BranchRunSummary.css';
 interface Props {
   scenarioName: string;
   scenario: Scenario;
+  orientation?: PitchOrientation;
   /** Source of each branch's full action log, for the per-branch drill-down. */
   run: BranchRun;
   summary: BranchSummary;
@@ -55,7 +57,7 @@ function diceRollSummary(outcomes: BranchStripEntry['outcomes']): string {
  * only carries the summary numbers the list itself needs.
  */
 export function BranchRunSummary({
-  scenarioName, scenario, run, summary, branches, onSubmit, onDismiss, defaultName, signedInName, error,
+  scenarioName, scenario, orientation, run, summary, branches, onSubmit, onDismiss, defaultName, signedInName, error,
   seriesMode = false, continueLabel, onReviewBoard,
 }: Props) {
   const titleId = useId();
@@ -117,6 +119,7 @@ export function BranchRunSummary({
                 scenario={scenario}
                 actionLog={run.lines[detail.id].state.actionLog}
                 variant="review"
+                orientation={orientation}
                 diagramAside={tree && (
                   <BranchReviewGraphic tree={tree} highlightedBranchIds={detailIds ?? [detail.id]} />
                 )}
