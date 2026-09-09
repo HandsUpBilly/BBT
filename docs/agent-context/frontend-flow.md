@@ -312,6 +312,16 @@ the full `actionLog`, so it can show the starting formation as well as every
 committed movement route, pass, handoff, and block. It is not a generic or
 pre-rendered football play.
 
+`PlayDiagram` also takes the live `pitchOrientation` (`'landscape'` |
+`'portrait'`, threaded down from `App.tsx` through `ScoreSummary`,
+`SubmitModal`/`BranchRunSummary`, and `ActionLogDetail`) and transposes its
+row/col-to-x/y mapping to match — on a tall/narrow viewport the live pitch
+draws state cols across and rows down, so the diagram must too, or a portrait
+run reads as inverted. This is a transpose, not a mirror: reversing both axes
+instead turns the recorded play around. A leaderboard review has no stored
+orientation, so it renders using whatever orientation the *viewer's* current
+device is using, not the one the run was originally played under.
+
 Movement entries are grouped only while their squares remain contiguous. This
 preserves separate activations and restarted routes, while still turning the
 rules engine's one-entry-per-square log into a readable line. Passes use a

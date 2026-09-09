@@ -1,6 +1,7 @@
 import { useId, useState } from 'react';
 import { ActionLogDetail } from './ActionLogDetail';
 import touchdownLockup from './assets/touchdown-lockup.webp';
+import type { PitchOrientation } from './Pitch';
 import type { ActionLogEntry, Scenario } from './types';
 import { useModalFocus } from './useModalFocus';
 import './SubmitModal.css';
@@ -8,6 +9,7 @@ import './SubmitModal.css';
 interface Props {
   scenario: Scenario;
   actionLog: ActionLogEntry[];
+  orientation?: PitchOrientation;
   onSubmit: (name: string) => void;
   onDismiss: () => void;
   /**
@@ -24,7 +26,7 @@ interface Props {
   error?: string;
 }
 
-export function SubmitModal({ scenario, actionLog, onSubmit, onDismiss, seriesMode, continueLabel, onReviewBoard, defaultName = '', signedInName, error }: Props) {
+export function SubmitModal({ scenario, actionLog, orientation, onSubmit, onDismiss, seriesMode, continueLabel, onReviewBoard, defaultName = '', signedInName, error }: Props) {
   const [name, setName] = useState(defaultName);
   const [submitting, setSubmitting] = useState(false);
   const titleId = useId();
@@ -66,7 +68,7 @@ export function SubmitModal({ scenario, actionLog, onSubmit, onDismiss, seriesMo
         </header>
 
         <div className="submit-modal__content">
-          <ActionLogDetail scenario={scenario} actionLog={actionLog} variant="review" />
+          <ActionLogDetail scenario={scenario} actionLog={actionLog} variant="review" orientation={orientation} />
 
           {error && (
             <p className="submit-modal__error" role="alert">{error}</p>
