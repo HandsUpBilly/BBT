@@ -2146,11 +2146,11 @@ export default function App() {
         const { canBlock, canBlitz } = blockActionAvailability(menuPiece, state);
         const enabledActions = new Set(enabledScenarioActions(activeScenario));
         const menuActions: PieceMenuAction[] = [
-          { label: 'Move',     key: 'move',    disabled: !enabledActions.has('move'), emphasized: emphasizedActions?.includes('move') },
-          { label: 'Hand-off', key: 'handoff', disabled: !enabledActions.has('handoff') || !canHandoff, emphasized: emphasizedActions?.includes('handoff') },
-          { label: 'Pass',     key: 'pass',    disabled: !enabledActions.has('pass') || !canPass, emphasized: emphasizedActions?.includes('pass') },
-          { label: 'Block',    key: 'block',   disabled: !enabledActions.has('block') || !canBlock, emphasized: emphasizedActions?.includes('block') },
-          { label: 'Blitz',    key: 'blitz',   disabled: !enabledActions.has('blitz') || !canBlitz, emphasized: emphasizedActions?.includes('blitz') },
+          { label: 'Move',     key: 'move',    disabled: !enabledActions.has('move'), locked: !enabledActions.has('move'), emphasized: emphasizedActions?.includes('move') },
+          { label: 'Hand-off', key: 'handoff', disabled: !enabledActions.has('handoff') || !canHandoff, locked: !enabledActions.has('handoff'), emphasized: emphasizedActions?.includes('handoff') },
+          { label: 'Pass',     key: 'pass',    disabled: !enabledActions.has('pass') || !canPass, locked: !enabledActions.has('pass'), emphasized: emphasizedActions?.includes('pass') },
+          { label: 'Block',    key: 'block',   disabled: !enabledActions.has('block') || !canBlock, locked: !enabledActions.has('block'), emphasized: emphasizedActions?.includes('block') },
+          { label: 'Blitz',    key: 'blitz',   disabled: !enabledActions.has('blitz') || !canBlitz, locked: !enabledActions.has('blitz'), emphasized: emphasizedActions?.includes('blitz') },
         ];
         return (
           <PieceMenu

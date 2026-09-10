@@ -46,6 +46,22 @@ describe('PieceMenu', () => {
       .toContain('piece-menu__item--emphasized');
   });
 
+  it('marks actions disabled by the puzzle configuration with a lock', () => {
+    render(
+      <PieceMenu
+        piece={humanBlocker()}
+        anchor={{ top: 10, left: 10, right: 110, bottom: 60 }}
+        actions={DEFAULT_ACTIONS.map(action => ({ ...action, disabled: action.key === 'pass', locked: action.key === 'pass' }))}
+        onAction={vi.fn()}
+        onDismiss={vi.fn()}
+      />,
+    );
+
+    expect((screen.getByRole('checkbox', { name: 'Pass' }) as HTMLInputElement).disabled).toBe(true);
+    expect(screen.getByTitle('Not enabled for this puzzle').closest('label')?.textContent).toContain('Pass');
+    expect(screen.queryAllByTitle('Not enabled for this puzzle')).toHaveLength(1);
+  });
+
   it('stays open while the player interacts with a higher-priority dialog', () => {
     const onDismiss = vi.fn();
     render(
