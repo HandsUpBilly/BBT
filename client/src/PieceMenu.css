@@ -80,6 +80,12 @@
   box-sizing: border-box;
 }
 
+.piece-menu__lock {
+  margin-left: auto;
+  font-size: 0.8em;
+  line-height: 1;
+}
+
 .piece-menu__item:hover {
   background: var(--color-surface-hover);
 }
