@@ -70,6 +70,31 @@ Block, and Blitz. Omitted `enabledActions` means all five, preserving legacy
 puzzles. Puzzle Creator saves the selected list; disabled choices are disabled
 in the menu and ignored by the action handler as defence in depth.
 
+`scenarioActionErrors` rejects a list that leaves the puzzle's own objective
+unreachable — an empty list, a `crowd-surf` puzzle with neither Block nor
+Blitz, or a `touchdown` puzzle with none of Move, Hand-off or Pass
+(`OBJECTIVE_REQUIRED_ACTIONS`). These are necessary conditions, not a
+solvability proof. A puzzle is one turn with no failure roll, so without the
+check a saved puzzle could reach players in a state where the run can neither
+be completed nor failed.
+
+## Run Failure
+
+`isScoringRunStalled` (`client/src/runOutcome.ts`) drives the Drive-failed
+dialog, and covers every objective:
+
+- `touchdown` — an active-team carrier whose activation is already spent.
+- `crowd-surf` — no active-team piece can still Block or Blitz, since only a
+  push can send a player into the crowd.
+- either — the puzzle's `enabledActions` exclude every route to its objective,
+  which only a puzzle predating `scenarioActionErrors` can still do.
+
+Both arms are sound but not complete: they detect positions that are definitely
+lost, not every one. A boxed-in carrier with an activation left has always been
+missed. It takes the enabled actions as a second argument and is memoized at
+its `App.tsx` call site, because the crowd-surf arm walks blitz reachability
+per piece.
+
 ## Pass / Handoff Invariants
 
 Receivers may already be activated. Prior bugs filtered receivers by
@@ -218,8 +243,15 @@ dice tie-break.
 - A push must use an empty square from its three-square push arc when one is
   available. When all available squares are occupied, those occupants become
   selectable and the chosen player is pushed through its own forward arc. This
-  repeats until the chain reaches empty turf. Only the originally blocked
-  defender falls; every displacement is retained in the block log and diagram.
+  repeats until the chain reaches empty turf. A chain route that cannot
+  ultimately reach an empty square is not offered (`chainCanReachEmpty`). Only
+  the originally blocked defender falls; every displacement is retained in the
+  block log and diagram.
+- An off-pitch square is never occupied, so it always satisfies the
+  empty-square rule above. A block against a player on the sideline whose other
+  arc squares are occupied therefore offers the crowd rather than a chain push.
+  Off-pitch squares have no rendered cell — the **Push into crowd** control in
+  the HUD status line is how the choice is made.
 - `blockActionAvailability` only offers Blitz when a standing opponent is
   actually reachable — checking merely that one exists left an enabled menu
   button that silently did nothing.
