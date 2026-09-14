@@ -171,6 +171,38 @@ test('scenario actions default to every player-menu action and reject unknown va
   assert.deepEqual(enabledScenarioActions({ enabledActions: [] }), []);
 });
 
+test('rejects a puzzle whose own objective has no enabled route to it', () => {
+  // Every action off: the piece menu greys out all five and the run can be
+  // neither completed nor failed.
+  assert.deepEqual(
+    validateScenario(validScenario({ enabledActions: [] })),
+    ['Enable at least one player action'],
+  );
+  // A list of nothing but unrecognized values normalizes to the same thing.
+  assert.deepEqual(
+    validateScenario(validScenario({ enabledActions: ['teleport'] })),
+    ['Enable at least one player action'],
+  );
+
+  // phase: 'crowd-surf' is only ever reached through a push.
+  assert.deepEqual(
+    validateScenario(validScenario({ objective: 'crowd-surf', enabledActions: ['move', 'handoff', 'pass'] })),
+    ['A Crowd surf puzzle needs Block or Blitz enabled'],
+  );
+  // The ball only enters the end zone carried, handed off or thrown.
+  assert.deepEqual(
+    validateScenario(validScenario({ objective: 'touchdown', enabledActions: ['block', 'blitz'] })),
+    ['A Touchdown puzzle needs Move, Hand-off or Pass enabled'],
+  );
+
+  // One open route is enough — the check is a necessary condition, not a
+  // solvability proof.
+  assert.deepEqual(validateScenario(validScenario({ objective: 'crowd-surf', enabledActions: ['blitz'] })), []);
+  assert.deepEqual(validateScenario(validScenario({ objective: 'touchdown', enabledActions: ['move'] })), []);
+  // Legacy puzzles omit the field entirely, which means all five.
+  assert.deepEqual(validateScenario(validScenario()), []);
+});
+
 test('normalizes the two puzzle teams and validates roster membership', () => {
   const scenario = validScenario({ teams: ['orc', 'human'] });
   assert.deepEqual(scenario.teams, ['orc', 'human']);

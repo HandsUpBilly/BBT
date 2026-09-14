@@ -247,6 +247,8 @@ indefinitely.
 - Cross-device public avatars and country/nationality labels for verified users,
   with avatar moderation in Admin Console
 - Admin-only complete, per-series, and per-puzzle ranking resets
+- Admin promotion/demotion from the Statistics login table, without the private
+  Google address ever reaching the browser
 - Combined home-screen progress endpoint
 - Player issue and feature reporting via `/api/reports`, rate-limited
 - Admin-only anonymous player-performance statistics from the full retained
@@ -255,3 +257,5 @@ indefinitely.
   play-time graphs from first-party game-session summaries
 - **Persistent live puzzle-editor saves** via Netlify Blobs; enabled flags
   control player visibility without a separate publish step
+- Touchdown and crowd-surf puzzle objectives, and per-puzzle restriction of the
+  five player-menu actions
