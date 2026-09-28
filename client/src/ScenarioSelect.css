@@ -125,7 +125,6 @@
   max-width: min(660px, 56%);
 }
 
-.scenario-select__eyebrow,
 .series-row__eyebrow,
 .challenge-tile__index {
   font-family: var(--font-display);
@@ -133,10 +132,6 @@
   font-weight: 600;
   letter-spacing: 0.13em;
   text-transform: uppercase;
-}
-
-.scenario-select__eyebrow {
-  color: var(--color-accent);
 }
 
 .scenario-select__title {
@@ -417,8 +412,7 @@
 
 .series-row__meta,
 .series-row__matchup,
-.challenge-tile__meta,
-.challenge-section__summary {
+.challenge-tile__meta {
   color: var(--color-text-muted);
   font-family: var(--font-display);
   font-variant-numeric: tabular-nums;
@@ -471,13 +465,6 @@
   margin-top: 3px;
   color: var(--color-text-muted);
   font-size: 0.82rem;
-}
-
-.challenge-section__summary {
-  font-size: 0.76rem;
-  letter-spacing: 0.05em;
-  text-align: right;
-  text-transform: uppercase;
 }
 
 .challenge-filter {
@@ -773,10 +760,6 @@
     gap: 8px;
   }
 
-  .challenge-section__summary {
-    text-align: left;
-  }
-
   .challenge-filter__button {
     flex: 1 0 auto;
     min-width: 112px;
@@ -815,10 +798,6 @@
   .scenario-select__header {
     min-height: 420px;
     padding: 28px 18px 22px;
-  }
-
-  .scenario-select__eyebrow {
-    max-width: 150px;
   }
 
   .scenario-select__subtitle {
