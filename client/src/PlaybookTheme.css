@@ -173,8 +173,7 @@
 
 .app--game .hud__back,
 .app--game .hud__restart,
-.app--game .hud__guide,
-.app--game .hud__end-turn {
+.app--game .hud__guide {
   /* inline-flex + gap: the icon and label are separate spans so the label can
      be dropped on touch, and they would otherwise sit flush ("←MENU"). */
   display: inline-flex;
@@ -199,8 +198,7 @@
 
 .app--game .hud__back:hover,
 .app--game .hud__restart:hover,
-.app--game .hud__guide:hover,
-.app--game .hud__end-turn:hover:not(:disabled) {
+.app--game .hud__guide:hover {
   color: var(--color-text-strong);
   background: #1b1f1d;
   border-color: #706e66;
@@ -803,7 +801,7 @@
 
 .app--playbook .submit-modal__moves,
 .app--playbook .score-summary__moves,
-.app--playbook .block-outcome__rows {
+.app--playbook .block-split__rows {
   color: var(--color-text);
   background: var(--color-surface-sunken);
   border: 1px solid var(--color-border-subtle);
@@ -821,14 +819,13 @@
 
 .app--playbook .submit-modal__move-row,
 .app--playbook .score-summary__move-row,
-.app--playbook .block-outcome__row {
+.app--playbook .block-split__row {
   border-color: var(--color-border-subtle);
 }
 
 .app--playbook .submit-modal__move-name,
 .app--playbook .score-summary__move-name,
-.app--playbook .block-outcome__row-label,
-.app--playbook .block-outcome__continue-option {
+.app--playbook .block-split__row-label {
   color: var(--color-text);
 }
 
@@ -838,8 +835,7 @@
 .app--playbook .score-summary__move-role,
 .app--playbook .score-summary__move-pos,
 .app--playbook .score-summary__move-prob,
-.app--playbook .block-outcome__row-prob,
-.app--playbook .block-outcome__continue-label {
+.app--playbook .block-split__row-prob {
   color: var(--color-text-muted);
 }
 
@@ -867,7 +863,6 @@
 
 .app--playbook .submit-modal__cum-value,
 .app--playbook .score-summary__cum-value,
-.app--playbook .block-outcome__combined,
 .app--playbook .submit-modal__no-risk {
   color: var(--color-success);
   font-variant-numeric: tabular-nums;
@@ -1631,7 +1626,7 @@
 }
 
 .app--playbook .btn--primary,
-.app--playbook :is(.modal__roll-btn, .confirm-dialog__confirm):not(:disabled) {
+.app--playbook .modal__roll-btn:not(:disabled) {
   color: var(--color-text-strong);
   background: var(--texture-noise), var(--gradient-accent);
   border-color: var(--color-accent-border);
@@ -1639,7 +1634,7 @@
 }
 
 .app--playbook .btn--primary:hover:not(:disabled),
-.app--playbook :is(.modal__roll-btn, .confirm-dialog__confirm):hover:not(:disabled) {
+.app--playbook .modal__roll-btn:hover:not(:disabled) {
   background: var(--texture-noise), var(--gradient-accent-hover);
   border-color: var(--color-accent-border);
 }
