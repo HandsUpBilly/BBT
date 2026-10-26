@@ -43,7 +43,7 @@ editor accepted drafts the server then rejected).
 
 | Module | Used by |
 |---|---|
-| `scenarioValidation.js` | client editor, `server/editor.js`, `editor-scenarios.js`, `editor-series.js`, `netlify/functions/leaderboard.js` |
+| `scenarioValidation.js` | client editor, `client/src/App.tsx`, `client/src/scenarios/runtime.ts`, `server/editor.js`, `editor-scenarios.js`, `editor-series.js`, `netlify/functions/editorStore.js`, `netlify/functions/leaderboard.js` |
 | `googleAuth.js` | `server/auth.js`, `netlify/functions/auth.js` |
 | `sessionAuth.js` | `server/auth.js`, `netlify/functions/auth.js`, `server/identityRoutes.js`, `netlify/functions/identity-auth.js` |
 | `identityFlow.js` | `server/identityRoutes.js`, `netlify/functions/identity-auth.js` |
@@ -55,7 +55,7 @@ editor accepted drafts the server then rejected).
 | `scoreValidation.js` | both leaderboard implementations, `netlify/functions/progress.js` |
 | `playerProfile.js` | public profile/avatar validation in Express and Netlify Functions |
 | `rankingReset.js` | destructive ranking-reset target validation in Express and Netlify Functions |
-| `rateLimit.js` | both `/api/reports`, both `/api/contact`, and both leaderboard implementations |
+| `rateLimit.js` | Netlify: `analytics.js`, `contact.js`, `identity-auth.js`, `leaderboard.js`, `logins.js`, `profile.js`, `reports.js`, `series-leaderboard.js`; Express: `analytics.js`, `identityRoutes.js`, `index.js`, `profiles.js` |
 | `statistics.js` | `server/index.js`, `editor-statistics.js` |
 | `loginTracking.js` | `server/index.js`, `netlify/functions/logins.js`, client `AdminLogins`/statistics |
 | `adminManagement.js` | `server/editor.js`, `server/adminStore.js`, `editor-admins.js`, `netlify/functions/adminStore.js` |
@@ -227,6 +227,7 @@ Never hand-edit `netlify/functions/scenarioSeed.js`.
 | `AUTH_EMAIL_FROM` | `shared/authEmail.js` | Optional verified sender for magic links; falls back to `CONTACT_EMAIL_FROM` |
 | `VITE_APP_VERSION` | `vite.config.ts` | Optional release-version override shown in About and attached to reports |
 | `VITE_DEPLOYED_AT` | `vite.config.ts` | Optional ISO timestamp overriding the About dialog's build-time deployment stamp |
+| `CONTEXT` | `client/vite.config.ts` | Set by Netlify to `production`, `deploy-preview`, `branch-deploy`, or `dev`; unset on a plain local build. Any value other than exactly `production` forces Admin nav visible client-side (`__BBT_FORCE_ADMIN_NAV__`) — see "Admin nav visibility vs. editor authorization" in `docs/agent-context/netlify-deploy.md` |
 
 ### Editor auth policy
 
