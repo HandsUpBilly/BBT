@@ -1,17 +1,8 @@
 import { readFile, writeFile } from 'fs/promises';
 import { join } from 'path';
-import { normalizeManagedAdmins } from '../shared/adminManagement.js';
+import { appendAuditEntry, normalizeAudit, normalizeManagedAdmins } from '../shared/adminManagement.js';
 
 const ADMIN_STORE_PATH = join(process.cwd(), '..', '.bbt-managed-admins.json');
-
-function normalizeAudit(value) {
-  if (!Array.isArray(value)) return [];
-  return value.filter(entry => entry && typeof entry === 'object'
-    && (entry.action === 'added' || entry.action === 'removed')
-    && typeof entry.actor === 'string' && typeof entry.target === 'string'
-    && typeof entry.at === 'string')
-    .slice(0, 100);
-}
 
 async function readAccess() {
   try {
@@ -43,7 +34,7 @@ export async function writeManagedAdmins(emails) {
 
 export async function recordAdminAudit(entry) {
   const { emails, audit } = await readAccess();
-  const nextAudit = [{ action: entry.action, actor: entry.actor, target: entry.target, at: new Date().toISOString() }, ...audit].slice(0, 100);
+  const nextAudit = appendAuditEntry(audit, entry);
   await writeFile(ADMIN_STORE_PATH, `${JSON.stringify({ emails, audit: nextAudit }, null, 2)}\n`);
   return nextAudit;
 }
@@ -51,7 +42,7 @@ export async function recordAdminAudit(entry) {
 export async function saveManagedAdminsWithAudit(emails, entry) {
   const normalized = normalizeManagedAdmins(emails);
   const { audit } = await readAccess();
-  const nextAudit = [{ action: entry.action, actor: entry.actor, target: entry.target, at: new Date().toISOString() }, ...audit].slice(0, 100);
+  const nextAudit = appendAuditEntry(audit, entry);
   await writeFile(ADMIN_STORE_PATH, `${JSON.stringify({ emails: normalized, audit: nextAudit }, null, 2)}\n`);
   return { managedAdmins: normalized, audit: nextAudit };
 }

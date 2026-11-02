@@ -1,15 +1,7 @@
 import { getStore } from '@netlify/blobs';
-import { normalizeManagedAdmins } from '../../shared/adminManagement.js';
+import { appendAuditEntry, normalizeAudit, normalizeManagedAdmins } from '../../shared/adminManagement.js';
 
 const MANAGED_ADMINS_KEY = 'managed-admins';
-
-function normalizeAudit(value) {
-  if (!Array.isArray(value)) return [];
-  return value.filter(entry => entry && typeof entry === 'object'
-    && (entry.action === 'added' || entry.action === 'removed')
-    && typeof entry.actor === 'string' && typeof entry.target === 'string'
-    && typeof entry.at === 'string').slice(0, 100);
-}
 
 function store() {
   return getStore({
@@ -44,7 +36,7 @@ export async function writeManagedAdmins(emails) {
 
 export async function recordAdminAudit(entry) {
   const { emails, audit } = await readAccess();
-  const nextAudit = [{ action: entry.action, actor: entry.actor, target: entry.target, at: new Date().toISOString() }, ...audit].slice(0, 100);
+  const nextAudit = appendAuditEntry(audit, entry);
   await store().set(MANAGED_ADMINS_KEY, JSON.stringify({ emails, audit: nextAudit }));
   return nextAudit;
 }
@@ -52,7 +44,7 @@ export async function recordAdminAudit(entry) {
 export async function saveManagedAdminsWithAudit(emails, entry) {
   const normalized = normalizeManagedAdmins(emails);
   const { audit } = await readAccess();
-  const nextAudit = [{ action: entry.action, actor: entry.actor, target: entry.target, at: new Date().toISOString() }, ...audit].slice(0, 100);
+  const nextAudit = appendAuditEntry(audit, entry);
   await store().set(MANAGED_ADMINS_KEY, JSON.stringify({ emails: normalized, audit: nextAudit }));
   return { managedAdmins: normalized, audit: nextAudit };
 }
