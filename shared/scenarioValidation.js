@@ -20,17 +20,18 @@ export const STAT_RANGE = { min: 1, max: 12 };
 export const STAT_KEYS = ['ma', 'st', 'ag', 'pa', 'av'];
 
 export const TEAMS = ['human', 'orc', 'black-orc', 'imperial-nobility'];
-export const OBJECTIVES = ['touchdown', 'crowd-surf'];
-export const SCENARIO_ACTIONS = ['move', 'handoff', 'pass', 'block', 'blitz'];
+export const OBJECTIVES = ['touchdown', 'crowd-surf', 'injure-by-foul'];
+export const SCENARIO_ACTIONS = ['move', 'handoff', 'pass', 'block', 'blitz', 'foul'];
 
 // Player-facing names, here rather than in the editor so a validation error
 // and the control that produced it can never call the same thing two things.
 export const OBJECTIVE_LABELS = Object.freeze({
   touchdown: 'Touchdown',
   'crowd-surf': 'Crowd surf',
+  'injure-by-foul': 'Injure by foul',
 });
 export const ACTION_LABELS = Object.freeze({
-  move: 'Move', handoff: 'Hand-off', pass: 'Pass', block: 'Block', blitz: 'Blitz',
+  move: 'Move', handoff: 'Hand-off', pass: 'Pass', block: 'Block', blitz: 'Blitz', foul: 'Foul',
 });
 
 /**
@@ -47,6 +48,7 @@ export const OBJECTIVE_REQUIRED_ACTIONS = Object.freeze({
   // phase: 'crowd-surf' is only ever set from a push, which only a block or a
   // blitz can produce.
   'crowd-surf': Object.freeze(['block', 'blitz']),
+  'injure-by-foul': Object.freeze(['foul']),
 });
 
 /** BB2025 team-sheet caps. A puzzle is a single on-pitch state, so each team
@@ -359,6 +361,10 @@ export function validateScenario(scenario, existingIds = new Set(), options = {}
     errors.push('At least one player is required');
   }
   errors.push(...scenarioActionErrors(scenario));
+  if (scenario.objective === 'injure-by-foul'
+    && !(scenario.pieces ?? []).some(p => p.team !== scenario.activeTeam && p.down === true)) {
+    errors.push('A foul injury puzzle needs at least one prone opponent');
+  }
 
   const ids = new Set();
   const squares = new Set();
