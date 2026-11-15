@@ -222,6 +222,18 @@ export function PlayDiagram({ scenario, actionLog, orientation = 'landscape' }: 
               </line>
             );
           })}
+          {fouls.map((entry, index) => {
+            const from = point(entry.from, orientation);
+            const to = point(entry.to, orientation);
+            return (
+              <g key={`foul-${index}`} data-route-kind="foul">
+                <title>{entry.pieceName} fouls {entry.receiverName ?? 'opponent'}</title>
+                <line className="play-diagram__route play-diagram__route--block" x1={from.x} y1={from.y} x2={to.x} y2={to.y} />
+                <circle className="play-diagram__block-mark" cx={to.x} cy={to.y} r="8" />
+                <text className="play-diagram__block-dice" x={to.x} y={to.y + 3}>F</text>
+              </g>
+            );
+          })}
           {blocks.map((entry, index) => {
             const from = point(entry.from, orientation);
             const to = point(entry.to, orientation);
