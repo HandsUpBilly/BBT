@@ -35,6 +35,10 @@ export function isScoringRunStalled(
   // can produce a push — so once no piece can do either, the surf can never
   // happen. This is the crowd-surf counterpart of the spent-carrier check.
   if (state.objective === 'crowd-surf') {
+    // Do not concede while the current activation or a pending block/push
+    // resolution can still legally produce a surf. Branch replay uses this
+    // guard too, before committing a stable, definitely failed state.
+    if (state.selectedPieceId || state.blockChoice || state.pendingBlockResolution) return false;
     return !state.pieces.some(piece => {
       if (piece.team !== state.activeTeam) return false;
       const { canBlock, canBlitz } = blockActionAvailability(piece, state);

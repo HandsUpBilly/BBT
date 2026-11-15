@@ -54,6 +54,17 @@ describe('isScoringRunStalled', () => {
       expect(isScoringRunStalled(state, ['move', 'block'])).toBe(false);
     });
 
+    it('does not concede a pending activation before its final push is resolved', () => {
+      const state = {
+        ...crowdSurfState([
+          humanBlocker({ position: { col: 1, row: 10 }, activated: true }),
+          orcBlocker({ position: { col: 0, row: 10 } }),
+        ]),
+        selectedPieceId: 'human1',
+      };
+      expect(isScoringRunStalled(state)).toBe(false);
+    });
+
     it('does not turn a completed crowd surf into a failure', () => {
       const state = {
         ...crowdSurfState([humanBlocker({ position: { col: 1, row: 10 }, activated: true })]),

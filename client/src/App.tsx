@@ -1806,7 +1806,7 @@ export default function App() {
   const statusLine = (
     <div className="hud__status">
       <span>{compact && seriesCounter && <>{seriesCounter}{' '}</>}{activationStatus}</span>
-      {crowdSurfTarget && (
+      {activeScenario?.objective !== 'crowd-surf' && crowdSurfTarget && (
         <button
           type="button"
           className="hud__crowd-surf"
@@ -2116,6 +2116,7 @@ export default function App() {
       {showStalledRunDialog && (
         <RunOutcomeDialog
           variant="failed"
+          objective={state.objective}
           onRestart={handleRestartTurn}
           onExit={handleExitFailedPuzzle}
         />

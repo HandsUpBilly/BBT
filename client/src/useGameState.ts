@@ -828,7 +828,7 @@ export function applyPushChoice(prev: GameState, pos: Position, followUp?: boole
       prev.pieces.map(piece => piece.position),
     );
     if (nextTargets.length === 0) return prev;
-    return {
+    return resolveImplicitCrowdPush({
       ...prev,
       pushTargetKeys: new Set(nextTargets.map(key)),
       pendingBlockResolution: {
@@ -837,7 +837,7 @@ export function applyPushChoice(prev: GameState, pos: Position, followUp?: boole
         chainPieceId: occupyingPiece.id,
         chainFrom: occupyingPiece.position,
       },
-    };
+    });
   }
 
   // Intermediate chain choices deliberately omit followUp. If this square is
@@ -936,6 +936,20 @@ export function applyPushChoice(prev: GameState, pos: Position, followUp?: boole
   return resolution.isBlitz
     ? resumeMovementAfterBlitz(nextState, pieces, resolution.attackerId)
     : clearSelection(nextState);
+}
+
+/**
+ * A Crowd surf objective makes an available off-pitch push the intended
+ * outcome, rather than asking the player to press a separate HUD button for a
+ * square that is deliberately outside the rendered pitch. Keep this pure so
+ * it applies equally to ordinary and Parallel Universes block resolution.
+ */
+function resolveImplicitCrowdPush(state: GameState): GameState {
+  if (state.objective !== 'crowd-surf' || !state.pendingBlockResolution) return state;
+  const crowdTarget = [...state.pushTargetKeys]
+    .map(fromKey)
+    .find(position => position.col < 0 || position.col >= 15 || position.row < 0 || position.row >= ROWS);
+  return crowdTarget ? applyPushChoice(state, crowdTarget, false) : state;
 }
 
 /**
@@ -1609,7 +1623,7 @@ export function useGameState(initialState: GameState) {
       }
 
       const pushTargetKeys = new Set(pushCandidates.map(key));
-      return {
+      return resolveImplicitCrowdPush({
         ...prev,
         actionLog: newActionLog,
         pendingProb: newPendingProb,
@@ -1628,7 +1642,7 @@ export function useGameState(initialState: GameState) {
           offerFollowUp: true,
           isBlitz,
         },
-      };
+      });
     });
   }, []);
 

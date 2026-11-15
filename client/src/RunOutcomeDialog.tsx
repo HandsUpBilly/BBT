@@ -2,10 +2,12 @@ import { useId } from 'react';
 import driveFailedLockup from './assets/drive-failed-lockup.webp';
 import parallelUniversesArt from './assets/parallel-universes-decision-tree.webp';
 import { useModalFocus } from './useModalFocus';
+import type { Objective } from './types';
 import './RunOutcomeDialog.css';
 
 type Props = {
   variant: 'failed';
+  objective: Objective;
   onRestart: () => void;
   onExit: () => void;
 } | {
@@ -37,8 +39,9 @@ export function RunOutcomeDialog(props: Props) {
           </header>
           <div className="run-outcome-dialog__body">
             <p id={descriptionId}>
-              The ball carrier has finished their activation without reaching the end zone.
-              They cannot act again this turn, so the puzzle can no longer be completed.
+              {props.objective === 'crowd-surf'
+                ? 'No standing player can make a legal Block or Blitz against an opponent, so the crowd-surf objective can no longer be completed.'
+                : 'The ball carrier has finished their activation without reaching the end zone. They cannot act again this turn, so the puzzle can no longer be completed.'}
             </p>
             <div className="submit-modal__actions run-outcome-dialog__actions">
               <button type="button" className="modal__roll-btn" onClick={props.onRestart}>
