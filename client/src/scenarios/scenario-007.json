@@ -1,0 +1,477 @@
+{
+  "id": "scenario-007",
+  "name": "Got to pay the Troll toll",
+  "description": "Leopold  is in trouble, can you extract him from under the arms of Brakk the troll and find a path to score.",
+  "activeTeam": "imperial-nobility",
+  "teams": [
+    "imperial-nobility",
+    "black-orc"
+  ],
+  "objective": "touchdown",
+  "enabledActions": [
+    "move",
+    "handoff",
+    "pass",
+    "block",
+    "blitz"
+  ],
+  "freePlay": true,
+  "published": true,
+  "ballPosition": null,
+  "pieces": [
+    {
+      "id": "black-orc-troll-1",
+      "team": "black-orc",
+      "role": "troll",
+      "name": "Brakk Stonegut",
+      "ma": 4,
+      "st": 5,
+      "ag": 1,
+      "pa": 5,
+      "av": 9,
+      "skills": [
+        "Always Hungry",
+        "Mighty Blow",
+        "Projectile Vomit",
+        "Really Stupid",
+        "Regeneration",
+        "Throw Team Mate"
+      ],
+      "position": {
+        "col": 6,
+        "row": 5
+      },
+      "hasBall": false
+    },
+    {
+      "id": "black-orc-black-orc-2",
+      "team": "black-orc",
+      "role": "black-orc",
+      "name": "Drazh Necksnappa",
+      "ma": 4,
+      "st": 4,
+      "ag": 2,
+      "pa": 5,
+      "av": 9,
+      "skills": [
+        "Brawler",
+        "Grab"
+      ],
+      "position": {
+        "col": 7,
+        "row": 4
+      },
+      "hasBall": false
+    },
+    {
+      "id": "black-orc-black-orc-3",
+      "team": "black-orc",
+      "role": "black-orc",
+      "name": "Uzgul Grimtusk",
+      "ma": 4,
+      "st": 4,
+      "ag": 2,
+      "pa": 5,
+      "av": 9,
+      "skills": [
+        "Brawler",
+        "Grab"
+      ],
+      "position": {
+        "col": 9,
+        "row": 4
+      },
+      "hasBall": false
+    },
+    {
+      "id": "black-orc-black-orc-4",
+      "team": "black-orc",
+      "role": "black-orc",
+      "name": "Kragga Chainfist",
+      "ma": 4,
+      "st": 4,
+      "ag": 2,
+      "pa": 5,
+      "av": 9,
+      "skills": [
+        "Brawler",
+        "Grab"
+      ],
+      "position": {
+        "col": 5,
+        "row": 5
+      },
+      "hasBall": false
+    },
+    {
+      "id": "black-orc-black-orc-5",
+      "team": "black-orc",
+      "role": "black-orc",
+      "name": "Borzag Blackhide",
+      "ma": 4,
+      "st": 4,
+      "ag": 2,
+      "pa": 5,
+      "av": 9,
+      "skills": [
+        "Brawler",
+        "Grab"
+      ],
+      "position": {
+        "col": 4,
+        "row": 4
+      },
+      "hasBall": false
+    },
+    {
+      "id": "imperial-nobility-thrower-6",
+      "team": "imperial-nobility",
+      "role": "thrower",
+      "name": "Leopold von Draken",
+      "ma": 6,
+      "st": 3,
+      "ag": 3,
+      "pa": 2,
+      "av": 8,
+      "skills": [
+        "Give and Go",
+        "Pass",
+        "Pro"
+      ],
+      "position": {
+        "col": 6,
+        "row": 6
+      },
+      "hasBall": true
+    },
+    {
+      "id": "black-orc-black-orc-7",
+      "team": "black-orc",
+      "role": "black-orc",
+      "name": "Grishnak Redmaw",
+      "ma": 4,
+      "st": 4,
+      "ag": 2,
+      "pa": 5,
+      "av": 9,
+      "skills": [
+        "Brawler",
+        "Grab"
+      ],
+      "position": {
+        "col": 7,
+        "row": 5
+      },
+      "hasBall": false
+    },
+    {
+      "id": "black-orc-goblin-8",
+      "team": "black-orc",
+      "role": "goblin",
+      "name": "Krib Toepoker 2",
+      "ma": 6,
+      "st": 2,
+      "ag": 3,
+      "pa": 4,
+      "av": 7,
+      "skills": [
+        "Dodge",
+        "Right Stuff",
+        "Stunty",
+        "Thick Skull"
+      ],
+      "position": {
+        "col": 10,
+        "row": 3
+      },
+      "hasBall": false
+    },
+    {
+      "id": "black-orc-goblin-9",
+      "team": "black-orc",
+      "role": "goblin",
+      "name": "Nizz Grubsnatcher 2",
+      "ma": 6,
+      "st": 2,
+      "ag": 3,
+      "pa": 4,
+      "av": 7,
+      "skills": [
+        "Dodge",
+        "Right Stuff",
+        "Stunty",
+        "Thick Skull"
+      ],
+      "position": {
+        "col": 5,
+        "row": 6
+      },
+      "hasBall": false
+    },
+    {
+      "id": "black-orc-black-orc-10",
+      "team": "black-orc",
+      "role": "black-orc",
+      "name": "Uzgul Grimtusk 2",
+      "ma": 4,
+      "st": 4,
+      "ag": 2,
+      "pa": 5,
+      "av": 9,
+      "skills": [
+        "Brawler",
+        "Grab"
+      ],
+      "position": {
+        "col": 3,
+        "row": 4
+      },
+      "hasBall": false
+    },
+    {
+      "id": "black-orc-goblin-11",
+      "team": "black-orc",
+      "role": "goblin",
+      "name": "Zag Nosebiter 3",
+      "ma": 6,
+      "st": 2,
+      "ag": 3,
+      "pa": 4,
+      "av": 7,
+      "skills": [
+        "Dodge",
+        "Right Stuff",
+        "Stunty",
+        "Thick Skull"
+      ],
+      "position": {
+        "col": 8,
+        "row": 3
+      },
+      "hasBall": false
+    },
+    {
+      "id": "black-orc-goblin-12",
+      "team": "black-orc",
+      "role": "goblin",
+      "name": "Krib Toepoker 3",
+      "ma": 6,
+      "st": 2,
+      "ag": 3,
+      "pa": 4,
+      "av": 7,
+      "skills": [
+        "Dodge",
+        "Right Stuff",
+        "Stunty",
+        "Thick Skull"
+      ],
+      "position": {
+        "col": 11,
+        "row": 5
+      },
+      "hasBall": false
+    },
+    {
+      "id": "imperial-nobility-ogre-13",
+      "team": "imperial-nobility",
+      "role": "ogre",
+      "name": "Grod Ribcracker",
+      "ma": 5,
+      "st": 5,
+      "ag": 2,
+      "pa": 5,
+      "av": 9,
+      "skills": [
+        "Bone Head",
+        "Loner (3+)",
+        "Mighty Blow",
+        "Thick Skull",
+        "Throw Team Mate"
+      ],
+      "position": {
+        "col": 8,
+        "row": 7
+      },
+      "hasBall": false
+    },
+    {
+      "id": "imperial-nobility-bodyguard-14",
+      "team": "imperial-nobility",
+      "role": "bodyguard",
+      "name": "Otto Eisenhelm",
+      "ma": 5,
+      "st": 3,
+      "ag": 3,
+      "pa": 4,
+      "av": 8,
+      "skills": [
+        "Stand Firm",
+        "Wrestle"
+      ],
+      "position": {
+        "col": 9,
+        "row": 6
+      },
+      "hasBall": false
+    },
+    {
+      "id": "imperial-nobility-bodyguard-15",
+      "team": "imperial-nobility",
+      "role": "bodyguard",
+      "name": "Mathias Falken",
+      "ma": 5,
+      "st": 3,
+      "ag": 3,
+      "pa": 4,
+      "av": 8,
+      "skills": [
+        "Stand Firm",
+        "Wrestle"
+      ],
+      "position": {
+        "col": 8,
+        "row": 6
+      },
+      "hasBall": false
+    },
+    {
+      "id": "imperial-nobility-retainer-16",
+      "team": "imperial-nobility",
+      "role": "retainer",
+      "name": "Konrad Hochmark",
+      "ma": 6,
+      "st": 3,
+      "ag": 3,
+      "pa": 4,
+      "av": 7,
+      "skills": [
+        "Fend"
+      ],
+      "position": {
+        "col": 13,
+        "row": 6
+      },
+      "hasBall": false
+    },
+    {
+      "id": "imperial-nobility-noble-blitzer-17",
+      "team": "imperial-nobility",
+      "role": "noble-blitzer",
+      "name": "Lukas Silberhand",
+      "ma": 7,
+      "st": 3,
+      "ag": 3,
+      "pa": 4,
+      "av": 8,
+      "skills": [
+        "Block",
+        "Catch",
+        "Pro"
+      ],
+      "position": {
+        "col": 5,
+        "row": 7
+      },
+      "hasBall": false
+    },
+    {
+      "id": "imperial-nobility-retainer-18",
+      "team": "imperial-nobility",
+      "role": "retainer",
+      "name": "Rudolf Drachenfels",
+      "ma": 6,
+      "st": 3,
+      "ag": 3,
+      "pa": 4,
+      "av": 7,
+      "skills": [
+        "Fend"
+      ],
+      "position": {
+        "col": 6,
+        "row": 7
+      },
+      "hasBall": false
+    },
+    {
+      "id": "imperial-nobility-retainer-19",
+      "team": "imperial-nobility",
+      "role": "retainer",
+      "name": "Viktor Sternbach",
+      "ma": 6,
+      "st": 3,
+      "ag": 3,
+      "pa": 4,
+      "av": 7,
+      "skills": [
+        "Fend"
+      ],
+      "position": {
+        "col": 4,
+        "row": 7
+      },
+      "hasBall": false
+    },
+    {
+      "id": "imperial-nobility-noble-blitzer-20",
+      "team": "imperial-nobility",
+      "role": "noble-blitzer",
+      "name": "Leopold von Draken 2",
+      "ma": 7,
+      "st": 3,
+      "ag": 3,
+      "pa": 4,
+      "av": 8,
+      "skills": [
+        "Block",
+        "Catch",
+        "Pro"
+      ],
+      "position": {
+        "col": 12,
+        "row": 5
+      },
+      "hasBall": false
+    },
+    {
+      "id": "imperial-nobility-bodyguard-21",
+      "team": "imperial-nobility",
+      "role": "bodyguard",
+      "name": "Alaric Goldcrest 2",
+      "ma": 5,
+      "st": 3,
+      "ag": 3,
+      "pa": 4,
+      "av": 8,
+      "skills": [
+        "Stand Firm",
+        "Wrestle"
+      ],
+      "position": {
+        "col": 7,
+        "row": 7
+      },
+      "hasBall": false
+    },
+    {
+      "id": "imperial-nobility-retainer-22",
+      "team": "imperial-nobility",
+      "role": "retainer",
+      "name": "Otto Eisenhelm 2",
+      "ma": 6,
+      "st": 3,
+      "ag": 3,
+      "pa": 4,
+      "av": 7,
+      "skills": [
+        "Fend"
+      ],
+      "position": {
+        "col": 3,
+        "row": 6
+      },
+      "hasBall": false
+    }
+  ]
+}
