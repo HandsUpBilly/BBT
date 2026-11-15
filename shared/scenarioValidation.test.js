@@ -58,8 +58,11 @@ test('foul objective requires a prone opponent and the Foul action', () => {
   assert.deepEqual(validateScenario(noBall), []);
   assert.ok(validateScenario({ ...prone, enabledActions: ['move'] })
     .some(error => error.includes('needs Foul enabled')));
-  assert.ok(validateScenario({ ...prone, pieces: original.pieces })
+  assert.ok(validateScenario({ ...prone, pieces: original.pieces, enabledActions: ['foul'] })
     .some(error => error.includes('prone opponent')));
+  assert.deepEqual(validateScenario({
+    ...prone, pieces: original.pieces, enabledActions: ['foul', 'block'],
+  }), []);
   assert.equal(normalizeScenario(prone).objective, 'injure-by-foul');
 });
 
