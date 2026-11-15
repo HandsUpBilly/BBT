@@ -90,7 +90,7 @@ export async function startGame(page: Page, playerName = 'E2E Tester'): Promise<
  */
 export async function startScenario(
   page: Page,
-  scenarioName: string,
+  scenarioName: string | RegExp,
   playerName = 'E2E Tester',
 ): Promise<void> {
   await page.goto('/');
