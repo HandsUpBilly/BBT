@@ -130,6 +130,7 @@ test('preview and staging catalog snapshots cannot overwrite production content'
   assert.equal(catalogStorageKey({ CONTEXT: 'production' }), CONTENT_KEY);
   assert.equal(catalogStorageKey({ CONTEXT: 'deploy-preview', REVIEW_ID: '374' }),
     'content-v3/preview-374');
+  assert.equal(catalogStorageKey({ CONTEXT: 'dev' }), 'content-v3/local-dev');
   assert.equal(catalogStorageKey({ CONTEXT: 'branch-deploy', BRANCH: 'staging' }),
     'content-v3/branch-staging');
 });
