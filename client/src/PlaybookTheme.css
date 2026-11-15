@@ -1141,10 +1141,6 @@
   box-shadow: none;
 }
 
-.app--landing .scenario-select__eyebrow {
-  color: var(--color-accent);
-}
-
 .app--landing .scenario-select__title {
   color: var(--color-text-strong);
 }
@@ -1156,11 +1152,6 @@
 .app--landing .challenge-section__subtitle {
   color: var(--color-text-muted);
   text-shadow: none;
-}
-
-.app--landing .challenge-section__summary {
-  color: var(--color-text-muted);
-  font-family: var(--font-display);
 }
 
 .app--landing .series-row__meta,
@@ -1314,10 +1305,6 @@
 
 .app--admin .editor__series-list {
   color: var(--color-text-muted);
-}
-
-.app--admin .editor__series-item--active {
-  color: var(--color-accent);
 }
 
 .app--admin .editor-tool .btn--ghost {
@@ -1605,7 +1592,6 @@
   .leaderboard__title,
   .score-summary__name,
   .settings-screen__title,
-  .help-screen__title,
   .editor__title
 ) {
   font-weight: 600;
@@ -1660,8 +1646,8 @@
   .editor-tool,
   .user-menu__dropdown,
   .game-tools-menu__dropdown,
-  .legend-menu__panel,
-  .action-log-menu__panel
+  .legend-menu__dropdown,
+  .action-log-menu__dropdown
 ) {
   border-color: var(--color-border);
   box-shadow: var(--shadow-panel);
@@ -1727,7 +1713,6 @@
   .leaderboard__title,
   .score-summary__name,
   .settings-screen__title,
-  .help-screen__title,
   .editor__title
 ) {
   color: var(--color-text-strong);

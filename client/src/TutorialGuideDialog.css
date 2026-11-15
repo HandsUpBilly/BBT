@@ -5,8 +5,7 @@
   text-align: left;
 }
 
-.tutorial-guide__progress,
-.tutorial-guide__tier {
+.tutorial-guide__progress {
   align-self: stretch;
   margin: 0;
   color: var(--color-accent);
@@ -17,23 +16,11 @@
   text-transform: uppercase;
 }
 
-.tutorial-guide__tier {
-  color: var(--color-text-muted);
-  font-size: 0.68rem;
-}
-
-.tutorial-guide__copy,
-.tutorial-guide__recovery {
+.tutorial-guide__copy {
   align-self: stretch;
   margin: 0;
   color: var(--color-text);
   line-height: 1.5;
-}
-
-.tutorial-guide__recovery {
-  padding: 0.65rem 0.8rem;
-  background: rgba(199, 78, 49, 0.12);
-  border-left: 3px solid var(--color-accent);
 }
 
 .tutorial-guide__actions {
@@ -42,15 +29,6 @@
   justify-content: flex-end;
   flex-wrap: wrap;
   gap: 0.65rem;
-}
-
-.tutorial-guide__skip {
-  margin-right: auto;
-  padding: 0.65rem 0;
-  color: var(--color-text-muted);
-  background: transparent;
-  border: none;
-  cursor: pointer;
 }
 
 @media (max-width: 360px) {

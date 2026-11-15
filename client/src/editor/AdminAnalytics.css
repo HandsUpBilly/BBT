@@ -13,8 +13,7 @@
   grid-template-columns: repeat(4, minmax(0, 1fr));
 }
 
-.admin-analytics__two-column,
-.admin-analytics__audience {
+.admin-analytics__two-column {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 16px;
@@ -24,19 +23,13 @@
   padding: 20px;
 }
 
-.admin-analytics__padded > h2,
-.admin-analytics__audience h3 {
+.admin-analytics__padded > h2 {
   margin: 0 0 14px;
   color: #c8c3b7;
   font-family: var(--font-display);
   font-size: 0.8rem;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-}
-
-.admin-analytics__help {
-  margin: -6px 0 18px;
-  color: var(--color-text-muted);
 }
 
 .admin-analytics__bars {
@@ -139,16 +132,14 @@
 
 @media (max-width: 900px) {
   .admin-analytics__cards,
-  .admin-analytics__two-column,
-  .admin-analytics__audience {
+  .admin-analytics__two-column {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
 @media (max-width: 560px) {
   .admin-analytics__cards,
-  .admin-analytics__two-column,
-  .admin-analytics__audience {
+  .admin-analytics__two-column {
     grid-template-columns: 1fr;
   }
 
