@@ -21,6 +21,7 @@ import { ConfirmDialog } from './ConfirmDialog';
 import { BlockSplitPanel } from './BlockSplitPanel';
 import { blockBoardStates } from './blockBranching';
 import { blockActionAvailability } from './blockActionAvailability';
+import { foulTargetKeys } from './useGameState';
 import { UserMenu } from './UserMenu';
 import { LegendMenu } from './LegendMenu';
 import { MobileInfoSheet } from './MobileInfoSheet';
@@ -470,7 +471,7 @@ export default function App() {
           handleSquareLeave: hookSquareLeave, handleCancelSelection, handleResetMovement,
           handleHandoffAction, handleHandoffTarget,
           handlePassAction, handlePassTarget,
-          handleBlockAction, handleBlockTarget, handlePushChoice } = game;
+          handleBlockAction, handleBlockTarget, handleFoulAction, handleFoulTarget, handlePushChoice } = game;
 
   const setBranchedState = branchedBoards.setState;
   // `phase: 'touchdown'` marks one branch scoring, not the run finishing, so
@@ -815,7 +816,7 @@ export default function App() {
     const picksUpBall = state.ballPosition !== null
       && state.pathPreview.some(step => key(step.pos) === key(state.ballPosition!));
     const carriesBall = Boolean(selected?.hasBall || picksUpBall);
-    const scores = activeScenario?.objective !== 'crowd-surf' && carriesBall
+    const scores = activeScenario?.objective === 'touchdown' && carriesBall
       && Boolean(selected && (attacksTopEndZone(selected.team) ? row === 0 : row === 25));
     const samePreview = activeArmedMove && key(activeArmedMove.destination) === k;
 
@@ -871,13 +872,15 @@ export default function App() {
       if (state.passReceiverKeys.has(key({ col, row }))) {
         setPendingTransfer({ kind: 'pass', position: { col, row } });
       }
+    } else if (state.isFoulTargeting) {
+      handleFoulTarget(col, row);
     } else if (state.isBlockTargeting) {
       handleBlockTarget(col, row);
     } else if (choosePushTarget(col, row)) {
       return;
     } else {
       const routeTip = state.committedPath[state.committedPath.length - 1];
-      if (movementContext && routeTip && key(routeTip) === key({ col, row }) && !state.pendingBlock) {
+      if (movementContext && routeTip && key(routeTip) === key({ col, row }) && !state.pendingBlock && !state.pendingFoul) {
         finishMove(movementContext, routeTip);
         return;
       }
@@ -886,8 +889,8 @@ export default function App() {
       hookSquareClick(col, row);
     }
   }, [state.isHandoffTargeting, state.handoffTargets, state.isPassTargeting, state.passReceiverKeys,
-      state.isBlockTargeting, state.committedPath, state.pendingBlock, movementContext,
-      handleBlockTarget, choosePushTarget,
+      state.isBlockTargeting, state.isFoulTargeting, state.committedPath, state.pendingBlock,
+      state.pendingFoul, movementContext, handleBlockTarget, handleFoulTarget, choosePushTarget,
       hookSquareClick, previewBeforeCommit, finishMove]);
 
   // Escape cancels the current activation. Dialogs handle their own Escape via
@@ -953,6 +956,12 @@ export default function App() {
       return;
     }
 
+    if (state.isFoulTargeting) {
+      if (state.foulTargets.has(k)) handleFoulTarget(col, row);
+      else handleCancelSelection();
+      return;
+    }
+
     // During block targeting, clicking a highlighted defender throws the block
     if (state.isBlockTargeting) {
       if (state.blockTargets.has(k)) {
@@ -960,6 +969,11 @@ export default function App() {
       } else {
         handleCancelSelection();
       }
+      return;
+    }
+
+    if (state.pendingFoul && state.foulTargetId === piece.id) {
+      handleFoulTarget(col, row);
       return;
     }
 
@@ -1007,8 +1021,9 @@ export default function App() {
   }, [state.pieces, state.selectedPieceId, state.reachableKeys, state.activeTeam,
       state.isHandoffTargeting, state.handoffTargets, state.isPassTargeting, state.passReceiverKeys,
       state.isBlockTargeting, state.blockTargets, state.pendingBlockIsBlitz, state.blitzTargetId,
+      state.isFoulTargeting, state.foulTargets, state.pendingFoul, state.foulTargetId,
       state.committedPath, movementContext,
-      hookSquareClick, handleBlockTarget, handleCancelSelection,
+      hookSquareClick, handleBlockTarget, handleFoulTarget, handleCancelSelection,
       previewBeforeCommit, finishMove, disarm, hoverCapable, compact, choosePushTarget]);
 
   const handleMenuAction = useCallback((actionKey: string, moveFirst: boolean) => {
@@ -1048,9 +1063,11 @@ export default function App() {
       handleBlockAction(pieceMenu.piece.id, false);
     } else if (actionKey === 'blitz') {
       handleBlockAction(pieceMenu.piece.id, true);
+    } else if (actionKey === 'foul') {
+      handleFoulAction(pieceMenu.piece.id);
     }
   }, [activeScenario, compact, editorPreviewScenario, engageAnalyticsAttempt, handleBlockAction,
-      handleHandoffAction, handlePassAction, hookSquareClick, pieceMenu, updateTutorialConcepts]);
+      handleFoulAction, handleHandoffAction, handlePassAction, hookSquareClick, pieceMenu, updateTutorialConcepts]);
 
   const dismissMenu = useCallback(() => {
     setPieceMenu(null);
@@ -1746,6 +1763,8 @@ export default function App() {
     ? 'HAND-OFF: Select a receiver. Press Esc to cancel.'
     : state.isPassTargeting
     ? 'PASS: Select a receiver. Press Esc to cancel.'
+    : state.isFoulTargeting
+    ? 'FOUL: Select a prone opponent. Press Esc to cancel.'
     : state.isBlockTargeting
     ? (state.pendingBlockIsBlitz
         ? 'BLITZ: Select the target. Press Esc to cancel.'
@@ -1758,6 +1777,8 @@ export default function App() {
     ? `HAND-OFF DECLARED: Move up to ${state.remainingMa} MA, then select the receiver. Press Esc to cancel.`
     : state.pendingPass
     ? `PASS DECLARED: Move up to ${state.remainingMa} MA, then select the receiver. Press Esc to cancel.`
+    : state.pendingFoul
+    ? `FOUL: Move adjacent to ${state.pieces.find(p => p.id === state.foulTargetId)?.name ?? 'your target'}, then select that player.`
     : state.pendingBlock
     ? `BLITZ: Move into contact with ${blitzTarget?.name ?? 'the target'}, then select the target. ${state.remainingMa} MA remaining.`
     : activeFinishedMove
@@ -2154,6 +2175,7 @@ export default function App() {
         const canHandoff = (menuPiece.hasBall || state.ballPosition !== null) && !state.passUsed && !menuPiece.activated;
         const canPass    = passActionAvailability(state, menuPiece);
         const { canBlock, canBlitz } = blockActionAvailability(menuPiece, state);
+        const canFoul = foulTargetKeys(state, menuPiece).size > 0;
         const enabledActions = new Set(enabledScenarioActions(activeScenario));
         const menuActions: PieceMenuAction[] = [
           { label: 'Move',     key: 'move',    disabled: !enabledActions.has('move'), locked: !enabledActions.has('move'), emphasized: emphasizedActions?.includes('move') },
@@ -2161,6 +2183,7 @@ export default function App() {
           { label: 'Pass',     key: 'pass',    disabled: !enabledActions.has('pass') || !canPass, locked: !enabledActions.has('pass'), emphasized: emphasizedActions?.includes('pass') },
           { label: 'Block',    key: 'block',   disabled: !enabledActions.has('block') || !canBlock, locked: !enabledActions.has('block'), emphasized: emphasizedActions?.includes('block') },
           { label: 'Blitz',    key: 'blitz',   disabled: !enabledActions.has('blitz') || !canBlitz, locked: !enabledActions.has('blitz'), emphasized: emphasizedActions?.includes('blitz') },
+          { label: 'Foul',     key: 'foul',    disabled: !enabledActions.has('foul') || !canFoul, locked: !enabledActions.has('foul'), emphasized: emphasizedActions?.includes('foul') },
         ];
         return (
           <PieceMenu
