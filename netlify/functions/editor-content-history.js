@@ -10,10 +10,14 @@ const validId = id => typeof id === 'string' && /^[a-z0-9][a-z0-9-]*$/.test(id);
 
 export default async function handler(req) {
   if (!['GET', 'POST'].includes(req.method)) return json(405, { errors: ['Method not allowed'] });
-  try { await requireAdminGoogleUser(req); } catch (error) {
+  let admin;
+  try { admin = await requireAdminGoogleUser(req); } catch (error) {
     if (error instanceof AdminAuthError) return authErrorResponse(error);
     throw error;
   }
+  // Revision history contains unpublished content; no unauthenticated
+  // bootstrap or open-local-editor fallback may read or restore it.
+  if (!admin?.email) return json(403, { errors: ['A verified administrator is required for revision history.'] });
   const store = editorStore();
   const catalog = await loadContent(store);
   if (req.method === 'GET') {
