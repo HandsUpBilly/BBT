@@ -1770,6 +1770,8 @@ export default function App() {
     .map(fromKey)
     .find(position => position.col < 0 || position.col >= 15 || position.row < 0 || position.row >= 26)
     ?? null;
+  const crowdSurfPosition = state.pendingBlockResolution?.chainFrom
+    ?? state.pendingBlockResolution?.defenderFrom;
   const activationStatus = activeTransfer?.kind === 'handoff'
     ? 'HAND-OFF READY: Confirm the receiver or choose another.'
     : activeTransfer?.kind === 'pass'
@@ -1842,21 +1844,6 @@ export default function App() {
   const statusLine = (
     <div className="hud__status">
       <span>{compact && seriesCounter && <>{seriesCounter}{' '}</>}{activationStatus}</span>
-      {crowdSurfTarget && (
-        <button
-          type="button"
-          className="hud__crowd-surf"
-          onClick={() => {
-            if (state.pendingBlockResolution?.offerFollowUp) {
-              setPendingPushSquare(crowdSurfTarget);
-            } else {
-              handlePushChoice(crowdSurfTarget.col, crowdSurfTarget.row, false);
-            }
-          }}
-        >
-          Push into crowd
-        </button>
-      )}
     </div>
   );
   const activeTutorialConcepts = activeScenario ? tutorialConceptsForScenario(activeScenario.id) : [];
@@ -1991,7 +1978,13 @@ export default function App() {
             branchGhosts={branchedBoards.ghosts}
             branchTree={branchedBoards.tree}
             onSelectBranch={branchedBoards.handleSelectBranch}
-            moveDecision={activeTransfer ? {
+            moveDecision={crowdSurfTarget && crowdSurfPosition ? {
+              position: crowdSurfPosition,
+              probability: null,
+              ariaLabel: 'Crowd push',
+              confirmText: 'Push into crowd',
+              onConfirm: () => choosePushTarget(crowdSurfTarget.col, crowdSurfTarget.row),
+            } : activeTransfer ? {
               position: activeTransfer.position,
               probability: null,
               ariaLabel: activeTransfer.kind === 'pass' ? 'Confirm pass' : 'Confirm hand-off',
