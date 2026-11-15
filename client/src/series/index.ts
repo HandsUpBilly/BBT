@@ -38,9 +38,21 @@ export const defaultSeries: SeriesDefinition = allSeries.find(series => series.i
   id: 'default', name: 'Default Series', description: '', scenarioIds: [], teams: ['human', 'orc'], order: 0,
 };
 
-/** Series matchup settings are authoritative for every puzzle in that run. */
+/**
+ * A series can host several matchups (The Troll Toll includes both Imperial
+ * Nobility and Reikland boards versus Black Orcs). Preserve each puzzle's
+ * actual roster and attacking team when its authored two-team matchup is valid.
+ * The series teams are a fallback for legacy puzzles without a valid matchup,
+ * not a licence to convert Human pieces into Imperial Nobility at runtime.
+ */
 export function applySeriesTeams(series: SeriesDefinition, scenario: Scenario): Scenario {
-  const teams = series.teams ?? scenario.teams ?? ['human', 'orc'];
+  const authored = scenario.teams;
+  const rosterTeams = new Set(scenario.pieces.map(piece => piece.team));
+  const usesAuthoredTeams = authored?.length === 2
+    && new Set(authored).size === 2
+    && authored.includes(scenario.activeTeam)
+    && [...rosterTeams].every(team => authored.includes(team));
+  const teams = usesAuthoredTeams ? authored : (series.teams ?? authored ?? ['human', 'orc']);
   return {
     ...scenario,
     teams: [...teams],
