@@ -4,7 +4,7 @@ import { boxOf, hasHorizontalOverflow, startScenario } from './helpers';
 test.setTimeout(120_000);
 
 test('block split can be revisited on pitch and switched by dice outcome', async ({ page }) => {
-  await startScenario(page, 'Loose Ball on the Goal Line', 'Split Point Tester');
+  await startScenario(page, /Loose Ball on the Goal Line|Things are getting serious/, 'Split Point Tester');
 
   // Make the real first block in this drill. The board state is shared with
   // blockDialog.spec.ts, so the marker location comes from actual game data.
