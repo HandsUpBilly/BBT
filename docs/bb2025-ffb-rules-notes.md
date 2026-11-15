@@ -132,3 +132,35 @@ that can only leave the pitch is not offered.
 Tackle (the only `skills.includes` calls in `useGameState.ts`). Every other
 skill a scenario can give a piece, Guard and Frenzy included, is presentational:
 it renders on the player card and changes nothing in the resolution.
+
+
+## BB2025 Foul casualty objective (#357)
+
+A puzzle with `objective: "injure-by-foul"` still lasts one turn. The Foul
+action is limited to one declaration per turn, targets an opposing **prone**
+player, and may include movement before the actual kick. The objective is
+the chance of a **casualty**, not simply an armour break or a KO. An attempted
+foul exhausts the Foul action; no additional turn begins after failure.
+
+`shared/foulMath.js` enumerates the 36 physical two-die armour outcomes and
+the 36 injury outcomes exactly, including natural doubles and referee send-off.
+Stored `av` is one below the printed target, so armour breaks at
+`2d6 + offensive assists - defensive assists >= av + 1`. The injury casualty
+threshold is 10+ (9+ against Stunty). Dirty Player may add +1 to either the
+armour or injury roll, not both. Sneaky Git avoids send-off for an armour
+double that fails to break. Lone Fouler rerolls an unassisted failed armour
+roll. A valid Put the Boot In assist can still contribute while marked.
+
+Injury odds are weighted as a *terminal success probability* multiplied into
+the existing action chain, so this objective requires no artificial new
+universe: armour failure, non-casualty injury, and send-off are implicit failed
+outcomes. Existing Block/Blitz universes continue to function unchanged;
+when their board states diverge they still split as before.
+
+The shared score validator independently recomputes each claimed foul's
+armour-break, casualty and send-off probabilities, including in a branch tree
+or series submission. This is not a complete authoritative board replay:
+assist eligibility and all prior movements are still trusted from the client.
+
+Rules reference: BB2025 foul, skills and referee sections
+(https://bloodbowlbase.ru/bb2025/core_rules/the_game_of_blood_bowl/).
