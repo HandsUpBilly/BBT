@@ -61,8 +61,7 @@ async function casWrite(store, snapshot, etag) {
   return result?.modified === true;
 }
 
-function reconcileToDeployment(snapshot) {
-  const next = source();
+export function reconcileToDeployment(snapshot, next = source()) {
   const before = snapshot.baseline;
   if (contentEqual(before, next)) return null;
   const a = reconcileCollection(before.scenarios, snapshot.scenarios, next.scenarios);
