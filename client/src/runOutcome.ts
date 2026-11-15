@@ -25,6 +25,11 @@ export function isScoringRunStalled(
 ): boolean {
   if (state.phase !== 'playing') return false;
 
+  // A resolved block can be waiting for its push square and follow-up. That
+  // push may *be* the crowd surf, even if the blocker was the team's last
+  // activation. Do not open the failed-drive dialog before it is resolved.
+  if (state.pendingBlockResolution || state.blockChoice || state.isBlockTargeting) return false;
+
   // A puzzle saved before scenarioActionErrors() existed can have every route
   // to its own objective switched off. Nothing in the run can recover that.
   const routes = OBJECTIVE_REQUIRED_ACTIONS[state.objective] ?? [];
