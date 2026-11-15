@@ -55,7 +55,7 @@ editor accepted drafts the server then rejected).
 | `scoreValidation.js` | both leaderboard implementations, `netlify/functions/progress.js` |
 | `playerProfile.js` | public profile/avatar validation in Express and Netlify Functions |
 | `rankingReset.js` | destructive ranking-reset target validation in Express and Netlify Functions |
-| `rateLimit.js` | Netlify: `analytics.js`, `contact.js`, `identity-auth.js`, `leaderboard.js`, `logins.js`, `profile.js`, `reports.js`, `series-leaderboard.js`; Express: `analytics.js`, `identityRoutes.js`, `index.js`, `profiles.js` |
+| `rateLimit.js` | Netlify: `analytics.js`, `contact.js`, `identity-auth.js`, `leaderboard.js`, `logins.js`, `profile.js`, `progress.js`, `reports.js`, `series-leaderboard.js`; Express: `analytics.js`, `identityRoutes.js`, `index.js`, `profiles.js` |
 | `statistics.js` | `server/index.js`, `editor-statistics.js` |
 | `loginTracking.js` | `server/index.js`, `netlify/functions/logins.js`, client `AdminLogins`/statistics |
 | `loginAdminControl.js` | `server/index.js`, `editor-logins.js` — promote/demote from the login table |
