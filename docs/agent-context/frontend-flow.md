@@ -347,6 +347,18 @@ The numbered decision log follows them, with cumulative probability promoted as
 the review's conclusion; its rows collapse to a readable two-column treatment
 on narrow screens.
 
+The live pitch also marks each block split on the ancestry of the currently
+viewed universe. A small gold branching badge sits next to the original
+attacker's square, not inside a playable square. Selecting it reveals the
+block's distinct board-state outcomes with the actual grouped block-die faces
+and a universe address. Selecting one navigates to its current playable leaf;
+for a historical state which has split again, navigation follows that branch
+down to a leaf rather than rewinding authored play. Only splits on the viewed
+path are annotated, so unrelated histories do not clutter the pitch. Markers
+transpose with portrait/landscape orientation, and remain usable on phones.
+The existing universe strip and these pitch markers both call the same branch
+selection action, keeping selection and scoring consistent.
+
 During a series, the touchdown analysis has a **Review Board** action. It hides
 the analysis without submitting or advancing, leaving the scored board exactly
 as played. A persistent **View Analysis & Continue** bar returns to the same
