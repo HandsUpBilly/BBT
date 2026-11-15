@@ -1,5 +1,6 @@
 import { useId } from 'react';
 import { buildMovementRoutes } from './playDiagramRoutes';
+import type { PitchOrientation } from './Pitch';
 import type { ActionLogEntry, Position, Scenario } from './types';
 import './PlayDiagram.css';
 
@@ -7,10 +8,12 @@ const CELL = 20;
 const MARGIN = 18;
 const STATE_ROWS = 26;
 const STATE_COLS = 15;
-const PITCH_WIDTH = STATE_ROWS * CELL;
-const PITCH_HEIGHT = STATE_COLS * CELL;
-const SVG_WIDTH = PITCH_WIDTH + MARGIN * 2;
-const SVG_HEIGHT = PITCH_HEIGHT + MARGIN * 2;
+// The pitch is always drawn 26-long by 15-wide; only which state axis maps to
+// screen x vs. y changes. LONG_PX/SHORT_PX name the two board dimensions
+// independent of orientation so the grid/marking helpers below don't have to
+// re-derive which is which.
+const LONG_PX = STATE_ROWS * CELL;
+const SHORT_PX = STATE_COLS * CELL;
 
 interface DiagramLogEntry {
   kind: ActionLogEntry['kind'];
@@ -23,27 +26,51 @@ interface DiagramLogEntry {
   pushes?: Array<{ from: Position; to: Position }>;
 }
 
-function point(position: Position): { x: number; y: number } {
-  // The completed review uses the live landscape pitch's screen convention:
-  // state rows run left → right and state columns run top → bottom. Keep this
-  // intentionally boring rather than introducing a second "player viewpoint"
-  // transform — reversing both axes here turns every recorded play around.
-  return {
-    x: MARGIN + (position.row + 0.5) * CELL,
-    y: MARGIN + (position.col + 0.5) * CELL,
-  };
+function point(position: Position, orientation: PitchOrientation): { x: number; y: number } {
+  // Match the live pitch's screen convention for the orientation the play
+  // happened under: portrait draws state cols across / rows down, landscape
+  // transposes that (see Pitch.tsx). Swap axes here, not reverse them — a
+  // past attempt reversed both axes and turned every recorded play around.
+  return orientation === 'portrait'
+    ? {
+        x: MARGIN + (position.col + 0.5) * CELL,
+        y: MARGIN + (position.row + 0.5) * CELL,
+      }
+    : {
+        x: MARGIN + (position.row + 0.5) * CELL,
+        y: MARGIN + (position.col + 0.5) * CELL,
+      };
 }
 
-function routePoints(positions: Position[]): string {
+// A row-based marking (LOS, endzones) is a line of constant row spanning the
+// full column extent; a col-based marking (wide-zone boundary) is a line of
+// constant col spanning the full row extent. Which screen axis is which
+// swaps with orientation, but each marking always spans the *other* state
+// axis's full length, so SHORT_PX/LONG_PX below don't swap with it.
+function rowLine(row: number, orientation: PitchOrientation) {
+  const pos = MARGIN + row * CELL;
+  return orientation === 'portrait'
+    ? { x1: MARGIN, y1: pos, x2: MARGIN + SHORT_PX, y2: pos }
+    : { x1: pos, y1: MARGIN, x2: pos, y2: MARGIN + SHORT_PX };
+}
+
+function colLine(col: number, orientation: PitchOrientation) {
+  const pos = MARGIN + col * CELL;
+  return orientation === 'portrait'
+    ? { x1: pos, y1: MARGIN, x2: pos, y2: MARGIN + LONG_PX }
+    : { x1: MARGIN, y1: pos, x2: MARGIN + LONG_PX, y2: pos };
+}
+
+function routePoints(positions: Position[], orientation: PitchOrientation): string {
   return positions.map(position => {
-    const p = point(position);
+    const p = point(position, orientation);
     return `${p.x},${p.y}`;
   }).join(' ');
 }
 
-function curvedPath(from: Position, to: Position): string {
-  const start = point(from);
-  const end = point(to);
+function curvedPath(from: Position, to: Position, orientation: PitchOrientation): string {
+  const start = point(from, orientation);
+  const end = point(to, orientation);
   const dx = end.x - start.x;
   const dy = end.y - start.y;
   const length = Math.hypot(dx, dy);
@@ -58,9 +85,11 @@ function curvedPath(from: Position, to: Position): string {
 interface Props {
   scenario: Scenario;
   actionLog: readonly DiagramLogEntry[];
+  /** The pitch orientation the run was reviewed under. Defaults to landscape. */
+  orientation?: PitchOrientation;
 }
 
-export function PlayDiagram({ scenario, actionLog }: Props) {
+export function PlayDiagram({ scenario, actionLog, orientation = 'landscape' }: Props) {
   const markerPrefix = useId().replaceAll(':', '');
   const movementMarker = `${markerPrefix}-movement-arrow`;
   const ballMarker = `${markerPrefix}-ball-arrow`;
@@ -76,6 +105,10 @@ export function PlayDiagram({ scenario, actionLog }: Props) {
     handoffs.length ? `${handoffs.length} ${handoffs.length === 1 ? 'hand-off' : 'hand-offs'}` : '',
     blocks.length ? `${blocks.length} ${blocks.length === 1 ? 'block' : 'blocks'}` : '',
   ].filter(Boolean).join(', ');
+  const boardWidth = orientation === 'portrait' ? SHORT_PX : LONG_PX;
+  const boardHeight = orientation === 'portrait' ? LONG_PX : SHORT_PX;
+  const svgWidth = boardWidth + MARGIN * 2;
+  const svgHeight = boardHeight + MARGIN * 2;
 
   return (
     <figure className="play-diagram">
@@ -85,7 +118,7 @@ export function PlayDiagram({ scenario, actionLog }: Props) {
       </div>
       <svg
         className="play-diagram__svg"
-        viewBox={`0 0 ${SVG_WIDTH} ${SVG_HEIGHT}`}
+        viewBox={`0 0 ${svgWidth} ${svgHeight}`}
         role="img"
         aria-label={`Completed play: ${description}`}
         preserveAspectRatio="xMidYMid meet"
@@ -102,26 +135,31 @@ export function PlayDiagram({ scenario, actionLog }: Props) {
           </marker>
         </defs>
 
-        <rect className="play-diagram__board" x={MARGIN} y={MARGIN} width={PITCH_WIDTH} height={PITCH_HEIGHT} rx="3" />
+        <rect className="play-diagram__board" x={MARGIN} y={MARGIN} width={boardWidth} height={boardHeight} rx="3" />
         <g className="play-diagram__grid" aria-hidden="true">
-          {Array.from({ length: 27 }, (_, index) => (
-            <line key={`col-${index}`} x1={MARGIN + index * CELL} y1={MARGIN} x2={MARGIN + index * CELL} y2={MARGIN + PITCH_HEIGHT} />
-          ))}
-          {Array.from({ length: 16 }, (_, index) => (
-            <line key={`row-${index}`} x1={MARGIN} y1={MARGIN + index * CELL} x2={MARGIN + PITCH_WIDTH} y2={MARGIN + index * CELL} />
-          ))}
+          {Array.from({ length: STATE_ROWS + 1 }, (_, row) => {
+            const l = rowLine(row, orientation);
+            return <line key={`row-${row}`} x1={l.x1} y1={l.y1} x2={l.x2} y2={l.y2} />;
+          })}
+          {Array.from({ length: STATE_COLS + 1 }, (_, col) => {
+            const l = colLine(col, orientation);
+            return <line key={`col-${col}`} x1={l.x1} y1={l.y1} x2={l.x2} y2={l.y2} />;
+          })}
         </g>
         <g className="play-diagram__markings" aria-hidden="true">
-          <line x1={MARGIN + CELL} y1={MARGIN} x2={MARGIN + CELL} y2={MARGIN + PITCH_HEIGHT} />
-          <line x1={MARGIN + 13 * CELL} y1={MARGIN} x2={MARGIN + 13 * CELL} y2={MARGIN + PITCH_HEIGHT} />
-          <line x1={MARGIN + 25 * CELL} y1={MARGIN} x2={MARGIN + 25 * CELL} y2={MARGIN + PITCH_HEIGHT} />
-          <line x1={MARGIN} y1={MARGIN + 4 * CELL} x2={MARGIN + PITCH_WIDTH} y2={MARGIN + 4 * CELL} />
-          <line x1={MARGIN} y1={MARGIN + 11 * CELL} x2={MARGIN + PITCH_WIDTH} y2={MARGIN + 11 * CELL} />
+          {[1, 13, 25].map(row => {
+            const l = rowLine(row, orientation);
+            return <line key={`marking-row-${row}`} x1={l.x1} y1={l.y1} x2={l.x2} y2={l.y2} />;
+          })}
+          {[4, 11].map(col => {
+            const l = colLine(col, orientation);
+            return <line key={`marking-col-${col}`} x1={l.x1} y1={l.y1} x2={l.x2} y2={l.y2} />;
+          })}
         </g>
 
         <g className="play-diagram__formation">
           {scenario.pieces.map(piece => {
-            const p = point(piece.position);
+            const p = point(piece.position, orientation);
             const active = piece.team === scenario.activeTeam;
             return active ? (
               <g key={piece.id} className={`play-diagram__player play-diagram__player--active${piece.down ? ' play-diagram__player--down' : ''}`}>
@@ -136,7 +174,7 @@ export function PlayDiagram({ scenario, actionLog }: Props) {
             );
           })}
           {ballStart && (() => {
-            const p = point(ballStart);
+            const p = point(ballStart, orientation);
             return <ellipse className="play-diagram__ball" cx={p.x} cy={p.y} rx="3.2" ry="5" transform={`rotate(-35 ${p.x} ${p.y})`} />;
           })()}
         </g>
@@ -147,7 +185,7 @@ export function PlayDiagram({ scenario, actionLog }: Props) {
               key={`move-${index}`}
               className="play-diagram__route play-diagram__route--movement"
               data-route-kind="movement"
-              points={routePoints(route.points)}
+              points={routePoints(route.points, orientation)}
               markerEnd={`url(#${movementMarker})`}
             >
               <title>{route.pieceName} movement</title>
@@ -158,15 +196,15 @@ export function PlayDiagram({ scenario, actionLog }: Props) {
               key={`pass-${index}`}
               className="play-diagram__route play-diagram__route--pass"
               data-route-kind="pass"
-              d={curvedPath(entry.from, entry.to)}
+              d={curvedPath(entry.from, entry.to, orientation)}
               markerEnd={`url(#${ballMarker})`}
             >
               <title>{entry.pieceName} passes to {entry.receiverName ?? 'receiver'}</title>
             </path>
           ))}
           {handoffs.map((entry, index) => {
-            const from = point(entry.from);
-            const to = point(entry.to);
+            const from = point(entry.from, orientation);
+            const to = point(entry.to, orientation);
             return (
               <line
                 key={`handoff-${index}`}
@@ -183,8 +221,8 @@ export function PlayDiagram({ scenario, actionLog }: Props) {
             );
           })}
           {blocks.map((entry, index) => {
-            const from = point(entry.from);
-            const to = point(entry.to);
+            const from = point(entry.from, orientation);
+            const to = point(entry.to, orientation);
             return (
               <g key={`block-${index}`} data-route-kind="block">
                 <title>{entry.pieceName} {entry.isBlitz ? 'blitzes' : 'blocks'} {entry.receiverName ?? 'opponent'}</title>
@@ -192,8 +230,8 @@ export function PlayDiagram({ scenario, actionLog }: Props) {
                 <circle className="play-diagram__block-mark" cx={to.x} cy={to.y} r="8" />
                 <text className="play-diagram__block-dice" x={to.x} y={to.y + 3}>{entry.diceCount ?? '?'}</text>
                 {entry.pushes?.map((push, pushIndex) => {
-                  const pushFrom = point(push.from);
-                  const pushTo = point(push.to);
+                  const pushFrom = point(push.from, orientation);
+                  const pushTo = point(push.to, orientation);
                   return (
                     <line
                       key={`push-${pushIndex}`}

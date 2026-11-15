@@ -4,6 +4,7 @@
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const MAX_ADMINS = 100;
+const MAX_AUDIT_ENTRIES = 100;
 
 export function normalizeAdminEmail(value) {
   const email = typeof value === 'string' ? value.trim().toLowerCase() : '';
@@ -28,4 +29,17 @@ export function removeManagedAdmin(current, rawEmail) {
   const email = normalizeAdminEmail(rawEmail);
   if (!email) throw new Error('Enter a valid administrator email address.');
   return normalizeManagedAdmins(current).filter(existing => existing !== email);
+}
+
+export function normalizeAudit(value) {
+  if (!Array.isArray(value)) return [];
+  return value.filter(entry => entry && typeof entry === 'object'
+    && (entry.action === 'added' || entry.action === 'removed')
+    && typeof entry.actor === 'string' && typeof entry.target === 'string'
+    && typeof entry.at === 'string')
+    .slice(0, MAX_AUDIT_ENTRIES);
+}
+
+export function appendAuditEntry(audit, entry, now = new Date()) {
+  return [{ action: entry.action, actor: entry.actor, target: entry.target, at: now.toISOString() }, ...audit].slice(0, MAX_AUDIT_ENTRIES);
 }

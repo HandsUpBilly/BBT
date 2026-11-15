@@ -9,6 +9,8 @@ export interface PieceMenuAction {
   label: string;
   key: string;
   disabled?: boolean;
+  /** Disabled by this puzzle's action configuration, rather than board state. */
+  locked?: boolean;
   emphasized?: boolean;
 }
 
@@ -157,7 +159,10 @@ export function PieceMenu({ piece, anchor, actions, onAction, onDismiss }: Props
                 disabled={isDisabled}
                 onChange={() => toggle(action.key)}
               />
-              {action.label}
+              <span>{action.label}</span>
+              {action.locked && (
+                <span className="piece-menu__lock" aria-hidden="true" title="Not enabled for this puzzle">🔒</span>
+              )}
             </label>
           );
         })}

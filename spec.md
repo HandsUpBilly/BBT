@@ -35,6 +35,7 @@ carries a **Status** line — read it before treating a section as work to do.
 | Step-by-step Tutorial Coach | Superseded |
 | Contextual Tutorial Coach Redesign | Shipped |
 | Multi-Series Creator Workflows | Shipped |
+| Crowd Pushes and Puzzle Objectives | Shipped |
 | Engagement Analytics and Admin Graphs | Shipped |
 | Full-game Rulebook Copy Audit | Shipped |
 | Completed Play Diagram | Shipped |
@@ -3204,7 +3205,7 @@ a real pass/fail dice roll.
 
 # Block and Blitz Actions
 
-**Status:** Shipped, with rules simplifications. Live. Later fixes made a knocked-down carrier drop the ball, made a Blitz block cost a square of movement, excluded marked assisters, and added recursive chain pushes through occupied push arcs. Still simplified: no Guard, no armour/injury rolls, and no crowd pushes. The outcome-checklist design below is **superseded** by the shipped Parallel Universes model; the ST/dice/assist and push-back rules in this section remain current.
+**Status:** Shipped, with rules simplifications. Live. Later fixes made a knocked-down carrier drop the ball, made a Blitz block cost a square of movement, excluded marked assisters, added recursive chain pushes through occupied push arcs, and made off-pitch push squares legal (see "Crowd pushes" below). Still simplified: no Guard, no armour/injury rolls, and no throw-in after a carrier is surfed. The outcome-checklist design below is **superseded** by the shipped Parallel Universes model; the ST/dice/assist and push-back rules in this section remain current.
 
 ## Problem Statement
 
@@ -3278,7 +3279,8 @@ defender vacated.
 - No Puzzle Editor changes — Block/Blitz scenarios are authored by hand in
   scenario JSON for this pass, same as the current process for any new
   scenario field.
-- No crowd push / pitch-invasion / multi-block mechanics.
+- No pitch-invasion / multi-block mechanics. (Crowd pushes were a non-goal for
+  this pass and shipped later — see "Crowd pushes" below.)
 
 ## Design: modeling block dice inside the probability-tracking model
 
@@ -4525,11 +4527,12 @@ per player from Settings → Experimental.
 
 ## Non-goals
 
-- Crowd pushes, armour/injury rolls, standing up — all still out, as in the
-  shipped section. Chain pushes are no longer on this list: they shipped
-  (`client/src/App.tsx`, `client/src/branchRun.ts`'s `choosePush`), authored
-  uniformly across sibling branches rather than introducing a new split — see
-  the next bullet.
+- Armour/injury rolls and standing up — still out, as in the shipped section.
+  Chain pushes and crowd pushes are no longer on this list: both shipped
+  (`client/src/App.tsx`, `client/src/branchRun.ts`'s `choosePush`, and
+  `pushBackArc` in `client/src/bfs.ts`), authored uniformly across sibling
+  branches rather than introducing a new split — see the next bullet, and
+  "Crowd pushes" below.
 - Guard, Frenzy, Juggernaut, Stand Firm — still out. Block, Wrestle, Dodge and
   Tackle are the only skills that affect the face-to-state mapping.
 - No opponent turn. A puzzle is still exactly one turn.
@@ -4872,7 +4875,8 @@ preserve every fact below and add no unsupported Blood Bowl rules.
 - Do not make Parallel Universes optional, tutorial-only, or dependent on the
   tutorial-guidance setting.
 - Rules simplifications already documented for blocking remain in force: no
-  chain/crowd pushes, armour/injury, Guard, Frenzy, Juggernaut, or Stand Firm.
+  armour/injury, Guard, Frenzy, Juggernaut, or Stand Firm. (Chain pushes and
+  crowd pushes were on this list when it was written and have since shipped.)
 - `shared/` remains dependency-free. Any series tree validation added there
   must reuse its existing plain ESM helpers and import no package.
 
@@ -5804,3 +5808,57 @@ Puzzles and series have separate **Enabled for everyone** and **Enabled for
 admins** controls. Everyone-enabled content uses the public scenarios endpoint;
 confirmed admins receive the public/admin union from the protected editor read.
 With both controls off, saved content remains Creator-only.
+
+# Crowd Pushes and Puzzle Objectives
+
+**Status:** Shipped.
+
+Off-pitch squares are legal push destinations. `pushBackArc`
+(`client/src/bfs.ts`) no longer discards the squares of the three-square arc
+that fall outside the pitch, and `applyPushChoice`
+(`client/src/useGameState.ts`) removes a player pushed into one of them from
+`pieces`. Because no piece ever occupies an off-pitch square, it always counts
+as empty for the "a push must use an empty square when one exists" rule — so a
+sideline block that previously offered a chain push through an occupied arc now
+offers the crowd instead. That applies to every puzzle, not only crowd-surf
+ones. Off-pitch squares have no rendered cell, so the choice is made through
+the **Push into crowd** control in the HUD status line.
+
+Still simplified: no armour or injury roll for a surfed player, and no throw-in.
+A surfed carrier's ball stays on their last in-bounds square, so a puzzle with
+another objective cannot lose the ball off the board.
+
+Scenarios carry an `objective`, validated against `OBJECTIVES` in
+`shared/scenarioValidation.js`:
+
+- `touchdown` — the ball reaches the active team's scoring end zone, by
+  carry, hand-off or pass.
+- `crowd-surf` — an **opposing** player is pushed off any pitch edge. Surfing
+  a team-mate through a chain push does not score it.
+
+Both set a terminal `GamePhase` and both submit through the same probability
+score, so completion checks test `phase !== 'playing'` rather than naming a
+phase. Reaching the end zone does not finish a crowd-surf puzzle, and a crowd
+surf does not finish a touchdown one.
+
+## Per-puzzle action availability
+
+A scenario's `enabledActions` restricts the five player-menu actions (Move,
+Hand-off, Pass, Block, Blitz). An omitted field means all five, which is what
+every puzzle authored before the field existed gets. Puzzle Creator writes the
+list; `App.tsx` both disables the menu entries and rejects the action in
+`handleMenuAction`, as defence in depth.
+
+`scenarioActionErrors` rejects a list that strands the puzzle's own objective:
+an empty list, a `crowd-surf` puzzle without Block or Blitz, or a `touchdown`
+puzzle without Move, Hand-off or Pass. These are necessary conditions only —
+passing them does not prove the puzzle is solvable from its starting position.
+The check exists because a puzzle is one turn with no failure roll: with every
+route disabled the run can be neither completed nor failed, leaving the player
+on a live board with nothing legal to do.
+
+`isScoringRunStalled` (`client/src/runOutcome.ts`) covers both objectives, so
+each has a Drive-failed path: a touchdown puzzle fails once the carrier's
+activation is spent, a crowd-surf puzzle once no piece can block or blitz. Both
+are sound rather than complete — they catch positions that are definitely lost,
+not every one.

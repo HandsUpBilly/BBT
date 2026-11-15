@@ -23,6 +23,32 @@ export const TEAMS = ['human', 'orc', 'black-orc', 'imperial-nobility'];
 export const OBJECTIVES = ['touchdown', 'crowd-surf'];
 export const SCENARIO_ACTIONS = ['move', 'handoff', 'pass', 'block', 'blitz'];
 
+// Player-facing names, here rather than in the editor so a validation error
+// and the control that produced it can never call the same thing two things.
+export const OBJECTIVE_LABELS = Object.freeze({
+  touchdown: 'Touchdown',
+  'crowd-surf': 'Crowd surf',
+});
+export const ACTION_LABELS = Object.freeze({
+  move: 'Move', handoff: 'Hand-off', pass: 'Pass', block: 'Block', blitz: 'Blitz',
+});
+
+/**
+ * Actions without which an objective can never be reached. A puzzle is one
+ * turn with no failure roll, so an objective whose only routes are all
+ * disabled leaves a run that can neither be completed nor failed — the player
+ * is stuck on a live board with every menu entry greyed out. These are
+ * necessary conditions, not sufficient ones: a satisfiable list still does not
+ * promise the puzzle is solvable from its particular starting position.
+ */
+export const OBJECTIVE_REQUIRED_ACTIONS = Object.freeze({
+  // The ball only enters the end zone by being carried, handed off or thrown.
+  touchdown: Object.freeze(['move', 'handoff', 'pass']),
+  // phase: 'crowd-surf' is only ever set from a push, which only a block or a
+  // blitz can produce.
+  'crowd-surf': Object.freeze(['block', 'blitz']),
+});
+
 /** BB2025 team-sheet caps. A puzzle is a single on-pitch state, so each team
  * may field at most 11 even though its full roster may contain 16 players. */
 export const ROSTER_LIMITS = {
@@ -123,9 +149,6 @@ export function normalizeScenario(input) {
   const secondTeam = configuredTeams.find(team => team !== firstTeam)
     ?? TEAMS.find(team => team !== firstTeam)
     ?? firstTeam;
-  const enabledActions = Array.isArray(source.enabledActions)
-    ? [...new Set(source.enabledActions.filter(action => SCENARIO_ACTIONS.includes(action)))]
-    : [...SCENARIO_ACTIONS];
   return {
     id: String(source.id ?? '').trim(),
     name: String(source.name ?? '').trim(),
@@ -133,7 +156,7 @@ export function normalizeScenario(input) {
     activeTeam,
     teams: [firstTeam, secondTeam],
     objective: OBJECTIVES.includes(source.objective) ? source.objective : 'touchdown',
-    enabledActions,
+    enabledActions: enabledScenarioActions(source),
     // Before this field existed, scenario-006 was the sole hard-coded Free
     // Play puzzle. Preserve that published Blob data during migration.
     freePlay: source.freePlay === true || (source.freePlay == null && source.id === 'scenario-006'),
@@ -149,6 +172,31 @@ export function enabledScenarioActions(scenario) {
   return Array.isArray(scenario?.enabledActions)
     ? [...new Set(scenario.enabledActions.filter(action => SCENARIO_ACTIONS.includes(action)))]
     : [...SCENARIO_ACTIONS];
+}
+
+/** "Block or Blitz" — the actions any one of which unlocks an objective. */
+function formatActionList(actions) {
+  const labels = actions.map(action => ACTION_LABELS[action] ?? action);
+  if (labels.length < 2) return labels.join('');
+  return `${labels.slice(0, -1).join(', ')} or ${labels[labels.length - 1]}`;
+}
+
+/**
+ * Rejects an action list that makes the puzzle's own objective unreachable.
+ * Note this reads `enabledActions` through `enabledScenarioActions`, so an
+ * omitted field means all five and a list of nothing but unrecognized values
+ * is judged as the empty list it normalizes to.
+ */
+export function scenarioActionErrors(scenario) {
+  const enabled = enabledScenarioActions(scenario);
+  if (enabled.length === 0) return ['Enable at least one player action'];
+
+  const objective = OBJECTIVES.includes(scenario?.objective) ? scenario.objective : 'touchdown';
+  const required = OBJECTIVE_REQUIRED_ACTIONS[objective] ?? [];
+  if (required.length > 0 && !required.some(action => enabled.includes(action))) {
+    return [`A ${OBJECTIVE_LABELS[objective]} puzzle needs ${formatActionList(required)} enabled`];
+  }
+  return [];
 }
 
 function normalizeBallPosition(ballPosition) {
@@ -310,6 +358,7 @@ export function validateScenario(scenario, existingIds = new Set(), options = {}
   if (!Array.isArray(scenario.pieces) || scenario.pieces.length === 0) {
     errors.push('At least one player is required');
   }
+  errors.push(...scenarioActionErrors(scenario));
 
   const ids = new Set();
   const squares = new Set();

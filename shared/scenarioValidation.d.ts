@@ -7,12 +7,18 @@ export declare const STAT_KEYS: readonly ('ma' | 'st' | 'ag' | 'pa' | 'av')[];
 export declare const TEAMS: readonly Team[];
 export declare const OBJECTIVES: readonly Objective[];
 export declare const SCENARIO_ACTIONS: readonly PuzzleAction[];
+export declare const OBJECTIVE_REQUIRED_ACTIONS: Readonly<Record<Objective, readonly PuzzleAction[]>>;
+export declare const OBJECTIVE_LABELS: Readonly<Record<Objective, string>>;
+export declare const ACTION_LABELS: Readonly<Record<PuzzleAction, string>>;
 export declare const ROSTER_LIMITS: Readonly<Record<Team, Readonly<Record<string, { max: number; label: string }>>>>;
 export declare function rosterLimitFor(team: Team, role?: string): { max: number; label: string } | undefined;
 export declare function scenarioRosterErrors(scenario: Pick<Scenario, 'pieces'>): string[];
 
 export declare function normalizeScenario(input: unknown): Scenario & { pieces: ScenarioPieceDef[] };
 export declare function enabledScenarioActions(scenario: Pick<Scenario, 'enabledActions'> | null | undefined): PuzzleAction[];
+export declare function scenarioActionErrors(
+  scenario: Pick<Scenario, 'enabledActions' | 'objective'> | null | undefined,
+): string[];
 export declare function normalizeSeries(input: unknown): SeriesDefinition;
 export declare function normalizeSeriesCollection(input: unknown): SeriesDefinition[];
 export declare function seriesMembershipErrors(

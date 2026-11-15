@@ -81,6 +81,29 @@ response. The home screen used to fire one request per scenario *and* run the
 whole fan-out twice per visit (the scenario array identity changes when the
 runtime fetch resolves), which was 12 function invocations for five puzzles.
 
+The public `/api/progress` read is limited to 60 requests per minute per trusted Netlify edge IP on each warm function instance. The limit is evaluated before reading Blobs; rotating query parameters cannot bypass the IP bucket. As with the other in-memory limiters, this blunts bursts but is not a distributed hard quota. A 429 response includes `Retry-After` and is never cacheable.\n\n## Admin nav visibility vs. editor authorization
+
+`client/vite.config.ts` defines `__BBT_FORCE_ADMIN_NAV__` from Netlify's
+`CONTEXT` build variable: `JSON.stringify(process.env.CONTEXT !== 'production')`.
+Netlify sets `CONTEXT` to exactly `production` for the configured production
+branch deploy, and to `deploy-preview`, `branch-deploy`, or `dev` everywhere
+else (staging, PR deploy previews, `netlify dev`); it is unset for a plain
+local build. So on every build except the real production deploy, `App.tsx`'s
+`isAdmin = __BBT_FORCE_ADMIN_NAV__ || confirmedAdmin` shows Puzzle Creator
+navigation and the Admin Console shell to anonymous visitors, including on
+publicly reachable deploy-preview URLs.
+
+**This is a client-side nav-visibility convenience only, not an access-control
+gap.** `App.tsx` passes the server-verified `confirmedAdmin` — not `isAdmin` —
+to the scenario/series fetch, every `/api/editor/*` route (Express and
+Netlify, `GET /api/editor/scenarios` included) still requires a verified
+admin Google user via `requireAdminGoogleUser`, and `/api/scenarios` /
+`/api/progress` never return admin-only draft content regardless of this
+flag. An anonymous preview visitor sees the shell; every panel inside it
+fails its fetch. Don't gate a genuinely sensitive, client-rendered admin
+affordance on `isAdmin` on the assumption that it means "verified admin" — use
+`confirmedAdmin` for that, the same way the data fetch does.
+
 ## Headers
 
 `netlify.toml` sets a CSP allowing only what the app actually loads, plus
@@ -247,6 +270,8 @@ indefinitely.
 - Cross-device public avatars and country/nationality labels for verified users,
   with avatar moderation in Admin Console
 - Admin-only complete, per-series, and per-puzzle ranking resets
+- Admin promotion/demotion from the Statistics login table, without the private
+  Google address ever reaching the browser
 - Combined home-screen progress endpoint
 - Player issue and feature reporting via `/api/reports`, rate-limited
 - Admin-only anonymous player-performance statistics from the full retained
@@ -255,3 +280,5 @@ indefinitely.
   play-time graphs from first-party game-session summaries
 - **Persistent live puzzle-editor saves** via Netlify Blobs; enabled flags
   control player visibility without a separate publish step
+- Touchdown and crowd-surf puzzle objectives, and per-puzzle restriction of the
+  five player-menu actions

@@ -167,7 +167,7 @@ function withLines(run: BranchRun, updates: RunLine[]): BranchRun {
 
 /** A crowd-surf branch with no remaining legal block is a dead outcome. */
 function failStalledCrowdSurfLine(line: RunLine): RunLine {
-  return isScoringRunStalled(line.state)
+  return line.state.objective === 'crowd-surf' && isScoringRunStalled(line.state)
     ? { ...line, conceded: true, needsAttention: false }
     : line;
 }
