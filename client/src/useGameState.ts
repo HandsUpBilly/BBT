@@ -356,6 +356,9 @@ export type ClickIntent =
 
 export function classifyClick(state: GameState, pos: Position): ClickIntent {
   if (state.phase !== 'playing') return 'none';
+  // A Foul is a single declared action. Until the opponent is chosen and
+  // the foul resolved (or Esc cancels it), unrelated piece clicks do nothing.
+  if (state.pendingFoul && state.isFoulTargeting) return 'none';
 
   const clickedKey = key(pos);
   const pieceOnSquare = state.pieces.find(p => key(p.position) === clickedKey);
@@ -376,6 +379,8 @@ export function classifyClick(state: GameState, pos: Position): ClickIntent {
   }
 
   if (state.selectedPieceId && state.reachableKeys.has(clickedKey)) return 'commit-move';
+
+  if (state.pendingFoul) return 'none';
 
   // Select own unactivated piece (a down piece cannot be selected/activated)
   if (
@@ -1151,7 +1156,7 @@ export function foulTargetKeys(state: GameState, attacker: PlayerPiece): Set<str
 
 /** A Foul may have movement, but one per turn and only against a prone opponent. */
 export function applyFoulAction(prev: GameState, pieceId: string): GameState {
-  if (prev.phase !== 'playing' || prev.foulUsed) return prev;
+  if (prev.phase !== 'playing' || prev.foulUsed || prev.selectedPieceId) return prev;
   const attacker = prev.pieces.find(p => p.id === pieceId);
   if (!attacker || attacker.team !== prev.activeTeam || attacker.activated || attacker.down) return prev;
   const targets = foulTargetKeys(prev, attacker);
