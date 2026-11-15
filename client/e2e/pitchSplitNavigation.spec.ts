@@ -15,6 +15,13 @@ test('block split can be revisited on pitch and switched by dice outcome', async
   await blockChoice.check({ force: true });
   await expect(blockChoice).toBeChecked();
   await page.locator('.piece-menu__confirm').click({ force: true });
+  console.log('SPLIT_SETUP', await page.evaluate(() => ({
+    selected: [...document.querySelectorAll('.square--selected')].map(el => (el as HTMLElement).dataset.square),
+    targets: [...document.querySelectorAll('.square--block-target')].map(el => (el as HTMLElement).dataset.square),
+    menu: document.querySelector('.piece-menu')?.textContent?.slice(0,300),
+    status: document.querySelector('.hud__status')?.textContent,
+    start: document.querySelector('[data-square="7F"]')?.getAttribute('class'),
+  })));
   // The target overlay can lag behind the menu closing in WebKit. Wait for
   // the actual rules-engine targeting state before attempting the block.
   await expect(page.locator('.square[data-square="6F"]')).toHaveClass(/square--block-target/);
