@@ -1,5 +1,5 @@
 import { SCENARIO_ID_RE, normalizeScenario, validateScenario } from '../../shared/scenarioValidation.js';
-import { editorStore, loadContent } from './editorStore.js';
+import { editorStore, loadContent, readLegacyScenarios, readLegacySeries } from './editorStore.js';
 import { writeContentItem, contentVersions, ContentConflictError } from './contentStore.js';
 import { AdminAuthError, authErrorResponse, requireAdminGoogleUser } from './auth.js';
 
@@ -27,8 +27,10 @@ async function mutate(store, kind, id, value, expectedRevision) {
   // Revisions are per item; CAS guards the entire update from lost writes.
   try {
     return await writeContentItem(store, async () => {
-      const catalog = await loadContent(store);
-      return { scenarios: catalog.scenarios, series: catalog.series };
+      const [scenarios, series] = await Promise.all([
+        readLegacyScenarios(store), readLegacySeries(store),
+      ]);
+      return { scenarios, series };
     }, { kind, id, value, expectedRevision });
   } catch (error) {
     if (error instanceof ContentConflictError) return { conflict: error.message };
