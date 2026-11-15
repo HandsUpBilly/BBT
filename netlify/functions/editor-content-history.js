@@ -1,5 +1,6 @@
 import { editorStore, loadContent, readLegacyScenarios, readLegacySeries } from './editorStore.js';
 import { contentVersions, ContentConflictError, writeContentItem } from './contentStore.js';
+import { normalizeScenario, normalizeSeries, validateScenario, seriesMembershipErrors } from '../../shared/scenarioValidation.js';
 import { AdminAuthError, authErrorResponse, requireAdminGoogleUser } from './auth.js';
 
 const json = (status, value) => new Response(JSON.stringify(value), {
@@ -41,6 +42,24 @@ export default async function handler(req) {
   const entry = catalog.history.find(record =>
     record.kind === kind && record.id === id && record.revision === targetRevision);
   if (!entry) return json(404, { errors: ['Revision is outside the available live history'] });
+  if (entry.after) {
+    if (kind === 'scenarios') {
+      const normalized = normalizeScenario(entry.after);
+      const errors = validateScenario(normalized, new Set(), { allowExisting: true });
+      if (errors.length) return json(409, { errors: ['Historical puzzle is no longer valid', ...errors] });
+    } else {
+      const normalized = normalizeSeries(entry.after);
+      const missing = normalized.scenarioIds.filter(scenarioId =>
+        !catalog.scenarios.some(scenario => scenario.id === scenarioId));
+      const errors = seriesMembershipErrors(normalized, catalog.series, catalog.scenarios);
+      if (missing.length || errors.length) {
+        return json(409, { errors: [
+          ...missing.map(scenarioId => `Historical series references missing puzzle ${scenarioId}`),
+          ...errors,
+        ] });
+      }
+    }
+  }
   try {
     const result = await writeContentItem(store, async () => {
       const [scenarios, series] = await Promise.all([readLegacyScenarios(store), readLegacySeries(store)]);
