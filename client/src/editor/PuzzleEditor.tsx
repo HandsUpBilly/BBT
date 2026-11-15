@@ -112,6 +112,8 @@ interface Props {
 export function PuzzleEditor({ onBack, onPlay, onReport, previewScenario, idToken }: Props) {
   const [scenarios, setScenarios] = useState<Scenario[]>([]);
   const [series, setSeries] = useState<SeriesDefinition[]>([]);
+  const [revisions, setRevisions] = useState<Record<string, number>>({});
+  const [syncConflicts, setSyncConflicts] = useState<Record<'scenarios' | 'series', Record<string, string[]>>>({ scenarios: {}, series: {} });
   const [draft, setDraft] = useState<Scenario>(() => emptyScenario([]));
   // The last-saved shape of the current draft, so we can tell whether the
   // editor holds unsaved work before discarding it.
@@ -130,18 +132,22 @@ export function PuzzleEditor({ onBack, onPlay, onReport, previewScenario, idToke
   } | null>(null);
   const [adminSection, setAdminSection] = useState<'editor' | 'series' | 'statistics' | 'console'>('editor');
 
+  const currentSyncConflict = originalId ? syncConflicts.scenarios[originalId] : undefined;
   const load = useCallback(async () => {
     try {
       const data = await fetchEditorData(idToken);
       setScenarios(data.scenarios);
       setSeries(Array.isArray(data.series) ? data.series : [data.series]);
+      setRevisions(data.revisions ?? {});
+      setSyncConflicts(data.conflicts ?? { scenarios: {}, series: {} });
       const first = previewScenario ?? data.scenarios[0] ?? emptyScenario([]);
       const clone = cloneScenario(first);
       setDraft(clone);
       setSavedDraft(data.scenarios.some(scenario => scenario.id === first.id) ? cloneScenario(first) : null);
       setOriginalId(data.scenarios.some(scenario => scenario.id === first.id) ? first.id : undefined);
       setSelectedPieceId(null);
-      setStatus('Loaded editor data.');
+      const count = Object.values(data.conflicts ?? {}).reduce((sum, group) => sum + Object.values(group).filter(paths => paths.length > 0).length, 0);
+      setStatus(count ? `Loaded with ${count} GitHub/editor content conflicts. Review before overwriting.` : 'Loaded editor data.');
     } catch (error) {
       setStatus(error instanceof Error ? error.message : 'Failed to load editor data.');
     }
@@ -429,8 +435,9 @@ export function PuzzleEditor({ onBack, onPlay, onReport, previewScenario, idToke
     setSaving(true);
     try {
       const saved = overwrite && originalId === draft.id
-        ? await updateScenario(scenarioToSave, idToken)
+        ? await updateScenario(scenarioToSave, idToken, revisions[`scenarios/${scenarioToSave.id}`] ?? 0)
         : await createScenario(scenarioToSave, idToken);
+      setRevisions(current => ({ ...current, [`scenarios/${saved.id}`]: saved.revision }));
       const next = scenarios.filter(scenario => scenario.id !== saved.id);
       const sorted = [...next, saved].sort((a, b) => a.id.localeCompare(b.id));
       setScenarios(sorted);
@@ -463,7 +470,9 @@ export function PuzzleEditor({ onBack, onPlay, onReport, previewScenario, idToke
     if (!originalId) return;
     setSaving(true);
     try {
-      const data = await deleteScenario(originalId, idToken);
+      const data = await deleteScenario(originalId, idToken, revisions[`scenarios/${originalId}`] ?? 0);
+      setRevisions(data.revisions);
+      setSyncConflicts(data.conflicts);
       setScenarios(data.scenarios);
       setSeries(Array.isArray(data.series) ? data.series : [data.series]);
       const nextDraft = data.scenarios[0] ?? emptyScenario([]);
@@ -538,8 +547,13 @@ export function PuzzleEditor({ onBack, onPlay, onReport, previewScenario, idToke
             <div className="editor__heading"><span className="editor__kicker">Campaign workshop</span><h1 className="editor__title">Series Creator</h1><p className="editor__subtitle">Create a series, set its identity and list position, then arrange its puzzle steps.</p></div>
             <div className="editor__header-actions"><button className="btn btn--secondary" onClick={onBack}>Back</button></div>
           </header>
-          <SeriesCreator scenarios={scenarios} series={series} idToken={idToken} onChange={setSeries} onStatus={setStatus} />
-          <div className="editor__status" role="status">{status}</div>
+          <SeriesCreator scenarios={scenarios} series={series} idToken={idToken} revisions={revisions} onRevision={(id, revision) => setRevisions(current => ({ ...current, [`series/${id}`]: revision }))} onChange={setSeries} onStatus={setStatus} />
+          {currentSyncConflict?.length ? (
+        <div className="editor__status" role="alert">
+          GitHub and live edits conflict on: {currentSyncConflict.join(', ')}. The live version is preserved; review before saving.
+        </div>
+      ) : null}
+      <div className="editor__status" role="status">{status}</div>
         </>
       ) : (
         <>
