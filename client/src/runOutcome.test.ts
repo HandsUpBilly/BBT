@@ -37,6 +37,37 @@ describe('isScoringRunStalled', () => {
       expect(isScoringRunStalled(state)).toBe(false);
     });
 
+    it('does not fail while the last blocker still has a pending crowd push', () => {
+      const state = {
+        ...crowdSurfState([
+          humanBlocker({ id: 'attacker', position: { col: 1, row: 10 }, activated: true }),
+          orcBlocker({ id: 'defender', position: { col: 0, row: 10 } }),
+        ]),
+        pendingBlockResolution: {
+          attackerId: 'attacker',
+          defenderId: 'defender',
+          resolvedFace: 'push' as const,
+          defenderFalls: false,
+          defenderFrom: { col: 0, row: 10 },
+          offerFollowUp: true,
+          isBlitz: false,
+        },
+        pushTargetKeys: new Set(['-1,10']),
+      };
+      expect(isScoringRunStalled(state)).toBe(false);
+    });
+
+    it('does not fail while a block is awaiting its dice outcome', () => {
+      const state = {
+        ...crowdSurfState([
+          humanBlocker({ id: 'attacker', position: { col: 1, row: 10 }, activated: true }),
+          orcBlocker({ id: 'defender', position: { col: 0, row: 10 } }),
+        ]),
+        isBlockTargeting: true,
+      };
+      expect(isScoringRunStalled(state)).toBe(false);
+    });
+
     it('fails once every piece that could push has been activated', () => {
       const state = crowdSurfState([
         humanBlocker({ position: { col: 1, row: 10 }, activated: true }),

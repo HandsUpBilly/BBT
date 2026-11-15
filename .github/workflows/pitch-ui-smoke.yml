@@ -1,0 +1,31 @@
+name: Pitch UI Smoke
+
+on:
+  pull_request:
+    paths:
+      - 'client/src/PitchSplitMarkers*'
+      - 'client/src/pitchSplitPoints*'
+      - 'client/src/Pitch.tsx'
+      - 'client/e2e/pitchSplitNavigation.spec.ts'
+      - '.github/workflows/pitch-ui-smoke.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  pitch-navigation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: client/package-lock.json
+      - run: npm ci --prefix client
+      - name: Install browser dependencies
+        run: cd client && npx playwright install --with-deps chromium webkit
+      - name: Verify split navigation on desktop and iPhone
+        run: cd client && npx playwright test e2e/pitchSplitNavigation.spec.ts --project=desktop --project=iphone-se

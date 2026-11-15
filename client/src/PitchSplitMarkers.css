@@ -1,0 +1,98 @@
+/* Pitch overlays cannot change the 390-cell grid or intercept pitch input. */
+.pitch-splits {
+  position: absolute;
+  inset: 0;
+  z-index: 22;
+  pointer-events: none;
+}
+
+.pitch-split-point {
+  position: absolute;
+  pointer-events: auto;
+}
+
+.pitch-split-point__trigger {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  min-width: 27px;
+  height: 26px;
+  padding: 2px 5px;
+  border: 1px solid #f1cb81;
+  border-radius: 6px;
+  color: #1b170f;
+  background: #eec477;
+  box-shadow: 0 2px 6px #000b, 0 0 0 2px #18120b;
+  cursor: pointer;
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+.pitch-split-point__trigger svg { width: 15px; height: 15px; flex: 0 0 auto; }
+.pitch-split-point__trigger:hover,
+.pitch-split-point__trigger--open { background: #ffe2a8; }
+.pitch-split-point__trigger:focus-visible,
+.pitch-split-point__choice:focus-visible,
+.pitch-split-point__close:focus-visible { outline: 3px solid #fff; outline-offset: 2px; }
+
+.pitch-split-point__popover {
+  position: absolute;
+  z-index: 2;
+  width: min(284px, calc(100vw - 24px));
+  padding: 10px;
+  color: #efece3;
+  background: #1b211f;
+  border: 1px solid #af9766;
+  border-radius: 10px;
+  box-shadow: 0 14px 36px #000d;
+  text-align: left;
+}
+.pitch-split-point--left .pitch-split-point__popover { left: 0; }
+.pitch-split-point--right .pitch-split-point__popover { right: 0; }
+.pitch-split-point--center .pitch-split-point__popover { left: 50%; transform: translateX(-50%); }
+.pitch-split-point--down .pitch-split-point__popover { top: calc(100% + 8px); }
+.pitch-split-point--up .pitch-split-point__popover { bottom: calc(100% + 8px); }
+
+.pitch-split-point__heading { display: flex; justify-content: space-between; gap: 10px; }
+.pitch-split-point__heading > div { display: grid; gap: 3px; min-width: 0; }
+.pitch-split-point__heading strong { font: 700 0.88rem var(--font-display, sans-serif); }
+.pitch-split-point__heading span { font-size: 0.78rem; color: #c7c5ba; }
+.pitch-split-point__close {
+  color: #eae5da;
+  background: transparent;
+  border: 0;
+  font-size: 1.3rem;
+  cursor: pointer;
+  align-self: start;
+}
+.pitch-split-point__hint { color: #aaa99e; font-size: 0.7rem; margin: 6px 0 9px; }
+.pitch-split-point__choices { display: grid; gap: 4px; }
+.pitch-split-point__choice {
+  width: 100%;
+  min-height: 48px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px;
+  border: 1px solid #3d4540;
+  border-radius: 6px;
+  color: inherit;
+  background: #252d2a;
+  text-align: left;
+  cursor: pointer;
+}
+.pitch-split-point__choice:hover { border-color: #dbbc7f; background: #353b32; }
+.pitch-split-point__choice--current { border-color: #eec477; }
+.pitch-split-point__faces { display: flex; flex-wrap: wrap; gap: 2px; flex: 0 0 auto; max-width: 76px; }
+.pitch-split-point__faces .block-dice-graphic { flex: 0 0 auto; }
+.pitch-split-point__choice-label { display: grid; gap: 2px; min-width: 0; }
+.pitch-split-point__choice-label strong { font-size: 0.76rem; }
+.pitch-split-point__choice-label small { font-size: 0.67rem; color: #b9b8b0; }
+.pitch-split-point__current { margin-left: auto; font-size: 0.62rem; color: #f4d495; }
+
+@media (max-width: 600px) {
+  .pitch-split-point__trigger { min-width: 29px; height: 29px; }
+  .pitch-split-point__popover { width: min(260px, calc(100vw - 22px)); }
+  .pitch-split-point__choice { min-height: 46px; }
+}

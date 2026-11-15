@@ -26,6 +26,10 @@ export function isScoringRunStalled(
 ): boolean {
   if (state.phase !== 'playing') return false;
 
+  // A Block may still need a push square or dice outcome. Don't abandon the
+  // current universe before the pending outcome has resolved.
+  if (state.pendingBlockResolution || state.blockChoice || state.isBlockTargeting) return false;
+
   // A puzzle saved before scenarioActionErrors() existed can have every route
   // to its own objective switched off. Nothing in the run can recover that.
   const routes = OBJECTIVE_REQUIRED_ACTIONS[state.objective] ?? [];
