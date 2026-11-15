@@ -20,17 +20,18 @@ export const STAT_RANGE = { min: 1, max: 12 };
 export const STAT_KEYS = ['ma', 'st', 'ag', 'pa', 'av'];
 
 export const TEAMS = ['human', 'orc', 'black-orc', 'imperial-nobility'];
-export const OBJECTIVES = ['touchdown', 'crowd-surf'];
-export const SCENARIO_ACTIONS = ['move', 'handoff', 'pass', 'block', 'blitz'];
+export const OBJECTIVES = ['touchdown', 'crowd-surf', 'injure-by-foul'];
+export const SCENARIO_ACTIONS = ['move', 'handoff', 'pass', 'block', 'blitz', 'foul'];
 
 // Player-facing names, here rather than in the editor so a validation error
 // and the control that produced it can never call the same thing two things.
 export const OBJECTIVE_LABELS = Object.freeze({
   touchdown: 'Touchdown',
   'crowd-surf': 'Crowd surf',
+  'injure-by-foul': 'Injure by foul',
 });
 export const ACTION_LABELS = Object.freeze({
-  move: 'Move', handoff: 'Hand-off', pass: 'Pass', block: 'Block', blitz: 'Blitz',
+  move: 'Move', handoff: 'Hand-off', pass: 'Pass', block: 'Block', blitz: 'Blitz', foul: 'Foul',
 });
 
 /**
@@ -47,6 +48,7 @@ export const OBJECTIVE_REQUIRED_ACTIONS = Object.freeze({
   // phase: 'crowd-surf' is only ever set from a push, which only a block or a
   // blitz can produce.
   'crowd-surf': Object.freeze(['block', 'blitz']),
+  'injure-by-foul': Object.freeze(['foul']),
 });
 
 /** BB2025 team-sheet caps. A puzzle is a single on-pitch state, so each team
@@ -169,9 +171,14 @@ export function normalizeScenario(input) {
 
 /** Legacy scenarios omit the field, which intentionally means every action. */
 export function enabledScenarioActions(scenario) {
-  return Array.isArray(scenario?.enabledActions)
-    ? [...new Set(scenario.enabledActions.filter(action => SCENARIO_ACTIONS.includes(action)))]
-    : [...SCENARIO_ACTIONS];
+  if (Array.isArray(scenario?.enabledActions)) {
+    return [...new Set(scenario.enabledActions.filter(action => SCENARIO_ACTIONS.includes(action)))];
+  }
+  // Older published puzzles omitted enabledActions when five actions existed.
+  // Do not silently introduce Foul into those puzzles; the new objective
+  // defaults to Foul explicitly, and the editor can opt other puzzles in.
+  return SCENARIO_ACTIONS.filter(action =>
+    action !== 'foul' || scenario?.objective === 'injure-by-foul');
 }
 
 /** "Block or Blitz" — the actions any one of which unlocks an objective. */
@@ -359,6 +366,11 @@ export function validateScenario(scenario, existingIds = new Set(), options = {}
     errors.push('At least one player is required');
   }
   errors.push(...scenarioActionErrors(scenario));
+  if (scenario.objective === 'injure-by-foul'
+    && !(scenario.pieces ?? []).some(p => p.team !== scenario.activeTeam && p.down === true)
+    && !enabledScenarioActions(scenario).some(action => action === 'block' || action === 'blitz')) {
+    errors.push('A foul injury puzzle needs a prone opponent or an enabled Block/Blitz to create one');
+  }
 
   const ids = new Set();
   const squares = new Set();
@@ -392,7 +404,7 @@ export function validateScenario(scenario, existingIds = new Set(), options = {}
   if (scenario.ballPosition) validatePosition(scenario.ballPosition, 'Loose ball', errors);
   if (carriers > 1) errors.push('Only one player can carry the ball');
   if (carriers === 1 && scenario.ballPosition) errors.push('Ball can be carried or loose, not both');
-  if (carriers === 0 && !scenario.ballPosition) errors.push('Place the ball on a player or on the ground');
+  if (carriers === 0 && !scenario.ballPosition && scenario.objective === 'touchdown') errors.push('Place the ball on a player or on the ground');
 
   errors.push(...scenarioRosterErrors(scenario));
 

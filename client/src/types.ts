@@ -3,8 +3,8 @@ import type { PathStep, BlockOutcomeFace } from './bfs';
 export type { BlockOutcomeFace };
 
 export type Team = 'human' | 'orc' | 'black-orc' | 'imperial-nobility';
-export type Objective = 'touchdown' | 'crowd-surf';
-export type PuzzleAction = 'move' | 'handoff' | 'pass' | 'block' | 'blitz';
+export type Objective = 'touchdown' | 'crowd-surf' | 'injure-by-foul';
+export type PuzzleAction = 'move' | 'handoff' | 'pass' | 'block' | 'blitz' | 'foul';
 
 /**
  * Portrait pitch coordinates — the orientation scenario JSON and the rules
@@ -183,13 +183,38 @@ export interface PushMovement {
   to: Position;
 }
 
-export type ActionLogEntry = MoveLogEntry | HandoffLogEntry | PassLogEntry | PassCatchLogEntry | BlockLogEntry;
+export type FoulLogEntry = {
+  kind: 'foul';
+  pieceName: string;
+  pieceRole: string;
+  receiverName: string;
+  receiverRole: string;
+  from: Position;
+  to: Position;
+  av: number;
+  offensiveAssists: number;
+  defensiveAssists: number;
+  dirtyPlayer: boolean;
+  sneakyGit: boolean;
+  loneFouler: boolean;
+  stunty: boolean;
+  armourBreakProbability: number;
+  sendOffProbability: number;
+  /** Chance of a casualty, including armour break and injury dice. */
+  actionProb: number;
+  cumulativeProb: number;
+  dodgeTarget: null;
+  isGfi: false;
+};
+
+export type ActionLogEntry = MoveLogEntry | HandoffLogEntry | PassLogEntry | PassCatchLogEntry | BlockLogEntry | FoulLogEntry;
 
 /** A puzzle is a single turn: you are either still playing it or you scored. */
 export type GamePhase =
   | 'playing'
   | 'touchdown'
-  | 'crowd-surf';
+  | 'crowd-surf'
+  | 'injure-by-foul';
 
 export type AppMode =
   | 'home'
@@ -260,6 +285,11 @@ export interface GameState {
   passReceiverKeys: Set<string>;
   // Block / Blitz (one Blitz per turn; plain Block has no limit)
   blitzUsed: boolean;
+  foulUsed: boolean;
+  pendingFoul: boolean;
+  isFoulTargeting: boolean;
+  foulTargets: Set<string>;
+  foulTargetId: string | null;
   // Id of the piece currently spending its post-Blitz leftover movement (its
   // block already resolved and committed to `pieces`, but it isn't marked
   // `activated` yet so it can keep moving). Selecting a different piece must
@@ -317,6 +347,16 @@ export interface RiskyMove {
   passTarget?: number;                                // pass
   rangeBand?: 'quick' | 'short' | 'long' | 'bomb';  // pass
   isBlitz?: boolean;                                  // block
+  foul?: boolean;
+  av?: number;
+  offensiveAssists?: number;
+  defensiveAssists?: number;
+  dirtyPlayer?: boolean;
+  sneakyGit?: boolean;
+  loneFouler?: boolean;
+  stunty?: boolean;
+  armourBreakProbability?: number;
+  sendOffProbability?: number;
   diceCount?: 1 | 2 | 3;                               // block
   picker?: 'attacker' | 'defender';                   // block
   acceptedFaces?: BlockOutcomeFace[];                  // block

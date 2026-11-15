@@ -31,6 +31,7 @@ const ACTIONS: PieceMenuAction[] = [
   { label: 'Pass', key: 'pass' },
   { label: 'Block', key: 'block' },
   { label: 'Blitz', key: 'blitz' },
+  { label: 'Foul', key: 'foul' },
 ];
 
 export { ACTIONS as DEFAULT_ACTIONS };
@@ -38,7 +39,7 @@ export { ACTIONS as DEFAULT_ACTIONS };
 // A piece may take exactly one of these actions per activation — checking
 // one unchecks the others. Move stays independent for Pass and Hand Off;
 // Blitz always permits movement after its target is chosen.
-const EXCLUSIVE_KEYS = ['pass', 'handoff', 'block', 'blitz'];
+const EXCLUSIVE_KEYS = ['pass', 'handoff', 'block', 'blitz', 'foul'];
 
 export function PieceMenu({ piece, anchor, actions, onAction, onDismiss }: Props) {
   const ref = useRef<HTMLDivElement>(null);
@@ -106,7 +107,7 @@ export function PieceMenu({ piece, anchor, actions, onAction, onDismiss }: Props
   };
 
   // Pass/Hand Off/Block/Blitz take priority over plain Move when selected.
-  const chosenAction = selected.has('pass')
+  const chosenAction = selected.has('foul') ? 'foul' : selected.has('pass')
     ? 'pass'
     : selected.has('handoff')
       ? 'handoff'

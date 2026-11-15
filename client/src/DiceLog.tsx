@@ -27,7 +27,7 @@ function entryClass(e: ActionLogEntry): string {
   if (e.kind === 'handoff')    return 'dice-log__entry--handoff';
   if (e.kind === 'pass')       return 'dice-log__entry--pass';
   if (e.kind === 'pass-catch') return 'dice-log__entry--pass-catch';
-  if (e.kind === 'block')      return 'dice-log__entry--block';
+  if (e.kind === 'block' || e.kind === 'foul') return 'dice-log__entry--block';
   if (e.kind === 'move' && e.pickupTarget) return 'dice-log__entry--pickup';
   if (e.isGfi && e.dodgeTarget !== null) return 'dice-log__entry--gfi-dodge';
   if (e.isGfi) return 'dice-log__entry--gfi';
@@ -78,7 +78,7 @@ export function DiceLog({ log }: Props) {
                 ? `${entry.pieceName} → ${entry.receiverName}`
                 : entry.kind === 'pass'
                 ? `${entry.pieceName} → ${entry.receiverName}`
-                : entry.kind === 'block'
+                : entry.kind === 'block' || entry.kind === 'foul'
                 ? `${entry.pieceName} ⚔ ${entry.receiverName}`
                 : entry.pieceName}
             </span>
@@ -98,6 +98,12 @@ export function DiceLog({ log }: Props) {
             <span className="dice-log__prob">
               <span className="dice-log__pass-catch-tag">Catch {entry.catchTarget}+</span>
               {' '}<span className="dice-log__prob-pct">({pct(entry.actionProb)})</span>
+            </span>
+          ) : entry.kind === 'foul' ? (
+            <span className="dice-log__prob">
+              <span className="dice-log__block-tag">Foul · Armour {pct(entry.armourBreakProbability)}</span>
+              {' '}<span className="dice-log__block-face">Sent off {pct(entry.sendOffProbability)}</span>
+              {' '}<span className="dice-log__prob-pct">Casualty ({pct(entry.actionProb)})</span>
             </span>
           ) : entry.kind === 'block' ? (
             <span className="dice-log__prob">

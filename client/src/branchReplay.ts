@@ -62,6 +62,7 @@ export function boardHash(state: GameState): string {
     state.phase,
     state.passUsed ? 'P' : '-',
     state.blitzUsed ? 'B' : '-',
+    state.foulUsed ? 'F' : '-',
     state.blitzResumeId ?? '-',
     state.selectedPieceId ?? '-',
   ].join('/');
@@ -79,6 +80,9 @@ export function boardHash(state: GameState): string {
     state.pendingPass ? 'p' : '-',
     state.pendingHandoff ? 'h' : '-',
     state.pendingBlock ? 'k' : '-',
+    state.pendingFoul ? 'f' : '-',
+    state.isFoulTargeting ? 'F' : '-',
+    state.foulTargetId ?? '-',
     state.isPassTargeting ? 'P' : '-',
     state.isHandoffTargeting ? 'H' : '-',
     state.isBlockTargeting ? 'K' : '-',
@@ -155,6 +159,7 @@ function entryRollSignature(entry: ActionLogEntry): string[] {
   if (entry.kind === 'pass') {
     return [`pass:${entry.passTarget}`];
   }
+  if (entry.kind === 'foul') return [`foul:${entry.av}:${entry.offensiveAssists}:${entry.defensiveAssists}:${entry.dirtyPlayer}:${entry.sneakyGit}:${entry.loneFouler}:${entry.stunty}`];
   return [`block:${entry.diceCount}:${entry.picker}`];
 }
 

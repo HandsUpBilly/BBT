@@ -2,6 +2,7 @@ import { useState, useCallback } from 'react';
 import type { GameState, PlayerPiece, Position, ActionLogEntry, Scenario, BlockOutcomeFace, PushMovement, Team } from './types';
 import type { PathStep } from './bfs';
 import type { BlockBoardState } from './blockBranching';
+import { foulOdds } from '../../shared/foulMath.js';
 import { attacksTopEndZone } from './teamPresentation';
 import {
   computeReachable, findShortestPath, key, fromKey, neighbours, catchTargetAt, passTargetAt, computePassRange,
@@ -51,6 +52,11 @@ function makeBlankState(overrides: Partial<GameState> = {}): GameState {
     passRangeKeys: new Map(),
     passReceiverKeys: new Set(),
     blitzUsed: false,
+    foulUsed: false,
+    pendingFoul: false,
+    isFoulTargeting: false,
+    foulTargets: new Set(),
+    foulTargetId: null,
     blitzResumeId: null,
     pendingBlock: false,
     pendingBlockIsBlitz: false,
@@ -215,6 +221,10 @@ function clearSelection(state: GameState, cancelActivation = false): GameState {
     blockChoice: null,
     pushTargetKeys: new Set(),
     pendingBlockResolution: null,
+    pendingFoul: false,
+    isFoulTargeting: false,
+    foulTargets: new Set(),
+    foulTargetId: null,
     actionLog: cancelActivation
       ? state.actionLog.slice(0, state.activationLogStart)
       : state.actionLog,
@@ -346,6 +356,9 @@ export type ClickIntent =
 
 export function classifyClick(state: GameState, pos: Position): ClickIntent {
   if (state.phase !== 'playing') return 'none';
+  // A Foul is a single declared action. Until the opponent is chosen and
+  // the foul resolved (or Esc cancels it), unrelated piece clicks do nothing.
+  if (state.pendingFoul && state.isFoulTargeting) return 'none';
 
   const clickedKey = key(pos);
   const pieceOnSquare = state.pieces.find(p => key(p.position) === clickedKey);
@@ -362,10 +375,12 @@ export function classifyClick(state: GameState, pos: Position): ClickIntent {
     // A Blitz stays active until the chosen defender is clicked from an
     // adjacent square. Clicking the attacker/path tip must not prematurely
     // end the activation while the block is still pending.
-    return state.pendingBlock ? 'none' : 'end-activation';
+    return state.pendingBlock || state.pendingFoul ? 'none' : 'end-activation';
   }
 
   if (state.selectedPieceId && state.reachableKeys.has(clickedKey)) return 'commit-move';
+
+  if (state.pendingFoul) return 'none';
 
   // Select own unactivated piece (a down piece cannot be selected/activated)
   if (
@@ -1125,6 +1140,129 @@ export function applyPassTarget(prev: GameState, pos: Position): GameState {
     actionLog: [...prev.actionLog, passEntry, catchEntry],
     pendingProb: prev.pendingProb * passProb * catchProb,
     ...(isTouchdown ? { phase: 'touchdown' as const } : {}),
+  });
+}
+
+/** Selectable prone targets that can be reached this activation. */
+export function foulTargetKeys(state: GameState, attacker: PlayerPiece): Set<string> {
+  if (state.foulUsed || attacker.activated || attacker.down) return new Set();
+  const reachable = recomputeReachable(state, attacker.id, attacker.position, attacker.ma, MAX_GFI).reachableKeys;
+  reachable.add(key(attacker.position));
+  return new Set(state.pieces
+    .filter(p => p.team !== attacker.team && p.down)
+    .filter(p => neighbours(p.position).some(adj => reachable.has(key(adj))))
+    .map(p => key(p.position)));
+}
+
+/** A Foul may have movement, but one per turn and only against a prone opponent. */
+export function applyFoulAction(prev: GameState, pieceId: string): GameState {
+  if (prev.phase !== 'playing' || prev.objective !== 'injure-by-foul' || prev.foulUsed || prev.selectedPieceId) return prev;
+  const attacker = prev.pieces.find(p => p.id === pieceId);
+  if (!attacker || attacker.team !== prev.activeTeam || attacker.activated || attacker.down) return prev;
+  const targets = foulTargetKeys(prev, attacker);
+  if (!targets.size) return prev;
+  return {
+    ...beginActivation(prev, attacker, attacker.ma, MAX_GFI, new Set()),
+    pendingFoul: true,
+    isFoulTargeting: true,
+    foulTargets: targets,
+    foulTargetId: null,
+  };
+}
+
+/**
+ * First click nominates a prone opponent; the second, after any movement,
+ * commits the entire foul as its EXACT casualty probability. Other outcomes
+ * (failed armour, stun/KO, referee send-off) are terminal failures for this
+ * one-objective, one-foul puzzle, so no artificial universe split is needed.
+ */
+export function applyFoulTarget(prev: GameState, pos: Position): GameState {
+  if (prev.phase !== 'playing' || !prev.pendingFoul || prev.foulUsed || !prev.selectedPieceId) return prev;
+  const attacker = prev.pieces.find(p => p.id === prev.selectedPieceId);
+  const target = prev.pieces.find(p => key(p.position) === key(pos));
+  if (!attacker || !target || attacker.team !== prev.activeTeam
+    || attacker.activated || attacker.down || target.team === attacker.team || !target.down) return prev;
+  const targetKey = key(pos);
+  if (prev.isFoulTargeting) {
+    if (!prev.foulTargets.has(targetKey)) return prev;
+    const reachable = recomputeReachable(prev, attacker.id, attacker.position, attacker.ma, MAX_GFI).reachableKeys;
+    return { ...prev, foulTargetId: target.id, foulTargets: new Set(),
+      isFoulTargeting: false, reachableKeys: reachable };
+  }
+  if (prev.foulTargetId !== target.id) return prev;
+  const attackerPos = prev.committedPath.at(-1) ?? prev.originPos ?? attacker.position;
+  if (!neighbours(attackerPos).some(n => key(n) === targetKey)) return prev;
+
+  // The committed path's ending square is provisional until the foul is made.
+  const pieces = prev.pieces.map(p => p.id === attacker.id
+    ? { ...p, position: attackerPos, activated: true }
+    : p);
+  const allied = pieces.filter(p => p.team === attacker.team)
+    .map(p => ({ id: p.id, position: p.position, down: p.down }));
+  const enemies = pieces.filter(p => p.team === target.team)
+    .map(p => ({ id: p.id, position: p.position, down: p.down }));
+  let offensive = countEligibleAssists(target.position, allied, attacker.id, enemies, target.id);
+  // Put the Boot In permits an assist even when marked, but never from prone players.
+  for (const p of pieces) {
+    if (p.id === attacker.id || p.team !== attacker.team || p.down
+      || !p.skills.includes('Put the Boot In')) continue;
+    if (!neighbours(target.position).some(n => key(n) === key(p.position))) continue;
+    const marked = enemies.some(e => e.id !== target.id && !e.down
+      && neighbours(e.position).some(n => key(n) === key(p.position)));
+    if (marked) offensive++;
+  }
+  const defensive = countEligibleAssists(attackerPos, enemies, target.id, allied, attacker.id);
+  const props = {
+    av: target.av, defensiveAssists: defensive,
+    dirtyPlayer: attacker.skills.includes('Dirty Player'),
+    sneakyGit: attacker.skills.includes('Sneaky Git'),
+    loneFouler: attacker.skills.includes('Lone Fouler'),
+    stunty: target.skills.includes('Stunty'),
+  };
+  // BB2025 offensive assists are optional; choose the count maximizing the
+  // declared injury objective (Lone Fouler can outperform assisted armour).
+  let offensiveAssists = 0;
+  let odds = foulOdds({ ...props, offensiveAssists: 0 });
+  for (let count = 1; count <= offensive; count++) {
+    const candidate = foulOdds({ ...props, offensiveAssists: count });
+    if (candidate.injuryProbability > odds.injuryProbability) {
+      offensiveAssists = count;
+      odds = candidate;
+    }
+  }
+  if (odds.injuryProbability <= 0) {
+    const pickedUpBall = prev.ballPosition !== null
+      && prev.walkedSquares.some(p => key(p) === key(prev.ballPosition!));
+    return clearSelection({
+      ...prev,
+      pieces: pieces.map(p => p.id === attacker.id
+        ? { ...p, hasBall: p.hasBall || pickedUpBall } : p),
+      ballPosition: pickedUpBall ? null : prev.ballPosition,
+      foulUsed: true,
+      // No possible casualty, so the objective is not fulfilled.
+      // runOutcome detects the spent foul and offers restart.
+    });
+  }
+  const prior = prev.actionLog.at(-1)?.cumulativeProb ?? 1;
+  const log: ActionLogEntry = {
+    kind: 'foul', pieceName: attacker.name, pieceRole: attacker.role ?? attacker.team,
+    receiverName: target.name, receiverRole: target.role ?? target.team,
+    from: attackerPos, to: target.position,
+    ...props, offensiveAssists,
+    armourBreakProbability: odds.armourBreakProbability,
+    sendOffProbability: odds.sentOffProbability,
+    dodgeTarget: null, isGfi: false,
+    actionProb: odds.injuryProbability, cumulativeProb: prior * odds.injuryProbability,
+  };
+  const pickedUpBall = prev.ballPosition !== null
+    && prev.walkedSquares.some(p => key(p) === key(prev.ballPosition!));
+  return clearSelection({
+    ...prev, pieces: pieces.map(p => p.id === attacker.id
+      ? { ...p, hasBall: p.hasBall || pickedUpBall } : p),
+    ballPosition: pickedUpBall ? null : prev.ballPosition,
+    foulUsed: true,
+    phase: 'injure-by-foul',
+    actionLog: [...prev.actionLog, log],
   });
 }
 

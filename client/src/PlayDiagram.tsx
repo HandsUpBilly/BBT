@@ -98,12 +98,14 @@ export function PlayDiagram({ scenario, actionLog, orientation = 'landscape' }: 
   const passes = actionLog.filter(entry => entry.kind === 'pass');
   const handoffs = actionLog.filter(entry => entry.kind === 'handoff');
   const blocks = actionLog.filter(entry => entry.kind === 'block');
+  const fouls = actionLog.filter(entry => entry.kind === 'foul');
   const ballStart = scenario.pieces.find(piece => piece.hasBall)?.position ?? scenario.ballPosition;
   const description = [
     `${routes.length} movement ${routes.length === 1 ? 'route' : 'routes'}`,
     passes.length ? `${passes.length} ${passes.length === 1 ? 'pass' : 'passes'}` : '',
     handoffs.length ? `${handoffs.length} ${handoffs.length === 1 ? 'hand-off' : 'hand-offs'}` : '',
     blocks.length ? `${blocks.length} ${blocks.length === 1 ? 'block' : 'blocks'}` : '',
+    fouls.length ? `${fouls.length} foul` : '',
   ].filter(Boolean).join(', ');
   const boardWidth = orientation === 'portrait' ? SHORT_PX : LONG_PX;
   const boardHeight = orientation === 'portrait' ? LONG_PX : SHORT_PX;
@@ -218,6 +220,18 @@ export function PlayDiagram({ scenario, actionLog, orientation = 'landscape' }: 
               >
                 <title>{entry.pieceName} hands off to {entry.receiverName ?? 'receiver'}</title>
               </line>
+            );
+          })}
+          {fouls.map((entry, index) => {
+            const from = point(entry.from, orientation);
+            const to = point(entry.to, orientation);
+            return (
+              <g key={`foul-${index}`} data-route-kind="foul">
+                <title>{entry.pieceName} fouls {entry.receiverName ?? 'opponent'}</title>
+                <line className="play-diagram__route play-diagram__route--block" x1={from.x} y1={from.y} x2={to.x} y2={to.y} />
+                <circle className="play-diagram__block-mark" cx={to.x} cy={to.y} r="8" />
+                <text className="play-diagram__block-dice" x={to.x} y={to.y + 3}>F</text>
+              </g>
             );
           })}
           {blocks.map((entry, index) => {

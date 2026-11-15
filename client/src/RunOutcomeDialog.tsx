@@ -8,7 +8,7 @@ type Props = {
   variant: 'failed';
   onRestart: () => void;
   onExit: () => void;
-  objective?: 'touchdown' | 'crowd-surf';
+  objective?: 'touchdown' | 'crowd-surf' | 'injure-by-foul';
 } | {
   variant: 'failed-branch';
   remainingBranches: number;
@@ -42,9 +42,11 @@ export function RunOutcomeDialog(props: Props) {
           </header>
           <div className="run-outcome-dialog__body">
             <p id={descriptionId}>
-              {props.objective === 'crowd-surf'
-                ? 'No legal block or blitz remains that can send an opposing player into the crowd this turn.'
-                : 'The ball carrier has finished their activation without reaching the end zone. They cannot act again this turn, so the puzzle can no longer be completed.'}
+              {props.objective === 'injure-by-foul'
+                ? 'No legal Foul remains that can cause a casualty this turn.'
+                : props.objective === 'crowd-surf'
+                  ? 'No legal block or blitz remains that can send an opposing player into the crowd this turn.'
+                  : 'The ball carrier has finished their activation without reaching the end zone. They cannot act again this turn, so the puzzle can no longer be completed.'}
             </p>
             <div className="submit-modal__actions run-outcome-dialog__actions">
               <button type="button" className="modal__roll-btn" onClick={props.onRestart}>
@@ -113,7 +115,7 @@ export function RunOutcomeDialog(props: Props) {
         </div>
         <div className="run-outcome-dialog__body">
           <span className="run-outcome-dialog__kicker">One universe secured</span>
-          <h2 id={titleId}>Touchdown, but the run is not finished</h2>
+          <h2 id={titleId}>Objective reached, but the run is not finished</h2>
           <p id={descriptionId}>
             This branch scored. {props.remainingBranches} {branchLabel} unresolved,
             and each still contributes to your final scoring chance.

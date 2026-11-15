@@ -1,6 +1,7 @@
 import type { BranchStripEntry } from './branchRun';
 import type { GameState, PuzzleAction } from './types';
 import { blockActionAvailability } from './blockActionAvailability';
+import { foulTargetKeys } from './useGameState';
 import { OBJECTIVE_REQUIRED_ACTIONS, SCENARIO_ACTIONS } from '../../shared/scenarioValidation.js';
 
 /**
@@ -25,9 +26,8 @@ export function isScoringRunStalled(
 ): boolean {
   if (state.phase !== 'playing') return false;
 
-  // A resolved block can be waiting for its push square and follow-up. That
-  // push may *be* the crowd surf, even if the blocker was the team's last
-  // activation. Do not open the failed-drive dialog before it is resolved.
+  // A Block may still need a push square or dice outcome. Don't abandon the
+  // current universe before the pending outcome has resolved.
   if (state.pendingBlockResolution || state.blockChoice || state.isBlockTargeting) return false;
 
   // A puzzle saved before scenarioActionErrors() existed can have every route
@@ -45,6 +45,22 @@ export function isScoringRunStalled(
       const { canBlock, canBlitz } = blockActionAvailability(piece, state);
       return (canBlock && openRoutes.includes('block'))
         || (canBlitz && openRoutes.includes('blitz'));
+    });
+  }
+
+  if (state.objective === 'injure-by-foul') {
+    if (state.foulUsed) return true;
+    const candidates = state.pieces.filter(piece => piece.team === state.activeTeam
+      && !piece.activated && !piece.down);
+    if (candidates.length === 0) return true;
+    if (state.selectedPieceId) return false; // An action is still being authored.
+    if (candidates.some(piece => foulTargetKeys(state, piece).size > 0)) return false;
+    // A standing opponent can become a legal prone target after a Block/Blitz.
+    // Never declare a run impossible merely because the victim is not down YET.
+    return !candidates.some(piece => {
+      const { canBlock, canBlitz } = blockActionAvailability(piece, state);
+      return (enabledActions.includes('block') && canBlock)
+        || (enabledActions.includes('blitz') && canBlitz);
     });
   }
 

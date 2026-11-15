@@ -33,6 +33,7 @@ function actionLabel(e: ActionLogEntry): string {
   if (e.kind === 'handoff')    return `Hand-off ${e.catchTarget}+`;
   if (e.kind === 'pass')       return `${BAND_LABEL[e.rangeBand]} Pass ${e.passTarget}+`;
   if (e.kind === 'pass-catch') return `Catch ${e.catchTarget}+`;
+  if (e.kind === 'foul') return `Foul · injury ${pct(e.actionProb)} · sent off ${pct(e.sendOffProbability)}`;
   if (e.kind === 'block') {
     const pushCount = e.pushes?.length ?? 0;
     const pushSuffix = pushCount > 1 ? ` · ${pushCount} pushes` : '';
@@ -49,7 +50,7 @@ function actionLabel(e: ActionLogEntry): string {
 function entryPlayerName(e: ActionLogEntry): string {
   if (e.kind === 'handoff') return `${e.pieceName} → ${e.receiverName}`;
   if (e.kind === 'pass')    return `${e.pieceName} → ${e.receiverName}`;
-  if (e.kind === 'block')   return `${e.pieceName} ⚔ ${e.receiverName}`;
+  if (e.kind === 'block' || e.kind === 'foul') return `${e.pieceName} ⚔ ${e.receiverName}`;
   return e.pieceName;
 }
 
@@ -75,7 +76,7 @@ function capitalize(s: string): string {
  */
 export function ActionLogDetail({ scenario, actionLog, diagramAside, variant = 'default', orientation }: Props) {
   const riskyMoves = actionLog.filter(e =>
-    e.kind === 'handoff' || e.kind === 'pass' || e.kind === 'pass-catch' || e.kind === 'block' ||
+    e.kind === 'handoff' || e.kind === 'pass' || e.kind === 'pass-catch' || e.kind === 'block' || e.kind === 'foul' ||
     e.isGfi || e.dodgeTarget !== null || (e.kind === 'move' && !!e.pickupTarget)
   );
   const cumulativeProb = actionLog.length > 0

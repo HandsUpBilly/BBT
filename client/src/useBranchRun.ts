@@ -30,6 +30,8 @@ import {
   declareBlock,
   declareHandoff,
   declarePass,
+  declareFoul,
+  chooseFoulTarget,
   ghostPieces,
   isBlockPending,
   isRunComplete,
@@ -100,6 +102,12 @@ export function useBranchRun(initialState: GameState) {
     }, []),
     handlePassTarget: useCallback((col: number, row: number) => {
       setRun(prev => choosePassTarget(prev, { col, row }));
+    }, []),
+    handleFoulAction: useCallback((pieceId: string) => {
+      setRun(prev => declareFoul(prev, pieceId));
+    }, []),
+    handleFoulTarget: useCallback((col: number, row: number) => {
+      setRun(prev => chooseFoulTarget(prev, { col, row }));
     }, []),
     handleBlockAction: useCallback((pieceId: string, isBlitz: boolean) => {
       setRun(prev => declareBlock(prev, pieceId, isBlitz));

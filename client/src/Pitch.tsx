@@ -7,8 +7,7 @@ import type { PathTrail } from './movementTrail';
 import { passTrajectoryPath } from './passTrajectory';
 import { skillGroupsFor, skillMarkersFor } from './skillPresentation';
 import type { PitchSurface, TokenStyle } from './prefs';
-import type { GhostPiece, BranchTreeBlockView } from './branchRun';
-import { PitchSplitMarkers } from './PitchSplitMarkers';
+import type { GhostPiece } from './branchRun';
 import type { MenuAnchor } from './menuPosition';
 import { RoleGlyph } from './RoleGlyph';
 import { roleCodeFor } from './rolePresentation';
@@ -433,9 +432,6 @@ interface Props {
    * see `ghostPieces` in branchRun.ts.
    */
   branchGhosts?: readonly GhostPiece[];
-  /** Historical splits visible along the currently viewed universe. */
-  splitTree?: BranchTreeBlockView | null;
-  onSelectSplitUniverse?: (id: string) => void;
   /** Final action decision, anchored beside its target without resizing the pitch. */
   moveDecision?: {
     position: Position;
@@ -470,7 +466,7 @@ const NO_BRANCH_GHOSTS: readonly BranchGhostView[] = [];
 export function Pitch({
   state, onSquareClick, onPieceClick, onSquareHover, onSquareLeave,
   orientation = 'landscape', tokenStyle = 'portrait', pitchSurface = 'grass', showCoordinates = true,
-  teams, branchGhosts, splitTree, onSelectSplitUniverse, moveDecision,
+  teams, branchGhosts, moveDecision,
 }: Props) {
   const portrait = orientation === 'portrait';
   const stateTeams = Array.from(new Set(state.pieces.map(piece => piece.team)));
@@ -630,6 +626,8 @@ export function Pitch({
       ? 'Pass'
       : state.isHandoffTargeting
         ? 'Hand-off'
+        : state.pendingFoul
+          ? 'Foul'
         : state.pendingBlockIsBlitz
           ? 'Blitz'
         : 'Move';
@@ -781,8 +779,8 @@ export function Pitch({
       const isHandoffTarget   = state.handoffTargets.has(k);
       const passRangeBand     = state.passRangeKeys.get(k);
       const isPassReceiver    = state.passReceiverKeys.has(k);
-      const isBlockTarget     = state.blockTargets.has(k);
-      const isBlitzTarget     = piece?.id === state.blitzTargetId;
+      const isBlockTarget     = state.blockTargets.has(k) || state.foulTargets.has(k);
+      const isBlitzTarget     = piece?.id === state.blitzTargetId || (state.pendingFoul && piece?.id === state.foulTargetId);
       const isPushTarget      = state.pushTargetKeys.has(k);
       const isPushOrigin      = pushOriginKeys.has(k);
       const isPushDestination = pushDestinationKeys.has(k);
@@ -847,7 +845,7 @@ export function Pitch({
 
       const targetDescription = isHandoffTarget ? 'hand-off target'
         : isPassReceiver ? 'pass target'
-        : isBlockTarget ? 'block target'
+        : isBlockTarget ? (state.isFoulTargeting ? 'foul target' : 'block target')
         : isPushTarget ? 'push-back square'
         : null;
 
@@ -999,15 +997,6 @@ export function Pitch({
         {/* The field */}
           <div className="pitch__grid" style={gridStyle} role="group" aria-label="Pitch">
             {squares}
-            {splitTree && onSelectSplitUniverse && (
-              <PitchSplitMarkers
-                tree={splitTree}
-                orientation={orientation}
-                acrossValues={acrossValues}
-                downValues={downValues}
-                onSelect={onSelectSplitUniverse}
-              />
-            )}
             {passTrajectories.length > 0 && (
             <svg
               className="pitch__pass-trajectories"

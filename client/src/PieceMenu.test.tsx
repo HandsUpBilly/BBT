@@ -24,7 +24,7 @@ describe('PieceMenu', () => {
     expect(within(stats).getByText('AG').parentElement?.textContent).toContain('4+');
     expect(within(stats).getByText('PA').parentElement?.textContent).toContain('4+');
     expect(within(stats).getByText('AV').parentElement?.textContent).toContain('10+');
-    expect(screen.getAllByRole('checkbox')).toHaveLength(5);
+    expect(screen.getAllByRole('checkbox')).toHaveLength(6);
   });
 
   it('can emphasize a Tutorial action without disabling the other legal choices', () => {

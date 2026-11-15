@@ -44,6 +44,28 @@ test('preserves crowd surf as a selectable objective', () => {
   assert.equal(validScenario({ objective: 'crowd-surf' }).objective, 'crowd-surf');
 });
 
+test('foul objective requires a prone opponent and the Foul action', () => {
+  const original = validScenario();
+  const prone = {
+    ...original,
+    objective: 'injure-by-foul',
+    enabledActions: [...SCENARIO_ACTIONS],
+    pieces: original.pieces.map(p => p.team === 'orc' ? { ...p, down: true } : p),
+  };
+  assert.deepEqual(validateScenario(prone), []);
+  const noBall = { ...prone, ballPosition: null,
+    pieces: prone.pieces.map(p => ({ ...p, hasBall: false })) };
+  assert.deepEqual(validateScenario(noBall), []);
+  assert.ok(validateScenario({ ...prone, enabledActions: ['move'] })
+    .some(error => error.includes('needs Foul enabled')));
+  assert.ok(validateScenario({ ...prone, pieces: original.pieces, enabledActions: ['foul'] })
+    .some(error => error.includes('prone opponent')));
+  assert.deepEqual(validateScenario({
+    ...prone, pieces: original.pieces, enabledActions: ['foul', 'block'],
+  }), []);
+  assert.equal(normalizeScenario(prone).objective, 'injure-by-foul');
+});
+
 test('rejects malformed ids', () => {
   for (const id of ['Scenario-1', '-leading', 'has space', '', 'UPPER']) {
     assert.equal(SCENARIO_ID_RE.test(id), false, `${id} should be rejected`);
@@ -165,9 +187,10 @@ test('normalizeScenario coerces hostile input rather than throwing', () => {
 });
 
 test('scenario actions default to every player-menu action and reject unknown values', () => {
-  assert.deepEqual(normalizeScenario({}).enabledActions, SCENARIO_ACTIONS);
+  assert.deepEqual(normalizeScenario({}).enabledActions, SCENARIO_ACTIONS.filter(action => action !== 'foul'));
   assert.deepEqual(normalizeScenario({ enabledActions: ['pass', 'pass', 'not-an-action'] }).enabledActions, ['pass']);
-  assert.deepEqual(enabledScenarioActions({}), SCENARIO_ACTIONS);
+  assert.deepEqual(enabledScenarioActions({}), SCENARIO_ACTIONS.filter(action => action !== 'foul'));
+  assert.deepEqual(enabledScenarioActions({ objective: 'injure-by-foul' }), SCENARIO_ACTIONS);
   assert.deepEqual(enabledScenarioActions({ enabledActions: [] }), []);
 });
 
@@ -199,7 +222,7 @@ test('rejects a puzzle whose own objective has no enabled route to it', () => {
   // solvability proof.
   assert.deepEqual(validateScenario(validScenario({ objective: 'crowd-surf', enabledActions: ['blitz'] })), []);
   assert.deepEqual(validateScenario(validScenario({ objective: 'touchdown', enabledActions: ['move'] })), []);
-  // Legacy puzzles omit the field entirely, which means all five.
+  // Legacy puzzles omit the field entirely, which still means the original five.
   assert.deepEqual(validateScenario(validScenario()), []);
 });
 

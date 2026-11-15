@@ -33,6 +33,8 @@ import {
   applyHandoffTarget,
   applyPassAction,
   applyPassTarget,
+  applyFoulAction,
+  applyFoulTarget,
   applyPushChoice,
   classifyClick,
   type ClickIntent,
@@ -303,6 +305,14 @@ export function declarePass(run: BranchRun, pieceId: string): BranchRun {
 /** Pick a pass receiver. Pass and catch targets are recomputed per branch. */
 export function choosePassTarget(run: BranchRun, pos: Position): BranchRun {
   return authorUniform(run, state => applyPassTarget(state, pos));
+}
+
+/** Declare a Foul. Target selection and its later resolution replay in lockstep. */
+export function declareFoul(run: BranchRun, pieceId: string): BranchRun {
+  return authorUniform(run, state => applyFoulAction(state, pieceId));
+}
+export function chooseFoulTarget(run: BranchRun, pos: Position): BranchRun {
+  return authorUniform(run, state => applyFoulTarget(state, pos));
 }
 
 /** Declare a Block or Blitz for a piece, across the lockstep group. */
@@ -653,8 +663,6 @@ export interface BranchTreeStateView extends Omit<BranchStripEntry, 'status'> {
 
 export interface BranchTreeBlockView {
   id: string;
-  /** Position of the blocking player when this split was created. */
-  position?: Position;
   blockNumber: number;
   blockLabel: string;
   diceCount: 1 | 2 | 3;
@@ -927,13 +935,8 @@ export function branchTreeView(run: BranchRun): BranchTreeBlockView | null {
         ...(nextBlock ? { nextBlock } : {}),
       });
     }
-    // The historical split parent still records the selected attacker at the
-    // instant the block was declared. Locate the marker from that immutable
-    // board, not from the current universe's potentially moved pieces.
-    const attacker = line.state.pieces.find(piece => piece.id === line.state.selectedPieceId);
     return {
       id: line.id,
-      ...(attacker ? { position: attacker.position } : {}),
       blockNumber: depth + 1,
       blockLabel: `${line.split.attackerName} ⚔ ${line.split.defenderName}`,
       diceCount: line.split.diceCount,

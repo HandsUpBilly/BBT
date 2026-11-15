@@ -34,6 +34,8 @@ export function SubmitModal({ scenario, actionLog, orientation, onSubmit, onDism
   // does not dismiss it. The hook still traps focus and restores the launcher.
   const dialogRef = useModalFocus<HTMLDivElement>();
   const isCrowdSurf = scenario.objective === 'crowd-surf';
+  const isFoul = scenario.objective === 'injure-by-foul';
+  const textObjective = isCrowdSurf || isFoul;
 
   // onSubmit may be async (it hits the network). Track it so the button can't
   // be double-fired, and clear the flag when a failure comes back so the
@@ -54,10 +56,10 @@ export function SubmitModal({ scenario, actionLog, orientation, onSubmit, onDism
         tabIndex={-1}
       >
         <header className="submit-modal__masthead">
-          <h2 id={titleId} className={isCrowdSurf ? 'submit-modal__objective-title' : 'submit-modal__visually-hidden'}>
-            {isCrowdSurf ? 'Crowd surf!' : 'Touchdown!'}
+          <h2 id={titleId} className={textObjective ? 'submit-modal__objective-title' : 'submit-modal__visually-hidden'}>
+            {isFoul ? 'Foul injury probability' : isCrowdSurf ? 'Crowd surf!' : 'Touchdown!'}
           </h2>
-          {!isCrowdSurf && (
+          {!textObjective && (
             <img
               className="submit-modal__masthead-art"
               src={touchdownLockup}
@@ -68,6 +70,7 @@ export function SubmitModal({ scenario, actionLog, orientation, onSubmit, onDism
         </header>
 
         <div className="submit-modal__content">
+          {isFoul && <p className="submit-modal__prompt">Score is the calculated chance of a casualty. The game has not rolled an actual injury.</p>}
           <ActionLogDetail scenario={scenario} actionLog={actionLog} variant="review" orientation={orientation} />
 
           {error && (
