@@ -49,6 +49,7 @@ test('foul objective requires a prone opponent and the Foul action', () => {
   const prone = {
     ...original,
     objective: 'injure-by-foul',
+    enabledActions: [...SCENARIO_ACTIONS],
     pieces: original.pieces.map(p => p.team === 'orc' ? { ...p, down: true } : p),
   };
   assert.deepEqual(validateScenario(prone), []);
