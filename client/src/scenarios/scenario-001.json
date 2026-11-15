@@ -1,20 +1,37 @@
 {
   "id": "scenario-001",
   "name": "Reikland's Opening Drive",
-  "description": "OBJECTIVE: Carry the ball into the Human End Zone. Two Orc Linemen block the direct route. Choose the safest path.",
+  "description": "Nuffle smiles on the Reavers' first snap. Swiftfoot has the ball but a wall of Orcs stand between him and glory.\n\nFind the safest path to the end zone.",
   "activeTeam": "human",
+  "teams": [
+    "human",
+    "orc"
+  ],
   "objective": "touchdown",
+  "enabledActions": [
+    "move"
+  ],
   "freePlay": false,
   "published": true,
+  "ballPosition": null,
   "pieces": [
     {
       "id": "carrier",
       "team": "human",
       "role": "thrower",
       "name": "Aldric Swiftfoot",
-      "ma": 6, "st": 3, "ag": 3, "pa": 3, "av": 8,
-      "skills": ["Pass", "Sure Hands"],
-      "position": { "col": 7, "row": 6 },
+      "ma": 6,
+      "st": 3,
+      "ag": 3,
+      "pa": 3,
+      "av": 8,
+      "skills": [
+        "Block"
+      ],
+      "position": {
+        "col": 7,
+        "row": 6
+      },
       "hasBall": true
     },
     {
@@ -22,19 +39,155 @@
       "team": "orc",
       "role": "lineman",
       "name": "Grukk Ironjaw",
-      "ma": 5, "st": 3, "ag": 3, "pa": 4, "av": 9,
-      "skills": [],
-      "position": { "col": 6, "row": 4 },
+      "ma": 4,
+      "st": 3,
+      "ag": 3,
+      "pa": 6,
+      "av": 9,
+      "skills": [
+        "Animosity"
+      ],
+      "position": {
+        "col": 6,
+        "row": 3
+      },
       "hasBall": false
     },
     {
       "id": "opp2",
       "team": "orc",
-      "role": "lineman",
+      "role": "blocker",
       "name": "Muzgash Skullkrak",
-      "ma": 5, "st": 3, "ag": 3, "pa": 4, "av": 9,
+      "ma": 4,
+      "st": 3,
+      "ag": 3,
+      "pa": 6,
+      "av": 9,
+      "skills": [
+        "Animosity"
+      ],
+      "position": {
+        "col": 8,
+        "row": 3
+      },
+      "hasBall": false
+    },
+    {
+      "id": "orc-blocker-4",
+      "team": "orc",
+      "role": "lineman",
+      "name": "Vrak Bonecruncher",
+      "ma": 4,
+      "st": 3,
+      "ag": 3,
+      "pa": 6,
+      "av": 9,
+      "skills": [
+        "Animosity"
+      ],
+      "position": {
+        "col": 12,
+        "row": 3
+      },
+      "hasBall": false
+    },
+    {
+      "id": "orc-blocker-5",
+      "team": "orc",
+      "role": "blocker",
+      "name": "Dorg Gutripper",
+      "ma": 4,
+      "st": 3,
+      "ag": 3,
+      "pa": 6,
+      "av": 9,
+      "skills": [
+        "Animosity"
+      ],
+      "position": {
+        "col": 3,
+        "row": 2
+      },
+      "hasBall": false
+    },
+    {
+      "id": "human-lineman-6",
+      "team": "human",
+      "role": "lineman",
+      "name": "Bramm Surehands",
+      "ma": 6,
+      "st": 3,
+      "ag": 3,
+      "pa": 4,
+      "av": 8,
       "skills": [],
-      "position": { "col": 8, "row": 4 },
+      "position": {
+        "col": 3,
+        "row": 11
+      },
+      "hasBall": false
+    },
+    {
+      "id": "human-lineman-7",
+      "team": "human",
+      "role": "lineman",
+      "name": "Cedric Linebreaker",
+      "ma": 6,
+      "st": 3,
+      "ag": 3,
+      "pa": 4,
+      "av": 8,
+      "skills": [],
+      "position": {
+        "col": 11,
+        "row": 11
+      },
+      "hasBall": false
+    },
+    {
+      "id": "orc-troll-8",
+      "team": "orc",
+      "role": "troll",
+      "name": "Ugthar Slabjaw 2",
+      "ma": 4,
+      "st": 5,
+      "ag": 1,
+      "pa": 5,
+      "av": 9,
+      "skills": [
+        "Always Hungry",
+        "Loner (4+)",
+        "Mighty Blow",
+        "Projectile Vomit",
+        "Really Stupid",
+        "Regeneration",
+        "Throw Team Mate"
+      ],
+      "position": {
+        "col": 7,
+        "row": 3
+      },
+      "hasBall": false
+    },
+    {
+      "id": "orc-goblin-9",
+      "team": "orc",
+      "role": "goblin",
+      "name": "Zag Nosebiter 2",
+      "ma": 6,
+      "st": 2,
+      "ag": 3,
+      "pa": 3,
+      "av": 7,
+      "skills": [
+        "Dodge",
+        "Right Stuff",
+        "Stunty"
+      ],
+      "position": {
+        "col": 8,
+        "row": 2
+      },
       "hasBall": false
     }
   ]

@@ -1,0 +1,23 @@
+{
+  "id": "blood-feud",
+  "name": "Blood Feud",
+  "description": "The Reikland Reavers face the Black Orc bruisers in eight one-turn tactical challenges. Each puzzle has one clear objective, but many ways to achieve it. Favour the cleanest probability line over needless dice.",
+  "scenarioIds": [
+    "blood-feud-02",
+    "blood-feud-03",
+    "blood-feud-07",
+    "blood-feud-08",
+    "blood-feud-09",
+    "blood-feud-10",
+    "blood-feud-11",
+    "blood-feud-12"
+  ],
+  "label": "Advanced",
+  "published": true,
+  "teams": [
+    "human",
+    "black-orc"
+  ],
+  "order": 2,
+  "logo": "blood-feud"
+}

@@ -1,20 +1,38 @@
 {
   "id": "scenario-002",
-  "name": "The Reikland Hand-off",
-  "description": "OBJECTIVE: Score with Quickhand. Swiftfoot carries the ball and must complete a Hand-off before Quickhand runs for the End Zone.",
+  "name": "The Reikland Handoff",
+  "description": "Swiftfoot can't carry it home alone this time. Feed the ball to Quickhand and dodge her clear of the green-skin line before Nuffle changes his mind.",
   "activeTeam": "human",
+  "teams": [
+    "human",
+    "orc"
+  ],
   "objective": "touchdown",
+  "enabledActions": [
+    "move",
+    "handoff"
+  ],
   "freePlay": false,
   "published": true,
+  "ballPosition": null,
   "pieces": [
     {
       "id": "thrower",
       "team": "human",
       "role": "thrower",
       "name": "Aldric Swiftfoot",
-      "ma": 6, "st": 3, "ag": 3, "pa": 3, "av": 8,
-      "skills": ["Pass", "Sure Hands"],
-      "position": { "col": 7, "row": 14 },
+      "ma": 6,
+      "st": 3,
+      "ag": 3,
+      "pa": 3,
+      "av": 8,
+      "skills": [
+        "Block"
+      ],
+      "position": {
+        "col": 7,
+        "row": 14
+      },
       "hasBall": true
     },
     {
@@ -22,9 +40,19 @@
       "team": "human",
       "role": "catcher",
       "name": "Sera Quickhand",
-      "ma": 8, "st": 3, "ag": 3, "pa": 4, "av": 7,
-      "skills": ["Catch", "Dodge"],
-      "position": { "col": 7, "row": 8 },
+      "ma": 8,
+      "st": 2,
+      "ag": 4,
+      "pa": 5,
+      "av": 7,
+      "skills": [
+        "Catch",
+        "Dodge"
+      ],
+      "position": {
+        "col": 7,
+        "row": 8
+      },
       "hasBall": false
     },
     {
@@ -32,19 +60,37 @@
       "team": "orc",
       "role": "lineman",
       "name": "Grukk Ironjaw",
-      "ma": 5, "st": 3, "ag": 3, "pa": 4, "av": 9,
-      "skills": [],
-      "position": { "col": 6, "row": 12 },
+      "ma": 4,
+      "st": 3,
+      "ag": 3,
+      "pa": 6,
+      "av": 9,
+      "skills": [
+        "Animosity"
+      ],
+      "position": {
+        "col": 6,
+        "row": 12
+      },
       "hasBall": false
     },
     {
       "id": "orc2",
       "team": "orc",
-      "role": "lineman",
+      "role": "blocker",
       "name": "Muzgash Skullkrak",
-      "ma": 5, "st": 3, "ag": 3, "pa": 4, "av": 9,
-      "skills": [],
-      "position": { "col": 8, "row": 12 },
+      "ma": 4,
+      "st": 3,
+      "ag": 3,
+      "pa": 6,
+      "av": 9,
+      "skills": [
+        "Animosity"
+      ],
+      "position": {
+        "col": 8,
+        "row": 12
+      },
       "hasBall": false
     },
     {
@@ -52,9 +98,18 @@
       "team": "orc",
       "role": "blitzer",
       "name": "Vrak Bonecruncher",
-      "ma": 6, "st": 3, "ag": 3, "pa": 4, "av": 9,
-      "skills": ["Block", "Break Tackle"],
-      "position": { "col": 5, "row": 9 },
+      "ma": 6,
+      "st": 3,
+      "ag": 3,
+      "pa": 5,
+      "av": 9,
+      "skills": [
+        "Block"
+      ],
+      "position": {
+        "col": 5,
+        "row": 9
+      },
       "hasBall": false
     },
     {
@@ -62,19 +117,37 @@
       "team": "orc",
       "role": "blitzer",
       "name": "Skrag Headsmash",
-      "ma": 6, "st": 3, "ag": 3, "pa": 4, "av": 9,
-      "skills": ["Block", "Break Tackle"],
-      "position": { "col": 4, "row": 7 },
+      "ma": 6,
+      "st": 3,
+      "ag": 3,
+      "pa": 5,
+      "av": 9,
+      "skills": [
+        "Block"
+      ],
+      "position": {
+        "col": 4,
+        "row": 7
+      },
       "hasBall": false
     },
     {
       "id": "orc5",
       "team": "orc",
-      "role": "lineman",
+      "role": "blocker",
       "name": "Dorg Gutripper",
-      "ma": 5, "st": 3, "ag": 3, "pa": 4, "av": 9,
-      "skills": [],
-      "position": { "col": 7, "row": 5 },
+      "ma": 4,
+      "st": 3,
+      "ag": 3,
+      "pa": 6,
+      "av": 9,
+      "skills": [
+        "Animosity"
+      ],
+      "position": {
+        "col": 7,
+        "row": 5
+      },
       "hasBall": false
     }
   ]

@@ -1,0 +1,196 @@
+{
+  "id": "blood-feud-02",
+  "name": "Green Lightning",
+  "description": "The Black Orcs have the numbers, but the Goblin has the pace. Run, screen or hand off around the Reikland press.",
+  "activeTeam": "black-orc",
+  "teams": [
+    "human",
+    "black-orc"
+  ],
+  "objective": "touchdown",
+  "enabledActions": [
+    "move",
+    "handoff",
+    "pass",
+    "block",
+    "blitz"
+  ],
+  "freePlay": false,
+  "published": true,
+  "ballPosition": null,
+  "pieces": [
+    {
+      "id": "b1",
+      "team": "black-orc",
+      "role": "goblin",
+      "name": "Krib Toepoker",
+      "ma": 6,
+      "st": 2,
+      "ag": 3,
+      "pa": 4,
+      "av": 7,
+      "skills": [
+        "Dodge",
+        "Stunty"
+      ],
+      "position": {
+        "col": 7,
+        "row": 20
+      },
+      "hasBall": true
+    },
+    {
+      "id": "b2",
+      "team": "black-orc",
+      "role": "goblin",
+      "name": "Krib Toepoker",
+      "ma": 6,
+      "st": 2,
+      "ag": 3,
+      "pa": 4,
+      "av": 7,
+      "skills": [
+        "Dodge",
+        "Stunty"
+      ],
+      "position": {
+        "col": 10,
+        "row": 21
+      },
+      "hasBall": false
+    },
+    {
+      "id": "b3",
+      "team": "black-orc",
+      "role": "black-orc",
+      "name": "Drazh Necksnappa",
+      "ma": 4,
+      "st": 4,
+      "ag": 2,
+      "pa": 5,
+      "av": 9,
+      "skills": [
+        "Brawler",
+        "Grab"
+      ],
+      "position": {
+        "col": 6,
+        "row": 21
+      },
+      "hasBall": false
+    },
+    {
+      "id": "b4",
+      "team": "black-orc",
+      "role": "black-orc",
+      "name": "Drazh Necksnappa",
+      "ma": 4,
+      "st": 4,
+      "ag": 2,
+      "pa": 5,
+      "av": 9,
+      "skills": [
+        "Brawler",
+        "Grab"
+      ],
+      "position": {
+        "col": 9,
+        "row": 21
+      },
+      "hasBall": false
+    },
+    {
+      "id": "b5",
+      "team": "black-orc",
+      "role": "black-orc",
+      "name": "Drazh Necksnappa",
+      "ma": 4,
+      "st": 4,
+      "ag": 2,
+      "pa": 5,
+      "av": 9,
+      "skills": [
+        "Brawler",
+        "Grab"
+      ],
+      "position": {
+        "col": 4,
+        "row": 23
+      },
+      "hasBall": false
+    },
+    {
+      "id": "h1",
+      "team": "human",
+      "role": "blitzer",
+      "name": "Cedric Linebreaker",
+      "ma": 7,
+      "st": 3,
+      "ag": 3,
+      "pa": 4,
+      "av": 8,
+      "skills": [
+        "Block"
+      ],
+      "position": {
+        "col": 7,
+        "row": 23
+      },
+      "hasBall": false
+    },
+    {
+      "id": "h2",
+      "team": "human",
+      "role": "lineman",
+      "name": "Bramm Surehands",
+      "ma": 6,
+      "st": 3,
+      "ag": 3,
+      "pa": 4,
+      "av": 8,
+      "skills": [],
+      "position": {
+        "col": 4,
+        "row": 22
+      },
+      "hasBall": false
+    },
+    {
+      "id": "h3",
+      "team": "human",
+      "role": "lineman",
+      "name": "Bramm Surehands",
+      "ma": 6,
+      "st": 3,
+      "ag": 3,
+      "pa": 4,
+      "av": 8,
+      "skills": [],
+      "position": {
+        "col": 10,
+        "row": 23
+      },
+      "hasBall": false
+    },
+    {
+      "id": "h4",
+      "team": "human",
+      "role": "catcher",
+      "name": "Joren Fleetstep",
+      "ma": 8,
+      "st": 3,
+      "ag": 3,
+      "pa": 4,
+      "av": 8,
+      "skills": [
+        "Catch",
+        "Dodge"
+      ],
+      "position": {
+        "col": 8,
+        "row": 24
+      },
+      "hasBall": false
+    }
+  ]
+}
