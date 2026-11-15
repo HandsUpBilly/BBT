@@ -367,8 +367,9 @@ export function validateScenario(scenario, existingIds = new Set(), options = {}
   }
   errors.push(...scenarioActionErrors(scenario));
   if (scenario.objective === 'injure-by-foul'
-    && !(scenario.pieces ?? []).some(p => p.team !== scenario.activeTeam && p.down === true)) {
-    errors.push('A foul injury puzzle needs at least one prone opponent');
+    && !(scenario.pieces ?? []).some(p => p.team !== scenario.activeTeam && p.down === true)
+    && !enabledScenarioActions(scenario).some(action => action === 'block' || action === 'blitz')) {
+    errors.push('A foul injury puzzle needs a prone opponent or an enabled Block/Blitz to create one');
   }
 
   const ids = new Set();
