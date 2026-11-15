@@ -46,8 +46,18 @@ export function isScoringRunStalled(
 
   if (state.objective === 'injure-by-foul') {
     if (state.foulUsed) return true;
-    return !state.pieces.some(piece => piece.team === state.activeTeam
-      && !piece.activated && !piece.down && foulTargetKeys(state, piece).size > 0);
+    const candidates = state.pieces.filter(piece => piece.team === state.activeTeam
+      && !piece.activated && !piece.down);
+    if (candidates.length === 0) return true;
+    if (state.selectedPieceId) return false; // An action is still being authored.
+    if (candidates.some(piece => foulTargetKeys(state, piece).size > 0)) return false;
+    // A standing opponent can become a legal prone target after a Block/Blitz.
+    // Never declare a run impossible merely because the victim is not down YET.
+    return !candidates.some(piece => {
+      const { canBlock, canBlitz } = blockActionAvailability(piece, state);
+      return (openRoutes.includes('block') && canBlock)
+        || (openRoutes.includes('blitz') && canBlitz);
+    });
   }
 
   // Touchdown: a carried ball cannot change hands or reach the end zone once
