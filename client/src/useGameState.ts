@@ -1226,9 +1226,13 @@ export function applyFoulTarget(prev: GameState, pos: Position): GameState {
     }
   }
   if (odds.injuryProbability <= 0) {
+    const pickedUpBall = prev.ballPosition !== null
+      && prev.walkedSquares.some(p => key(p) === key(prev.ballPosition!));
     return clearSelection({
       ...prev,
-      pieces,
+      pieces: pieces.map(p => p.id === attacker.id
+        ? { ...p, hasBall: p.hasBall || pickedUpBall } : p),
+      ballPosition: pickedUpBall ? null : prev.ballPosition,
       foulUsed: true,
       // No possible casualty, so the objective is not fulfilled.
       // runOutcome detects the spent foul and offers restart.
