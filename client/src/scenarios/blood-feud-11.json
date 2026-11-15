@@ -1,0 +1,215 @@
+{
+  "id": "blood-feud-11",
+  "name": "Last Orders",
+  "description": "The Black Orcs are inches from glory but the Human defence is compact. Is the answer a power play or a Goblin slip?",
+  "activeTeam": "black-orc",
+  "teams": [
+    "human",
+    "black-orc"
+  ],
+  "objective": "touchdown",
+  "enabledActions": [
+    "move",
+    "handoff",
+    "pass",
+    "block",
+    "blitz"
+  ],
+  "freePlay": false,
+  "published": true,
+  "ballPosition": null,
+  "pieces": [
+    {
+      "id": "b1",
+      "team": "black-orc",
+      "role": "goblin",
+      "name": "Krib Toepoker",
+      "ma": 6,
+      "st": 2,
+      "ag": 3,
+      "pa": 4,
+      "av": 7,
+      "skills": [
+        "Dodge",
+        "Stunty"
+      ],
+      "position": {
+        "col": 6,
+        "row": 20
+      },
+      "hasBall": true
+    },
+    {
+      "id": "b2",
+      "team": "black-orc",
+      "role": "goblin",
+      "name": "Krib Toepoker",
+      "ma": 6,
+      "st": 2,
+      "ag": 3,
+      "pa": 4,
+      "av": 7,
+      "skills": [
+        "Dodge",
+        "Stunty"
+      ],
+      "position": {
+        "col": 12,
+        "row": 21
+      },
+      "hasBall": false
+    },
+    {
+      "id": "b3",
+      "team": "black-orc",
+      "role": "goblin",
+      "name": "Krib Toepoker",
+      "ma": 6,
+      "st": 2,
+      "ag": 3,
+      "pa": 4,
+      "av": 7,
+      "skills": [
+        "Dodge",
+        "Stunty"
+      ],
+      "position": {
+        "col": 2,
+        "row": 22
+      },
+      "hasBall": false
+    },
+    {
+      "id": "b4",
+      "team": "black-orc",
+      "role": "black-orc",
+      "name": "Drazh Necksnappa",
+      "ma": 4,
+      "st": 4,
+      "ag": 2,
+      "pa": 5,
+      "av": 9,
+      "skills": [
+        "Brawler",
+        "Grab"
+      ],
+      "position": {
+        "col": 7,
+        "row": 22
+      },
+      "hasBall": false
+    },
+    {
+      "id": "b5",
+      "team": "black-orc",
+      "role": "black-orc",
+      "name": "Drazh Necksnappa",
+      "ma": 4,
+      "st": 4,
+      "ag": 2,
+      "pa": 5,
+      "av": 9,
+      "skills": [
+        "Brawler",
+        "Grab"
+      ],
+      "position": {
+        "col": 9,
+        "row": 21
+      },
+      "hasBall": false
+    },
+    {
+      "id": "b6",
+      "team": "black-orc",
+      "role": "black-orc",
+      "name": "Drazh Necksnappa",
+      "ma": 4,
+      "st": 4,
+      "ag": 2,
+      "pa": 5,
+      "av": 9,
+      "skills": [
+        "Brawler",
+        "Grab"
+      ],
+      "position": {
+        "col": 4,
+        "row": 23
+      },
+      "hasBall": false
+    },
+    {
+      "id": "h1",
+      "team": "human",
+      "role": "blitzer",
+      "name": "Cedric Linebreaker",
+      "ma": 7,
+      "st": 3,
+      "ag": 3,
+      "pa": 4,
+      "av": 8,
+      "skills": [
+        "Block"
+      ],
+      "position": {
+        "col": 6,
+        "row": 23
+      },
+      "hasBall": false
+    },
+    {
+      "id": "h2",
+      "team": "human",
+      "role": "blitzer",
+      "name": "Cedric Linebreaker",
+      "ma": 7,
+      "st": 3,
+      "ag": 3,
+      "pa": 4,
+      "av": 8,
+      "skills": [
+        "Block"
+      ],
+      "position": {
+        "col": 9,
+        "row": 23
+      },
+      "hasBall": false
+    },
+    {
+      "id": "h3",
+      "team": "human",
+      "role": "lineman",
+      "name": "Bramm Surehands",
+      "ma": 6,
+      "st": 3,
+      "ag": 3,
+      "pa": 4,
+      "av": 8,
+      "skills": [],
+      "position": {
+        "col": 4,
+        "row": 24
+      },
+      "hasBall": false
+    },
+    {
+      "id": "h4",
+      "team": "human",
+      "role": "lineman",
+      "name": "Bramm Surehands",
+      "ma": 6,
+      "st": 3,
+      "ag": 3,
+      "pa": 4,
+      "av": 8,
+      "skills": [],
+      "position": {
+        "col": 11,
+        "row": 24
+      },
+      "hasBall": false
+    }
+  ]
+}
