@@ -398,7 +398,7 @@ export function validateScenario(scenario, existingIds = new Set(), options = {}
   if (scenario.ballPosition) validatePosition(scenario.ballPosition, 'Loose ball', errors);
   if (carriers > 1) errors.push('Only one player can carry the ball');
   if (carriers === 1 && scenario.ballPosition) errors.push('Ball can be carried or loose, not both');
-  if (carriers === 0 && !scenario.ballPosition) errors.push('Place the ball on a player or on the ground');
+  if (carriers === 0 && !scenario.ballPosition && scenario.objective === 'touchdown') errors.push('Place the ball on a player or on the ground');
 
   errors.push(...scenarioRosterErrors(scenario));
 
