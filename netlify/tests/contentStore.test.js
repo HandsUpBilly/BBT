@@ -134,3 +134,34 @@ test('preview and staging catalog snapshots cannot overwrite production content'
   assert.equal(catalogStorageKey({ CONTEXT: 'branch-deploy', BRANCH: 'staging' }),
     'content-v3/branch-staging');
 });
+
+test('previous merge conflicts persist across an unrelated GitHub deploy', () => {
+  const snapshot = {
+    schema: 3,
+    baseline: { scenarios: [{ id: 'x', name: 'GitHub', description: 'Old' }], series: [] },
+    scenarios: [{ id: 'x', name: 'Editor', description: 'Old' }], series: [],
+    revisions: { 'scenarios/x': 3 },
+    conflicts: { scenarios: { x: ['name'] }, series: {} },
+    history: [],
+  };
+  const merged = reconcileToDeployment(snapshot, {
+    scenarios: [{ id: 'x', name: 'GitHub', description: 'New' }], series: [],
+  });
+  assert.deepEqual(merged.conflicts.scenarios.x, ['name']);
+  assert.equal(merged.scenarios[0].description, 'New');
+});
+
+test('GitHub adopting the live editor value resolves an existing conflict', () => {
+  const snapshot = {
+    schema: 3,
+    baseline: { scenarios: [{ id: 'x', name: 'GitHub' }], series: [] },
+    scenarios: [{ id: 'x', name: 'Editor' }], series: [],
+    revisions: { 'scenarios/x': 3 },
+    conflicts: { scenarios: { x: ['name'] }, series: {} },
+    history: [],
+  };
+  const merged = reconcileToDeployment(snapshot, {
+    scenarios: [{ id: 'x', name: 'Editor' }], series: [],
+  });
+  assert.equal(merged.conflicts.scenarios.x, undefined);
+});
