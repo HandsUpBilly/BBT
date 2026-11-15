@@ -44,7 +44,7 @@ describe('Tutorial series', () => {
     expect(normalized.label).toBe(FEATURED_SERIES_LABEL);
   });
 
-  it('uses the selected series teams for every puzzle in the run', () => {
+  it('preserves native teams and active side for a valid board even in a mixed series', () => {
     const scenario = scenarios[0];
     const series: SeriesDefinition = {
       ...defaultSeries,
@@ -52,8 +52,35 @@ describe('Tutorial series', () => {
       scenarioIds: [scenario.id],
     };
 
+    const resolved = applySeriesTeams(series, scenario);
+    expect(resolved.teams).toEqual(['human', 'orc']);
+    expect(resolved.activeTeam).toBe('human');
+    expect(resolveSeriesScenarios(series, scenarios)[0].pieces).toEqual(scenario.pieces);
+  });
+
+  it('uses configured series teams as a fallback for malformed legacy scenarios', () => {
+    const scenario = { ...scenarios[0], teams: undefined };
+    const series: SeriesDefinition = {
+      ...defaultSeries,
+      teams: ['black-orc', 'imperial-nobility'],
+      scenarioIds: [scenario.id],
+    };
     expect(applySeriesTeams(series, scenario).teams).toEqual(['black-orc', 'imperial-nobility']);
-    expect(resolveSeriesScenarios(series, scenarios)[0].teams).toEqual(['black-orc', 'imperial-nobility']);
-    expect(resolveSeriesScenarios(series, scenarios)[0].activeTeam).toBe('black-orc');
+  });
+
+  it('keeps both Reikland and Imperial Nobility active rosters playable in Series 2', () => {
+    const secondSeries = {
+      ...defaultSeries,
+      teams: ['imperial-nobility', 'black-orc'] as SeriesDefinition['teams'],
+      scenarioIds: ['scenario-007', 'blood-feud-01', 'blood-feud-04', 'blood-feud-05', 'blood-feud-06'],
+    };
+    const resolved = resolveSeriesScenarios(secondSeries, scenarios);
+    expect(resolved).toHaveLength(secondSeries.scenarioIds.length);
+    for (const puzzle of resolved) {
+      expect(puzzle.pieces.some(piece => piece.team === puzzle.activeTeam)).toBe(true);
+      expect(puzzle.pieces.every(piece => puzzle.teams?.includes(piece.team))).toBe(true);
+    }
+    expect(resolved.find(puzzle => puzzle.id === 'blood-feud-01')?.activeTeam).toBe('human');
+    expect(resolved.find(puzzle => puzzle.id === 'scenario-007')?.activeTeam).toBe('imperial-nobility');
   });
 });
