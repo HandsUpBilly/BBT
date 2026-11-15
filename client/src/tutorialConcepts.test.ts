@@ -20,8 +20,12 @@ describe('Tutorial concepts', () => {
   });
 
   it('provides a concept library for every Tutorial drill', () => {
-    for (const scenario of scenarios.slice(0, 6)) {
-      expect(tutorialConceptsForScenario(scenario.id).length).toBeGreaterThan(0);
+    // The scenario catalogue now contains other series whose IDs sort before
+    // the Tutorial drills. Do not assume the first six published entries are
+    // tutorial content.
+    for (const id of ['scenario-001', 'scenario-002', 'scenario-003', 'scenario-004', 'scenario-005', 'scenario-006']) {
+      expect(scenarios.some(scenario => scenario.id === id)).toBe(true);
+      expect(tutorialConceptsForScenario(id).length).toBeGreaterThan(0);
     }
   });
 
