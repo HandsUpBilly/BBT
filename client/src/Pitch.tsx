@@ -443,7 +443,8 @@ interface Props {
     ariaLabel?: string;
     cancelLabel?: string;
     confirmLabel?: string;
-    onCancel: () => void;
+    confirmText?: string;
+    onCancel?: () => void;
     onConfirm: () => void;
   };
 }
@@ -1057,31 +1058,33 @@ export function Pitch({
                 </span>
               )}
               <div className="move-decision__actions">
+                {moveDecision.onCancel && (
+                  <button
+                    type="button"
+                    className="move-decision__button move-decision__button--cancel"
+                    aria-label={moveDecision.cancelLabel ?? 'Plot Again'}
+                    title={moveDecision.cancelLabel ?? 'Plot Again'}
+                    onPointerDown={event => event.stopPropagation()}
+                    onClick={event => {
+                      event.stopPropagation();
+                      moveDecision.onCancel?.();
+                    }}
+                  >
+                    <span aria-hidden="true">×</span>
+                  </button>
+                )}
                 <button
                   type="button"
-                  className="move-decision__button move-decision__button--cancel"
-                  aria-label={moveDecision.cancelLabel ?? 'Plot Again'}
-                  title={moveDecision.cancelLabel ?? 'Plot Again'}
-                  onPointerDown={event => event.stopPropagation()}
-                  onClick={event => {
-                    event.stopPropagation();
-                    moveDecision.onCancel();
-                  }}
-                >
-                  <span aria-hidden="true">×</span>
-                </button>
-                <button
-                  type="button"
-                  className="move-decision__button move-decision__button--confirm"
-                  aria-label={moveDecision.confirmLabel ?? 'Confirm Move'}
-                  title={moveDecision.confirmLabel ?? 'Confirm Move'}
+                  className={moveDecision.confirmText ? 'hud__crowd-surf' : 'move-decision__button move-decision__button--confirm'}
+                  aria-label={moveDecision.confirmLabel ?? moveDecision.confirmText ?? 'Confirm Move'}
+                  title={moveDecision.confirmLabel ?? moveDecision.confirmText ?? 'Confirm Move'}
                   onPointerDown={event => event.stopPropagation()}
                   onClick={event => {
                     event.stopPropagation();
                     moveDecision.onConfirm();
                   }}
                 >
-                  <span aria-hidden="true">✓</span>
+                  {moveDecision.confirmText ?? <span aria-hidden="true">✓</span>}
                 </button>
               </div>
             </div>
