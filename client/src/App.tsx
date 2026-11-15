@@ -1102,8 +1102,10 @@ export default function App() {
   // Memoized because the crowd-surf arm walks blitz reachability per piece,
   // and this sits on the render path of every board update.
   const showStalledRunDialog = useMemo(
-    () => isScoringRunStalled(state, enabledScenarioActions(activeScenario)),
-    [state, activeScenario],
+    () => !branchedBoards.run.lines[viewedBranchId]?.conceded
+      && !runFinished
+      && isScoringRunStalled(state, enabledScenarioActions(activeScenario)),
+    [state, activeScenario, branchedBoards.run.lines, viewedBranchId, runFinished],
   );
   const showUnfinishedBranchesDialog = branchedBoards.hasSplit
     && state.phase !== 'playing'
@@ -1251,6 +1253,15 @@ export default function App() {
     });
     const nextBranch = unresolvedBranchList[0];
     if (nextBranch) branchedBoards.handleSelectBranch(nextBranch.id);
+  }, [branchedBoards, unresolvedBranchList, viewedBranchId]);
+
+  // A dead end after a dice split is not a failed puzzle: only this universe
+  // contributes zero. Keep the successful siblings and move to the next live
+  // line, or open the run summary if everything else has resolved.
+  const handleConcedeStalledUniverse = useCallback(() => {
+    const next = unresolvedBranchList.find(branch => branch.id !== viewedBranchId);
+    branchedBoards.handleConcedeBranch(viewedBranchId);
+    if (next) branchedBoards.handleSelectBranch(next.id);
   }, [branchedBoards, unresolvedBranchList, viewedBranchId]);
 
   // ── Series mode handlers ──────────────────────────────────────────────────
@@ -2118,13 +2129,20 @@ export default function App() {
         />
       )}
 
-      {showStalledRunDialog && (
+      {showStalledRunDialog && (branchedBoards.hasSplit ? (
+        <RunOutcomeDialog
+          variant="failed-branch"
+          remainingBranches={unresolvedBranchList.filter(branch => branch.id !== viewedBranchId).length}
+          onConcede={handleConcedeStalledUniverse}
+        />
+      ) : (
         <RunOutcomeDialog
           variant="failed"
+          objective={state.objective}
           onRestart={handleRestartTurn}
           onExit={handleExitFailedPuzzle}
         />
-      )}
+      ))}
 
       {showUnfinishedBranchesDialog && (
         <RunOutcomeDialog
