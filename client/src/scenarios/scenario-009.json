@@ -1,0 +1,439 @@
+{
+  "id": "scenario-009",
+  "name": "Into the Stands",
+  "description": "OBJECTIVE: Crowd-surf a Black Orc player. Two threatened sidelines offer different block and blitz sequences; either may need an assist or a chain push. A touchdown will not count.",
+  "activeTeam": "imperial-nobility",
+  "teams": [
+    "imperial-nobility",
+    "black-orc"
+  ],
+  "objective": "crowd-surf",
+  "enabledActions": [
+    "move",
+    "handoff",
+    "pass",
+    "block",
+    "blitz"
+  ],
+  "freePlay": false,
+  "published": true,
+  "ballPosition": {
+    "col": 7,
+    "row": 9
+  },
+  "pieces": [
+    {
+      "id": "scenario-009-i1",
+      "team": "imperial-nobility",
+      "role": "thrower",
+      "name": "Leopold von Draken",
+      "ma": 6,
+      "st": 3,
+      "ag": 3,
+      "pa": 2,
+      "av": 8,
+      "skills": [
+        "Give and Go",
+        "Pass",
+        "Pro"
+      ],
+      "position": {
+        "col": 7,
+        "row": 9
+      },
+      "hasBall": false
+    },
+    {
+      "id": "scenario-009-i2",
+      "team": "imperial-nobility",
+      "role": "ogre",
+      "name": "Grod Ribcracker",
+      "ma": 5,
+      "st": 5,
+      "ag": 2,
+      "pa": 5,
+      "av": 9,
+      "skills": [
+        "Bone Head",
+        "Loner (3+)",
+        "Mighty Blow",
+        "Thick Skull",
+        "Throw Team Mate"
+      ],
+      "position": {
+        "col": 5,
+        "row": 7
+      },
+      "hasBall": false
+    },
+    {
+      "id": "scenario-009-i3",
+      "team": "imperial-nobility",
+      "role": "bodyguard",
+      "name": "Otto Eisenhelm",
+      "ma": 5,
+      "st": 3,
+      "ag": 3,
+      "pa": 4,
+      "av": 8,
+      "skills": [
+        "Stand Firm",
+        "Wrestle"
+      ],
+      "position": {
+        "col": 13,
+        "row": 6
+      },
+      "hasBall": false
+    },
+    {
+      "id": "scenario-009-i4",
+      "team": "imperial-nobility",
+      "role": "bodyguard",
+      "name": "Mathias Falken",
+      "ma": 5,
+      "st": 3,
+      "ag": 3,
+      "pa": 4,
+      "av": 8,
+      "skills": [
+        "Stand Firm",
+        "Wrestle"
+      ],
+      "position": {
+        "col": 2,
+        "row": 6
+      },
+      "hasBall": false
+    },
+    {
+      "id": "scenario-009-i5",
+      "team": "imperial-nobility",
+      "role": "retainer",
+      "name": "Konrad Hochmark",
+      "ma": 6,
+      "st": 3,
+      "ag": 3,
+      "pa": 4,
+      "av": 7,
+      "skills": [
+        "Fend"
+      ],
+      "position": {
+        "col": 1,
+        "row": 7
+      },
+      "hasBall": false
+    },
+    {
+      "id": "scenario-009-i6",
+      "team": "imperial-nobility",
+      "role": "noble-blitzer",
+      "name": "Lukas Silberhand",
+      "ma": 7,
+      "st": 3,
+      "ag": 3,
+      "pa": 4,
+      "av": 8,
+      "skills": [
+        "Block",
+        "Catch",
+        "Pro"
+      ],
+      "position": {
+        "col": 5,
+        "row": 6
+      },
+      "hasBall": false
+    },
+    {
+      "id": "scenario-009-i7",
+      "team": "imperial-nobility",
+      "role": "retainer",
+      "name": "Rudolf Drachenfels",
+      "ma": 6,
+      "st": 3,
+      "ag": 3,
+      "pa": 4,
+      "av": 7,
+      "skills": [
+        "Fend"
+      ],
+      "position": {
+        "col": 10,
+        "row": 7
+      },
+      "hasBall": false
+    },
+    {
+      "id": "scenario-009-i8",
+      "team": "imperial-nobility",
+      "role": "retainer",
+      "name": "Viktor Sternbach",
+      "ma": 6,
+      "st": 3,
+      "ag": 3,
+      "pa": 4,
+      "av": 7,
+      "skills": [
+        "Fend"
+      ],
+      "position": {
+        "col": 11,
+        "row": 6
+      },
+      "hasBall": false
+    },
+    {
+      "id": "scenario-009-i9",
+      "team": "imperial-nobility",
+      "role": "noble-blitzer",
+      "name": "Leopold von Draken 2",
+      "ma": 7,
+      "st": 3,
+      "ag": 3,
+      "pa": 4,
+      "av": 8,
+      "skills": [
+        "Block",
+        "Catch",
+        "Pro"
+      ],
+      "position": {
+        "col": 12,
+        "row": 7
+      },
+      "hasBall": false
+    },
+    {
+      "id": "scenario-009-i10",
+      "team": "imperial-nobility",
+      "role": "bodyguard",
+      "name": "Alaric Goldcrest 2",
+      "ma": 5,
+      "st": 3,
+      "ag": 3,
+      "pa": 4,
+      "av": 8,
+      "skills": [
+        "Stand Firm",
+        "Wrestle"
+      ],
+      "position": {
+        "col": 3,
+        "row": 8
+      },
+      "hasBall": false
+    },
+    {
+      "id": "scenario-009-b1",
+      "team": "black-orc",
+      "role": "troll",
+      "name": "Brakk Stonegut",
+      "ma": 4,
+      "st": 5,
+      "ag": 1,
+      "pa": 5,
+      "av": 9,
+      "skills": [
+        "Always Hungry",
+        "Mighty Blow",
+        "Projectile Vomit",
+        "Really Stupid",
+        "Regeneration",
+        "Throw Team Mate"
+      ],
+      "position": {
+        "col": 8,
+        "row": 5
+      },
+      "hasBall": false
+    },
+    {
+      "id": "scenario-009-b2",
+      "team": "black-orc",
+      "role": "black-orc",
+      "name": "Drazh Necksnappa",
+      "ma": 4,
+      "st": 4,
+      "ag": 2,
+      "pa": 5,
+      "av": 9,
+      "skills": [
+        "Brawler",
+        "Grab"
+      ],
+      "position": {
+        "col": 0,
+        "row": 6
+      },
+      "hasBall": false
+    },
+    {
+      "id": "scenario-009-b3",
+      "team": "black-orc",
+      "role": "black-orc",
+      "name": "Uzgul Grimtusk",
+      "ma": 4,
+      "st": 4,
+      "ag": 2,
+      "pa": 5,
+      "av": 9,
+      "skills": [
+        "Brawler",
+        "Grab"
+      ],
+      "position": {
+        "col": 14,
+        "row": 6
+      },
+      "hasBall": false
+    },
+    {
+      "id": "scenario-009-b4",
+      "team": "black-orc",
+      "role": "black-orc",
+      "name": "Kragga Chainfist",
+      "ma": 4,
+      "st": 4,
+      "ag": 2,
+      "pa": 5,
+      "av": 9,
+      "skills": [
+        "Brawler",
+        "Grab"
+      ],
+      "position": {
+        "col": 4,
+        "row": 6
+      },
+      "hasBall": false
+    },
+    {
+      "id": "scenario-009-b5",
+      "team": "black-orc",
+      "role": "black-orc",
+      "name": "Borzag Blackhide",
+      "ma": 4,
+      "st": 4,
+      "ag": 2,
+      "pa": 5,
+      "av": 9,
+      "skills": [
+        "Brawler",
+        "Grab"
+      ],
+      "position": {
+        "col": 12,
+        "row": 5
+      },
+      "hasBall": false
+    },
+    {
+      "id": "scenario-009-b6",
+      "team": "black-orc",
+      "role": "black-orc",
+      "name": "Grishnak Redmaw",
+      "ma": 4,
+      "st": 4,
+      "ag": 2,
+      "pa": 5,
+      "av": 9,
+      "skills": [
+        "Brawler",
+        "Grab"
+      ],
+      "position": {
+        "col": 10,
+        "row": 5
+      },
+      "hasBall": false
+    },
+    {
+      "id": "scenario-009-b7",
+      "team": "black-orc",
+      "role": "goblin",
+      "name": "Krib Toepoker 2",
+      "ma": 6,
+      "st": 2,
+      "ag": 3,
+      "pa": 4,
+      "av": 7,
+      "skills": [
+        "Dodge",
+        "Right Stuff",
+        "Stunty",
+        "Thick Skull"
+      ],
+      "position": {
+        "col": 3,
+        "row": 6
+      },
+      "hasBall": false
+    },
+    {
+      "id": "scenario-009-b8",
+      "team": "black-orc",
+      "role": "goblin",
+      "name": "Nizz Grubsnatcher 2",
+      "ma": 6,
+      "st": 2,
+      "ag": 3,
+      "pa": 4,
+      "av": 7,
+      "skills": [
+        "Dodge",
+        "Right Stuff",
+        "Stunty",
+        "Thick Skull"
+      ],
+      "position": {
+        "col": 1,
+        "row": 5
+      },
+      "hasBall": false
+    },
+    {
+      "id": "scenario-009-b9",
+      "team": "black-orc",
+      "role": "black-orc",
+      "name": "Uzgul Grimtusk 2",
+      "ma": 4,
+      "st": 4,
+      "ag": 2,
+      "pa": 5,
+      "av": 9,
+      "skills": [
+        "Brawler",
+        "Grab"
+      ],
+      "position": {
+        "col": 13,
+        "row": 5
+      },
+      "hasBall": false
+    },
+    {
+      "id": "scenario-009-b10",
+      "team": "black-orc",
+      "role": "goblin",
+      "name": "Zag Nosebiter 3",
+      "ma": 6,
+      "st": 2,
+      "ag": 3,
+      "pa": 4,
+      "av": 7,
+      "skills": [
+        "Dodge",
+        "Right Stuff",
+        "Stunty",
+        "Thick Skull"
+      ],
+      "position": {
+        "col": 6,
+        "row": 6
+      },
+      "hasBall": false
+    }
+  ]
+}
