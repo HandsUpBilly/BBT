@@ -51,8 +51,8 @@ import {
   rateLimitKey,
 } from '../shared/rateLimit.js';
 import { buildPlayerStatistics } from '../shared/statistics.js';
-import { adminLoginEntries, LoginValidationError, loginAdminEmail, recordLogin, validateLoginPayload } from '../shared/loginTracking.js';
-import { addManagedAdmin, removeManagedAdmin } from '../shared/adminManagement.js';
+import { adminLoginEntries, LoginValidationError, recordLogin, validateLoginPayload } from '../shared/loginTracking.js';
+import { planLoginAdminUpdate } from '../shared/loginAdminControl.js';
 import { readManagedAdmins, saveManagedAdminsWithAudit } from './adminStore.js';
 import {
   RankingResetValidationError,
@@ -344,19 +344,18 @@ async function loginAdminManager(req, res) {
 async function updateLoginAdministrator(req, res, adding) {
   const user = await loginAdminManager(req, res);
   if (!user) return;
-  const target = loginAdminEmail(loginEntries, String(req.query.userId ?? ''));
-  if (!target) return res.status(400).json({ errors: ['This login is not a verified Google account.'] });
 
-  const current = await readManagedAdmins();
-  const managedAdmins = adding ? addManagedAdmin(current, target) : removeManagedAdmin(current, target);
-  if (!adding && configuredAdminCount === 0 && managedAdmins.length === 0 && current.length > 0) {
-    return res.status(400).json({ errors: ['Keep at least one managed administrator, or configure ADMIN_EMAILS.'] });
-  }
-  if (!adding && managedAdmins.length === current.length) {
-    return res.status(404).json({ errors: ['That administrator is managed by deployment configuration or does not exist.'] });
-  }
-  const saved = await saveManagedAdminsWithAudit(managedAdmins, {
-    action: adding ? 'added' : 'removed', actor: user.email, target,
+  const plan = planLoginAdminUpdate({
+    entries: loginEntries,
+    userId: req.query.userId,
+    adding,
+    current: await readManagedAdmins(),
+    configuredAdminCount,
+  });
+  if (!plan.ok) return res.status(plan.status).json({ errors: plan.errors });
+
+  const saved = await saveManagedAdminsWithAudit(plan.managedAdmins, {
+    action: adding ? 'added' : 'removed', actor: user.email, target: plan.target,
   });
   res.json({ ...saved, configuredAdminCount });
 }

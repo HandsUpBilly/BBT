@@ -5,8 +5,7 @@
  */
 .branch-summary__score,
 .branch-summary__breakdown,
-.branch-summary__branches,
-.branch-summary__note {
+.branch-summary__branches {
   align-self: stretch;
   width: 100%;
   text-align: left;
@@ -274,8 +273,3 @@
   }
 }
 
-.branch-summary__note {
-  margin: 0 0 12px;
-  font-size: 0.75rem;
-  color: var(--color-text-muted);
-}

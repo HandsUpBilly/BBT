@@ -58,6 +58,20 @@ describe('validateScenarioDraft', () => {
     expect(validateScenarioDraft(draft(), ['scenario-006'], 'scenario-006')).toEqual([]);
   });
 
+  // The author sees these in the live error list, and Save is blocked — the
+  // only thing standing between an all-unchecked Allowed actions fieldset and
+  // a published puzzle whose run can neither be completed nor failed.
+  it('rejects an action list that strands the puzzle objective', () => {
+    expect(validateScenarioDraft(draft({ enabledActions: [] }), []))
+      .toEqual(['Enable at least one player action']);
+    expect(validateScenarioDraft(draft({ objective: 'crowd-surf', enabledActions: ['move'] }), []))
+      .toEqual(['A Crowd surf puzzle needs Block or Blitz enabled']);
+    expect(validateScenarioDraft(draft({ objective: 'touchdown', enabledActions: ['block'] }), []))
+      .toEqual(['A Touchdown puzzle needs Move, Hand-off or Pass enabled']);
+    expect(validateScenarioDraft(draft({ objective: 'crowd-surf', enabledActions: ['move', 'block'] }), []))
+      .toEqual([]);
+  });
+
   it('requires exactly one ball', () => {
     expect(validateScenarioDraft(draft({ ballPosition: { col: 1, row: 1 } }), []))
       .toContain('Ball can be carried or loose, not both');

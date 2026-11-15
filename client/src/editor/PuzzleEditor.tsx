@@ -13,7 +13,7 @@ import { playerPortraitFor } from '../playerPortraits';
 import { TEAMS as AVAILABLE_TEAMS, teamLabel, teamPluralLabel } from '../teamPresentation';
 import { applySeriesTeams } from '../series';
 import { SeriesCreator } from './SeriesCreator';
-import { enabledScenarioActions, SCENARIO_ACTIONS, STAT_KEYS, STAT_RANGE, PITCH, rosterLimitFor } from '../../../shared/scenarioValidation.js';
+import { ACTION_LABELS, enabledScenarioActions, OBJECTIVE_LABELS, OBJECTIVES, SCENARIO_ACTIONS, STAT_KEYS, STAT_RANGE, PITCH, rosterLimitFor } from '../../../shared/scenarioValidation.js';
 import './PuzzleEditor.css';
 
 const COLS = PITCH.maxCol + 1;
@@ -22,9 +22,6 @@ type InspectorSection = 'roster' | 'player' | 'review';
 
 const STAT_LABELS: Record<string, string> = {
   ma: 'MA', st: 'ST', ag: 'AG', pa: 'PA', av: 'AV',
-};
-const ACTION_LABELS: Record<PuzzleAction, string> = {
-  move: 'Move', handoff: 'Hand-off', pass: 'Pass', block: 'Block', blitz: 'Blitz',
 };
 
 function cloneScenario(scenario: Scenario): Scenario {
@@ -688,8 +685,9 @@ export function PuzzleEditor({ onBack, onPlay, onReport, previewScenario, idToke
             <label>
               Objective
               <select value={draft.objective ?? 'touchdown'} onChange={event => setMetadata('objective', event.target.value as Scenario['objective'])}>
-                <option value="touchdown">Touchdown</option>
-                <option value="crowd-surf">Crowd surf</option>
+                {OBJECTIVES.map(objective => (
+                  <option key={objective} value={objective}>{OBJECTIVE_LABELS[objective]}</option>
+                ))}
               </select>
             </label>
             <fieldset className="editor__toggle-group">

@@ -163,7 +163,6 @@
 }
 
 .editor__header-actions .btn { white-space: nowrap; }
-.editor__publish { border-color: rgba(195, 76, 57, 0.6); }
 
 .editor__status-strip {
   max-width: 1760px;
@@ -872,8 +871,6 @@
   border: 1px solid var(--editor-line);
   font-size: 0.78rem;
 }
-
-.editor__series-item--active { color: var(--color-accent); font-weight: 700; }
 
 .series-creator {
   display: grid;

@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { PlayDiagram } from './PlayDiagram';
+import type { PitchOrientation } from './Pitch';
 import type { ActionLogEntry, Scenario } from './types';
 import './SubmitModal.css'; // submit-modal__moves* classes, shared across every place this renders
 import './ActionLogDetail.css';
@@ -10,6 +11,7 @@ interface Props {
   /** Optional companion graphic used by the branch-review screen. */
   diagramAside?: ReactNode;
   variant?: 'default' | 'review';
+  orientation?: PitchOrientation;
 }
 
 function pct(p: number) { return `${(p * 100).toFixed(1)}%`; }
@@ -71,7 +73,7 @@ function capitalize(s: string): string {
  * conceded branch of a policy run), so this is the one place that knows how
  * to read an `ActionLogEntry[]` back into a human account of the play.
  */
-export function ActionLogDetail({ scenario, actionLog, diagramAside, variant = 'default' }: Props) {
+export function ActionLogDetail({ scenario, actionLog, diagramAside, variant = 'default', orientation }: Props) {
   const riskyMoves = actionLog.filter(e =>
     e.kind === 'handoff' || e.kind === 'pass' || e.kind === 'pass-catch' || e.kind === 'block' ||
     e.isGfi || e.dodgeTarget !== null || (e.kind === 'move' && !!e.pickupTarget)
@@ -83,7 +85,7 @@ export function ActionLogDetail({ scenario, actionLog, diagramAside, variant = '
   return (
     <div className={`action-log-detail action-log-detail--${variant}`}>
       <div className={`action-log-detail__diagrams${diagramAside ? ' action-log-detail__diagrams--paired' : ''}`}>
-        <PlayDiagram scenario={scenario} actionLog={actionLog} />
+        <PlayDiagram scenario={scenario} actionLog={actionLog} orientation={orientation} />
         {diagramAside}
       </div>
 
