@@ -231,3 +231,34 @@ export async function openContentSyncPullRequest(idToken: string | null): Promis
   });
   return parseJsonResponse(response);
 }
+
+export interface ContentHistoryEntry {
+  kind: 'scenarios' | 'series';
+  id: string;
+  revision: number;
+  at: string;
+  actor: string;
+  canRestore: boolean;
+}
+
+export async function fetchContentHistory(
+  kind: 'scenarios' | 'series', id: string, idToken: string | null,
+): Promise<{ revision: number; changes: ContentHistoryEntry[] }> {
+  const params = new URLSearchParams({ kind, id });
+  const response = await fetch(`/api/editor/content-history?${params}`, {
+    headers: authHeaders(idToken),
+  });
+  return parseJsonResponse(response);
+}
+
+export async function restoreContentHistory(
+  kind: 'scenarios' | 'series', id: string, targetRevision: number,
+  expectedRevision: number, idToken: string | null,
+): Promise<{ revision: number }> {
+  const response = await fetch('/api/editor/content-history', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...authHeaders(idToken) },
+    body: JSON.stringify({ kind, id, targetRevision, expectedRevision }),
+  });
+  return parseJsonResponse(response);
+}
