@@ -75,7 +75,33 @@ async function casWrite(store, snapshot, etag) {
 }
 
 function valueAtPath(item, path) {
-  if (path === '
+  if (path.length === 1 && path.charCodeAt(0) === 36) return item;
+  const segments = path.split('.');
+  let value = item;
+  for (let index = 0; index < segments.length; index++) {
+    const segment = segments[index];
+    if (index === 1 && segments[0] === 'pieces' && Array.isArray(value)) {
+      value = value.find(piece => piece.id === segment);
+    } else {
+      value = value && typeof value === 'object' ? value[segment] : undefined;
+    }
+  }
+  return value;
+}
+
+function retainUnresolvedConflicts(previous, fresh, currentItems, remoteItems) {
+  const live = new Map(currentItems.map(item => [item.id, item]));
+  const remote = new Map(remoteItems.map(item => [item.id, item]));
+  const result = { ...fresh };
+  for (const [id, oldPaths] of Object.entries(previous ?? {})) {
+    const unresolved = oldPaths.filter(path =>
+      !contentEqual(valueAtPath(live.get(id), path), valueAtPath(remote.get(id), path)));
+    if (unresolved.length) result[id] = [...new Set([...(result[id] ?? []), ...unresolved])];
+  }
+  return result;
+}
+
+export function reconcileToDeployment(snapshot, next = source()) {
   const before = snapshot.baseline;
   if (contentEqual(before, next)) return null;
   const a = reconcileCollection(before.scenarios, snapshot.scenarios, next.scenarios);
@@ -113,7 +139,7 @@ export async function readContentCatalog(store, readLegacy, { withEtag = false }
     if (!snapshot) {
       // Non-production previews must not seed themselves by reading/writing
       // the legacy production Blob keys. Start from their built-in branch data.
-      const isolated = ['deploy-preview', 'branch-deploy'].includes(process.env.CONTEXT);
+      const isolated = ['deploy-preview', 'branch-deploy', 'dev'].includes(process.env.CONTEXT);
       const legacy = isolated ? source() : await readLegacy();
       const fresh = initialCatalog(legacy);
       if (await casWrite(store, fresh, null)) {
@@ -174,195 +200,10 @@ export async function writeContentItem(store, readLegacy, { kind, id, value, exp
         [kind]: {
           ...catalog.conflicts[kind],
           [id]: (catalog.conflicts[kind]?.[id] ?? []).filter(path =>
-            !contentEqual(
-              valueAtPath(value ?? undefined, path),
-              valueAtPath(catalog.baseline[kind].find(item => item.id === id), path),
-            )),
+            !contentEqual(valueAtPath(value ?? undefined, path),
+              valueAtPath(catalog.baseline[kind].find(item => item.id === id), path))),
         },
       },
-      history: [...catalog.history, { kind, id, revision, at: new Date().toISOString(),
-        actor, before: previous ?? null, after: value }].slice(-HISTORY_LIMIT),
-    };
-    if (kind === 'scenarios' && value === null) {
-      updated.series = catalog.series.map(series => ({
-        ...series, scenarioIds: series.scenarioIds.filter(scenarioId => scenarioId !== id),
-      }));
-      for (const series of updated.series) {
-        const old = catalog.series.find(item => item.id === series.id);
-        if (!contentEqual(old, series)) updated.revisions[ref('series', series.id)] =
-          (updated.revisions[ref('series', series.id)] ?? 0) + 1;
-      }
-    }
-    // ETag belongs to the snapshot we actually edited; a concurrent writer
-    // forces a retry even if it changed a different puzzle.
-    if (await casWrite(store, updated, etag)) return { catalog: updated, revision };
-  }
-  throw new ContentConflictError('Concurrent content updates exceeded retry limit.');
-}
-
-/**
- * Moving a puzzle between series is one atomic multi-item mutation.
- * The caller must acknowledge the current revision of every affected series.
- */
-export async function writeContentAssignment(store, readLegacy, {
-  scenarioId, targetSeriesId, expectedRevisions,
-}) {
-  if (!expectedRevisions || typeof expectedRevisions !== 'object') {
-    throw new ContentConflictError('Current series revisions are required.');
-  }
-  for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
-    const { catalog, etag } = await readContentCatalog(store, readLegacy, { withEtag: true });
-    const { series, errors } = updateSeriesAssignment(
-      catalog.series, scenarioId, targetSeriesId, catalog.scenarios,
-    );
-    if (errors.length) return { catalog, errors };
-    if (series === catalog.series) return { catalog, errors: [] };
-    const revisions = { ...catalog.revisions };
-    const changed = [];
-    for (const item of series) {
-      const original = catalog.series.find(before => before.id === item.id);
-      if (contentEqual(original, item)) continue;
-      const key = ref('series', item.id);
-      if (expectedRevisions[item.id] !== (revisions[key] ?? 0)) {
-        throw new ContentConflictError(`Series ${item.id} changed. Reload before moving puzzle membership.`);
-      }
-      revisions[key] = (revisions[key] ?? 0) + 1;
-      changed.push({
-        kind: 'series', id: item.id, revision: revisions[key],
-        at: new Date().toISOString(), actor: 'editor-assignment',
-        before: original ?? null, after: item,
-      });
-    }
-    const updated = {
-      ...catalog, series, revisions,
-      history: [...catalog.history, ...changed].slice(-HISTORY_LIMIT),
-    };
-    if (await casWrite(store, updated, etag)) return { catalog: updated, errors: [] };
-  }
-  throw new ContentConflictError('Concurrent series updates exceeded retry limit.');
-}
-
-export function contentPublicView(catalog) {
-  const scenarios = catalog.scenarios.filter(item => item.published !== false).map(normalizeScenario);
-  const published = new Set(scenarios.map(item => item.id));
-  const series = normalizeSeriesCollection(catalog.series)
-    .filter(item => item.published !== false)
-    .map(item => ({ ...item, scenarioIds: item.scenarioIds.filter(id => published.has(id)) }));
-  return { scenarios, series };
-}
-) return item;
-  return path.split('.').reduce((value, segment, index) => {
-    if (index === 1 && path.startsWith('pieces.') && Array.isArray(value)) {
-      return value.find(piece => piece.id === segment);
-    }
-    return value && typeof value === 'object' ? value[segment] : undefined;
-  }, item);
-}
-
-function retainUnresolvedConflicts(previous, fresh, currentItems, remoteItems) {
-  const live = new Map(currentItems.map(item => [item.id, item]));
-  const remote = new Map(remoteItems.map(item => [item.id, item]));
-  const result = { ...fresh };
-  for (const [id, oldPaths] of Object.entries(previous ?? {})) {
-    const unresolved = oldPaths.filter(path =>
-      !contentEqual(valueAtPath(live.get(id), path), valueAtPath(remote.get(id), path)));
-    if (unresolved.length) result[id] = [...new Set([...(result[id] ?? []), ...unresolved])];
-  }
-  return result;
-}
-
-export function reconcileToDeployment(snapshot, next = source()) {
-  const before = snapshot.baseline;
-  if (contentEqual(before, next)) return null;
-  const a = reconcileCollection(before.scenarios, snapshot.scenarios, next.scenarios);
-  const b = reconcileCollection(before.series, snapshot.series, next.series);
-  const revisions = { ...snapshot.revisions };
-  const recordChanges = (kind, oldItems, newItems) => {
-    const old = new Map(oldItems.map(item => [item.id, item]));
-    const updated = new Map(newItems.map(item => [item.id, item]));
-    for (const id of new Set([...old.keys(), ...updated.keys()])) {
-      if (!contentEqual(old.get(id), updated.get(id))) {
-        const key = ref(kind, id);
-        revisions[key] = (revisions[key] ?? 0) + 1;
-      }
-    }
-  };
-  recordChanges('scenarios', snapshot.scenarios, a.items);
-  recordChanges('series', snapshot.series, b.items);
-  return {
-    ...snapshot, baseline: clone(next), scenarios: a.items, series: b.items, revisions,
-    conflicts: { scenarios: a.conflicts, series: b.conflicts },
-  };
-}
-
-/**
- * GitHub deploys reconcile on the next read. Edited fields survive; independent
- * GitHub changes merge; conflicts remain visible to admins and never overwrite
- * either version without an explicit follow-up.
- */
-export async function readContentCatalog(store, readLegacy, { withEtag = false } = {}) {
-  for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
-    const { snapshot, etag } = await fetchSnapshot(store);
-    if (!snapshot) {
-      // Non-production previews must not seed themselves by reading/writing
-      // the legacy production Blob keys. Start from their built-in branch data.
-      const isolated = ['deploy-preview', 'branch-deploy'].includes(process.env.CONTEXT);
-      const legacy = isolated ? source() : await readLegacy();
-      const fresh = initialCatalog(legacy);
-      if (await casWrite(store, fresh, null)) {
-        if (!withEtag) return fresh;
-        continue; // Fetch the newly created ETag before applying a write.
-      }
-      continue;
-    }
-    const reconciled = reconcileToDeployment(snapshot);
-    if (!reconciled) return withEtag ? { catalog: snapshot, etag } : snapshot;
-    if (await casWrite(store, reconciled, etag)) {
-      if (!withEtag) return reconciled;
-      continue; // The CAS changed the ETag; fetch it before editing.
-    }
-  }
-  throw new ContentConflictError('The catalogue changed repeatedly during synchronisation. Retry.');
-}
-
-export function contentVersions(catalog) {
-  return {
-    revisions: { ...catalog.revisions },
-    conflicts: clone(catalog.conflicts),
-    dirty: Object.fromEntries(['scenarios', 'series'].map(kind => {
-      const base = new Map(catalog.baseline[kind].map(item => [item.id, item]));
-      const live = new Map(items(catalog, kind).map(item => [item.id, item]));
-      return [kind, [...new Set([...base.keys(), ...live.keys()])]
-        .filter(id => !contentEqual(live.get(id), base.get(id)))];
-    })),
-  };
-}
-
-/**
- * Optimistic item save. A CAS retry always reloads and reapplies this ONE item,
- * so simultaneous edits to unrelated puzzles or series cannot lose updates.
- * The expected revision is checked on every retry.
- */
-export async function writeContentItem(store, readLegacy, { kind, id, value, expectedRevision, actor = 'editor' }) {
-  if (!['scenarios', 'series'].includes(kind)) throw new TypeError('Invalid content kind');
-  if (!Number.isSafeInteger(expectedRevision) || expectedRevision < 0) {
-    throw new ContentConflictError('A content revision is required. Reload the editor.');
-  }
-  for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
-    const { catalog, etag } = await readContentCatalog(store, readLegacy, { withEtag: true });
-    const key = ref(kind, id);
-    const actualRevision = catalog.revisions[key] ?? 0;
-    if (actualRevision !== expectedRevision) throw new ContentConflictError();
-    const current = items(catalog, kind);
-    const previous = current.find(item => item.id === id);
-    if (contentEqual(previous, value)) return { catalog, revision: actualRevision };
-    const updatedItems = current.filter(item => item.id !== id);
-    if (value !== null) updatedItems.push(clone(value));
-    const revision = actualRevision + 1;
-    const updated = {
-      ...catalog, [kind]: updatedItems,
-      revisions: { ...catalog.revisions, [key]: revision },
-      conflicts: { ...catalog.conflicts, [kind]: { ...catalog.conflicts[kind], [id]: [] } },
       history: [...catalog.history, { kind, id, revision, at: new Date().toISOString(),
         actor, before: previous ?? null, after: value }].slice(-HISTORY_LIMIT),
     };
