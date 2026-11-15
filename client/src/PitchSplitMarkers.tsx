@@ -43,7 +43,12 @@ export function PitchSplitMarkers({ tree, orientation, acrossValues, downValues,
       if (!layerRef.current?.contains(event.target as Node)) setOpenId(null);
     };
     const escape = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') setOpenId(null);
+      if (event.key === 'Escape') {
+        // The app also uses Escape to cancel a player's pending activation.
+        // Closing this overlay must not discard gameplay underneath it.
+        event.stopPropagation();
+        setOpenId(null);
+      }
     };
     document.addEventListener('pointerdown', dismiss);
     document.addEventListener('keydown', escape);
