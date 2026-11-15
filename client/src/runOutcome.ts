@@ -1,6 +1,7 @@
 import type { BranchStripEntry } from './branchRun';
 import type { GameState, PuzzleAction } from './types';
 import { blockActionAvailability } from './blockActionAvailability';
+import { foulTargetKeys } from './useGameState';
 import { OBJECTIVE_REQUIRED_ACTIONS, SCENARIO_ACTIONS } from '../../shared/scenarioValidation.js';
 
 /**
@@ -41,6 +42,12 @@ export function isScoringRunStalled(
       return (canBlock && openRoutes.includes('block'))
         || (canBlitz && openRoutes.includes('blitz'));
     });
+  }
+
+  if (state.objective === 'injure-by-foul') {
+    if (state.foulUsed) return true;
+    return !state.pieces.some(piece => piece.team === state.activeTeam
+      && !piece.activated && !piece.down && foulTargetKeys(state, piece).size > 0);
   }
 
   // Touchdown: a carried ball cannot change hands or reach the end zone once
