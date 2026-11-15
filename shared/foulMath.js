@@ -14,7 +14,7 @@ const DICE = Array.from({ length: 36 }, (_, n) => {
 
 /**
  * Input is fully serializable and can be recomputed by the leaderboard API.
- * Optional Offensive Assists are currently all taken when pursuing max injury.
+ * The calling rules engine may choose any eligible offensive assist count.
  */
 export function foulOdds({ av, offensiveAssists = 0, defensiveAssists = 0, dirtyPlayer = false, sneakyGit = false, loneFouler = false, stunty = false }) {
   if (!Number.isInteger(av) || av < 1 || av > 12
