@@ -20,7 +20,9 @@ describe('Tutorial concepts', () => {
   });
 
   it('provides a concept library for every Tutorial drill', () => {
-    for (const scenario of scenarios.slice(0, 6)) {
+    const drills = scenarios.filter(scenario => /^scenario-00[1-6]$/.test(scenario.id));
+    expect(drills).toHaveLength(6);
+    for (const scenario of drills) {
       expect(tutorialConceptsForScenario(scenario.id).length).toBeGreaterThan(0);
     }
   });

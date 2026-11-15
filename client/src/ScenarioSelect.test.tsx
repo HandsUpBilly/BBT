@@ -151,7 +151,10 @@ describe('ScenarioSelect Free Play', () => {
     expect(screen.queryByText(guidedDrill!.name)).toBeNull();
 
     fireEvent.click(screen.getByRole('button', { name: 'Specials' }));
-    expect(screen.getByText('No special matches are available yet.')).toBeTruthy();
+    const specials = scenarios.filter(scenario =>
+      scenario.freePlay && !defaultSeries.scenarioIds.includes(scenario.id));
+    expect(specials.length).toBeGreaterThan(0);
+    expect(screen.getByText(specials[0].name)).toBeTruthy();
     expect(screen.queryByText(freePlay!.name)).toBeNull();
 
     fireEvent.click(screen.getByRole('button', { name: 'Series' }));
