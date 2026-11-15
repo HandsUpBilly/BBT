@@ -81,7 +81,7 @@ response. The home screen used to fire one request per scenario *and* run the
 whole fan-out twice per visit (the scenario array identity changes when the
 runtime fetch resolves), which was 12 function invocations for five puzzles.
 
-## Admin nav visibility vs. editor authorization
+The public `/api/progress` read is limited to 60 requests per minute per trusted Netlify edge IP on each warm function instance. The limit is evaluated before reading Blobs; rotating query parameters cannot bypass the IP bucket. As with the other in-memory limiters, this blunts bursts but is not a distributed hard quota. A 429 response includes `Retry-After` and is never cacheable.\n\n## Admin nav visibility vs. editor authorization
 
 `client/vite.config.ts` defines `__BBT_FORCE_ADMIN_NAV__` from Netlify's
 `CONTEXT` build variable: `JSON.stringify(process.env.CONTEXT !== 'production')`.
