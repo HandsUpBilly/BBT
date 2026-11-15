@@ -42,7 +42,7 @@ function authError(res, error) {
   throw error;
 }
 
-export function registerIdentityRoutes(app) {
+export function registerIdentityRoutes(app, { magicLinkStore = magicLinks } = {}) {
   app.get('/api/auth/config', (_req, res) => res.json(config()));
 
   app.post('/api/auth/google', async (req, res) => {
@@ -83,11 +83,11 @@ export function registerIdentityRoutes(app) {
       }
       const { token, record } = createMagicLinkRecord(req.body?.email);
       const hash = await hashAuthValue(token);
-      magicLinks.set(hash, record);
+      magicLinkStore.set(hash, record);
       try {
         await sendMagicLinkEmail({ email: record.email, link: `${appUrl()}/#magic=${encodeURIComponent(token)}` });
       } catch (error) {
-        magicLinks.delete(hash);
+        magicLinkStore.delete(hash);
         throw error;
       }
       return res.status(202).json({ sent: true });
@@ -101,11 +101,13 @@ export function registerIdentityRoutes(app) {
       if (!config().email) throw new AuthEmailConfigurationError('Email login is not configured');
       const token = typeof req.body?.token === 'string' ? req.body.token : '';
       const hash = await hashAuthValue(token);
-      const record = magicLinks.get(hash);
+      const record = magicLinkStore.get(hash);
       const email = validateMagicLinkRecord(record);
-      magicLinks.set(hash, { ...record, consumed: true });
+      // Consume synchronously before the first await so two concurrent
+      // HTTP requests cannot both issue a session from the same link.
+      magicLinkStore.set(hash, { ...record, consumed: true });
       const session = await issueIdentitySession({ provider: 'email', subject: email, email }, process.env.AUTH_SESSION_SECRET);
-      magicLinks.delete(hash);
+      magicLinkStore.delete(hash);
       return res.json(session);
     } catch (error) {
       return authError(res, error);
