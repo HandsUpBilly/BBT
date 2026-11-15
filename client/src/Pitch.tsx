@@ -7,7 +7,8 @@ import type { PathTrail } from './movementTrail';
 import { passTrajectoryPath } from './passTrajectory';
 import { skillGroupsFor, skillMarkersFor } from './skillPresentation';
 import type { PitchSurface, TokenStyle } from './prefs';
-import type { GhostPiece } from './branchRun';
+import type { BranchTreeBlockView, GhostPiece } from './branchRun';
+import { PitchSplitMarkers } from './PitchSplitMarkers';
 import type { MenuAnchor } from './menuPosition';
 import { RoleGlyph } from './RoleGlyph';
 import { roleCodeFor } from './rolePresentation';
@@ -432,6 +433,9 @@ interface Props {
    * see `ghostPieces` in branchRun.ts.
    */
   branchGhosts?: readonly GhostPiece[];
+  /** Historical Block/Blitz forks shown as navigable points on the pitch. */
+  branchTree?: BranchTreeBlockView | null;
+  onSelectBranch?: (id: string) => void;
   /** Final action decision, anchored beside its target without resizing the pitch. */
   moveDecision?: {
     position: Position;
@@ -466,7 +470,7 @@ const NO_BRANCH_GHOSTS: readonly BranchGhostView[] = [];
 export function Pitch({
   state, onSquareClick, onPieceClick, onSquareHover, onSquareLeave,
   orientation = 'landscape', tokenStyle = 'portrait', pitchSurface = 'grass', showCoordinates = true,
-  teams, branchGhosts, moveDecision,
+  teams, branchGhosts, branchTree, onSelectBranch, moveDecision,
 }: Props) {
   const portrait = orientation === 'portrait';
   const stateTeams = Array.from(new Set(state.pieces.map(piece => piece.team)));
@@ -997,6 +1001,15 @@ export function Pitch({
         {/* The field */}
           <div className="pitch__grid" style={gridStyle} role="group" aria-label="Pitch">
             {squares}
+            {branchTree && onSelectBranch && (
+              <PitchSplitMarkers
+                tree={branchTree}
+                orientation={orientation}
+                acrossValues={acrossValues}
+                downValues={downValues}
+                onSelect={onSelectBranch}
+              />
+            )}
             {passTrajectories.length > 0 && (
             <svg
               className="pitch__pass-trajectories"
