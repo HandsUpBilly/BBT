@@ -4,7 +4,8 @@ import type { PuzzleAction, Scenario, ScenarioPieceDef, SeriesDefinition, Team }
 import { ConfirmDialog } from '../ConfirmDialog';
 import { AdminStatistics } from './AdminStatistics';
 import { AdminConsole } from './AdminConsole';
-import { createScenario, deleteScenario, fetchEditorData, updateScenario, openContentSyncPullRequest } from './editorApi';
+import { createScenario, deleteScenario, fetchEditorData, updateScenario, openContentSyncPullRequest, fetchContentHistory, restoreContentHistory } from './editorApi';
+import type { ContentHistoryEntry } from './editorApi';
 import { nextScenarioId, validateScenarioDraft } from './editorValidation';
 import { PLAYER_TEMPLATES, generatedPlayerName, templateToPiece } from './playerTemplates';
 import { agilityTarget, armourTarget, storedAgility, storedArmour, targetLabel } from '../playerStats';
@@ -124,6 +125,8 @@ export function PuzzleEditor({ onBack, onPlay, onReport, previewScenario, idToke
   const [status, setStatus] = useState('Loading editor data...');
   const [saving, setSaving] = useState(false);
   const [syncing, setSyncing] = useState(false);
+  const [historyEntries, setHistoryEntries] = useState<ContentHistoryEntry[] | null>(null);
+  const [historyBusy, setHistoryBusy] = useState(false);
   const [puzzleQuery, setPuzzleQuery] = useState('');
   const [puzzleFilter, setPuzzleFilter] = useState<'all' | 'enabled' | 'disabled' | 'series'>('all');
   const [inspectorSection, setInspectorSection] = useState<InspectorSection>('roster');
@@ -170,6 +173,35 @@ export function PuzzleEditor({ onBack, onPlay, onReport, previewScenario, idToke
       setStatus(error instanceof Error ? error.message : 'Failed to load editor data.');
     }
   }, [previewScenario, idToken]);
+
+  const openHistory = useCallback(async () => {
+    if (!originalId) return;
+    setHistoryBusy(true);
+    try {
+      const data = await fetchContentHistory('scenarios', originalId, idToken);
+      setHistoryEntries(data.changes.slice().reverse());
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : 'Could not read history.');
+    } finally {
+      setHistoryBusy(false);
+    }
+  }, [originalId, idToken]);
+
+  const restoreHistory = async (targetRevision: number) => {
+    if (!originalId) return;
+    setHistoryBusy(true);
+    try {
+      await restoreContentHistory('scenarios', originalId, targetRevision,
+        revisions[`scenarios/${originalId}`] ?? 0, idToken);
+      setHistoryEntries(null);
+      await load();
+      setStatus(`Restored saved revision ${targetRevision} of ${originalId}.`);
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : 'Could not restore revision.');
+    } finally {
+      setHistoryBusy(false);
+    }
+  };
 
   // Deferred to a macrotask so React 19 StrictMode's double-invoked effect
   // doesn't fire two concurrent loads on mount.
@@ -576,6 +608,24 @@ export function PuzzleEditor({ onBack, onPlay, onReport, previewScenario, idToke
           GitHub and live edits conflict on: {currentSyncConflict.join(', ')}. The live version is preserved; review before saving.
         </div>
       ) : null}
+      {historyEntries !== null ? (
+        <section className="editor__status" role="dialog" aria-modal="false" aria-label="Puzzle revision history">
+          <div><strong>Saved puzzle revisions</strong> (latest first)</div>
+          {historyEntries.length === 0 ? <p>No saved revisions yet.</p> : null}
+          {historyEntries.map(entry => (
+            <div key={entry.revision} className="editor__history-row">
+              <span>Revision {entry.revision}, {new Date(entry.at).toLocaleString()}, {entry.actor}</span>
+              <button className="btn btn--secondary" disabled={historyBusy}
+                onClick={() => setConfirm({
+                  title: `Restore revision ${entry.revision}?`,
+                  message: 'This creates another saved version. Your current puzzle will remain in history.',
+                  confirmLabel: 'Restore', run: () => { void restoreHistory(entry.revision); },
+                })}>Restore</button>
+            </div>
+          ))}
+          <button className="btn btn--secondary" onClick={() => setHistoryEntries(null)}>Close History</button>
+        </section>
+      ) : null}
       <div className="editor__status" role="status">{status}</div>
         </>
       ) : (
@@ -596,6 +646,9 @@ export function PuzzleEditor({ onBack, onPlay, onReport, previewScenario, idToke
           </span>
         </div>
         <div className="editor__header-actions">
+          <button className="btn btn--secondary" onClick={() => { void openHistory(); }} disabled={historyBusy || !originalId}>
+            View History
+          </button>
           <button className="btn btn--secondary" onClick={() => { void syncToGithub(); }} disabled={syncing || saving}>
             {syncing ? 'Syncing...' : 'Review Live Changes in GitHub'}
           </button>
