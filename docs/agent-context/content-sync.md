@@ -75,6 +75,8 @@ The v3 catalog is a **single CAS-protected snapshot** with item-level
 revisions, rather than one Blob key per puzzle. This keeps the public API
 atomic and avoids 25+ reads per page load, while providing independent item
 optimistic concurrency. The retained history is a bounded (40-entry) record
-of prior values inside the snapshot. Bulk GitHub export is deliberately a
-reviewable, explicit action, not an unreviewed production push. Automated
-publishing and a full history/restore UI are separate enhancements.
+of prior values inside the snapshot. The Puzzle Editor offers a bounded in-app revision history and rollback,
+using the same CAS guard to prevent restoring over someone else's changes.
+Bulk GitHub export remains a reviewable explicit action, not an unreviewed
+production push. A separate draft/publish queue and automatically scheduled
+GitHub PR creation are not yet part of this release.
