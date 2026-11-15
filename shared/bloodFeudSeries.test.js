@@ -50,3 +50,39 @@ test('each crowd-surf puzzle includes an unactivated legal surf opportunity', ()
     assert.ok(possible, `${puzzle.id}: no immediate surf geometry; include a documented blitz witness if changed`);
   }
 });
+
+test('every touchdown has at least two geometrically distinct carrier routes', () => {
+  for (const puzzle of puzzles.filter(p => p.objective === 'touchdown')) {
+    const carrier = puzzle.pieces.find(p => p.hasBall && p.team === puzzle.activeTeam);
+    assert.ok(carrier, `${puzzle.id}: no ball carrier on active team`);
+    const goal = puzzle.activeTeam === 'human' ? 0 : 25;
+    const blocked = new Set(puzzle.pieces.filter(p => p.id !== carrier.id)
+      .map(p => `${p.position.col},${p.position.row}`));
+    const canFinish = (startCol, startRow) => {
+      const queue = [[startCol, startRow, 1]], seen = new Set();
+      while (queue.length) {
+        const [col, row, steps] = queue.shift();
+        const key = `${col},${row}`;
+        if (seen.has(key)) continue;
+        seen.add(key);
+        if (row === goal) return true;
+        if (steps >= carrier.ma + 2) continue;
+        for (let dx = -1; dx <= 1; dx++) for (let dy = -1; dy <= 1; dy++) {
+          if (!dx && !dy) continue;
+          const x = col + dx, y = row + dy;
+          if (x >= 0 && x < 15 && y >= 0 && y < 26 && !blocked.has(`${x},${y}`))
+            queue.push([x, y, steps + 1]);
+        }
+      }
+      return false;
+    };
+    const firstSteps = [];
+    for (let dx = -1; dx <= 1; dx++) for (let dy = -1; dy <= 1; dy++) {
+      if (!dx && !dy) continue;
+      const col = carrier.position.col + dx, row = carrier.position.row + dy;
+      if (col < 0 || col > 14 || row < 0 || row > 25 || blocked.has(`${col},${row}`)) continue;
+      if (canFinish(col, row)) firstSteps.push([col, row]);
+    }
+    assert.ok(firstSteps.length >= 2, `${puzzle.id}: multiple direct lanes not found`);
+  }
+});
