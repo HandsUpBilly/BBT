@@ -1,0 +1,198 @@
+{
+  "id": "blood-feud-04",
+  "name": "The Crossfield Gambit",
+  "description": "One runner is marked, another is open. A hand-off, a pass or a daring solo sprint can finish the drive.",
+  "activeTeam": "human",
+  "teams": [
+    "human",
+    "black-orc"
+  ],
+  "objective": "touchdown",
+  "enabledActions": [
+    "move",
+    "handoff",
+    "pass",
+    "block",
+    "blitz"
+  ],
+  "freePlay": false,
+  "published": true,
+  "ballPosition": null,
+  "pieces": [
+    {
+      "id": "h1",
+      "team": "human",
+      "role": "thrower",
+      "name": "Aldric Swiftfoot",
+      "ma": 6,
+      "st": 3,
+      "ag": 3,
+      "pa": 3,
+      "av": 8,
+      "skills": [
+        "Pass"
+      ],
+      "position": {
+        "col": 8,
+        "row": 7
+      },
+      "hasBall": true
+    },
+    {
+      "id": "h2",
+      "team": "human",
+      "role": "catcher",
+      "name": "Joren Fleetstep",
+      "ma": 8,
+      "st": 3,
+      "ag": 3,
+      "pa": 4,
+      "av": 8,
+      "skills": [
+        "Catch",
+        "Dodge"
+      ],
+      "position": {
+        "col": 3,
+        "row": 4
+      },
+      "hasBall": false
+    },
+    {
+      "id": "h3",
+      "team": "human",
+      "role": "catcher",
+      "name": "Joren Fleetstep",
+      "ma": 8,
+      "st": 3,
+      "ag": 3,
+      "pa": 4,
+      "av": 8,
+      "skills": [
+        "Catch",
+        "Dodge"
+      ],
+      "position": {
+        "col": 11,
+        "row": 3
+      },
+      "hasBall": false
+    },
+    {
+      "id": "h4",
+      "team": "human",
+      "role": "blitzer",
+      "name": "Cedric Linebreaker",
+      "ma": 7,
+      "st": 3,
+      "ag": 3,
+      "pa": 4,
+      "av": 8,
+      "skills": [
+        "Block"
+      ],
+      "position": {
+        "col": 8,
+        "row": 4
+      },
+      "hasBall": false
+    },
+    {
+      "id": "h5",
+      "team": "human",
+      "role": "lineman",
+      "name": "Bramm Surehands",
+      "ma": 6,
+      "st": 3,
+      "ag": 3,
+      "pa": 4,
+      "av": 8,
+      "skills": [],
+      "position": {
+        "col": 6,
+        "row": 5
+      },
+      "hasBall": false
+    },
+    {
+      "id": "b1",
+      "team": "black-orc",
+      "role": "black-orc",
+      "name": "Drazh Necksnappa",
+      "ma": 4,
+      "st": 4,
+      "ag": 2,
+      "pa": 5,
+      "av": 9,
+      "skills": [
+        "Brawler",
+        "Grab"
+      ],
+      "position": {
+        "col": 8,
+        "row": 5
+      },
+      "hasBall": false
+    },
+    {
+      "id": "b2",
+      "team": "black-orc",
+      "role": "goblin",
+      "name": "Krib Toepoker",
+      "ma": 6,
+      "st": 2,
+      "ag": 3,
+      "pa": 4,
+      "av": 7,
+      "skills": [
+        "Dodge",
+        "Stunty"
+      ],
+      "position": {
+        "col": 10,
+        "row": 4
+      },
+      "hasBall": false
+    },
+    {
+      "id": "b3",
+      "team": "black-orc",
+      "role": "black-orc",
+      "name": "Drazh Necksnappa",
+      "ma": 4,
+      "st": 4,
+      "ag": 2,
+      "pa": 5,
+      "av": 9,
+      "skills": [
+        "Brawler",
+        "Grab"
+      ],
+      "position": {
+        "col": 5,
+        "row": 3
+      },
+      "hasBall": false
+    },
+    {
+      "id": "b4",
+      "team": "black-orc",
+      "role": "goblin",
+      "name": "Krib Toepoker",
+      "ma": 6,
+      "st": 2,
+      "ag": 3,
+      "pa": 4,
+      "av": 7,
+      "skills": [
+        "Dodge",
+        "Stunty"
+      ],
+      "position": {
+        "col": 7,
+        "row": 2
+      },
+      "hasBall": false
+    }
+  ]
+}
