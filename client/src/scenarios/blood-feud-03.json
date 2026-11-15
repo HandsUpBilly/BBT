@@ -15,7 +15,10 @@
   ],
   "freePlay": false,
   "published": true,
-  "ballPosition": null,
+  "ballPosition": {
+    "col": 7,
+    "row": 20
+  },
   "pieces": [
     {
       "id": "h1",
