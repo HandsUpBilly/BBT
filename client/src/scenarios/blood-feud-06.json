@@ -1,0 +1,154 @@
+{
+  "id": "blood-feud-06",
+  "name": "No Room at the Rail",
+  "description": "A Goblin is balancing on the far touchline. Clear the angle, arrange assists and send him into the spectators.",
+  "activeTeam": "human",
+  "teams": [
+    "human",
+    "black-orc"
+  ],
+  "objective": "crowd-surf",
+  "enabledActions": [
+    "move",
+    "block",
+    "blitz"
+  ],
+  "freePlay": false,
+  "published": true,
+  "ballPosition": null,
+  "pieces": [
+    {
+      "id": "h1",
+      "team": "human",
+      "role": "blitzer",
+      "name": "Cedric Linebreaker",
+      "ma": 7,
+      "st": 3,
+      "ag": 3,
+      "pa": 4,
+      "av": 8,
+      "skills": [
+        "Block"
+      ],
+      "position": {
+        "col": 12,
+        "row": 10
+      },
+      "hasBall": false
+    },
+    {
+      "id": "h2",
+      "team": "human",
+      "role": "lineman",
+      "name": "Bramm Surehands",
+      "ma": 6,
+      "st": 3,
+      "ag": 3,
+      "pa": 4,
+      "av": 8,
+      "skills": [],
+      "position": {
+        "col": 13,
+        "row": 9
+      },
+      "hasBall": false
+    },
+    {
+      "id": "h3",
+      "team": "human",
+      "role": "lineman",
+      "name": "Bramm Surehands",
+      "ma": 6,
+      "st": 3,
+      "ag": 3,
+      "pa": 4,
+      "av": 8,
+      "skills": [],
+      "position": {
+        "col": 11,
+        "row": 11
+      },
+      "hasBall": false
+    },
+    {
+      "id": "h4",
+      "team": "human",
+      "role": "catcher",
+      "name": "Joren Fleetstep",
+      "ma": 8,
+      "st": 3,
+      "ag": 3,
+      "pa": 4,
+      "av": 8,
+      "skills": [
+        "Catch",
+        "Dodge"
+      ],
+      "position": {
+        "col": 10,
+        "row": 8
+      },
+      "hasBall": false
+    },
+    {
+      "id": "b1",
+      "team": "black-orc",
+      "role": "goblin",
+      "name": "Krib Toepoker",
+      "ma": 6,
+      "st": 2,
+      "ag": 3,
+      "pa": 4,
+      "av": 7,
+      "skills": [
+        "Dodge",
+        "Stunty"
+      ],
+      "position": {
+        "col": 14,
+        "row": 10
+      },
+      "hasBall": false
+    },
+    {
+      "id": "b2",
+      "team": "black-orc",
+      "role": "black-orc",
+      "name": "Drazh Necksnappa",
+      "ma": 4,
+      "st": 4,
+      "ag": 2,
+      "pa": 5,
+      "av": 9,
+      "skills": [
+        "Brawler",
+        "Grab"
+      ],
+      "position": {
+        "col": 12,
+        "row": 12
+      },
+      "hasBall": false
+    },
+    {
+      "id": "b3",
+      "team": "black-orc",
+      "role": "goblin",
+      "name": "Krib Toepoker",
+      "ma": 6,
+      "st": 2,
+      "ag": 3,
+      "pa": 4,
+      "av": 7,
+      "skills": [
+        "Dodge",
+        "Stunty"
+      ],
+      "position": {
+        "col": 10,
+        "row": 11
+      },
+      "hasBall": false
+    }
+  ]
+}
