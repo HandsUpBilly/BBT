@@ -2,9 +2,9 @@
   "id": "blood-feud-01",
   "name": "The Thin Blue Line",
   "description": "A crowded channel, two receiving lanes and one turn to find daylight. The shortest route is not necessarily the safest.",
-  "activeTeam": "human",
+  "activeTeam": "imperial-nobility",
   "teams": [
-    "human",
+    "imperial-nobility",
     "black-orc"
   ],
   "objective": "touchdown",
@@ -21,13 +21,13 @@
   "pieces": [
     {
       "id": "h1",
-      "team": "human",
+      "team": "imperial-nobility",
       "role": "thrower",
-      "name": "Aldric Swiftfoot",
+      "name": "Leopold von Draken",
       "ma": 6,
       "st": 3,
       "ag": 3,
-      "pa": 3,
+      "pa": 2,
       "av": 8,
       "skills": [
         "Pass"
@@ -40,17 +40,17 @@
     },
     {
       "id": "h2",
-      "team": "human",
-      "role": "catcher",
-      "name": "Joren Fleetstep",
-      "ma": 8,
+      "team": "imperial-nobility",
+      "role": "noble-blitzer",
+      "name": "Lukas Silberhand",
+      "ma": 7,
       "st": 3,
       "ag": 3,
       "pa": 4,
       "av": 8,
       "skills": [
-        "Catch",
-        "Dodge"
+        "Block",
+        "Catch"
       ],
       "position": {
         "col": 4,
@@ -60,17 +60,17 @@
     },
     {
       "id": "h3",
-      "team": "human",
-      "role": "catcher",
-      "name": "Joren Fleetstep",
-      "ma": 8,
+      "team": "imperial-nobility",
+      "role": "noble-blitzer",
+      "name": "Alaric Goldcrest",
+      "ma": 7,
       "st": 3,
       "ag": 3,
       "pa": 4,
       "av": 8,
       "skills": [
-        "Catch",
-        "Dodge"
+        "Block",
+        "Catch"
       ],
       "position": {
         "col": 10,
@@ -80,16 +80,17 @@
     },
     {
       "id": "h4",
-      "team": "human",
-      "role": "blitzer",
-      "name": "Cedric Linebreaker",
-      "ma": 7,
+      "team": "imperial-nobility",
+      "role": "bodyguard",
+      "name": "Otto Eisenhelm",
+      "ma": 5,
       "st": 3,
       "ag": 3,
       "pa": 4,
       "av": 8,
       "skills": [
-        "Block"
+        "Stand Firm",
+        "Wrestle"
       ],
       "position": {
         "col": 7,
@@ -99,15 +100,17 @@
     },
     {
       "id": "h5",
-      "team": "human",
-      "role": "lineman",
-      "name": "Bramm Surehands",
+      "team": "imperial-nobility",
+      "role": "retainer",
+      "name": "Konrad Hochmark",
       "ma": 6,
       "st": 3,
       "ag": 3,
       "pa": 4,
-      "av": 8,
-      "skills": [],
+      "av": 7,
+      "skills": [
+        "Fend"
+      ],
       "position": {
         "col": 3,
         "row": 6
