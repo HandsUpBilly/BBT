@@ -53,6 +53,7 @@ export default async function handler(req) {
       scenarios: catalog.scenarios.map(normalizeScenario),
       series: catalog.series,
       ...contentVersions(catalog),
+      syncConfigured: Boolean(process.env.GITHUB_CONTENT_SYNC_TOKEN),
       history: catalog.history.map(({ before, after, ...metadata }) => metadata),
     });
   }
