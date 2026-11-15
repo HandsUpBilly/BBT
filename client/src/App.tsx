@@ -1011,6 +1011,9 @@ export default function App() {
       return;
     }
 
+    // A declared Foul must resolve or be cancelled before another action.
+    if (state.pendingFoul) return;
+
     // Own unactivated piece — show context menu
     if (piece.team === state.activeTeam && !piece.activated) {
       if (compact) setMobileInfoOpen(false);
