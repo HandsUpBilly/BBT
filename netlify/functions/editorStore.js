@@ -9,6 +9,7 @@ import { getStore } from '@netlify/blobs';
 // import.meta.glob behavior.
 import { STATIC_SCENARIOS, STATIC_SERIES } from './scenarioSeed.js';
 import { normalizeScenario, normalizeSeriesCollection } from '../../shared/scenarioValidation.js';
+import { readContentCatalog } from './contentStore.js';
 
 const SCENARIOS_KEY = 'scenarios';
 const SERIES_KEY = 'series-default';
@@ -193,20 +194,30 @@ async function migratePuzzleTactics(store, scenarios) {
   return updated;
 }
 
-export const readDraftScenarios = async store => {
+// The v1 collection is read only during a one-time, non-destructive v3 import.
+// Retain the old migrations to preserve existing editor changes as we upgrade.
+export const readLegacyScenarios = async store => {
   const expanded = await migrateNewPuzzles(store, await readSeeded(store, SCENARIOS_KEY, STATIC_SCENARIOS));
   return (await migratePuzzleTactics(store, expanded)).map(normalizeScenario);
 };
-export const readDraftSeries = async store => {
+export const readLegacySeries = async store => {
   const saved = normalizeSeriesCollection(await readSeeded(store, SERIES_KEY, STATIC_SERIES));
   const expanded = await migrateNewSeries(store, saved);
   return normalizeSeriesCollection(await migrateBalancedSeries(store, expanded));
 };
 
-export const writeDraftScenarios = (store, scenarios) =>
-  store.set(SCENARIOS_KEY, JSON.stringify(scenarios));
-export const writeDraftSeries = (store, series) =>
-  store.set(SERIES_KEY, JSON.stringify(series));
+export const loadContent = store => readContentCatalog(store, async () => {
+  const [scenarios, series] = await Promise.all([
+    readLegacyScenarios(store), readLegacySeries(store),
+  ]);
+  return { scenarios, series };
+});
+export const readDraftScenarios = async store => (await loadContent(store)).scenarios.map(normalizeScenario);
+export const readDraftSeries = async store =>
+  normalizeSeriesCollection((await loadContent(store)).series);
+
+// Legacy full-collection writes are intentionally no longer offered. Content
+// handlers use writeContentItem() with item-level revisions and CAS instead.
 
 /**
  * The player-facing view: enabled scenarios only, with series ids narrowed to

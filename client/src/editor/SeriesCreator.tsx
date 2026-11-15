@@ -10,6 +10,8 @@ interface Props {
   scenarios: Scenario[];
   series: SeriesDefinition[];
   idToken: string | null;
+  revisions: Record<string, number>;
+  onRevision: (id: string, revision: number) => void;
   onChange: (series: SeriesDefinition[]) => void;
   onStatus: (status: string) => void;
 }
@@ -28,7 +30,7 @@ function newSeries(order: number): SeriesDefinition {
   };
 }
 
-export function SeriesCreator({ scenarios, series, idToken, onChange, onStatus }: Props) {
+export function SeriesCreator({ scenarios, series, idToken, revisions, onRevision, onChange, onStatus }: Props) {
   const [selectedId, setSelectedId] = useState(series[0]?.id ?? '');
   const selected = series.find(item => item.id === selectedId);
   const [draft, setDraft] = useState<SeriesDefinition>(() => selected ?? newSeries(series.length));
@@ -77,7 +79,8 @@ export function SeriesCreator({ scenarios, series, idToken, onChange, onStatus }
     }
     setSaving(true);
     try {
-      const saved = await saveSeries(draft, creating, idToken);
+      const saved = await saveSeries(draft, creating, idToken, creating ? 0 : revisions[`series/${draft.id}`] ?? 0);
+      onRevision(saved.id, saved.revision);
       const next = [...series.filter(item => item.id !== saved.id), saved]
         .sort((a, b) => (a.order ?? 0) - (b.order ?? 0) || a.name.localeCompare(b.name));
       onChange(next);
@@ -96,7 +99,9 @@ export function SeriesCreator({ scenarios, series, idToken, onChange, onStatus }
     if (creating) return startNew();
     setSaving(true);
     try {
-      const next = await deleteSeries(draft.id, idToken);
+      const response = await deleteSeries(draft.id, idToken, revisions[`series/${draft.id}`] ?? 0);
+      const next = response.series;
+      onRevision(draft.id, response.revisions[`series/${draft.id}`] ?? 0);
       onChange(next);
       const first = next[0];
       setSelectedId(first?.id ?? '');
