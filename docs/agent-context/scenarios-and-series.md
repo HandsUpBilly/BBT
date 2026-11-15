@@ -17,6 +17,8 @@ Primary files:
 - `description`
 - `activeTeam`
 - `objective` (`touchdown` or `crowd-surf`)
+- `enabledActions?: PuzzleAction[]` (allowed player-menu actions; omitted means
+  all five, which is what every puzzle predating the field gets)
 - `freePlay` (whether the puzzle also appears as a standalone match)
 - `published?: boolean`
 - `ballPosition?: Position | null`
@@ -71,6 +73,12 @@ player on the active team. The client editor, `server/editor.js`, and
 `netlify/functions/editor-scenarios.js` all import it. Do not fork it: the
 client used to have its own looser copy, so the editor accepted drafts the
 server then rejected with a 400.
+
+It also rejects an `enabledActions` list that strands the puzzle's own
+objective (`scenarioActionErrors`) — see "Puzzle Action Availability" in
+`game-rules-engine.md`. The player-facing `OBJECTIVE_LABELS` and
+`ACTION_LABELS` live here too, so a validation message and the Puzzle Creator
+control that produced it cannot name the same thing differently.
 
 ## Series
 

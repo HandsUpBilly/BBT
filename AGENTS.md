@@ -58,14 +58,11 @@ editor accepted drafts the server then rejected).
 | `rateLimit.js` | Netlify: `analytics.js`, `contact.js`, `identity-auth.js`, `leaderboard.js`, `logins.js`, `profile.js`, `reports.js`, `series-leaderboard.js`; Express: `analytics.js`, `identityRoutes.js`, `index.js`, `profiles.js` |
 | `statistics.js` | `server/index.js`, `editor-statistics.js` |
 | `loginTracking.js` | `server/index.js`, `netlify/functions/logins.js`, client `AdminLogins`/statistics |
+| `loginAdminControl.js` | `server/index.js`, `editor-logins.js` — promote/demote from the login table |
 | `adminManagement.js` | `server/editor.js`, `server/adminStore.js`, `editor-admins.js`, `netlify/functions/adminStore.js` |
 | `analyticsValidation.js` | `server/analytics.js`, both `/api/analytics` implementations |
 | `analyticsStatistics.js` | `server/analytics.js`, `editor-analytics.js`, client `AdminAnalytics.tsx` |
 | `blockWeights.js` | `client/src/blockBranching.ts`, `shared/scoreValidation.js` |
-| `sessionAuth.js` | `server/auth.js`, `netlify/functions/auth.js`, `server/identityRoutes.js`, `netlify/functions/identity-auth.js` |
-| `identityFlow.js` | `server/identityRoutes.js`, `netlify/functions/identity-auth.js` |
-| `authEmail.js` | both magic-link start routes (server-only) |
-| `loginTracking.js` | `server/index.js`, `netlify/functions/logins.js`, client `AdminLogins`/statistics |
 
 They are plain ESM `.js` with hand-written `.d.ts` siblings so TypeScript can
 consume them. **Do not fork these into a package-local copy.** Vite is

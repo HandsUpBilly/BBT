@@ -1099,7 +1099,12 @@ export default function App() {
     [branchedBoards.strip],
   );
   const viewedBranchId = branchedBoards.run.viewedId;
-  const showStalledRunDialog = isScoringRunStalled(state);
+  // Memoized because the crowd-surf arm walks blitz reachability per piece,
+  // and this sits on the render path of every board update.
+  const showStalledRunDialog = useMemo(
+    () => isScoringRunStalled(state, enabledScenarioActions(activeScenario)),
+    [state, activeScenario],
+  );
   const showUnfinishedBranchesDialog = branchedBoards.hasSplit
     && state.phase !== 'playing'
     && unresolvedBranchList.length > 0

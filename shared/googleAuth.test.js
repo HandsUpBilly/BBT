@@ -52,6 +52,32 @@ test('no allowlist defaults to unrestricted admin access', async () => {
 });
 
 /**
+ * The null above is the legacy bootstrap, and callers treat it as "no
+ * allowlist, so let this through" — `/api/editor/logins` falls back to any
+ * verified Google identity on it, which would let a non-administrator promote
+ * themselves. Both targets close that off by wrapping ADMIN_EMAILS in
+ * withPermanentAdminEmails() whenever GOOGLE_CLIENT_ID is set, so the state is
+ * unreachable wherever a token can actually be verified. Nothing else pins
+ * that reasoning down: without this, reworking the permanent-owner union
+ * reopens the bootstrap and no test fails.
+ */
+test('a deployment that can verify Google tokens can never enter the bootstrap state', async () => {
+  for (const configured of ['', undefined, '  ,  ', 'coach@example.com']) {
+    const auth = createGoogleAuth({
+      verifyIdToken: async () => ({ sub: 'g-1', email: 'stranger@example.com', email_verified: true }),
+      adminEmails: withPermanentAdminEmails(configured),
+    });
+
+    // Never the unrestricted null — an unlisted verified account is refused.
+    await assert.rejects(
+      () => auth.requireAdminGoogleUser(headers({ authorization: 'Bearer token' })),
+      error => error instanceof AdminAuthError && error.status === 403,
+      `bootstrap reachable with ADMIN_EMAILS=${JSON.stringify(configured)}`,
+    );
+  }
+});
+
+/**
  * The cold-start warning is the only signal that a deployment is fail-open —
  * there is no banner and no health check. A cleared or typo'd ADMIN_EMAILS
  * would otherwise open every /api/editor/* route silently and indefinitely,
