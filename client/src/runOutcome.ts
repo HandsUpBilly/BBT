@@ -55,8 +55,8 @@ export function isScoringRunStalled(
     // Never declare a run impossible merely because the victim is not down YET.
     return !candidates.some(piece => {
       const { canBlock, canBlitz } = blockActionAvailability(piece, state);
-      return (openRoutes.includes('block') && canBlock)
-        || (openRoutes.includes('blitz') && canBlitz);
+      return (enabledActions.includes('block') && canBlock)
+        || (enabledActions.includes('blitz') && canBlitz);
     });
   }
 
