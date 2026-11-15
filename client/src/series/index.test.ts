@@ -45,7 +45,7 @@ describe('Tutorial series', () => {
   });
 
   it('preserves native teams and active side for a valid board even in a mixed series', () => {
-    const scenario = scenarios[0];
+    const scenario = scenarios.find(item => item.id === 'scenario-001')!;
     const series: SeriesDefinition = {
       ...defaultSeries,
       teams: ['black-orc', 'imperial-nobility'],
