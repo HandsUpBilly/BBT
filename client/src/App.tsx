@@ -1679,6 +1679,7 @@ export default function App() {
             entry={selectedEntry}
             scenario={activeScenario}
             onBack={() => setSelectedEntry(undefined)}
+            orientation={pitchOrientation}
           />
           {notice}
           {reportModal}
@@ -2034,6 +2035,7 @@ export default function App() {
         <SubmitModal
           scenario={activeScenario}
           actionLog={state.actionLog}
+          orientation={pitchOrientation}
           onSubmit={handleSeriesContinue}
           onDismiss={handleSeriesContinue}
           seriesMode
@@ -2051,6 +2053,7 @@ export default function App() {
         <BranchRunSummary
           scenarioName={activeScenario.name}
           scenario={activeScenario}
+          orientation={pitchOrientation}
           run={branchedBoards.run}
           summary={branchedBoards.summary}
           branches={branchedBoards.strip}
@@ -2083,6 +2086,7 @@ export default function App() {
         <SubmitModal
           scenario={activeScenario}
           actionLog={state.actionLog}
+          orientation={pitchOrientation}
           onSubmit={handleSubmit}
           onDismiss={handleSkipSubmit}
           defaultName={identityName}
@@ -2097,6 +2101,7 @@ export default function App() {
         <BranchRunSummary
           scenarioName={activeScenario.name}
           scenario={activeScenario}
+          orientation={pitchOrientation}
           run={branchedBoards.run}
           summary={branchedBoards.summary}
           branches={branchedBoards.strip}

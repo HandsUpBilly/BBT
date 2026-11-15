@@ -1,5 +1,6 @@
 import type { LeaderboardEntry } from './types';
 import { PlayDiagram } from './PlayDiagram';
+import type { PitchOrientation } from './Pitch';
 import type { Scenario } from './types';
 import './ScoreSummary.css';
 
@@ -7,6 +8,7 @@ interface Props {
   entry: LeaderboardEntry;
   scenario: Scenario;
   onBack: () => void;
+  orientation?: PitchOrientation;
 }
 
 function pct(p: number) { return `${(p * 100).toFixed(1)}%`; }
@@ -49,7 +51,7 @@ function playerRole(m: LeaderboardEntry['moves'][number]): string {
 }
 
 
-export function ScoreSummary({ entry, scenario, onBack }: Props) {
+export function ScoreSummary({ entry, scenario, onBack, orientation }: Props) {
   const moves = entry.moves ?? [];
   const cumProb = moves.length > 0 ? moves[moves.length - 1].cumulativeProb : entry.probability;
 
@@ -66,7 +68,7 @@ export function ScoreSummary({ entry, scenario, onBack }: Props) {
       </div>
 
       {entry.playLog !== undefined ? (
-        <PlayDiagram scenario={scenario} actionLog={entry.playLog} />
+        <PlayDiagram scenario={scenario} actionLog={entry.playLog} orientation={orientation} />
       ) : (
         <p className="score-summary__diagram-unavailable">
           Play diagram unavailable for scores submitted before this feature.

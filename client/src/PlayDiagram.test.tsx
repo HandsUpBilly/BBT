@@ -126,4 +126,15 @@ describe('PlayDiagram', () => {
     expect(container.querySelector('[data-route-kind="movement"]')?.getAttribute('points'))
       .toBe('48,308 28,308');
   });
+
+  it('transposes row/col onto x/y for a portrait review instead of mirroring either axis', () => {
+    const { container } = render(
+      <PlayDiagram scenario={scenario} actionLog={actionLog} orientation="portrait" />
+    );
+
+    // Same three squares as the landscape case above, but with row/col swapped
+    // between x and y — not reversed, per the point() comment's warning.
+    expect(container.querySelector('[data-route-kind="movement"]')?.getAttribute('points'))
+      .toBe('168,148 168,168 168,188');
+  });
 });
