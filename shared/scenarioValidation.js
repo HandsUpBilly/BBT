@@ -171,9 +171,14 @@ export function normalizeScenario(input) {
 
 /** Legacy scenarios omit the field, which intentionally means every action. */
 export function enabledScenarioActions(scenario) {
-  return Array.isArray(scenario?.enabledActions)
-    ? [...new Set(scenario.enabledActions.filter(action => SCENARIO_ACTIONS.includes(action)))]
-    : [...SCENARIO_ACTIONS];
+  if (Array.isArray(scenario?.enabledActions)) {
+    return [...new Set(scenario.enabledActions.filter(action => SCENARIO_ACTIONS.includes(action)))];
+  }
+  // Older published puzzles omitted enabledActions when five actions existed.
+  // Do not silently introduce Foul into those puzzles; the new objective
+  // defaults to Foul explicitly, and the editor can opt other puzzles in.
+  return SCENARIO_ACTIONS.filter(action =>
+    action !== 'foul' || scenario?.objective === 'injure-by-foul');
 }
 
 /** "Block or Blitz" — the actions any one of which unlocks an objective. */
