@@ -52,6 +52,9 @@ test('foul objective requires a prone opponent and the Foul action', () => {
     pieces: original.pieces.map(p => p.team === 'orc' ? { ...p, down: true } : p),
   };
   assert.deepEqual(validateScenario(prone), []);
+  const noBall = { ...prone, ballPosition: null,
+    pieces: prone.pieces.map(p => ({ ...p, hasBall: false })) };
+  assert.deepEqual(validateScenario(noBall), []);
   assert.ok(validateScenario({ ...prone, enabledActions: ['move'] })
     .some(error => error.includes('needs Foul enabled')));
   assert.ok(validateScenario({ ...prone, pieces: original.pieces })
