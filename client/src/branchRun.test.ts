@@ -501,6 +501,7 @@ describe('a second block', () => {
     const tree = branchTreeView(twoBlocks());
 
     expect(tree?.blockNumber).toBe(1);
+    expect(tree?.position).toEqual({ col: 7, row: 10 });
     expect(tree?.blockLabel).toBe('Aldric Swiftfoot ⚔ Grukk Ironjaw');
     expect(tree?.states).toHaveLength(3);
     expect(tree?.states.map(state => state.number)).toEqual(['1', '2', '3']);
@@ -508,6 +509,7 @@ describe('a second block', () => {
 
     const laterBlocks = tree?.states.map(state => state.nextBlock);
     expect(laterBlocks?.every(block => block?.blockNumber === 2)).toBe(true);
+    expect(laterBlocks?.every(block => block?.position?.col === 2 && block?.position?.row === 10)).toBe(true);
     expect(laterBlocks?.every(block => block?.blockLabel === 'Cedric Linebreaker ⚔ Muzgash Skullkrak')).toBe(true);
     const leaves = laterBlocks?.flatMap(block => block?.states ?? []) ?? [];
     expect(leaves).toHaveLength(9);

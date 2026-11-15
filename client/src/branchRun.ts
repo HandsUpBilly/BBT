@@ -73,6 +73,8 @@ export interface RunLine {
 }
 
 export interface RunSplit {
+  /** The attacker's square when this Block/Blitz was declared, before pushes/follow-up. */
+  position: Position;
   resolution: BlockResolution;
   diceCount: 1 | 2 | 3;
   picker: 'attacker' | 'defender';
@@ -489,6 +491,7 @@ export function splitOnBlock(run: BranchRun): BranchRun {
     });
 
     const split: RunSplit = {
+      position: { ...attacker.position },
       resolution,
       diceCount: choice.diceCount,
       picker: choice.picker,
@@ -663,6 +666,8 @@ export interface BranchTreeStateView extends Omit<BranchStripEntry, 'status'> {
 
 export interface BranchTreeBlockView {
   id: string;
+  /** Position of the original block, if available for the on-pitch split marker. */
+  position?: Position;
   blockNumber: number;
   blockLabel: string;
   diceCount: 1 | 2 | 3;
@@ -937,6 +942,7 @@ export function branchTreeView(run: BranchRun): BranchTreeBlockView | null {
     }
     return {
       id: line.id,
+      position: line.split.position,
       blockNumber: depth + 1,
       blockLabel: `${line.split.attackerName} ⚔ ${line.split.defenderName}`,
       diceCount: line.split.diceCount,

@@ -1989,6 +1989,8 @@ export default function App() {
             showCoordinates={prefs.showCoordinates ?? true}
             teams={activeScenario?.teams}
             branchGhosts={branchedBoards.ghosts}
+            branchTree={branchedBoards.tree}
+            onSelectBranch={branchedBoards.handleSelectBranch}
             moveDecision={activeTransfer ? {
               position: activeTransfer.position,
               probability: null,
