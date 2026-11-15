@@ -4,7 +4,7 @@ import type { PuzzleAction, Scenario, ScenarioPieceDef, SeriesDefinition, Team }
 import { ConfirmDialog } from '../ConfirmDialog';
 import { AdminStatistics } from './AdminStatistics';
 import { AdminConsole } from './AdminConsole';
-import { createScenario, deleteScenario, fetchEditorData, updateScenario, openContentSyncPullRequest, fetchContentSyncStatus, fetchContentHistory, restoreContentHistory } from './editorApi';
+import { createScenario, deleteScenario, fetchEditorData, updateScenario, openContentSyncPullRequest, fetchContentHistory, restoreContentHistory } from './editorApi';
 import type { ContentHistoryEntry } from './editorApi';
 import { nextScenarioId, validateScenarioDraft } from './editorValidation';
 import { PLAYER_TEMPLATES, generatedPlayerName, templateToPiece } from './playerTemplates';
@@ -165,8 +165,7 @@ export function PuzzleEditor({ onBack, onPlay, onReport, previewScenario, idToke
       setRevisions(data.revisions ?? {});
       setSyncConflicts(data.conflicts ?? { scenarios: {}, series: {} });
       setDirtyContent(data.dirty ?? { scenarios: [], series: [] });
-      const remoteSync = await fetchContentSyncStatus(idToken).catch(() => null);
-      setSyncConfigured(remoteSync?.configured === true);
+      setSyncConfigured(data.syncConfigured === true);
       const first = previewScenario ?? data.scenarios[0] ?? emptyScenario([]);
       const clone = cloneScenario(first);
       setDraft(clone);
