@@ -259,8 +259,8 @@ export const STATIC_SCENARIOS = [
           "Stunty"
         ],
         "position": {
-          "col": 11,
-          "row": 22
+          "col": 10,
+          "row": 21
         },
         "hasBall": false
       },
@@ -355,7 +355,7 @@ export const STATIC_SCENARIOS = [
         "av": 8,
         "skills": [],
         "position": {
-          "col": 5,
+          "col": 4,
           "row": 22
         },
         "hasBall": false
@@ -402,7 +402,7 @@ export const STATIC_SCENARIOS = [
   {
     "id": "blood-feud-03",
     "name": "To the Cheap Seats",
-    "description": "The Reavers have the touchline trapped. Find a legal surf with the best odds; a supporting run can change the block.",
+    "description": "Two Black Orc players are exposed on the same touchline. Decide which target to hit and where your assists will count.",
     "activeTeam": "human",
     "teams": [
       "human",
@@ -469,8 +469,8 @@ export const STATIC_SCENARIOS = [
         "av": 8,
         "skills": [],
         "position": {
-          "col": 3,
-          "row": 13
+          "col": 1,
+          "row": 16
         },
         "hasBall": false
       },
@@ -488,8 +488,8 @@ export const STATIC_SCENARIOS = [
           "Block"
         ],
         "position": {
-          "col": 4,
-          "row": 12
+          "col": 1,
+          "row": 14
         },
         "hasBall": false
       },
@@ -528,8 +528,8 @@ export const STATIC_SCENARIOS = [
           "Grab"
         ],
         "position": {
-          "col": 1,
-          "row": 14
+          "col": 0,
+          "row": 15
         },
         "hasBall": false
       },
@@ -706,8 +706,8 @@ export const STATIC_SCENARIOS = [
           "Stunty"
         ],
         "position": {
-          "col": 10,
-          "row": 4
+          "col": 9,
+          "row": 3
         },
         "hasBall": false
       },
@@ -726,8 +726,8 @@ export const STATIC_SCENARIOS = [
           "Grab"
         ],
         "position": {
-          "col": 5,
-          "row": 3
+          "col": 3,
+          "row": 2
         },
         "hasBall": false
       },
@@ -888,8 +888,8 @@ export const STATIC_SCENARIOS = [
           "Block"
         ],
         "position": {
-          "col": 4,
-          "row": 22
+          "col": 3,
+          "row": 20
         },
         "hasBall": false
       },
@@ -952,7 +952,7 @@ export const STATIC_SCENARIOS = [
   {
     "id": "blood-feud-06",
     "name": "No Room at the Rail",
-    "description": "A Goblin is balancing on the far touchline. Clear the angle, arrange assists and send him into the spectators.",
+    "description": "A Goblin and a Black Orc are both near the crowd. Weigh a quick hit against setting up a stronger block.",
     "activeTeam": "human",
     "teams": [
       "human",
@@ -1019,8 +1019,8 @@ export const STATIC_SCENARIOS = [
         "av": 8,
         "skills": [],
         "position": {
-          "col": 11,
-          "row": 11
+          "col": 13,
+          "row": 12
         },
         "hasBall": false
       },
@@ -1039,8 +1039,8 @@ export const STATIC_SCENARIOS = [
           "Dodge"
         ],
         "position": {
-          "col": 10,
-          "row": 8
+          "col": 13,
+          "row": 14
         },
         "hasBall": false
       },
@@ -1079,8 +1079,8 @@ export const STATIC_SCENARIOS = [
           "Grab"
         ],
         "position": {
-          "col": 12,
-          "row": 12
+          "col": 14,
+          "row": 13
         },
         "hasBall": false
       },
@@ -1799,7 +1799,7 @@ export const STATIC_SCENARIOS = [
   {
     "id": "blood-feud-10",
     "name": "The Long Way Round",
-    "description": "The victim is exposed, but the obvious hitter is out of position. Several players can engineer the decisive push.",
+    "description": "Two targets are pinned against the touchline. Use the players already in contact or bring a blitzer around the screen.",
     "activeTeam": "human",
     "teams": [
       "human",
@@ -1885,7 +1885,7 @@ export const STATIC_SCENARIOS = [
         "av": 8,
         "skills": [],
         "position": {
-          "col": 4,
+          "col": 1,
           "row": 11
         },
         "hasBall": false
@@ -1905,8 +1905,8 @@ export const STATIC_SCENARIOS = [
           "Dodge"
         ],
         "position": {
-          "col": 3,
-          "row": 10
+          "col": 1,
+          "row": 9
         },
         "hasBall": false
       },
@@ -1945,8 +1945,8 @@ export const STATIC_SCENARIOS = [
           "Grab"
         ],
         "position": {
-          "col": 2,
-          "row": 12
+          "col": 0,
+          "row": 10
         },
         "hasBall": false
       },
@@ -2164,7 +2164,7 @@ export const STATIC_SCENARIOS = [
         "skills": [],
         "position": {
           "col": 4,
-          "row": 24
+          "row": 22
         },
         "hasBall": false
       },
@@ -2435,7 +2435,7 @@ export const STATIC_SCENARIOS = [
         ],
         "position": {
           "col": 12,
-          "row": 2
+          "row": 3
         },
         "hasBall": false
       },
@@ -4073,8 +4073,8 @@ export const STATIC_SCENARIOS = [
           "Wrestle"
         ],
         "position": {
-          "col": 7,
-          "row": 7
+          "col": 8,
+          "row": 8
         },
         "hasBall": false
       },
@@ -4460,8 +4460,8 @@ export const STATIC_SCENARIOS = [
           "Thick Skull"
         ],
         "position": {
-          "col": 3,
-          "row": 5
+          "col": 5,
+          "row": 3
         },
         "hasBall": false
       },

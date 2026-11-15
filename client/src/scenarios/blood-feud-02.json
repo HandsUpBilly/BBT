@@ -54,8 +54,8 @@
         "Stunty"
       ],
       "position": {
-        "col": 11,
-        "row": 22
+        "col": 10,
+        "row": 21
       },
       "hasBall": false
     },
@@ -150,7 +150,7 @@
       "av": 8,
       "skills": [],
       "position": {
-        "col": 5,
+        "col": 4,
         "row": 22
       },
       "hasBall": false

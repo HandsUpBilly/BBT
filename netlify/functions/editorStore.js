@@ -128,8 +128,75 @@ async function migrateBalancedSeries(store, series) {
   return updated;
 }
 
-export const readDraftScenarios = async store =>
-  (await migrateNewPuzzles(store, await readSeeded(store, SCENARIOS_KEY, STATIC_SCENARIOS))).map(normalizeScenario);
+// Prior positions identify the bundled layouts that can safely be rebalanced.
+const ORIGINAL_TACTICS_LAYOUTS = {
+  'blood-feud-02': { positions: { 'b2': [11, 22], 'h2': [5, 22] } },
+  'blood-feud-03': { positions: { 'h3': [3, 13], 'h4': [4, 12], 'b2': [1, 14] },
+    description: 'The Reavers have the touchline trapped. Find a legal surf with the best odds; a supporting run can change the block.',
+  },
+  'blood-feud-04': { positions: { 'b2': [10, 4], 'b3': [5, 3] } },
+  'blood-feud-05': { positions: { 'h1': [4, 22] } },
+  'blood-feud-06': { positions: { 'h3': [11, 11], 'h4': [10, 8], 'b2': [12, 12] },
+    description: 'A Goblin is balancing on the far touchline. Clear the angle, arrange assists and send him into the spectators.',
+  },
+  'blood-feud-10': { positions: { 'h4': [4, 11], 'h5': [3, 10], 'b2': [2, 12] },
+    description: 'The victim is exposed, but the obvious hitter is out of position. Several players can engineer the decisive push.',
+  },
+  'blood-feud-11': { positions: { 'h3': [4, 24] } },
+  'blood-feud-12': { positions: { 'b5': [12, 2] } },
+  'scenario-007': { positions: { 'imperial-nobility-bodyguard-21': [7, 7] } },
+  'scenario-008': { positions: { 'scenario-008-b7': [3, 5] } },
+};
+
+function rebalancePuzzle(scenario, revised, original) {
+  if (!revised || scenario.pieces.length !== revised.pieces.length
+    || scenario.activeTeam !== revised.activeTeam || scenario.objective !== revised.objective
+    || scenario.ballPosition?.col !== revised.ballPosition?.col
+    || scenario.ballPosition?.row !== revised.ballPosition?.row) return scenario;
+
+  const revisedPieces = new Map(revised.pieces.map(piece => [piece.id, piece]));
+  const matchesOriginal = scenario.pieces.every(piece => {
+    const replacement = revisedPieces.get(piece.id);
+    if (!replacement || piece.team !== replacement.team
+      || piece.hasBall !== Boolean(replacement.hasBall) || Boolean(piece.down) !== Boolean(replacement.down)) return false;
+    const [col, row] = original.positions[piece.id]
+      ?? [replacement.position.col, replacement.position.row];
+    return piece.position.col === col && piece.position.row === row;
+  });
+  if (!matchesOriginal) return scenario;
+
+  return {
+    ...scenario,
+    description: scenario.description === original.description ? revised.description : scenario.description,
+    pieces: scenario.pieces.map(piece => ({
+      ...piece,
+      position: revisedPieces.get(piece.id).position,
+    })),
+  };
+}
+
+async function migratePuzzleTactics(store, scenarios) {
+  const marker = 'series-tactics-2026-11-v1';
+  if (await store.get(marker, { type: 'text' })) return scenarios;
+  const revised = new Map(STATIC_SCENARIOS.map(scenario => [scenario.id, scenario]));
+  const updated = scenarios.map(raw => {
+    const original = ORIGINAL_TACTICS_LAYOUTS[raw.id];
+    if (!original) return raw;
+    const scenario = normalizeScenario(raw);
+    const replacement = rebalancePuzzle(scenario, revised.get(raw.id), original);
+    return replacement === scenario ? raw : replacement;
+  });
+  if (updated.some((scenario, index) => scenario !== scenarios[index])) {
+    await store.set(SCENARIOS_KEY, JSON.stringify(updated));
+  }
+  await store.set(marker, 'done');
+  return updated;
+}
+
+export const readDraftScenarios = async store => {
+  const expanded = await migrateNewPuzzles(store, await readSeeded(store, SCENARIOS_KEY, STATIC_SCENARIOS));
+  return (await migratePuzzleTactics(store, expanded)).map(normalizeScenario);
+};
 export const readDraftSeries = async store => {
   const saved = normalizeSeriesCollection(await readSeeded(store, SERIES_KEY, STATIC_SERIES));
   const expanded = await migrateNewSeries(store, saved);
