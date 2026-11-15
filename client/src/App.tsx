@@ -2180,7 +2180,7 @@ export default function App() {
         const canHandoff = (menuPiece.hasBall || state.ballPosition !== null) && !state.passUsed && !menuPiece.activated;
         const canPass    = passActionAvailability(state, menuPiece);
         const { canBlock, canBlitz } = blockActionAvailability(menuPiece, state);
-        const canFoul = foulTargetKeys(state, menuPiece).size > 0;
+        const canFoul = state.objective === 'injure-by-foul' && foulTargetKeys(state, menuPiece).size > 0;
         const enabledActions = new Set(enabledScenarioActions(activeScenario));
         const menuActions: PieceMenuAction[] = [
           { label: 'Move',     key: 'move',    disabled: !enabledActions.has('move'), locked: !enabledActions.has('move'), emphasized: emphasizedActions?.includes('move') },
