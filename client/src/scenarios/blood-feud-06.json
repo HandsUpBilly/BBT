@@ -2,9 +2,9 @@
   "id": "blood-feud-06",
   "name": "No Room at the Rail",
   "description": "A Goblin is balancing on the far touchline. Clear the angle, arrange assists and send him into the spectators.",
-  "activeTeam": "human",
+  "activeTeam": "imperial-nobility",
   "teams": [
-    "human",
+    "imperial-nobility",
     "black-orc"
   ],
   "objective": "crowd-surf",
@@ -22,16 +22,17 @@
   "pieces": [
     {
       "id": "h1",
-      "team": "human",
-      "role": "blitzer",
-      "name": "Cedric Linebreaker",
-      "ma": 7,
+      "team": "imperial-nobility",
+      "role": "bodyguard",
+      "name": "Otto Eisenhelm",
+      "ma": 5,
       "st": 3,
       "ag": 3,
       "pa": 4,
       "av": 8,
       "skills": [
-        "Block"
+        "Stand Firm",
+        "Wrestle"
       ],
       "position": {
         "col": 12,
@@ -41,15 +42,17 @@
     },
     {
       "id": "h2",
-      "team": "human",
-      "role": "lineman",
-      "name": "Bramm Surehands",
+      "team": "imperial-nobility",
+      "role": "retainer",
+      "name": "Konrad Hochmark",
       "ma": 6,
       "st": 3,
       "ag": 3,
       "pa": 4,
-      "av": 8,
-      "skills": [],
+      "av": 7,
+      "skills": [
+        "Fend"
+      ],
       "position": {
         "col": 13,
         "row": 9
@@ -58,15 +61,17 @@
     },
     {
       "id": "h3",
-      "team": "human",
-      "role": "lineman",
-      "name": "Bramm Surehands",
+      "team": "imperial-nobility",
+      "role": "retainer",
+      "name": "Viktor Sternbach",
       "ma": 6,
       "st": 3,
       "ag": 3,
       "pa": 4,
-      "av": 8,
-      "skills": [],
+      "av": 7,
+      "skills": [
+        "Fend"
+      ],
       "position": {
         "col": 11,
         "row": 11
@@ -75,17 +80,17 @@
     },
     {
       "id": "h4",
-      "team": "human",
-      "role": "catcher",
-      "name": "Joren Fleetstep",
-      "ma": 8,
+      "team": "imperial-nobility",
+      "role": "noble-blitzer",
+      "name": "Lukas Silberhand",
+      "ma": 7,
       "st": 3,
       "ag": 3,
       "pa": 4,
       "av": 8,
       "skills": [
-        "Catch",
-        "Dodge"
+        "Block",
+        "Catch"
       ],
       "position": {
         "col": 10,
