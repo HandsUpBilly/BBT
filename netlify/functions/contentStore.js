@@ -91,18 +91,24 @@ function reconcileToDeployment(snapshot) {
  * GitHub changes merge; conflicts remain visible to admins and never overwrite
  * either version without an explicit follow-up.
  */
-export async function readContentCatalog(store, readLegacy) {
+export async function readContentCatalog(store, readLegacy, { withEtag = false } = {}) {
   for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
     const { snapshot, etag } = await fetchSnapshot(store);
     if (!snapshot) {
       const legacy = await readLegacy();
       const fresh = initialCatalog(legacy);
-      if (await casWrite(store, fresh, null)) return fresh;
+      if (await casWrite(store, fresh, null)) {
+        if (!withEtag) return fresh;
+        continue; // Fetch the newly created ETag before applying a write.
+      }
       continue;
     }
     const reconciled = reconcileToDeployment(snapshot);
-    if (!reconciled) return snapshot;
-    if (await casWrite(store, reconciled, etag)) return reconciled;
+    if (!reconciled) return withEtag ? { catalog: snapshot, etag } : snapshot;
+    if (await casWrite(store, reconciled, etag)) {
+      if (!withEtag) return reconciled;
+      continue; // The CAS changed the ETag; fetch it before editing.
+    }
   }
   throw new ContentConflictError('The catalogue changed repeatedly during synchronisation. Retry.');
 }
@@ -129,7 +135,7 @@ export async function writeContentItem(store, readLegacy, { kind, id, value, exp
     throw new ContentConflictError('A content revision is required. Reload the editor.');
   }
   for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
-    const catalog = await readContentCatalog(store, readLegacy);
+    const { catalog, etag } = await readContentCatalog(store, readLegacy, { withEtag: true });
     const key = ref(kind, id);
     const actualRevision = catalog.revisions[key] ?? 0;
     if (actualRevision !== expectedRevision) throw new ContentConflictError();
@@ -156,9 +162,8 @@ export async function writeContentItem(store, readLegacy, { kind, id, value, exp
           (updated.revisions[ref('series', series.id)] ?? 0) + 1;
       }
     }
-    const { etag } = await fetchSnapshot(store);
-    // Do not let a stale copy overwrite a concurrent commit even when the
-    // second writer changed a different record.
+    // ETag belongs to the snapshot we actually edited; a concurrent writer
+    // forces a retry even if it changed a different puzzle.
     if (await casWrite(store, updated, etag)) return { catalog: updated, revision };
   }
   throw new ContentConflictError('Concurrent content updates exceeded retry limit.');
