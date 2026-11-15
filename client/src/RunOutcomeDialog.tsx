@@ -37,8 +37,7 @@ export function RunOutcomeDialog(props: Props) {
           </header>
           <div className="run-outcome-dialog__body">
             <p id={descriptionId}>
-              The ball carrier has finished their activation without reaching the end zone.
-              They cannot act again this turn, so the puzzle can no longer be completed.
+              No legal action remains to achieve this puzzle's objective in the current turn.
             </p>
             <div className="submit-modal__actions run-outcome-dialog__actions">
               <button type="button" className="modal__roll-btn" onClick={props.onRestart}>
@@ -71,7 +70,7 @@ export function RunOutcomeDialog(props: Props) {
         </div>
         <div className="run-outcome-dialog__body">
           <span className="run-outcome-dialog__kicker">One universe secured</span>
-          <h2 id={titleId}>Touchdown, but the run is not finished</h2>
+          <h2 id={titleId}>Objective reached, but the run is not finished</h2>
           <p id={descriptionId}>
             This branch scored. {props.remainingBranches} {branchLabel} unresolved,
             and each still contributes to your final scoring chance.
