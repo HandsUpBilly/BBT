@@ -626,6 +626,8 @@ export function Pitch({
       ? 'Pass'
       : state.isHandoffTargeting
         ? 'Hand-off'
+        : state.pendingFoul
+          ? 'Foul'
         : state.pendingBlockIsBlitz
           ? 'Blitz'
         : 'Move';
@@ -777,8 +779,8 @@ export function Pitch({
       const isHandoffTarget   = state.handoffTargets.has(k);
       const passRangeBand     = state.passRangeKeys.get(k);
       const isPassReceiver    = state.passReceiverKeys.has(k);
-      const isBlockTarget     = state.blockTargets.has(k);
-      const isBlitzTarget     = piece?.id === state.blitzTargetId;
+      const isBlockTarget     = state.blockTargets.has(k) || state.foulTargets.has(k);
+      const isBlitzTarget     = piece?.id === state.blitzTargetId || (state.pendingFoul && piece?.id === state.foulTargetId);
       const isPushTarget      = state.pushTargetKeys.has(k);
       const isPushOrigin      = pushOriginKeys.has(k);
       const isPushDestination = pushDestinationKeys.has(k);
