@@ -4,7 +4,7 @@
   "description": "A hard running lane, a wide receiver and a blocking escort. Decide how much of the plan really needs dice.",
   "activeTeam": "black-orc",
   "teams": [
-    "human",
+    "imperial-nobility",
     "black-orc"
   ],
   "objective": "touchdown",
@@ -121,16 +121,17 @@
     },
     {
       "id": "h1",
-      "team": "human",
-      "role": "blitzer",
-      "name": "Cedric Linebreaker",
-      "ma": 7,
+      "team": "imperial-nobility",
+      "role": "bodyguard",
+      "name": "Otto Eisenhelm",
+      "ma": 5,
       "st": 3,
       "ag": 3,
       "pa": 4,
       "av": 8,
       "skills": [
-        "Block"
+        "Stand Firm",
+        "Wrestle"
       ],
       "position": {
         "col": 4,
@@ -140,15 +141,17 @@
     },
     {
       "id": "h2",
-      "team": "human",
-      "role": "lineman",
-      "name": "Bramm Surehands",
+      "team": "imperial-nobility",
+      "role": "retainer",
+      "name": "Konrad Hochmark",
       "ma": 6,
       "st": 3,
       "ag": 3,
       "pa": 4,
-      "av": 8,
-      "skills": [],
+      "av": 7,
+      "skills": [
+        "Fend"
+      ],
       "position": {
         "col": 6,
         "row": 23
@@ -157,17 +160,17 @@
     },
     {
       "id": "h3",
-      "team": "human",
-      "role": "catcher",
-      "name": "Joren Fleetstep",
-      "ma": 8,
+      "team": "imperial-nobility",
+      "role": "noble-blitzer",
+      "name": "Lukas Silberhand",
+      "ma": 7,
       "st": 3,
       "ag": 3,
       "pa": 4,
       "av": 8,
       "skills": [
-        "Catch",
-        "Dodge"
+        "Block",
+        "Catch"
       ],
       "position": {
         "col": 9,
@@ -177,15 +180,17 @@
     },
     {
       "id": "h4",
-      "team": "human",
-      "role": "lineman",
-      "name": "Bramm Surehands",
+      "team": "imperial-nobility",
+      "role": "retainer",
+      "name": "Viktor Sternbach",
       "ma": 6,
       "st": 3,
       "ag": 3,
       "pa": 4,
-      "av": 8,
-      "skills": [],
+      "av": 7,
+      "skills": [
+        "Fend"
+      ],
       "position": {
         "col": 12,
         "row": 24
