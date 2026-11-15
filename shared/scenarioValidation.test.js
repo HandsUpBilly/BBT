@@ -44,6 +44,21 @@ test('preserves crowd surf as a selectable objective', () => {
   assert.equal(validScenario({ objective: 'crowd-surf' }).objective, 'crowd-surf');
 });
 
+test('foul objective requires a prone opponent and the Foul action', () => {
+  const original = validScenario();
+  const prone = {
+    ...original,
+    objective: 'injure-by-foul',
+    pieces: original.pieces.map(p => p.team === 'orc' ? { ...p, down: true } : p),
+  };
+  assert.deepEqual(validateScenario(prone), []);
+  assert.ok(validateScenario({ ...prone, enabledActions: ['move'] })
+    .some(error => error.includes('needs Foul enabled')));
+  assert.ok(validateScenario({ ...prone, pieces: original.pieces })
+    .some(error => error.includes('prone opponent')));
+  assert.equal(normalizeScenario(prone).objective, 'injure-by-foul');
+});
+
 test('rejects malformed ids', () => {
   for (const id of ['Scenario-1', '-leading', 'has space', '', 'UPPER']) {
     assert.equal(SCENARIO_ID_RE.test(id), false, `${id} should be rejected`);
