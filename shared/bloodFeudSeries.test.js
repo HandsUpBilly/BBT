@@ -22,6 +22,20 @@ test('The Troll Toll and Blood Feud each have eight puzzles with no shared membe
   }
 });
 
+test('Every puzzle uses only players from its owning series teams', () => {
+  for (const lineup of lineups) {
+    const puzzles = loadPuzzles(lineup.scenarioIds);
+    for (const puzzle of puzzles) {
+      assert.ok(lineup.teams.includes(puzzle.activeTeam), `${puzzle.id}: wrong active team`);
+      assert.deepEqual(
+        [...new Set(puzzle.pieces.map(piece => piece.team).filter(team => !lineup.teams.includes(team)))],
+        [],
+        `${puzzle.id}: opposing roster is inconsistent with series matchup`,
+      );
+    }
+  }
+});
+
 test('All twelve Blood Feud boards remain in the two series', () => {
   assert.equal(puzzles.length, 12);
   assert.deepEqual(series.teams, ['human', 'black-orc']);
@@ -68,7 +82,7 @@ test('every touchdown has at least two geometrically distinct carrier routes', (
   for (const puzzle of puzzles.filter(p => p.objective === 'touchdown')) {
     const carrier = puzzle.pieces.find(p => p.hasBall && p.team === puzzle.activeTeam);
     assert.ok(carrier, `${puzzle.id}: no ball carrier on active team`);
-    const goal = puzzle.activeTeam === 'human' ? 0 : 25;
+    const goal = puzzle.activeTeam === 'human' || puzzle.activeTeam === 'imperial-nobility' ? 0 : 25;
     const blocked = new Set(puzzle.pieces.filter(p => p.id !== carrier.id)
       .map(p => `${p.position.col},${p.position.row}`));
     const canFinish = (startCol, startRow) => {
