@@ -1,6 +1,6 @@
 import { STATIC_SCENARIOS, STATIC_SERIES } from './scenarioSeed.js';
 import { reconcileCollection, contentEqual } from '../../shared/contentReconcile.js';
-import { normalizeScenario, normalizeSeriesCollection } from '../../shared/scenarioValidation.js';
+import { normalizeScenario, normalizeSeriesCollection, updateSeriesAssignment } from '../../shared/scenarioValidation.js';
 
 export const CONTENT_KEY = 'content-v3/catalog';
 
@@ -183,6 +183,48 @@ export async function writeContentItem(store, readLegacy, { kind, id, value, exp
     if (await casWrite(store, updated, etag)) return { catalog: updated, revision };
   }
   throw new ContentConflictError('Concurrent content updates exceeded retry limit.');
+}
+
+/**
+ * Moving a puzzle between series is one atomic multi-item mutation.
+ * The caller must acknowledge the current revision of every affected series.
+ */
+export async function writeContentAssignment(store, readLegacy, {
+  scenarioId, targetSeriesId, expectedRevisions,
+}) {
+  if (!expectedRevisions || typeof expectedRevisions !== 'object') {
+    throw new ContentConflictError('Current series revisions are required.');
+  }
+  for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+    const { catalog, etag } = await readContentCatalog(store, readLegacy, { withEtag: true });
+    const { series, errors } = updateSeriesAssignment(
+      catalog.series, scenarioId, targetSeriesId, catalog.scenarios,
+    );
+    if (errors.length) return { catalog, errors };
+    if (series === catalog.series) return { catalog, errors: [] };
+    const revisions = { ...catalog.revisions };
+    const changed = [];
+    for (const item of series) {
+      const original = catalog.series.find(before => before.id === item.id);
+      if (contentEqual(original, item)) continue;
+      const key = ref('series', item.id);
+      if (expectedRevisions[item.id] !== (revisions[key] ?? 0)) {
+        throw new ContentConflictError(`Series ${item.id} changed. Reload before moving puzzle membership.`);
+      }
+      revisions[key] = (revisions[key] ?? 0) + 1;
+      changed.push({
+        kind: 'series', id: item.id, revision: revisions[key],
+        at: new Date().toISOString(), actor: 'editor-assignment',
+        before: original ?? null, after: item,
+      });
+    }
+    const updated = {
+      ...catalog, series, revisions,
+      history: [...catalog.history, ...changed].slice(-HISTORY_LIMIT),
+    };
+    if (await casWrite(store, updated, etag)) return { catalog: updated, errors: [] };
+  }
+  throw new ContentConflictError('Concurrent series updates exceeded retry limit.');
 }
 
 export function contentPublicView(catalog) {
