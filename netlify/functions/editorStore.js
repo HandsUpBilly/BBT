@@ -128,8 +128,66 @@ async function migrateBalancedSeries(store, series) {
   return updated;
 }
 
-export const readDraftScenarios = async store =>
-  (await migrateNewPuzzles(store, await readSeeded(store, SCENARIOS_KEY, STATIC_SCENARIOS))).map(normalizeScenario);
+// Series 2's eight-puzzle lineup originally reused four Human boards, but
+// its matchup is Imperial Nobility vs Black Orcs. Those boards are impossible
+// once applySeriesTeams switches the active team. Refresh *only* untouched
+// legacy layouts, leaving bespoke editor adjustments alone.
+const IMPERIAL_ROSTER_IDS = new Set([
+  'blood-feud-01', 'blood-feud-04', 'blood-feud-05', 'blood-feud-06',
+]);
+const ORIGINAL_HUMAN_ROLES = Object.freeze({
+  thrower: 'thrower', 'noble-blitzer': 'catcher',
+  bodyguard: 'blitzer', retainer: 'lineman',
+});
+const ORIGINAL_HUMAN_NAMES = Object.freeze({
+  thrower: 'Aldric Swiftfoot', catcher: 'Joren Fleetstep',
+  blitzer: 'Cedric Linebreaker', lineman: 'Bramm Surehands',
+});
+
+function isUnmodifiedHumanBoard(old, updated) {
+  if (!old || !updated || old.pieces?.length !== updated.pieces?.length) return false;
+  if (!old.pieces.some(piece => piece.team === 'human')) return false;
+  const byId = new Map(old.pieces.map(piece => [piece.id, piece]));
+  return updated.pieces.every(piece => {
+    const original = byId.get(piece.id);
+    if (!original || original.position?.col !== piece.position.col
+      || original.position?.row !== piece.position.row
+      || original.hasBall !== piece.hasBall) return false;
+    if (piece.team === 'black-orc') {
+      return original.team === 'black-orc' && original.role === piece.role
+        && original.name === piece.name;
+    }
+    const oldRole = ORIGINAL_HUMAN_ROLES[piece.role];
+    return original.team === 'human' && original.role === oldRole
+      && original.name === ORIGINAL_HUMAN_NAMES[oldRole];
+  });
+}
+
+async function migrateImperialSeriesPuzzles(store, scenarios) {
+  const targets = STATIC_SCENARIOS.filter(item => IMPERIAL_ROSTER_IDS.has(item.id));
+  if (targets.length !== IMPERIAL_ROSTER_IDS.size
+    || targets.some(item => item.pieces.some(piece => piece.team === 'human'))) return scenarios;
+  const marker = 'imperial-series2-rosters-2026-11-v1';
+  if (await store.get(marker, { type: 'text' })) return scenarios;
+  const replacements = new Map(targets.map(item => [item.id, item]));
+  let changed = false;
+  const updated = scenarios.map(item => {
+    const seed = replacements.get(item.id);
+    if (!isUnmodifiedHumanBoard(item, seed)) return item;
+    changed = true;
+    // Retain metadata such as custom descriptions and enablement; convert
+    // only the obsolete starting roster to the new series' legal team.
+    return { ...item, activeTeam: seed.activeTeam, teams: seed.teams, pieces: seed.pieces };
+  });
+  if (changed) await store.set(SCENARIOS_KEY, JSON.stringify(updated));
+  await store.set(marker, 'done');
+  return updated;
+}
+
+export const readDraftScenarios = async store => {
+  const scenarios = await migrateNewPuzzles(store, await readSeeded(store, SCENARIOS_KEY, STATIC_SCENARIOS));
+  return (await migrateImperialSeriesPuzzles(store, scenarios)).map(normalizeScenario);
+};
 export const readDraftSeries = async store => {
   const saved = normalizeSeriesCollection(await readSeeded(store, SERIES_KEY, STATIC_SERIES));
   const expanded = await migrateNewSeries(store, saved);
