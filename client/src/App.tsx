@@ -10,6 +10,7 @@ import { PieceMenu } from './PieceMenu';
 import type { PieceMenuAction } from './PieceMenu';
 import type { MenuAnchor } from './menuPosition';
 import { PlayerPanel } from './PlayerPanel';
+import { puzzleObjectiveText } from './objectiveCopy';
 import { ScenarioSelect } from './ScenarioSelect';
 import { SubmitModal } from './SubmitModal';
 import { RunOutcomeDialog } from './RunOutcomeDialog';
@@ -1843,7 +1844,10 @@ export default function App() {
     : 0;
   const statusLine = (
     <div className="hud__status">
-      <span>{compact && seriesCounter && <>{seriesCounter}{' '}</>}{activationStatus}</span>
+      <span>
+        <strong className="hud__objective">Objective · {puzzleObjectiveText(state.objective)}</strong>
+        {compact && seriesCounter && <>{seriesCounter}{' '}</>}{activationStatus}
+      </span>
     </div>
   );
   const activeTutorialConcepts = activeScenario ? tutorialConceptsForScenario(activeScenario.id) : [];
