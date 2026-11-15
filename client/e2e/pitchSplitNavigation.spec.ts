@@ -14,14 +14,9 @@ test('block split can be revisited on pitch and switched by dice outcome', async
   const blockChoice = page.locator('.piece-menu__item', { hasText: 'Block' }).locator('input');
   await blockChoice.check({ force: true });
   await expect(blockChoice).toBeChecked();
-  await page.locator('.piece-menu__confirm').click({ force: true });
-  console.log('SPLIT_SETUP', await page.evaluate(() => ({
-    selected: [...document.querySelectorAll('.square--selected')].map(el => (el as HTMLElement).dataset.square),
-    targets: [...document.querySelectorAll('.square--block-target')].map(el => (el as HTMLElement).dataset.square),
-    menu: document.querySelector('.piece-menu')?.textContent?.slice(0,300),
-    status: document.querySelector('.hud__status')?.textContent,
-    start: document.querySelector('[data-square="7F"]')?.getAttribute('class'),
-  })));
+  // WebKit can dispatch a forced tap through the floating menu instead of to
+  // its confirmation control. Keyboard activation targets the button directly.
+  await page.locator('.piece-menu__confirm').press('Enter');
   // The target overlay can lag behind the menu closing in WebKit. Wait for
   // the actual rules-engine targeting state before attempting the block.
   await expect(page.locator('.square[data-square="6F"]')).toHaveClass(/square--block-target/);
