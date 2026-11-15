@@ -8,8 +8,12 @@ test('block split can be revisited on pitch and switched by dice outcome', async
 
   // Make the real first block in this drill. The board state is shared with
   // blockDialog.spec.ts, so the marker location comes from actual game data.
-  await page.locator('.square[data-square="7F"] .piece').click({ force: true });
-  await page.locator('.piece-menu__item', { hasText: 'Block' }).locator('input').check({ force: true });
+  // Keyboard activation exercises the square's accessible route and avoids
+  // WebKit tap-hit ambiguity over small pitch tokens.
+  await page.locator('.square[data-square="7F"]').press('Enter');
+  const blockChoice = page.locator('.piece-menu__item', { hasText: 'Block' }).locator('input');
+  await blockChoice.check({ force: true });
+  await expect(blockChoice).toBeChecked();
   await page.locator('.piece-menu__confirm').click({ force: true });
   // The target overlay can lag behind the menu closing in WebKit. Wait for
   // the actual rules-engine targeting state before attempting the block.
