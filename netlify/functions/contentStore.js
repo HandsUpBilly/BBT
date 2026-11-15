@@ -169,7 +169,17 @@ export async function writeContentItem(store, readLegacy, { kind, id, value, exp
     const updated = {
       ...catalog, [kind]: updatedItems,
       revisions: { ...catalog.revisions, [key]: revision },
-      conflicts: { ...catalog.conflicts, [kind]: { ...catalog.conflicts[kind], [id]: [] } },
+      conflicts: {
+        ...catalog.conflicts,
+        [kind]: {
+          ...catalog.conflicts[kind],
+          [id]: (catalog.conflicts[kind]?.[id] ?? []).filter(path =>
+            !contentEqual(
+              valueAtPath(value ?? undefined, path),
+              valueAtPath(catalog.baseline[kind].find(item => item.id === id), path),
+            )),
+        },
+      },
       history: [...catalog.history, { kind, id, revision, at: new Date().toISOString(),
         actor, before: previous ?? null, after: value }].slice(-HISTORY_LIMIT),
     };
