@@ -1,12 +1,16 @@
 {
   "id": "troll-toll",
   "name": "The Troll Toll",
-  "description": "Imperial Nobility face the Black Orcs across four one-turn tactical matches. Break a close-marked carrier free, dismantle a defensive screen, throw a rival into the crowd and find a final scoring route. Every match offers multiple tactical approaches.",
+  "description": "The Imperial Nobility and Reikland Reavers take on the Black Orcs across eight one-turn challenges. Break through defensive screens, move the ball across the pitch and push rivals into the crowd.",
   "scenarioIds": [
     "scenario-007",
     "scenario-008",
     "scenario-009",
-    "scenario-010"
+    "scenario-010",
+    "blood-feud-01",
+    "blood-feud-04",
+    "blood-feud-05",
+    "blood-feud-06"
   ],
   "label": "Challenge",
   "published": true,

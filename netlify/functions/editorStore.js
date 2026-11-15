@@ -40,9 +40,11 @@ async function readSeeded(store, key, seed) {
 // invisible even after deploy. Import this release's new IDs once, preserving
 // existing author edits and deliberate deletions on subsequent reads.
 const SERIES_EXPANSION_MIGRATION = 'series-expansion-2026-11-v1';
+const NEW_BLOOD_FEUD_IDS = Array.from({ length: 12 }, (_, index) =>
+  `blood-feud-${String(index + 1).padStart(2, '0')}`);
 const NEW_PUZZLE_IDS = new Set([
   'scenario-008', 'scenario-009', 'scenario-010',
-  ...Array.from({ length: 12 }, (_, index) => `blood-feud-${String(index + 1).padStart(2, '0')}`),
+  ...NEW_BLOOD_FEUD_IDS,
 ]);
 
 async function migrateNewPuzzles(store, scenarios) {
@@ -69,7 +71,7 @@ async function migrateNewSeries(store, series) {
     // Production may already have a custom Series 2 ID. Extend it rather than
     // introducing a duplicate series that competes for puzzle membership.
     const ids = new Set(existingSecond.scenarioIds);
-    for (const id of newSecond.scenarioIds) ids.add(id);
+    for (const id of newSecond.scenarioIds.filter(id => !NEW_BLOOD_FEUD_IDS.includes(id))) ids.add(id);
     existingSecond.scenarioIds = [...ids];
   } else if (newSecond && !updated.some(item => item.id === newSecond.id)) {
     updated.push(newSecond);
@@ -81,11 +83,58 @@ async function migrateNewSeries(store, series) {
   return updated;
 }
 
+// The first expansion can already be saved in Blobs. Move memberships in one
+// write and leave manually reordered or reassigned lineups alone.
+async function migrateBalancedSeries(store, series) {
+  const marker = 'balanced-series-2026-11-v1';
+  if (await store.get(marker, { type: 'text' })) return series;
+
+  const secondSeed = STATIC_SERIES.find(item => item.id === 'troll-toll');
+  const thirdSeed = STATIC_SERIES.find(item => item.id === 'blood-feud');
+  const oldSecondIds = secondSeed.scenarioIds.filter(id => !NEW_BLOOD_FEUD_IDS.includes(id));
+  const movedIds = secondSeed.scenarioIds.filter(id => NEW_BLOOD_FEUD_IDS.includes(id));
+  const hasOrder = (item, ids) => item.scenarioIds.length === ids.length
+    && ids.every((id, index) => item.scenarioIds[index] === id);
+  const second = series.find(item => hasOrder(item, oldSecondIds));
+  const third = series.find(item => item.id === thirdSeed.id);
+  const ownsMovedPuzzle = series.some(item => item !== third
+    && item.scenarioIds.some(id => movedIds.includes(id)));
+
+  if (!second || !third || ownsMovedPuzzle) return series;
+  // On a first-time expansion the third series is already built from the new seed.
+  if (!hasOrder(third, NEW_BLOOD_FEUD_IDS) && !hasOrder(third, thirdSeed.scenarioIds)) return series;
+
+  const updated = series.map(item => {
+    if (item === second) {
+      return {
+        ...item,
+        description: item.description === 'Imperial Nobility face the Black Orcs across four one-turn tactical matches. Break a close-marked carrier free, dismantle a defensive screen, throw a rival into the crowd and find a final scoring route. Every match offers multiple tactical approaches.'
+          ? secondSeed.description : item.description,
+        scenarioIds: secondSeed.scenarioIds,
+      };
+    }
+    if (item === third) {
+      return {
+        ...item,
+        description: item.description === 'The Reikland Reavers face the Black Orc bruisers in twelve one-turn tactical challenges. Each puzzle has one clear objective, but many ways to achieve it. Favour the cleanest probability line over needless dice.'
+          ? thirdSeed.description : item.description,
+        scenarioIds: thirdSeed.scenarioIds,
+      };
+    }
+    return item;
+  });
+  await store.set(SERIES_KEY, JSON.stringify(updated));
+  await store.set(marker, 'done');
+  return updated;
+}
+
 export const readDraftScenarios = async store =>
   (await migrateNewPuzzles(store, await readSeeded(store, SCENARIOS_KEY, STATIC_SCENARIOS))).map(normalizeScenario);
-export const readDraftSeries = async store =>
-  normalizeSeriesCollection(await migrateNewSeries(store,
-    normalizeSeriesCollection(await readSeeded(store, SERIES_KEY, STATIC_SERIES))));
+export const readDraftSeries = async store => {
+  const saved = normalizeSeriesCollection(await readSeeded(store, SERIES_KEY, STATIC_SERIES));
+  const expanded = await migrateNewSeries(store, saved);
+  return normalizeSeriesCollection(await migrateBalancedSeries(store, expanded));
+};
 
 export const writeDraftScenarios = (store, scenarios) =>
   store.set(SCENARIOS_KEY, JSON.stringify(scenarios));

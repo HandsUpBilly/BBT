@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { toPublicView } from '../functions/editorStore.js';
+import { readDraftSeries, toPublicView } from '../functions/editorStore.js';
 
 const scenarios = [
   { id: 'scenario-001', published: true },
@@ -62,4 +62,31 @@ test('toPublicView hides disabled series while leaving enabled series available'
     { id: 'disabled', published: false, scenarioIds: ['scenario-002'] },
   ]);
   assert.deepEqual(result.series.map(item => item.id), ['enabled']);
+});
+
+test('readDraftSeries rebalances the original lineups once and preserves custom metadata', async () => {
+  const secondIds = ['scenario-007', 'scenario-008', 'scenario-009', 'scenario-010'];
+  const thirdIds = Array.from({ length: 12 }, (_, index) =>
+    `blood-feud-${String(index + 1).padStart(2, '0')}`);
+  const storedSeries = [
+    { id: 'legacy-second', description: 'Custom copy', scenarioIds: secondIds },
+    { id: 'blood-feud', scenarioIds: thirdIds },
+  ];
+  const values = new Map([
+    ['series-default', JSON.stringify(storedSeries)],
+    ['series-expansion-2026-11-v1-series', 'done'],
+  ]);
+  const store = {
+    get: async key => values.get(key),
+    set: async (key, value) => values.set(key, value),
+  };
+
+  const balanced = await readDraftSeries(store);
+  const movedIds = [thirdIds[0], thirdIds[3], thirdIds[4], thirdIds[5]];
+  assert.deepEqual(balanced[0].scenarioIds, [...secondIds, ...movedIds]);
+  assert.equal(balanced[0].description, 'Custom copy');
+  assert.deepEqual(balanced[1].scenarioIds, thirdIds.filter(id => !movedIds.includes(id)));
+
+  values.set('series-default', JSON.stringify(storedSeries));
+  assert.deepEqual((await readDraftSeries(store))[0].scenarioIds, secondIds);
 });

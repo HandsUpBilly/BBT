@@ -5,16 +5,29 @@ import { normalizeScenario, validateScenario, seriesMembershipErrors } from './s
 
 const readJson = path => JSON.parse(readFileSync(new URL('../' + path, import.meta.url), 'utf8'));
 const series = readJson('client/src/series/blood-feud.json');
-const puzzles = series.scenarioIds.map(id => readJson(`client/src/scenarios/${id}.json`));
+const second = readJson('client/src/series/troll-toll.json');
+const lineups = [second, series];
+const loadPuzzles = ids => ids.map(id => readJson(`client/src/scenarios/${id}.json`));
+const allPuzzles = loadPuzzles(lineups.flatMap(item => item.scenarioIds));
+const puzzles = allPuzzles.filter(puzzle => puzzle.id.startsWith('blood-feud-'));
 
-test('Blood Feud consists of twelve uniquely identified single-objective puzzles', () => {
+test('The Troll Toll and Blood Feud each have eight puzzles with no shared membership', () => {
+  assert.deepEqual(lineups.map(item => item.scenarioIds.length), [8, 8]);
+  assert.equal(new Set(allPuzzles.map(puzzle => puzzle.id)).size, 16);
+  for (const item of lineups) {
+    assert.deepEqual(seriesMembershipErrors(item, lineups, allPuzzles), []);
+    const objectives = loadPuzzles(item.scenarioIds).map(puzzle => puzzle.objective);
+    assert.equal(objectives.filter(objective => objective === 'touchdown').length, 6);
+    assert.equal(objectives.filter(objective => objective === 'crowd-surf').length, 2);
+  }
+});
+
+test('All twelve Blood Feud boards remain in the two series', () => {
   assert.equal(puzzles.length, 12);
-  assert.equal(new Set(series.scenarioIds).size, 12);
   assert.deepEqual(series.teams, ['human', 'black-orc']);
   assert.equal(series.logo, 'blood-feud');
   assert.equal(puzzles.filter(p => p.objective === 'crowd-surf').length, 3);
   assert.equal(puzzles.filter(p => p.objective === 'touchdown').length, 9);
-  assert.deepEqual(seriesMembershipErrors(series, [series], puzzles), []);
 });
 
 test('every Blood Feud puzzle passes the shared production scenario validator', () => {
