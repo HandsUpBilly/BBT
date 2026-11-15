@@ -32,14 +32,15 @@ export function foulOdds({ av, offensiveAssists = 0, defensiveAssists = 0, dirty
   let casualtyAndSentOff = 0;
 
   // Each branch is an entire physical dice outcome. When a failed armour
-  // roll has Lone Fouler, re-roll it once. A previous double still counts.
+  // roll has Lone Fouler, re-roll it once. A previous roll, including doubles,
+  // ceases to exist under BB2025's official Lone Fouler FAQ.
   const resolveArmour = (first, second, weight) => {
     const roll = second ?? first;
     const naturalArmourBreak = roll.sum + modifier >= armourTarget;
     const usedDirtyOnArmour = !naturalArmourBreak
       && dirtyPlayer && roll.sum + modifier + 1 >= armourTarget;
     const broken = naturalArmourBreak || usedDirtyOnArmour;
-    const armourDouble = first.double || Boolean(second?.double);
+    const armourDouble = roll.double;
     const sneakyProtects = sneakyGit && !broken;
     const sendOffOnArmour = armourDouble && !sneakyProtects;
 
