@@ -211,3 +211,23 @@ export async function deleteSeries(seriesId: string, idToken: string | null, rev
   });
   return parseJsonResponse<EditorLoadResponse>(response);
 }
+
+export async function fetchContentSyncStatus(idToken: string | null): Promise<{
+  configured: boolean;
+  dirty: Record<'scenarios' | 'series', string[]>;
+  conflicts: Record<'scenarios' | 'series', Record<string, string[]>>;
+}> {
+  const response = await fetch('/api/editor/content-sync', { headers: authHeaders(idToken) });
+  return parseJsonResponse(response);
+}
+
+export async function openContentSyncPullRequest(idToken: string | null): Promise<{
+  synced: boolean;
+  changes: number;
+  pullRequest?: string;
+}> {
+  const response = await fetch('/api/editor/content-sync', {
+    method: 'POST', headers: authHeaders(idToken),
+  });
+  return parseJsonResponse(response);
+}
