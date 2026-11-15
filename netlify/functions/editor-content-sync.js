@@ -30,7 +30,7 @@ function findItem(list, id) {
   return (list ?? []).find(item => item.id === id);
 }
 
-async function editorDiff(catalog, token) {
+async function editorDiff(catalog, token, baseSha) {
   const versions = contentVersions(catalog);
   const changes = [];
   const conflicts = [];
@@ -39,7 +39,7 @@ async function editorDiff(catalog, token) {
       const base = findItem(catalog.baseline[kind], id);
       const live = findItem(catalog[kind], id);
       const path = `client/src/${kind}/${id}.json`;
-      const gh = await github(`contents/${path}?ref=${encodeURIComponent(branch)}`, token, { allowMissing: true });
+      const gh = await github(`contents/${path}?ref=${encodeURIComponent(baseSha)}`, token, { allowMissing: true });
       let remote = null;
       if (gh) {
         const raw = await github(`git/blobs/${gh.sha}`, token);
@@ -83,14 +83,16 @@ export default async function handler(req) {
     return json(409, { errors: ['Resolve existing GitHub/editor conflicts before exporting.'], conflicts: status.conflicts });
   }
   try {
-    const { changes, conflicts } = await editorDiff(catalog, token);
+    // Pin the GitHub snapshot before inspecting any file so we cannot merge
+    // changes read from different staging commits into one PR.
+    const baseRef = await github(`git/ref/heads/${branch}`, token);
+    const { changes, conflicts } = await editorDiff(catalog, token, baseRef.object.sha);
     if (conflicts.length) return json(409, {
       errors: ['GitHub changed since this editor content was last synchronised. Resolve these differences first.'],
       conflicts,
     });
     if (!changes.length) return json(200, { synced: true, changes: 0 });
     // Branch off the fresh staging commit so unrelated source changes survive.
-    const baseRef = await github(`git/ref/heads/${branch}`, token);
     const baseCommit = await github(`git/commits/${baseRef.object.sha}`, token);
     const tree = await github('git/trees', token, {
       method: 'POST', body: JSON.stringify({
