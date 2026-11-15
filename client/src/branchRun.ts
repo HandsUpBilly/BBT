@@ -33,6 +33,8 @@ import {
   applyHandoffTarget,
   applyPassAction,
   applyPassTarget,
+  applyFoulAction,
+  applyFoulTarget,
   applyPushChoice,
   classifyClick,
   type ClickIntent,
@@ -303,6 +305,14 @@ export function declarePass(run: BranchRun, pieceId: string): BranchRun {
 /** Pick a pass receiver. Pass and catch targets are recomputed per branch. */
 export function choosePassTarget(run: BranchRun, pos: Position): BranchRun {
   return authorUniform(run, state => applyPassTarget(state, pos));
+}
+
+/** Declare a Foul. Target selection and its later resolution replay in lockstep. */
+export function declareFoul(run: BranchRun, pieceId: string): BranchRun {
+  return authorUniform(run, state => applyFoulAction(state, pieceId));
+}
+export function chooseFoulTarget(run: BranchRun, pos: Position): BranchRun {
+  return authorUniform(run, state => applyFoulTarget(state, pos));
 }
 
 /** Declare a Block or Blitz for a piece, across the lockstep group. */
