@@ -78,6 +78,17 @@ function openCreatorTool(name: RegExp) {
 }
 
 describe('PuzzleEditor unsaved changes', { timeout: 15_000 }, () => {
+  it('keeps a non-functional Side missions placeholder visible for future authoring', async () => {
+    renderEditor();
+    await screen.findByDisplayValue('Saved Puzzle');
+
+    expect(screen.getByRole('heading', { name: 'Side missions' })).toBeTruthy();
+    expect(screen.getByText('Touchdown after throwing a team-mate')).toBeTruthy();
+    expect(screen.getByText('Complete at least one Jump')).toBeTruthy();
+    expect(screen.getByText(/not saved or scored yet/i)).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Add side mission' })).toHaveProperty('disabled', true);
+  });
+
   it('enables every player-menu action by default and saves an edited action list', async () => {
     const fetchMock = renderEditor();
     await screen.findByDisplayValue('Saved Puzzle');
