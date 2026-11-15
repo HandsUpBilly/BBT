@@ -1225,6 +1225,15 @@ export function applyFoulTarget(prev: GameState, pos: Position): GameState {
       odds = candidate;
     }
   }
+  if (odds.injuryProbability <= 0) {
+    return clearSelection({
+      ...prev,
+      pieces,
+      foulUsed: true,
+      // No possible casualty, so the objective is not fulfilled.
+      // runOutcome detects the spent foul and offers restart.
+    });
+  }
   const prior = prev.actionLog.at(-1)?.cumulativeProb ?? 1;
   const log: ActionLogEntry = {
     kind: 'foul', pieceName: attacker.name, pieceRole: attacker.role ?? attacker.team,
