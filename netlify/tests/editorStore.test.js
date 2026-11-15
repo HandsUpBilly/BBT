@@ -90,3 +90,47 @@ test('readDraftSeries rebalances the original lineups once and preserves custom 
   values.set('series-default', JSON.stringify(storedSeries));
   assert.deepEqual((await readDraftSeries(store))[0].scenarioIds, secondIds);
 });
+
+test('Series 2 migration upgrades untouched Human lineups but preserves edited ones', async () => {
+  const ids = ['blood-feud-01', 'blood-feud-04', 'blood-feud-05', 'blood-feud-06'];
+  const originalRoles = { thrower: 'thrower', 'noble-blitzer': 'catcher', bodyguard: 'blitzer', retainer: 'lineman' };
+  const originalNames = { thrower: 'Aldric Swiftfoot', catcher: 'Joren Fleetstep',
+    blitzer: 'Cedric Linebreaker', lineman: 'Bramm Surehands' };
+  const makeLegacy = scenario => ({
+    ...scenario,
+    activeTeam: scenario.activeTeam === 'imperial-nobility' ? 'human' : scenario.activeTeam,
+    teams: ['human', 'black-orc'],
+    pieces: scenario.pieces.map(piece => {
+      if (piece.team !== 'imperial-nobility') return piece;
+      const role = originalRoles[piece.role];
+      return { ...piece, team: 'human', role, name: originalNames[role] };
+    }),
+  });
+
+  const seeded = structuredClone(STATIC_SCENARIOS);
+  const positions = ids.map(id => seeded.findIndex(item => item.id === id));
+  assert.ok(positions.every(index => index >= 0));
+  for (const index of positions) seeded[index] = makeLegacy(seeded[index]);
+  const custom = seeded.find(item => item.id === 'blood-feud-06');
+  custom.pieces[0].position.row += 1;
+  const stored = new Map([
+    ['scenarios', JSON.stringify(seeded)],
+    ['series-expansion-2026-11-v1-scenarios', 'done'],
+  ]);
+  const writes = [];
+  const store = {
+    async get(key) { return stored.get(key) ?? null; },
+    async set(key, value) { writes.push(key); stored.set(key, value); },
+  };
+  const first = await readDraftScenarios(store);
+  for (const id of ids.filter(item => item !== 'blood-feud-06')) {
+    const scenario = first.find(item => item.id === id);
+    assert.ok(scenario.pieces.some(piece => piece.team === 'imperial-nobility'), id);
+    assert.ok(scenario.pieces.every(piece => scenario.teams.includes(piece.team)), id);
+  }
+  assert.ok(first.find(item => item.id === 'blood-feud-06').pieces.some(piece => piece.team === 'human'),
+    'preserve user-customised board instead of overwriting');
+  const after = writes.length;
+  await readDraftScenarios(store);
+  assert.equal(writes.length, after, 'migration marker stops recurring writes');
+});
