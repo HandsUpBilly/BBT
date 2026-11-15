@@ -146,6 +146,12 @@
   to     = "/.netlify/functions/editor-series/:splat"
   status = 200
 
+# Admin-only per-item revision history and safe rollback.
+[[redirects]]
+  from   = "/api/editor/content-history"
+  to     = "/.netlify/functions/editor-content-history"
+  status = 200
+
 # Admin-only export of live Puzzle Editor changes into a reviewed GitHub PR.
 [[redirects]]
   from   = "/api/editor/content-sync"
