@@ -32,13 +32,12 @@ export function PitchSplitMarkers({ tree, orientation, acrossValues, downValues,
   const [openId, setOpenId] = useState<string | null>(null);
   const layerRef = useRef<HTMLDivElement>(null);
   const markers = pitchSplitPoints(tree);
+  // A removed split must not leave its popover on screen. Derive visibility
+  // from the current tree instead of setting state during an effect.
+  const activeOpenId = markers.some(marker => marker.id === openId) ? openId : null;
 
   useEffect(() => {
-    if (!openId) return;
-    if (!markers.some(marker => marker.id === openId)) {
-      setOpenId(null);
-      return;
-    }
+    if (!activeOpenId) return;
     const dismiss = (event: PointerEvent) => {
       if (!layerRef.current?.contains(event.target as Node)) setOpenId(null);
     };
@@ -56,7 +55,7 @@ export function PitchSplitMarkers({ tree, orientation, acrossValues, downValues,
       document.removeEventListener('pointerdown', dismiss);
       document.removeEventListener('keydown', escape);
     };
-  }, [openId, markers]);
+  }, [activeOpenId]);
 
   if (markers.length === 0) return null;
 
@@ -77,7 +76,7 @@ export function PitchSplitMarkers({ tree, orientation, acrossValues, downValues,
         const y = ((downIndex + 0.18) / downValues.length) * 100;
         const side = x < 34 ? 'left' : x > 66 ? 'right' : 'center';
         const vertical = y > 50 ? 'up' : 'down';
-        const isOpen = openId === marker.id;
+        const isOpen = activeOpenId === marker.id;
         const title = `Split ${marker.number}: ${marker.blockLabel}`;
         return (
           <div
