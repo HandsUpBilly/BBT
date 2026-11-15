@@ -6,7 +6,7 @@ export function summarizeActionLog(actionLog: ActionLogEntry[]) {
     ? actionLog[actionLog.length - 1].cumulativeProb
     : 1;
   const riskyMoves = actionLog.filter(e =>
-    e.kind === 'handoff' || e.kind === 'pass' || e.kind === 'pass-catch' || e.kind === 'block' ||
+    e.kind === 'handoff' || e.kind === 'pass' || e.kind === 'pass-catch' || e.kind === 'block' || e.kind === 'foul' ||
     e.dodgeTarget !== null || e.isGfi || (e.kind === 'move' && !!e.pickupTarget)
   );
   const diceCount = riskyMoves.length;
@@ -37,6 +37,19 @@ export function summarizeActionLog(actionLog: ActionLogEntry[]) {
         from: e.from, to: e.to,
         dodgeTarget: null, isGfi: false,
         catchTarget: e.catchTarget,
+        actionProb: e.actionProb, cumulativeProb: e.cumulativeProb,
+      };
+    }
+    if (e.kind === 'foul') {
+      return {
+        pieceName: e.pieceName, pieceRole: e.pieceRole,
+        receiverName: e.receiverName, receiverRole: e.receiverRole,
+        from: e.from, to: e.to, dodgeTarget: null, isGfi: false,
+        foul: true, av: e.av, offensiveAssists: e.offensiveAssists,
+        defensiveAssists: e.defensiveAssists, dirtyPlayer: e.dirtyPlayer,
+        sneakyGit: e.sneakyGit, loneFouler: e.loneFouler, stunty: e.stunty,
+        armourBreakProbability: e.armourBreakProbability,
+        sendOffProbability: e.sendOffProbability,
         actionProb: e.actionProb, cumulativeProb: e.cumulativeProb,
       };
     }
