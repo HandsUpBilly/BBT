@@ -9,9 +9,9 @@ export const STATIC_SCENARIOS = [
     "id": "blood-feud-01",
     "name": "The Thin Blue Line",
     "description": "A crowded channel, two receiving lanes and one turn to find daylight. The shortest route is not necessarily the safest.",
-    "activeTeam": "human",
+    "activeTeam": "imperial-nobility",
     "teams": [
-      "human",
+      "imperial-nobility",
       "black-orc"
     ],
     "objective": "touchdown",
@@ -28,13 +28,13 @@ export const STATIC_SCENARIOS = [
     "pieces": [
       {
         "id": "h1",
-        "team": "human",
+        "team": "imperial-nobility",
         "role": "thrower",
-        "name": "Aldric Swiftfoot",
+        "name": "Leopold von Draken",
         "ma": 6,
         "st": 3,
         "ag": 3,
-        "pa": 3,
+        "pa": 2,
         "av": 8,
         "skills": [
           "Pass"
@@ -47,17 +47,17 @@ export const STATIC_SCENARIOS = [
       },
       {
         "id": "h2",
-        "team": "human",
-        "role": "catcher",
-        "name": "Joren Fleetstep",
-        "ma": 8,
+        "team": "imperial-nobility",
+        "role": "noble-blitzer",
+        "name": "Lukas Silberhand",
+        "ma": 7,
         "st": 3,
         "ag": 3,
         "pa": 4,
         "av": 8,
         "skills": [
-          "Catch",
-          "Dodge"
+          "Block",
+          "Catch"
         ],
         "position": {
           "col": 4,
@@ -67,17 +67,17 @@ export const STATIC_SCENARIOS = [
       },
       {
         "id": "h3",
-        "team": "human",
-        "role": "catcher",
-        "name": "Joren Fleetstep",
-        "ma": 8,
+        "team": "imperial-nobility",
+        "role": "noble-blitzer",
+        "name": "Alaric Goldcrest",
+        "ma": 7,
         "st": 3,
         "ag": 3,
         "pa": 4,
         "av": 8,
         "skills": [
-          "Catch",
-          "Dodge"
+          "Block",
+          "Catch"
         ],
         "position": {
           "col": 10,
@@ -87,16 +87,17 @@ export const STATIC_SCENARIOS = [
       },
       {
         "id": "h4",
-        "team": "human",
-        "role": "blitzer",
-        "name": "Cedric Linebreaker",
-        "ma": 7,
+        "team": "imperial-nobility",
+        "role": "bodyguard",
+        "name": "Otto Eisenhelm",
+        "ma": 5,
         "st": 3,
         "ag": 3,
         "pa": 4,
         "av": 8,
         "skills": [
-          "Block"
+          "Stand Firm",
+          "Wrestle"
         ],
         "position": {
           "col": 7,
@@ -106,15 +107,17 @@ export const STATIC_SCENARIOS = [
       },
       {
         "id": "h5",
-        "team": "human",
-        "role": "lineman",
-        "name": "Bramm Surehands",
+        "team": "imperial-nobility",
+        "role": "retainer",
+        "name": "Konrad Hochmark",
         "ma": 6,
         "st": 3,
         "ag": 3,
         "pa": 4,
-        "av": 8,
-        "skills": [],
+        "av": 7,
+        "skills": [
+          "Fend"
+        ],
         "position": {
           "col": 3,
           "row": 6
@@ -559,9 +562,9 @@ export const STATIC_SCENARIOS = [
     "id": "blood-feud-04",
     "name": "The Crossfield Gambit",
     "description": "One runner is marked, another is open. A hand-off, a pass or a daring solo sprint can finish the drive.",
-    "activeTeam": "human",
+    "activeTeam": "imperial-nobility",
     "teams": [
-      "human",
+      "imperial-nobility",
       "black-orc"
     ],
     "objective": "touchdown",
@@ -578,13 +581,13 @@ export const STATIC_SCENARIOS = [
     "pieces": [
       {
         "id": "h1",
-        "team": "human",
+        "team": "imperial-nobility",
         "role": "thrower",
-        "name": "Aldric Swiftfoot",
+        "name": "Leopold von Draken",
         "ma": 6,
         "st": 3,
         "ag": 3,
-        "pa": 3,
+        "pa": 2,
         "av": 8,
         "skills": [
           "Pass"
@@ -597,17 +600,17 @@ export const STATIC_SCENARIOS = [
       },
       {
         "id": "h2",
-        "team": "human",
-        "role": "catcher",
-        "name": "Joren Fleetstep",
-        "ma": 8,
+        "team": "imperial-nobility",
+        "role": "noble-blitzer",
+        "name": "Lukas Silberhand",
+        "ma": 7,
         "st": 3,
         "ag": 3,
         "pa": 4,
         "av": 8,
         "skills": [
-          "Catch",
-          "Dodge"
+          "Block",
+          "Catch"
         ],
         "position": {
           "col": 3,
@@ -617,17 +620,17 @@ export const STATIC_SCENARIOS = [
       },
       {
         "id": "h3",
-        "team": "human",
-        "role": "catcher",
-        "name": "Joren Fleetstep",
-        "ma": 8,
+        "team": "imperial-nobility",
+        "role": "noble-blitzer",
+        "name": "Alaric Goldcrest",
+        "ma": 7,
         "st": 3,
         "ag": 3,
         "pa": 4,
         "av": 8,
         "skills": [
-          "Catch",
-          "Dodge"
+          "Block",
+          "Catch"
         ],
         "position": {
           "col": 11,
@@ -637,16 +640,17 @@ export const STATIC_SCENARIOS = [
       },
       {
         "id": "h4",
-        "team": "human",
-        "role": "blitzer",
-        "name": "Cedric Linebreaker",
-        "ma": 7,
+        "team": "imperial-nobility",
+        "role": "bodyguard",
+        "name": "Otto Eisenhelm",
+        "ma": 5,
         "st": 3,
         "ag": 3,
         "pa": 4,
         "av": 8,
         "skills": [
-          "Block"
+          "Stand Firm",
+          "Wrestle"
         ],
         "position": {
           "col": 8,
@@ -656,15 +660,17 @@ export const STATIC_SCENARIOS = [
       },
       {
         "id": "h5",
-        "team": "human",
-        "role": "lineman",
-        "name": "Bramm Surehands",
+        "team": "imperial-nobility",
+        "role": "retainer",
+        "name": "Konrad Hochmark",
         "ma": 6,
         "st": 3,
         "ag": 3,
         "pa": 4,
-        "av": 8,
-        "skills": [],
+        "av": 7,
+        "skills": [
+          "Fend"
+        ],
         "position": {
           "col": 6,
           "row": 5
@@ -759,7 +765,7 @@ export const STATIC_SCENARIOS = [
     "description": "A hard running lane, a wide receiver and a blocking escort. Decide how much of the plan really needs dice.",
     "activeTeam": "black-orc",
     "teams": [
-      "human",
+      "imperial-nobility",
       "black-orc"
     ],
     "objective": "touchdown",
@@ -876,16 +882,17 @@ export const STATIC_SCENARIOS = [
       },
       {
         "id": "h1",
-        "team": "human",
-        "role": "blitzer",
-        "name": "Cedric Linebreaker",
-        "ma": 7,
+        "team": "imperial-nobility",
+        "role": "bodyguard",
+        "name": "Otto Eisenhelm",
+        "ma": 5,
         "st": 3,
         "ag": 3,
         "pa": 4,
         "av": 8,
         "skills": [
-          "Block"
+          "Stand Firm",
+          "Wrestle"
         ],
         "position": {
           "col": 4,
@@ -895,15 +902,17 @@ export const STATIC_SCENARIOS = [
       },
       {
         "id": "h2",
-        "team": "human",
-        "role": "lineman",
-        "name": "Bramm Surehands",
+        "team": "imperial-nobility",
+        "role": "retainer",
+        "name": "Konrad Hochmark",
         "ma": 6,
         "st": 3,
         "ag": 3,
         "pa": 4,
-        "av": 8,
-        "skills": [],
+        "av": 7,
+        "skills": [
+          "Fend"
+        ],
         "position": {
           "col": 6,
           "row": 23
@@ -912,17 +921,17 @@ export const STATIC_SCENARIOS = [
       },
       {
         "id": "h3",
-        "team": "human",
-        "role": "catcher",
-        "name": "Joren Fleetstep",
-        "ma": 8,
+        "team": "imperial-nobility",
+        "role": "noble-blitzer",
+        "name": "Lukas Silberhand",
+        "ma": 7,
         "st": 3,
         "ag": 3,
         "pa": 4,
         "av": 8,
         "skills": [
-          "Catch",
-          "Dodge"
+          "Block",
+          "Catch"
         ],
         "position": {
           "col": 9,
@@ -932,15 +941,17 @@ export const STATIC_SCENARIOS = [
       },
       {
         "id": "h4",
-        "team": "human",
-        "role": "lineman",
-        "name": "Bramm Surehands",
+        "team": "imperial-nobility",
+        "role": "retainer",
+        "name": "Viktor Sternbach",
         "ma": 6,
         "st": 3,
         "ag": 3,
         "pa": 4,
-        "av": 8,
-        "skills": [],
+        "av": 7,
+        "skills": [
+          "Fend"
+        ],
         "position": {
           "col": 12,
           "row": 24
@@ -953,9 +964,9 @@ export const STATIC_SCENARIOS = [
     "id": "blood-feud-06",
     "name": "No Room at the Rail",
     "description": "A Goblin is balancing on the far touchline. Clear the angle, arrange assists and send him into the spectators.",
-    "activeTeam": "human",
+    "activeTeam": "imperial-nobility",
     "teams": [
-      "human",
+      "imperial-nobility",
       "black-orc"
     ],
     "objective": "crowd-surf",
@@ -973,16 +984,17 @@ export const STATIC_SCENARIOS = [
     "pieces": [
       {
         "id": "h1",
-        "team": "human",
-        "role": "blitzer",
-        "name": "Cedric Linebreaker",
-        "ma": 7,
+        "team": "imperial-nobility",
+        "role": "bodyguard",
+        "name": "Otto Eisenhelm",
+        "ma": 5,
         "st": 3,
         "ag": 3,
         "pa": 4,
         "av": 8,
         "skills": [
-          "Block"
+          "Stand Firm",
+          "Wrestle"
         ],
         "position": {
           "col": 12,
@@ -992,15 +1004,17 @@ export const STATIC_SCENARIOS = [
       },
       {
         "id": "h2",
-        "team": "human",
-        "role": "lineman",
-        "name": "Bramm Surehands",
+        "team": "imperial-nobility",
+        "role": "retainer",
+        "name": "Konrad Hochmark",
         "ma": 6,
         "st": 3,
         "ag": 3,
         "pa": 4,
-        "av": 8,
-        "skills": [],
+        "av": 7,
+        "skills": [
+          "Fend"
+        ],
         "position": {
           "col": 13,
           "row": 9
@@ -1009,15 +1023,17 @@ export const STATIC_SCENARIOS = [
       },
       {
         "id": "h3",
-        "team": "human",
-        "role": "lineman",
-        "name": "Bramm Surehands",
+        "team": "imperial-nobility",
+        "role": "retainer",
+        "name": "Viktor Sternbach",
         "ma": 6,
         "st": 3,
         "ag": 3,
         "pa": 4,
-        "av": 8,
-        "skills": [],
+        "av": 7,
+        "skills": [
+          "Fend"
+        ],
         "position": {
           "col": 11,
           "row": 11
@@ -1026,17 +1042,17 @@ export const STATIC_SCENARIOS = [
       },
       {
         "id": "h4",
-        "team": "human",
-        "role": "catcher",
-        "name": "Joren Fleetstep",
-        "ma": 8,
+        "team": "imperial-nobility",
+        "role": "noble-blitzer",
+        "name": "Lukas Silberhand",
+        "ma": 7,
         "st": 3,
         "ag": 3,
         "pa": 4,
         "av": 8,
         "skills": [
-          "Catch",
-          "Dodge"
+          "Block",
+          "Catch"
         ],
         "position": {
           "col": 10,
