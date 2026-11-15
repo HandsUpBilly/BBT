@@ -1953,6 +1953,11 @@ export default function App() {
             showCoordinates={prefs.showCoordinates ?? true}
             teams={activeScenario?.teams}
             branchGhosts={branchedBoards.ghosts}
+            splitTree={branchedBoards.tree}
+            onSelectSplitUniverse={id => {
+              setParallelUniversesSpotlight(false);
+              branchedBoards.handleSelectBranch(id);
+            }}
             moveDecision={activeTransfer ? {
               position: activeTransfer.position,
               probability: null,
