@@ -105,6 +105,7 @@ export function PlayDiagram({ scenario, actionLog, orientation = 'landscape' }: 
     passes.length ? `${passes.length} ${passes.length === 1 ? 'pass' : 'passes'}` : '',
     handoffs.length ? `${handoffs.length} ${handoffs.length === 1 ? 'hand-off' : 'hand-offs'}` : '',
     blocks.length ? `${blocks.length} ${blocks.length === 1 ? 'block' : 'blocks'}` : '',
+    fouls.length ? `${fouls.length} foul` : '',
   ].filter(Boolean).join(', ');
   const boardWidth = orientation === 'portrait' ? SHORT_PX : LONG_PX;
   const boardHeight = orientation === 'portrait' ? LONG_PX : SHORT_PX;
