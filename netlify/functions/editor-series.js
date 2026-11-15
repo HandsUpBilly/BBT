@@ -1,6 +1,6 @@
 import { SCENARIO_ID_RE, normalizeSeries, seriesMembershipErrors, updateSeriesAssignment } from '../../shared/scenarioValidation.js';
 import { editorStore, loadContent, readLegacyScenarios, readLegacySeries } from './editorStore.js';
-import { writeContentItem, contentVersions, ContentConflictError } from './contentStore.js';
+import { writeContentItem, writeContentAssignment, contentVersions, ContentConflictError } from './contentStore.js';
 import { AdminAuthError, authErrorResponse, requireAdminGoogleUser } from './auth.js';
 
 function jsonResponse(status, body) {
@@ -60,9 +60,18 @@ export default async function handler(req) {
     const { series: saved, errors } = updateSeriesAssignment(existing, scenarioId, targetSeriesId, catalog.scenarios);
     if (errors.length) return jsonResponse(409, { errors });
     if (saved === existing) return jsonResponse(200, existing);
-    // Assignment moves affect two series. Call the multi-series transactional
-    // writer, never sequential updates that could leave duplicate membership.
-    return jsonResponse(409, { errors: ['Use Series Creator to save membership changes with revision checks.'] });
+    try {
+      const outcome = await writeContentAssignment(store, () => readLegacy(store), {
+        scenarioId, targetSeriesId, expectedRevisions: assignment?.revisions,
+      });
+      if (outcome.errors.length) return jsonResponse(409, { errors: outcome.errors });
+      return jsonResponse(200, {
+        series: outcome.catalog.series, ...contentVersions(outcome.catalog),
+      });
+    } catch (error) {
+      if (error instanceof ContentConflictError) return jsonResponse(409, { errors: [error.message] });
+      throw error;
+    }
   }
 
   if (req.method === 'DELETE') {
