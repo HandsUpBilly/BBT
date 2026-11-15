@@ -1,6 +1,6 @@
 import { editorStore, loadContent } from './editorStore.js';
 import { contentVersions } from './contentStore.js';
-import { reconcileItem } from '../../shared/contentReconcile.js';
+import { planContentExport } from '../../shared/contentGitSync.js';
 import { AdminAuthError, authErrorResponse, requireAdminGoogleUser } from './auth.js';
 
 const REPO = 'HandsUpBilly/BBT';
@@ -9,7 +9,6 @@ const branch = 'staging';
 const json = (status, data) => new Response(JSON.stringify(data), {
   status, headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
 });
-const compareItems = (a, b) => JSON.stringify(a) === JSON.stringify(b);
 
 async function github(path, token, options = {}) {
   const response = await fetch(`${GITHUB_API}/repos/${REPO}/${path}`, {
@@ -49,13 +48,12 @@ async function editorDiff(catalog, token) {
       }
       // Treat an absent GitHub file as undefined, not as a deletion of
       // an item that an admin might just have created live.
-      const result = reconcileItem(base, live, remote ?? undefined);
+      const result = planContentExport({ base, live, remote: remote ?? undefined, kind, id });
       if (result.conflicts.length) {
         conflicts.push({ kind, id, paths: result.conflicts });
         continue;
       }
-      if (compareItems(remote ?? undefined, result.value)) continue;
-      changes.push({ path, value: result.value });
+      if (result.change) changes.push(result.change);
     }
   }
   return { changes, conflicts };
