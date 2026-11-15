@@ -183,9 +183,10 @@ test('normalizeScenario coerces hostile input rather than throwing', () => {
 });
 
 test('scenario actions default to every player-menu action and reject unknown values', () => {
-  assert.deepEqual(normalizeScenario({}).enabledActions, SCENARIO_ACTIONS);
+  assert.deepEqual(normalizeScenario({}).enabledActions, SCENARIO_ACTIONS.filter(action => action !== 'foul'));
   assert.deepEqual(normalizeScenario({ enabledActions: ['pass', 'pass', 'not-an-action'] }).enabledActions, ['pass']);
-  assert.deepEqual(enabledScenarioActions({}), SCENARIO_ACTIONS);
+  assert.deepEqual(enabledScenarioActions({}), SCENARIO_ACTIONS.filter(action => action !== 'foul'));
+  assert.deepEqual(enabledScenarioActions({ objective: 'injure-by-foul' }), SCENARIO_ACTIONS);
   assert.deepEqual(enabledScenarioActions({ enabledActions: [] }), []);
 });
 
@@ -217,7 +218,7 @@ test('rejects a puzzle whose own objective has no enabled route to it', () => {
   // solvability proof.
   assert.deepEqual(validateScenario(validScenario({ objective: 'crowd-surf', enabledActions: ['blitz'] })), []);
   assert.deepEqual(validateScenario(validScenario({ objective: 'touchdown', enabledActions: ['move'] })), []);
-  // Legacy puzzles omit the field entirely, which means all five.
+  // Legacy puzzles omit the field entirely, which still means the original five.
   assert.deepEqual(validateScenario(validScenario()), []);
 });
 
