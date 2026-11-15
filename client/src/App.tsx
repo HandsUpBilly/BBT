@@ -542,6 +542,8 @@ export default function App() {
         trackAnalytics('puzzle-action', { attemptId, action: 'pass' });
       } else if (entry.kind === 'pass-catch') {
         trackAnalytics('puzzle-action', { attemptId, action: 'catch' });
+      } else if (entry.kind === 'foul') {
+        trackAnalytics('puzzle-action', { attemptId, action: 'foul' });
       } else if (entry.kind === 'block') {
         trackAnalytics('puzzle-action', { attemptId, action: 'block' });
         if (entry.isBlitz) trackAnalytics('puzzle-action', { attemptId, action: 'blitz' });
