@@ -9,6 +9,7 @@ export function catalogStorageKey(env = process.env) {
     const id = String(env.REVIEW_ID ?? env.DEPLOY_ID ?? 'unknown').replace(/[^a-zA-Z0-9-]/g, '').slice(0, 48);
     return `content-v3/preview-${id || 'unknown'}`;
   }
+  if (env.CONTEXT === 'dev' || env.NETLIFY_DEV === 'true') return 'content-v3/local-dev';
   if (env.CONTEXT === 'branch-deploy') {
     const branch = String(env.BRANCH ?? 'staging').replace(/[^a-zA-Z0-9-]/g, '').slice(0, 48);
     return `content-v3/branch-${branch || 'staging'}`;
