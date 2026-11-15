@@ -3,6 +3,18 @@ import { reconcileCollection, contentEqual } from '../../shared/contentReconcile
 import { normalizeScenario, normalizeSeriesCollection } from '../../shared/scenarioValidation.js';
 
 export const CONTENT_KEY = 'content-v3/catalog';
+
+export function catalogStorageKey(env = process.env) {
+  if (env.CONTEXT === 'deploy-preview') {
+    const id = String(env.REVIEW_ID ?? env.DEPLOY_ID ?? 'unknown').replace(/[^a-zA-Z0-9-]/g, '').slice(0, 48);
+    return `content-v3/preview-${id || 'unknown'}`;
+  }
+  if (env.CONTEXT === 'branch-deploy') {
+    const branch = String(env.BRANCH ?? 'staging').replace(/[^a-zA-Z0-9-]/g, '').slice(0, 48);
+    return `content-v3/branch-${branch || 'staging'}`;
+  }
+  return CONTENT_KEY;
+}
 const MAX_RETRIES = 6;
 const HISTORY_LIMIT = 40;
 const clone = value => structuredClone(value);
@@ -44,7 +56,7 @@ function initialCatalog(legacy) {
 }
 
 async function fetchSnapshot(store) {
-  const current = await store.getWithMetadata(CONTENT_KEY, { type: 'text' });
+  const current = await store.getWithMetadata(catalogStorageKey(), { type: 'text' });
   if (!current?.data) return { snapshot: null, etag: null };
   let snapshot;
   try { snapshot = JSON.parse(current.data); } catch { throw new ContentStoreError('Stored content is corrupt; manual recovery required'); }
@@ -57,7 +69,7 @@ async function fetchSnapshot(store) {
 
 async function casWrite(store, snapshot, etag) {
   const options = etag ? { onlyIfMatch: etag } : { onlyIfNew: true };
-  const result = await store.set(CONTENT_KEY, JSON.stringify(snapshot), options);
+  const result = await store.set(catalogStorageKey(), JSON.stringify(snapshot), options);
   return result?.modified === true;
 }
 
@@ -94,7 +106,10 @@ export async function readContentCatalog(store, readLegacy, { withEtag = false }
   for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
     const { snapshot, etag } = await fetchSnapshot(store);
     if (!snapshot) {
-      const legacy = await readLegacy();
+      // Non-production previews must not seed themselves by reading/writing
+      // the legacy production Blob keys. Start from their built-in branch data.
+      const isolated = ['deploy-preview', 'branch-deploy'].includes(process.env.CONTEXT);
+      const legacy = isolated ? source() : await readLegacy();
       const fresh = initialCatalog(legacy);
       if (await casWrite(store, fresh, null)) {
         if (!withEtag) return fresh;
