@@ -177,6 +177,13 @@ export function PuzzleEditor({ onBack, onPlay, onReport, previewScenario, idToke
     }
   }, [previewScenario, idToken]);
 
+  const requestGithubSync = () => setConfirm({
+    title: 'Open a GitHub content pull request?',
+    message: 'GitHub pull requests in this public repository are visible to everyone, including unpublished puzzle drafts. Review the resulting changes before merging. This will not deploy to production.',
+    confirmLabel: 'Create Review PR',
+    run: () => { void syncToGithub(); },
+  });
+
   const openHistory = useCallback(async () => {
     if (!originalId) return;
     setHistoryBusy(true);
@@ -600,7 +607,7 @@ export function PuzzleEditor({ onBack, onPlay, onReport, previewScenario, idToke
           <header className="editor__header">
             <div className="editor__heading"><span className="editor__kicker">Campaign workshop</span><h1 className="editor__title">Series Creator</h1><p className="editor__subtitle">Create a series, set its identity and list position, then arrange its puzzle steps.</p></div>
             <div className="editor__header-actions">
-              <button className="btn btn--secondary" onClick={() => { void syncToGithub(); }} disabled={syncing}>
+              <button className="btn btn--secondary" onClick={requestGithubSync} disabled={syncing}>
                 {syncing ? 'Syncing...' : 'Review Live Changes in GitHub'}
               </button>
               <button className="btn btn--secondary" onClick={onBack}>Back</button>
@@ -656,7 +663,7 @@ export function PuzzleEditor({ onBack, onPlay, onReport, previewScenario, idToke
           <button className="btn btn--secondary" onClick={() => { void openHistory(); }} disabled={historyBusy || !originalId}>
             View History
           </button>
-          <button className="btn btn--secondary" onClick={() => { void syncToGithub(); }} disabled={syncing || saving}>
+          <button className="btn btn--secondary" onClick={requestGithubSync} disabled={syncing || saving}>
             {syncing ? 'Syncing...' : 'Review Live Changes in GitHub'}
           </button>
           <button className="btn btn--secondary" onClick={() => guardUnsaved(onBack, 'Leaving the editor')}>Back</button>
