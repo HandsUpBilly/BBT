@@ -33,6 +33,13 @@ test('Lone Fouler rerolls failed armour only when unassisted', () => {
   assert.ok(Math.abs(foulOdds({ av: 9, offensiveAssists: 1, loneFouler: true }).injuryProbability
     - foulOdds({ av: 9, offensiveAssists: 1 }).injuryProbability) < 1e-12);
 });
+test('Lone Fouler rerolled natural double is discarded per the official BB2025 FAQ', () => {
+  // Armour cannot break at this value; all rolls are rerolled. The original
+  // natural double is erased, so the referee sees only the rerolled dice.
+  const odds = foulOdds({ av: 12, loneFouler: true });
+  assert.ok(Math.abs(odds.sentOffProbability - 1/6) < 1e-12);
+});
+
 test('invalid armour/assist inputs are rejected', () => {
   assert.throws(() => foulOdds({ av: 99 }));
   assert.throws(() => foulOdds({ av: 9, offensiveAssists: -1 }));
