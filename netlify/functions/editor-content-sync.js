@@ -66,10 +66,14 @@ async function editorDiff(catalog, token, baseSha) {
  */
 export default async function handler(req) {
   if (!['GET', 'POST'].includes(req.method)) return json(405, { errors: ['Method not allowed'] });
-  try { await requireAdminGoogleUser(req); } catch (error) {
+  let admin;
+  try { admin = await requireAdminGoogleUser(req); } catch (error) {
     if (error instanceof AdminAuthError) return authErrorResponse(error);
     throw error;
   }
+  // The legacy editor permits unrestricted local development when no
+  // allowlist exists. Never grant that fallback permission to GitHub writes.
+  if (!admin?.email) return json(403, { errors: ['A verified administrator is required for GitHub export.'] });
   const token = process.env.GITHUB_CONTENT_SYNC_TOKEN;
   const catalog = await loadContent(editorStore());
   const status = contentVersions(catalog);
