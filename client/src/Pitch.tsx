@@ -845,7 +845,7 @@ export function Pitch({
 
       const targetDescription = isHandoffTarget ? 'hand-off target'
         : isPassReceiver ? 'pass target'
-        : isBlockTarget ? 'block target'
+        : isBlockTarget ? (state.isFoulTargeting ? 'foul target' : 'block target')
         : isPushTarget ? 'push-back square'
         : null;
 
