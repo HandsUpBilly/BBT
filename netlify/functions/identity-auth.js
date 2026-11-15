@@ -72,7 +72,10 @@ function errorResponse(error) {
   throw error;
 }
 
-export default async function handler(req) {
+// A store factory is injectable for route-level tests. Production always uses
+// the real Netlify Blobs store, including its atomic etag compare-and-swap.
+export function createIdentityHandler(getMagicLinkStore = store) {
+  return async function handler(req) {
   const action = actionFrom(req);
   try {
     if (action === 'config' && req.method === 'GET') return json(configuration());
@@ -113,7 +116,7 @@ export default async function handler(req) {
       }
       const { token, record } = createMagicLinkRecord((await body(req)).email);
       const key = await hashAuthValue(token);
-      const magicStore = store();
+      const magicStore = getMagicLinkStore();
       await magicStore.set(key, JSON.stringify(record), { onlyIfNew: true });
       try {
         await sendMagicLinkEmail({ email: record.email, link: `${appUrl(req)}/#magic=${encodeURIComponent(token)}` });
@@ -129,7 +132,7 @@ export default async function handler(req) {
       const token = (await body(req)).token;
       if (typeof token !== 'string') throw new SessionAuthError('This email login link is invalid or has expired');
       const key = await hashAuthValue(token);
-      const magicStore = store();
+      const magicStore = getMagicLinkStore();
       const current = await magicStore.getWithMetadata(key, { type: 'text' });
       let record;
       try {
@@ -138,10 +141,14 @@ export default async function handler(req) {
         record = null;
       }
       const email = validateMagicLinkRecord(record);
+      // A versionless read cannot establish exclusive ownership of an
+      // existing link. Refuse to issue a session rather than trying onlyIfNew,
+      // which cannot consume the record that was just read.
+      if (!current?.etag) throw new SessionAuthError('This email login link has already been used');
       let consumed;
       try {
         consumed = await magicStore.set(key, JSON.stringify({ ...record, consumed: true }), {
-          ...(current?.etag ? { onlyIfMatch: current.etag } : { onlyIfNew: true }),
+          onlyIfMatch: current.etag,
         });
       } catch {
         throw new SessionAuthError('This email login link has already been used');
@@ -193,4 +200,7 @@ export default async function handler(req) {
   } catch (error) {
     return errorResponse(error);
   }
+  };
 }
+
+export default createIdentityHandler();
