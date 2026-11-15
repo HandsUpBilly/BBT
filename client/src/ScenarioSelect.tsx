@@ -4,6 +4,7 @@ import type { LeaderboardEntry, Scenario, SeriesDefinition, SeriesLeaderboardEnt
 import { BrandLogo } from './BrandLogo';
 import { seriesLogoSource } from './seriesLogo';
 import { teamAccentRgb, teamPluralLabel } from './teamPresentation';
+import { puzzleObjectiveText } from './objectiveCopy';
 import { UI_COPY } from './uiCopy';
 import './ScenarioSelect.css';
 
@@ -290,6 +291,7 @@ export function ScenarioSelect({
                   <div className="challenge-tile__body">
                     <div className="challenge-tile__name">{s.name}</div>
                     {isTutorial ? <div className="challenge-tile__context">{UI_COPY.landing.tutorialFinalPuzzle}</div> : null}
+                    <div><strong>Objective</strong> · {puzzleObjectiveText(s.objective)}</div>
                     <div className="challenge-tile__desc">{s.description}</div>
                     <div className="challenge-tile__meta">{formatProgress(scenarioProgress[s.id])}</div>
                   </div>

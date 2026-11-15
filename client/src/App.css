@@ -660,6 +660,10 @@ body,
 }
 
 .hud__status > span { flex: 1; }
+.hud__objective {
+  display: block;
+  color: var(--color-text-strong);
+}
 
 .hud__crowd-surf {
   flex: 0 0 auto;

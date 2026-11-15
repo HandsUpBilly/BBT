@@ -1,6 +1,7 @@
 import type { Scenario } from './types';
 import { tutorialLessonFor } from './tutorialLessons';
 import type { TutorialDrillRecap } from './tutorialRecap';
+import { puzzleObjectiveText } from './objectiveCopy';
 import { UI_COPY } from './uiCopy';
 import './TutorialPuzzleChooser.css';
 
@@ -62,6 +63,7 @@ export function TutorialPuzzleChooser({
                 <div className="tutorial-chooser__card-copy">
                   <p className="tutorial-chooser__lesson">{lesson?.title ?? (isTutorial ? 'Open play' : 'Series match')}</p>
                   <h2>{scenario.name}</h2>
+                  <div><strong>Objective</strong> · {puzzleObjectiveText(scenario.objective)}</div>
                   <p>{scenario.description}</p>
                   {recap && (
                     <section className="tutorial-chooser__recap" aria-label={`${scenario.name} last run recap`}>
