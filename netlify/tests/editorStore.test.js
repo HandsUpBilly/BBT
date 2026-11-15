@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { readDraftSeries, toPublicView } from '../functions/editorStore.js';
+import { readDraftScenarios, readDraftSeries, toPublicView } from '../functions/editorStore.js';
+import { STATIC_SCENARIOS } from '../functions/scenarioSeed.js';
 
 const scenarios = [
   { id: 'scenario-001', published: true },
@@ -89,4 +90,33 @@ test('readDraftSeries rebalances the original lineups once and preserves custom 
 
   values.set('series-default', JSON.stringify(storedSeries));
   assert.deepEqual((await readDraftSeries(store))[0].scenarioIds, secondIds);
+});
+
+test('readDraftScenarios updates stock puzzle layouts and preserves custom boards', async () => {
+  const stock = structuredClone(STATIC_SCENARIOS.find(scenario => scenario.id === 'blood-feud-05'));
+  stock.pieces.find(piece => piece.id === 'h1').position = { col: 4, row: 22 };
+  stock.published = false;
+
+  const custom = structuredClone(STATIC_SCENARIOS.find(scenario => scenario.id === 'blood-feud-11'));
+  custom.pieces.find(piece => piece.id === 'h3').position = { col: 4, row: 24 };
+  custom.pieces.find(piece => piece.id === 'h4').position = { col: 12, row: 24 };
+
+  const original = JSON.stringify([stock, custom]);
+  const values = new Map([
+    ['scenarios', original],
+    ['series-expansion-2026-11-v1-scenarios', 'done'],
+  ]);
+  const store = {
+    get: async key => values.get(key),
+    set: async (key, value) => values.set(key, value),
+  };
+  const [updated, untouched] = await readDraftScenarios(store);
+  assert.deepEqual(updated.pieces.find(piece => piece.id === 'h1').position, { col: 3, row: 20 });
+  assert.equal(updated.published, false);
+  assert.deepEqual(untouched.pieces.find(piece => piece.id === 'h3').position, { col: 4, row: 24 });
+  assert.deepEqual(untouched.pieces.find(piece => piece.id === 'h4').position, { col: 12, row: 24 });
+
+  values.set('scenarios', original);
+  const [restored] = await readDraftScenarios(store);
+  assert.deepEqual(restored.pieces.find(piece => piece.id === 'h1').position, { col: 4, row: 22 });
 });

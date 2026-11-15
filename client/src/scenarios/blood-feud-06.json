@@ -1,7 +1,7 @@
 {
   "id": "blood-feud-06",
   "name": "No Room at the Rail",
-  "description": "A Goblin is balancing on the far touchline. Clear the angle, arrange assists and send him into the spectators.",
+  "description": "A Goblin and a Black Orc are both near the crowd. Weigh a quick hit against setting up a stronger block.",
   "activeTeam": "human",
   "teams": [
     "human",
@@ -68,8 +68,8 @@
       "av": 8,
       "skills": [],
       "position": {
-        "col": 11,
-        "row": 11
+        "col": 13,
+        "row": 12
       },
       "hasBall": false
     },
@@ -88,8 +88,8 @@
         "Dodge"
       ],
       "position": {
-        "col": 10,
-        "row": 8
+        "col": 13,
+        "row": 14
       },
       "hasBall": false
     },
@@ -128,8 +128,8 @@
         "Grab"
       ],
       "position": {
-        "col": 12,
-        "row": 12
+        "col": 14,
+        "row": 13
       },
       "hasBall": false
     },

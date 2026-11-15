@@ -1,7 +1,7 @@
 {
   "id": "blood-feud-03",
   "name": "To the Cheap Seats",
-  "description": "The Reavers have the touchline trapped. Find a legal surf with the best odds; a supporting run can change the block.",
+  "description": "Two Black Orc players are exposed on the same touchline. Decide which target to hit and where your assists will count.",
   "activeTeam": "human",
   "teams": [
     "human",
@@ -68,8 +68,8 @@
       "av": 8,
       "skills": [],
       "position": {
-        "col": 3,
-        "row": 13
+        "col": 1,
+        "row": 16
       },
       "hasBall": false
     },
@@ -87,8 +87,8 @@
         "Block"
       ],
       "position": {
-        "col": 4,
-        "row": 12
+        "col": 1,
+        "row": 14
       },
       "hasBall": false
     },
@@ -127,8 +127,8 @@
         "Grab"
       ],
       "position": {
-        "col": 1,
-        "row": 14
+        "col": 0,
+        "row": 15
       },
       "hasBall": false
     },
