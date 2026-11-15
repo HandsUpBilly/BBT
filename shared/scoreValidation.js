@@ -25,6 +25,7 @@
 // "Leaderboard and Report Integrity" for why that is deferred.
 
 import { blockStateWeights, blockNodeWeightedValue, DIE_FACES } from './blockWeights.js';
+import { foulOdds } from './foulMath.js';
 
 export const SCORE_LIMITS = {
   name: 32,
@@ -46,7 +47,7 @@ const RANGE_BANDS = new Set(['quick', 'short', 'long', 'bomb']);
 const BLOCK_FACES = new Set(['attacker-down', 'both-down', 'push', 'defender-stumbles', 'defender-down']);
 const PICKERS = new Set(['attacker', 'defender']);
 const DICE_COUNTS = new Set([1, 2, 3]);
-const PLAY_LOG_KINDS = new Set(['move', 'handoff', 'pass', 'pass-catch', 'block']);
+const PLAY_LOG_KINDS = new Set(['move', 'handoff', 'pass', 'pass-catch', 'block', 'foul']);
 
 export class ScoreValidationError extends Error {}
 
@@ -179,8 +180,45 @@ function sanitizeMove(move, actionProb) {
     sanitized.acceptedFaces = move.acceptedFaces.filter(face => BLOCK_FACES.has(face)).slice(0, 3);
   }
   if (BLOCK_FACES.has(move.resolvedFace)) sanitized.resolvedFace = move.resolvedFace;
+  if (move.foul === true) {
+    sanitized.foul = true;
+    for (const field of ['av', 'offensiveAssists', 'defensiveAssists',
+      'dirtyPlayer', 'sneakyGit', 'loneFouler', 'stunty',
+      'armourBreakProbability', 'sendOffProbability']) {
+      sanitized[field] = move[field];
+    }
+  }
 
   return sanitized;
+}
+
+/**
+ * Foul scores must reflect the exact physical armour/injury dice, not a
+ * claimed armour break or a fabricated per-action probability. This remains
+ * a metadata sanity check, not a substitute for authoritative board replay.
+ */
+function checkFoulMove(move, label) {
+  if (move.foul !== true) return false;
+  for (const field of ['dirtyPlayer', 'sneakyGit', 'loneFouler', 'stunty']) {
+    if (typeof move[field] !== 'boolean') throw new ScoreValidationError(`${label} ${field} must be boolean`);
+  }
+  let odds;
+  try {
+    odds = foulOdds({
+      av: move.av, offensiveAssists: move.offensiveAssists,
+      defensiveAssists: move.defensiveAssists,
+      dirtyPlayer: move.dirtyPlayer, sneakyGit: move.sneakyGit,
+      loneFouler: move.loneFouler, stunty: move.stunty,
+    });
+  } catch {
+    throw new ScoreValidationError(`${label} has invalid foul stats`);
+  }
+  if (!closeEnough(move.actionProb, odds.injuryProbability)
+    || !closeEnough(move.armourBreakProbability, odds.armourBreakProbability)
+    || !closeEnough(move.sendOffProbability, odds.sentOffProbability)) {
+    throw new ScoreValidationError(`${label} foul probability does not match armour and injury dice`);
+  }
+  return true;
 }
 
 /**
@@ -205,10 +243,13 @@ function validateMoves(moves, probability, diceCount, label) {
   }
 
   let product = 1;
+  let foulCount = 0;
   const sanitized = [];
   for (const move of moves) {
     if (!move || typeof move !== 'object') throw new ScoreValidationError(`${label} contains an invalid move`);
     const actionProb = validProbability(move.actionProb, `${label} move probability`);
+    if (checkFoulMove(move, label)) foulCount++;
+    if (foulCount > 1) throw new ScoreValidationError(`${label} has more than one foul`);
     product *= actionProb;
     sanitized.push(sanitizeMove(move, actionProb));
   }
@@ -253,8 +294,11 @@ function checkSegmentRolls(node, lineProb, label) {
   if (moves.length > SCORE_LIMITS.maxMoves) throw new ScoreValidationError(`${label} has too many moves`);
 
   let product = 1;
+  let foulCount = 0;
   for (const move of moves) {
     if (!move || typeof move !== 'object') throw new ScoreValidationError(`${label} contains an invalid move`);
+    if (checkFoulMove(move, label)) foulCount++;
+    if (foulCount > 1) throw new ScoreValidationError(`${label} has more than one foul`);
     product *= validProbability(move.actionProb, `${label} move probability`);
   }
   if (!closeEnough(product, lineProb)) {
@@ -404,6 +448,7 @@ function sanitizeDisplayMoves(moves, label) {
 
   return moves.map(move => {
     if (!move || typeof move !== 'object') throw new ScoreValidationError(`${label} contains an invalid move`);
+    checkFoulMove(move, label);
     return sanitizeMove(move, validProbability(move.actionProb, `${label} move probability`));
   });
 }
