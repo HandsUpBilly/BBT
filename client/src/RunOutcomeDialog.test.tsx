@@ -27,7 +27,7 @@ describe('RunOutcomeDialog', () => {
       />,
     );
 
-    expect(screen.getByRole('dialog', { name: 'Touchdown, but the run is not finished' })).toBeTruthy();
+    expect(screen.getByRole('dialog', { name: 'Objective reached, but the run is not finished' })).toBeTruthy();
     expect(screen.getByText(/2 universes remain unresolved/)).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: 'Continue Remaining Branches' }));
     expect(onContinue).toHaveBeenCalledOnce();
