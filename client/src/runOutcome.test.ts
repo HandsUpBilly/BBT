@@ -72,6 +72,34 @@ describe('isScoringRunStalled', () => {
     });
   });
 
+  describe('foul casualty objective', () => {
+    it('does not stall before a block creates a prone foul target', () => {
+      const state = {
+        ...makeState([
+          humanBlocker({ position: { col: 7, row: 10 } }),
+          humanBlocker({ id: 'helper', position: { col: 8, row: 10 } }),
+          orcBlocker({ position: { col: 7, row: 9 }, down: false }),
+        ]),
+        objective: 'injure-by-foul' as const,
+      };
+      expect(isScoringRunStalled(state, ['move', 'block', 'blitz', 'foul'])).toBe(false);
+      expect(isScoringRunStalled(state, ['foul'])).toBe(true);
+    });
+
+    it('fails after the only Foul is spent', () => {
+      const state = {
+        ...makeState([
+          humanBlocker({ position: { col: 7, row: 10 } }),
+          orcBlocker({ position: { col: 7, row: 9 }, down: true }),
+        ]),
+        objective: 'injure-by-foul' as const,
+        foulUsed: true,
+      };
+      expect(isScoringRunStalled(state)).toBe(true);
+      expect(isScoringRunStalled({ ...state, phase: 'injure-by-foul' })).toBe(false);
+    });
+  });
+
   it('fails a touchdown puzzle that disables every way to move the ball', () => {
     const state = makeState([humanThrower({ hasBall: true })]);
     expect(isScoringRunStalled(state, ['block', 'blitz'])).toBe(true);
