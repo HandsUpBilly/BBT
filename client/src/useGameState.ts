@@ -1230,7 +1230,6 @@ export function applyFoulTarget(prev: GameState, pos: Position): GameState {
       ...prev,
       pieces,
       foulUsed: true,
-      ballPosition: prev.ballPosition,
       // No possible casualty, so the objective is not fulfilled.
       // runOutcome detects the spent foul and offers restart.
     });
