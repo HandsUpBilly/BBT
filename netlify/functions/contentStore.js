@@ -118,7 +118,9 @@ export function contentVersions(catalog) {
     conflicts: clone(catalog.conflicts),
     dirty: Object.fromEntries(['scenarios', 'series'].map(kind => {
       const base = new Map(catalog.baseline[kind].map(item => [item.id, item]));
-      return [kind, items(catalog, kind).filter(item => !contentEqual(item, base.get(item.id))).map(item => item.id)];
+      const live = new Map(items(catalog, kind).map(item => [item.id, item]));
+      return [kind, [...new Set([...base.keys(), ...live.keys()])]
+        .filter(id => !contentEqual(live.get(id), base.get(id)))];
     })),
   };
 }
