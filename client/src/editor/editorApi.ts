@@ -7,6 +7,7 @@ export interface EditorLoadResponse {
   scenarios: Scenario[];
   series: SeriesDefinition[];
   revisions: Record<string, number>;
+  syncConfigured?: boolean;
   conflicts: Record<'scenarios' | 'series', Record<string, string[]>>;
   dirty?: Record<'scenarios' | 'series', string[]>;
   history?: Array<{ kind: string; id: string; revision: number; at: string; actor: string }>;
