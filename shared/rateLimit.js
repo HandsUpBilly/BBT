@@ -112,3 +112,6 @@ export const LOGIN_RATE_LIMIT = { limit: 10, windowMs: 60 * 1000 };
 /** Profile writes can replace public user-generated images, so keep retries
  * practical while preventing a verified account from hammering Blobs. */
 export const PROFILE_RATE_LIMIT = { limit: 10, windowMs: 10 * 60 * 1000 };
+
+/** Public progress reads fan out across multiple Blobs keys; allow generous normal browsing while throttling bursts. */
+export const PROGRESS_RATE_LIMIT = { limit: 60, windowMs: 60 * 1000 };
