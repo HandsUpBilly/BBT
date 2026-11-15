@@ -4,7 +4,7 @@ import type { PuzzleAction, Scenario, ScenarioPieceDef, SeriesDefinition, Team }
 import { ConfirmDialog } from '../ConfirmDialog';
 import { AdminStatistics } from './AdminStatistics';
 import { AdminConsole } from './AdminConsole';
-import { createScenario, deleteScenario, fetchEditorData, updateScenario } from './editorApi';
+import { createScenario, deleteScenario, fetchEditorData, updateScenario, openContentSyncPullRequest } from './editorApi';
 import { nextScenarioId, validateScenarioDraft } from './editorValidation';
 import { PLAYER_TEMPLATES, generatedPlayerName, templateToPiece } from './playerTemplates';
 import { agilityTarget, armourTarget, storedAgility, storedArmour, targetLabel } from '../playerStats';
@@ -123,6 +123,7 @@ export function PuzzleEditor({ onBack, onPlay, onReport, previewScenario, idToke
   const [ballTool, setBallTool] = useState(false);
   const [status, setStatus] = useState('Loading editor data...');
   const [saving, setSaving] = useState(false);
+  const [syncing, setSyncing] = useState(false);
   const [puzzleQuery, setPuzzleQuery] = useState('');
   const [puzzleFilter, setPuzzleFilter] = useState<'all' | 'enabled' | 'disabled' | 'series'>('all');
   const [inspectorSection, setInspectorSection] = useState<InspectorSection>('roster');
@@ -133,6 +134,23 @@ export function PuzzleEditor({ onBack, onPlay, onReport, previewScenario, idToke
   const [adminSection, setAdminSection] = useState<'editor' | 'series' | 'statistics' | 'console'>('editor');
 
   const currentSyncConflict = originalId ? syncConflicts.scenarios[originalId] : undefined;
+  const syncToGithub = useCallback(async () => {
+    setSyncing(true);
+    try {
+      const outcome = await openContentSyncPullRequest(idToken);
+      if (outcome.pullRequest) {
+        setStatus(`Opened GitHub content review for ${outcome.changes} edited items: ${outcome.pullRequest}`);
+        window.open(outcome.pullRequest, '_blank', 'noopener,noreferrer');
+      } else {
+        setStatus('Live editor and GitHub content are already in sync.');
+      }
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : 'Could not open GitHub sync PR.');
+    } finally {
+      setSyncing(false);
+    }
+  }, [idToken]);
+
   const load = useCallback(async () => {
     try {
       const data = await fetchEditorData(idToken);
@@ -545,7 +563,12 @@ export function PuzzleEditor({ onBack, onPlay, onReport, previewScenario, idToke
         <>
           <header className="editor__header">
             <div className="editor__heading"><span className="editor__kicker">Campaign workshop</span><h1 className="editor__title">Series Creator</h1><p className="editor__subtitle">Create a series, set its identity and list position, then arrange its puzzle steps.</p></div>
-            <div className="editor__header-actions"><button className="btn btn--secondary" onClick={onBack}>Back</button></div>
+            <div className="editor__header-actions">
+              <button className="btn btn--secondary" onClick={() => { void syncToGithub(); }} disabled={syncing}>
+                {syncing ? 'Syncing...' : 'Review Live Changes in GitHub'}
+              </button>
+              <button className="btn btn--secondary" onClick={onBack}>Back</button>
+            </div>
           </header>
           <SeriesCreator scenarios={scenarios} series={series} idToken={idToken} revisions={revisions} onRevision={(id, revision) => setRevisions(current => ({ ...current, [`series/${id}`]: revision }))} onChange={setSeries} onStatus={setStatus} />
           {currentSyncConflict?.length ? (
@@ -573,6 +596,9 @@ export function PuzzleEditor({ onBack, onPlay, onReport, previewScenario, idToke
           </span>
         </div>
         <div className="editor__header-actions">
+          <button className="btn btn--secondary" onClick={() => { void syncToGithub(); }} disabled={syncing || saving}>
+            {syncing ? 'Syncing...' : 'Review Live Changes in GitHub'}
+          </button>
           <button className="btn btn--secondary" onClick={() => guardUnsaved(onBack, 'Leaving the editor')}>Back</button>
           <button className="btn btn--secondary" onClick={() => onPlay(effectiveDraft)} disabled={validationErrors.length > 0}>
             Play Draft
