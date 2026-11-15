@@ -1,0 +1,18 @@
+{
+  "id": "troll-toll",
+  "name": "The Troll Toll",
+  "description": "Imperial Nobility face the Black Orcs across four one-turn tactical matches. Break a close-marked carrier free, dismantle a defensive screen, throw a rival into the crowd and find a final scoring route. Every match offers multiple tactical approaches.",
+  "scenarioIds": [
+    "scenario-007",
+    "scenario-008",
+    "scenario-009",
+    "scenario-010"
+  ],
+  "label": "Challenge",
+  "published": true,
+  "teams": [
+    "imperial-nobility",
+    "black-orc"
+  ],
+  "order": 1
+}
