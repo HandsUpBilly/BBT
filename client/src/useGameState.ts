@@ -1156,7 +1156,7 @@ export function foulTargetKeys(state: GameState, attacker: PlayerPiece): Set<str
 
 /** A Foul may have movement, but one per turn and only against a prone opponent. */
 export function applyFoulAction(prev: GameState, pieceId: string): GameState {
-  if (prev.phase !== 'playing' || prev.foulUsed || prev.selectedPieceId) return prev;
+  if (prev.phase !== 'playing' || prev.objective !== 'injure-by-foul' || prev.foulUsed || prev.selectedPieceId) return prev;
   const attacker = prev.pieces.find(p => p.id === pieceId);
   if (!attacker || attacker.team !== prev.activeTeam || attacker.activated || attacker.down) return prev;
   const targets = foulTargetKeys(prev, attacker);
