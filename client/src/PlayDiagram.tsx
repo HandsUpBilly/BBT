@@ -98,6 +98,7 @@ export function PlayDiagram({ scenario, actionLog, orientation = 'landscape' }: 
   const passes = actionLog.filter(entry => entry.kind === 'pass');
   const handoffs = actionLog.filter(entry => entry.kind === 'handoff');
   const blocks = actionLog.filter(entry => entry.kind === 'block');
+  const fouls = actionLog.filter(entry => entry.kind === 'foul');
   const ballStart = scenario.pieces.find(piece => piece.hasBall)?.position ?? scenario.ballPosition;
   const description = [
     `${routes.length} movement ${routes.length === 1 ? 'route' : 'routes'}`,
