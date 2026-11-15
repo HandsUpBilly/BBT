@@ -2188,7 +2188,7 @@ export default function App() {
           { label: 'Pass',     key: 'pass',    disabled: !enabledActions.has('pass') || !canPass, locked: !enabledActions.has('pass'), emphasized: emphasizedActions?.includes('pass') },
           { label: 'Block',    key: 'block',   disabled: !enabledActions.has('block') || !canBlock, locked: !enabledActions.has('block'), emphasized: emphasizedActions?.includes('block') },
           { label: 'Blitz',    key: 'blitz',   disabled: !enabledActions.has('blitz') || !canBlitz, locked: !enabledActions.has('blitz'), emphasized: emphasizedActions?.includes('blitz') },
-          { label: 'Foul',     key: 'foul',    disabled: !enabledActions.has('foul') || !canFoul, locked: !enabledActions.has('foul'), emphasized: emphasizedActions?.includes('foul') },
+          { label: 'Foul',     key: 'foul',    disabled: !enabledActions.has('foul') || !canFoul, locked: !enabledActions.has('foul'), emphasized: false },
         ];
         return (
           <PieceMenu
