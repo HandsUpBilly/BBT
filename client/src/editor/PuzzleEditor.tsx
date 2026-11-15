@@ -115,6 +115,7 @@ export function PuzzleEditor({ onBack, onPlay, onReport, previewScenario, idToke
   const [series, setSeries] = useState<SeriesDefinition[]>([]);
   const [revisions, setRevisions] = useState<Record<string, number>>({});
   const [syncConflicts, setSyncConflicts] = useState<Record<'scenarios' | 'series', Record<string, string[]>>>({ scenarios: {}, series: {} });
+  const [dirtyContent, setDirtyContent] = useState<Record<'scenarios' | 'series', string[]>>({ scenarios: [], series: [] });
   const [draft, setDraft] = useState<Scenario>(() => emptyScenario([]));
   // The last-saved shape of the current draft, so we can tell whether the
   // editor holds unsaved work before discarding it.
@@ -137,6 +138,7 @@ export function PuzzleEditor({ onBack, onPlay, onReport, previewScenario, idToke
   const [adminSection, setAdminSection] = useState<'editor' | 'series' | 'statistics' | 'console'>('editor');
 
   const currentSyncConflict = originalId ? syncConflicts.scenarios[originalId] : undefined;
+  const pendingSync = dirtyContent.scenarios.length + dirtyContent.series.length;
   const syncToGithub = useCallback(async () => {
     setSyncing(true);
     try {
@@ -161,6 +163,7 @@ export function PuzzleEditor({ onBack, onPlay, onReport, previewScenario, idToke
       setSeries(Array.isArray(data.series) ? data.series : [data.series]);
       setRevisions(data.revisions ?? {});
       setSyncConflicts(data.conflicts ?? { scenarios: {}, series: {} });
+      setDirtyContent(data.dirty ?? { scenarios: [], series: [] });
       const first = previewScenario ?? data.scenarios[0] ?? emptyScenario([]);
       const clone = cloneScenario(first);
       setDraft(clone);
@@ -488,6 +491,7 @@ export function PuzzleEditor({ onBack, onPlay, onReport, previewScenario, idToke
         ? await updateScenario(scenarioToSave, idToken, revisions[`scenarios/${scenarioToSave.id}`] ?? 0)
         : await createScenario(scenarioToSave, idToken);
       setRevisions(current => ({ ...current, [`scenarios/${saved.id}`]: saved.revision }));
+      setDirtyContent(current => ({ ...current, scenarios: [...new Set([...current.scenarios, saved.id])] }));
       const next = scenarios.filter(scenario => scenario.id !== saved.id);
       const sorted = [...next, saved].sort((a, b) => a.id.localeCompare(b.id));
       setScenarios(sorted);
@@ -626,7 +630,10 @@ export function PuzzleEditor({ onBack, onPlay, onReport, previewScenario, idToke
           <button className="btn btn--secondary" onClick={() => setHistoryEntries(null)}>Close History</button>
         </section>
       ) : null}
-      <div className="editor__status" role="status">{status}</div>
+<div className="editor__status" aria-label="GitHub content sync status">
+        {pendingSync > 0 ? `${pendingSync} live-edited item(s) pending GitHub review.` : 'Content matches the deployed GitHub baseline.'}
+      </div>
+            <div className="editor__status" role="status">{status}</div>
         </>
       ) : (
         <>
