@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  CONTENT_KEY, ContentConflictError, contentVersions, readContentCatalog,
+  CONTENT_KEY, catalogStorageKey, ContentConflictError, contentVersions, readContentCatalog,
   reconcileToDeployment, writeContentItem,
 } from '../functions/contentStore.js';
 
@@ -124,4 +124,12 @@ test('read-only request does not modify the store if the seed is unchanged', asy
   const before = data.get(CONTENT_KEY).etag;
   await readContentCatalog(store, importLegacy);
   assert.equal(data.get(CONTENT_KEY).etag, before);
+});
+
+test('preview and staging catalog snapshots cannot overwrite production content', () => {
+  assert.equal(catalogStorageKey({ CONTEXT: 'production' }), CONTENT_KEY);
+  assert.equal(catalogStorageKey({ CONTEXT: 'deploy-preview', REVIEW_ID: '374' }),
+    'content-v3/preview-374');
+  assert.equal(catalogStorageKey({ CONTEXT: 'branch-deploy', BRANCH: 'staging' }),
+    'content-v3/branch-staging');
 });
