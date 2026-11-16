@@ -101,10 +101,10 @@ production, and a build break that passed every local check.
 >
 > **7. Rules fidelity.**
 > Compare the engine against `docs/bb2025-ffb-rules-notes.md`. Known deliberate
-> simplifications — flat assist counting, no armour/injury rolls, no chain
-> pushes, failed rolls not simulated — are documented and out of scope. Flag only
-> *new* divergences, or simplifications that have become wrong because
-> surrounding behavior changed.
+> simplifications — flat assist counting, no armour/injury rolls, failed rolls
+> not simulated — are documented and out of scope. Flag only *new* divergences,
+> or simplifications that have become wrong because surrounding behavior
+> changed.
 >
 > **8. Test coverage of the week's changes.**
 > Did new behavior arrive with tests? Would each new test actually fail if its

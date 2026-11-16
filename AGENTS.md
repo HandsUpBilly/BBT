@@ -133,9 +133,13 @@ npm run build            # regenerates the scenario seed, then tsc -b && vite bu
 npm run check:functions  # bundles the Netlify functions as the deploy does
 ```
 
-There is no hosted CI, so `npm run verify` is the only signal before opening a
-PR. Note that `lint`, `tsc`, and the tests all pass on a module-resolution break
-that fails the deploy — `check:functions` is the step that catches it.
+`.github/workflows/verify.yml` runs the same `npm run verify` on every PR and
+every push to `main`/`staging`, and `.github/workflows/pitch-ui-smoke.yml` runs
+the Playwright pitch-navigation spec automatically on PRs that touch pitch
+split-point code. Still run `npm run verify` yourself before opening a PR
+rather than waiting on the hosted run. Note that `lint`, `tsc`, and the tests
+all pass on a module-resolution break that fails the deploy —
+`check:functions` is the step that catches it.
 
 **Verification cadence:** do not run `verify` after every edit or every user
 request. During implementation, run a single related Vitest file or

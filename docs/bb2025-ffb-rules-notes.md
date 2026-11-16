@@ -125,8 +125,6 @@ Skill interactions the engine does model:
 ### Not simulated
 
 Armour, injury and casualty rolls — `down` is the only knocked-over state.
-Crowd pushes. Occupied push arcs do support recursive chain pushes, but a route
-that can only leave the pitch is not offered.
 
 **Block resolution reads exactly four skills** — Block, Wrestle, Dodge and
 Tackle (the only `skills.includes` calls in `useGameState.ts`). Every other
