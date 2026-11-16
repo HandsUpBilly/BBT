@@ -92,6 +92,7 @@ async function migrateBalancedSeries(store, series) {
 
   const secondSeed = STATIC_SERIES.find(item => item.id === 'troll-toll');
   const thirdSeed = STATIC_SERIES.find(item => item.id === 'blood-feud');
+  if (!secondSeed || !thirdSeed) return series;
   const oldSecondIds = secondSeed.scenarioIds.filter(id => !NEW_BLOOD_FEUD_IDS.includes(id));
   const movedIds = secondSeed.scenarioIds.filter(id => NEW_BLOOD_FEUD_IDS.includes(id));
   const hasOrder = (item, ids) => item.scenarioIds.length === ids.length
