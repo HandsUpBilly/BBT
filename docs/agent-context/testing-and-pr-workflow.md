@@ -19,9 +19,16 @@ npm run verify
 ```
 
 That is `lint` → `test` (shared and Netlify, then client) → `build` →
-`check:functions`. There is no hosted CI, so it is the only signal before
-opening a PR — and `check:functions` is the step that matters, for the reason
-below. It is not optional and it is not implied by the other three.
+`check:functions`. `.github/workflows/verify.yml` runs it on every PR and every
+push to `main`/`staging`, but still run it yourself before opening a PR rather
+than waiting on the hosted run — and `check:functions` is the step that
+matters, for the reason below. It is not optional and it is not implied by the
+other three.
+
+`.github/workflows/pitch-ui-smoke.yml` separately runs the Playwright
+`pitchSplitNavigation.spec.ts` on Chromium and WebKit, but only for PRs that
+touch `PitchSplitMarkers*`, `pitchSplitPoints*`, or `Pitch.tsx` — it does not
+cover the rest of `client/e2e/`.
 
 Individually:
 
@@ -82,7 +89,8 @@ pass” unless the complete applicable suite ran successfully.
 
 ```bash
 npx playwright install                       # once — fetches browser binaries
-npm --prefix client run test:e2e             # 10-case smoke gate
+npm --prefix client run test:e2e             # 10-case smoke gate (alias for test:e2e:smoke)
+npm --prefix client run test:e2e:smoke       # same smoke gate, explicit name
 npm --prefix client run test:e2e:layout      # board geometry
 npm --prefix client run test:e2e:input       # touch/mouse sizing
 npm --prefix client run test:e2e:overlays    # menus, log, controls, block dialog
@@ -91,6 +99,7 @@ npm --prefix client run test:e2e:branches    # game-tree and player comparison
 npm --prefix client run test:e2e:tutorial    # tutorial guide
 npm --prefix client run test:e2e:admin       # puzzle creator
 npm --prefix client run test:e2e:mobile      # all specs on one representative phone
+npm --prefix client run test:e2e:graphics    # layout + overlays combined
 npm --prefix client run test:e2e:full        # scheduled/release matrix only
 ```
 

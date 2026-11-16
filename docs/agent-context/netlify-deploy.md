@@ -60,18 +60,24 @@ All configured in `netlify.toml`, in this order:
 | `/api/series-leaderboard` | `series-leaderboard` | Optional signed-in identity (guest allowed) |
 | `/api/progress` | `progress` | Public |
 | `/api/reports` | `reports` | Optional Google, rate-limited |
+| `/api/contact` | `contact` | Public contact form, rate-limited |
 | `/api/analytics` | `analytics` | Public, game-event batches only, rate-limited |
 | `/api/profile` | `profile` | **Verified signed-in user**, writes rate-limited |
 | `/api/auth/*` | `identity-auth` | Public login flow; email requests rate-limited |
 | `/api/avatar/*` | `avatar` | Public, current selected avatar only |
+| `/api/logins` | `logins` | Public per-player login history, rate-limited |
+| `/api/editor/access` | `editor-access` | **Admin only** — reports only the caller's own admin capability, for nav gating |
 | `/api/editor/statistics` | `editor-statistics` | **Admin only** |
 | `/api/editor/analytics` | `editor-analytics` | **Admin only** |
+| `/api/editor/logins` | `editor-logins` | **Admin only** |
 | `/api/editor/admins` | `editor-admins` | **Admin only** (any verified user may add themselves as the first managed admin when the effective allowlist is empty — see AGENTS.md "Editor auth policy") |
 | `/api/editor/profiles` | `editor-profiles` | **Admin only**, public-profile moderation |
 | `/api/editor/rankings` | `editor-rankings` | **Admin only**, destructive ranking resets |
 | `/api/editor/scenarios` | `editor-scenarios` | **Admin only, including GET** |
 | `/api/editor/scenarios/*` | `editor-scenarios` | **Admin only** |
-| `/api/editor/series/default` | `editor-series` | **Admin only** |
+| `/api/editor/series-assignment` | `editor-series` (`/assignment`) | **Admin only** |
+| `/api/editor/series` | `editor-series` | **Admin only** |
+| `/api/editor/series/*` | `editor-series` | **Admin only** |
 | `/api/editor/publish` | `editor-publish` | **Admin only** (legacy no-op) |
 | `/api/scenarios` | `scenarios` | Public (enabled saved state only) |
 | `/*` | SPA fallback | — |
@@ -81,7 +87,9 @@ response. The home screen used to fire one request per scenario *and* run the
 whole fan-out twice per visit (the scenario array identity changes when the
 runtime fetch resolves), which was 12 function invocations for five puzzles.
 
-The public `/api/progress` read is limited to 60 requests per minute per trusted Netlify edge IP on each warm function instance. The limit is evaluated before reading Blobs; rotating query parameters cannot bypass the IP bucket. As with the other in-memory limiters, this blunts bursts but is not a distributed hard quota. A 429 response includes `Retry-After` and is never cacheable.\n\n## Admin nav visibility vs. editor authorization
+The public `/api/progress` read is limited to 60 requests per minute per trusted Netlify edge IP on each warm function instance. The limit is evaluated before reading Blobs; rotating query parameters cannot bypass the IP bucket. As with the other in-memory limiters, this blunts bursts but is not a distributed hard quota. A 429 response includes `Retry-After` and is never cacheable.
+
+## Admin nav visibility vs. editor authorization
 
 `client/vite.config.ts` defines `__BBT_FORCE_ADMIN_NAV__` from Netlify's
 `CONTEXT` build variable: `JSON.stringify(process.env.CONTEXT !== 'production')`.
