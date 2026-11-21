@@ -222,13 +222,39 @@ export async function fetchContentSyncStatus(idToken: string | null): Promise<{
   return parseJsonResponse(response);
 }
 
-export async function openContentSyncPullRequest(idToken: string | null): Promise<{
-  synced: boolean;
-  changes: number;
-  pullRequest?: string;
-}> {
+export interface ContentExportItem {
+  kind: 'scenarios' | 'series';
+  id: string;
+  path: string;
+  revision: number;
+  action: 'update' | 'delete' | 'none';
+  conflictPaths: string[];
+  selectable: boolean;
+}
+
+export interface ContentExportPreview {
+  configured: boolean;
+  baseSha: string;
+  items: ContentExportItem[];
+}
+
+export async function previewContentSync(idToken: string | null): Promise<ContentExportPreview> {
+  const response = await fetch('/api/editor/content-sync?preview=1', {
+    headers: authHeaders(idToken),
+  });
+  return parseJsonResponse<ContentExportPreview>(response);
+}
+
+export async function openContentSyncPullRequest(
+  idToken: string | null, preview: ContentExportPreview, selected: ContentExportItem[],
+): Promise<{ synced: boolean; changes: number; pullRequest?: string }> {
   const response = await fetch('/api/editor/content-sync', {
-    method: 'POST', headers: authHeaders(idToken),
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...authHeaders(idToken) },
+    body: JSON.stringify({
+      baseSha: preview.baseSha,
+      items: selected.map(({ kind, id, revision }) => ({ kind, id, revision })),
+    }),
   });
   return parseJsonResponse(response);
 }

@@ -4,7 +4,8 @@ import type { PuzzleAction, Scenario, ScenarioPieceDef, SeriesDefinition, Team }
 import { ConfirmDialog } from '../ConfirmDialog';
 import { AdminStatistics } from './AdminStatistics';
 import { AdminConsole } from './AdminConsole';
-import { createScenario, deleteScenario, fetchEditorData, updateScenario, openContentSyncPullRequest, fetchContentHistory, restoreContentHistory } from './editorApi';
+import { createScenario, deleteScenario, fetchEditorData, updateScenario, fetchContentHistory, restoreContentHistory } from './editorApi';
+import { ContentExportPanel } from './ContentExportPanel';
 import type { ContentHistoryEntry } from './editorApi';
 import { nextScenarioId, validateScenarioDraft } from './editorValidation';
 import { PLAYER_TEMPLATES, generatedPlayerName, templateToPiece } from './playerTemplates';
@@ -125,7 +126,7 @@ export function PuzzleEditor({ onBack, onPlay, onReport, previewScenario, idToke
   const [ballTool, setBallTool] = useState(false);
   const [status, setStatus] = useState('Loading editor data...');
   const [saving, setSaving] = useState(false);
-  const [syncing, setSyncing] = useState(false);
+  const [showContentExport, setShowContentExport] = useState(false);
   const [syncConfigured, setSyncConfigured] = useState(false);
   const [historyEntries, setHistoryEntries] = useState<ContentHistoryEntry[] | null>(null);
   const [historyBusy, setHistoryBusy] = useState(false);
@@ -140,23 +141,6 @@ export function PuzzleEditor({ onBack, onPlay, onReport, previewScenario, idToke
 
   const currentSyncConflict = originalId ? syncConflicts.scenarios[originalId] : undefined;
   const pendingSync = dirtyContent.scenarios.length + dirtyContent.series.length;
-  const syncToGithub = useCallback(async () => {
-    setSyncing(true);
-    try {
-      const outcome = await openContentSyncPullRequest(idToken);
-      if (outcome.pullRequest) {
-        setStatus(`Opened GitHub content review for ${outcome.changes} edited items: ${outcome.pullRequest}`);
-        window.open(outcome.pullRequest, '_blank', 'noopener,noreferrer');
-      } else {
-        setStatus('Live editor and GitHub content are already in sync.');
-      }
-    } catch (error) {
-      setStatus(error instanceof Error ? error.message : 'Could not open GitHub sync PR.');
-    } finally {
-      setSyncing(false);
-    }
-  }, [idToken]);
-
   const load = useCallback(async () => {
     try {
       const data = await fetchEditorData(idToken);
@@ -179,12 +163,7 @@ export function PuzzleEditor({ onBack, onPlay, onReport, previewScenario, idToke
     }
   }, [previewScenario, idToken]);
 
-  const requestGithubSync = () => setConfirm({
-    title: 'Open a GitHub content pull request?',
-    message: 'GitHub pull requests in this public repository are visible to everyone, including unpublished puzzle drafts. Review the resulting changes before merging. This will not deploy to production.',
-    confirmLabel: 'Create Review PR',
-    run: () => { void syncToGithub(); },
-  });
+  const requestGithubSync = () => setShowContentExport(true);
 
   const openHistory = useCallback(async () => {
     if (!originalId) return;
@@ -609,8 +588,8 @@ export function PuzzleEditor({ onBack, onPlay, onReport, previewScenario, idToke
           <header className="editor__header">
             <div className="editor__heading"><span className="editor__kicker">Campaign workshop</span><h1 className="editor__title">Series Creator</h1><p className="editor__subtitle">Create a series, set its identity and list position, then arrange its puzzle steps.</p></div>
             <div className="editor__header-actions">
-              <button className="btn btn--secondary" onClick={requestGithubSync} disabled={syncing || !syncConfigured} title={syncConfigured ? 'Open a reviewable GitHub PR' : 'GitHub content sync token is not configured'}>
-                {syncing ? 'Syncing...' : 'Review Live Changes in GitHub'}
+              <button className="btn btn--secondary" onClick={requestGithubSync} disabled={!syncConfigured} title={syncConfigured ? 'Open a reviewable GitHub PR' : 'GitHub content sync token is not configured'}>
+                Review Live Changes in GitHub
               </button>
               <button className="btn btn--secondary" onClick={onBack}>Back</button>
             </div>
@@ -666,8 +645,8 @@ export function PuzzleEditor({ onBack, onPlay, onReport, previewScenario, idToke
           <button className="btn btn--secondary" onClick={() => { void openHistory(); }} disabled={historyBusy || !originalId}>
             View History
           </button>
-          <button className="btn btn--secondary" onClick={requestGithubSync} disabled={syncing || saving || !syncConfigured} title={syncConfigured ? 'Open a reviewable GitHub PR' : 'GitHub content sync token is not configured'}>
-            {syncing ? 'Syncing...' : 'Review Live Changes in GitHub'}
+          <button className="btn btn--secondary" onClick={requestGithubSync} disabled={saving || !syncConfigured} title={syncConfigured ? 'Open a reviewable GitHub PR' : 'GitHub content sync token is not configured'}>
+            Review Live Changes in GitHub
           </button>
           <button className="btn btn--secondary" onClick={() => guardUnsaved(onBack, 'Leaving the editor')}>Back</button>
           <button className="btn btn--secondary" onClick={() => onPlay(effectiveDraft)} disabled={validationErrors.length > 0}>
@@ -1152,6 +1131,12 @@ export function PuzzleEditor({ onBack, onPlay, onReport, previewScenario, idToke
       </div>
         </>
       )}
+
+      {showContentExport ? (
+        <ContentExportPanel idToken={idToken}
+          onClose={() => setShowContentExport(false)}
+          onStatus={setStatus} />
+      ) : null}
 
       {confirm && (
         <ConfirmDialog
