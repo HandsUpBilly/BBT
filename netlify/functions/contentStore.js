@@ -246,7 +246,15 @@ export async function writeContentItem(store, readLegacy, { kind, id, value, exp
     const { catalog, etag } = await readContentCatalog(store, readLegacy, { withEtag: true });
     const key = ref(kind, id);
     const actualRevision = catalog.revisions[key] ?? 0;
-    if (actualRevision !== expectedRevision) throw new ContentConflictError();
+    if (actualRevision !== expectedRevision) {
+      if (process.env.CONTEXT === 'branch-deploy' && process.env.BRANCH === 'staging') {
+        console.warn('Editor item revision mismatch', {
+          kind, expectedRevision, actualRevision,
+          itemExists: items(catalog, kind).some(item => item.id === id),
+        });
+      }
+      throw new ContentConflictError();
+    }
     const current = items(catalog, kind);
     const previous = current.find(item => item.id === id);
     if (contentEqual(previous, value)) return { catalog, revision: actualRevision };
