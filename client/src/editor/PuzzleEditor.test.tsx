@@ -47,6 +47,9 @@ afterEach(() => {
 function renderEditor(scenarios: Scenario[] = [savedScenario], series?: SeriesDefinition[]) {
   const initialData = {
     scenarios,
+    revisions: { 'scenarios/scenario-001': 1, 'series/default': 1 },
+    publishedRevisions: { 'scenarios/scenario-001': 1, 'series/default': 1 },
+    pendingPublish: { scenarios: [], series: [] },
     series: series ?? [{
       id: 'default',
       name: 'Tutorial',
@@ -56,9 +59,13 @@ function renderEditor(scenarios: Scenario[] = [savedScenario], series?: SeriesDe
       order: 0,
     }],
   };
-  const fetchMock = vi.fn().mockImplementation((_: unknown, options?: RequestInit) => Promise.resolve({
+  const fetchMock = vi.fn().mockImplementation((url: unknown, options?: RequestInit) => Promise.resolve({
     ok: true,
-    json: async () => options?.method === 'PUT' ? JSON.parse(String(options.body)) : initialData,
+    json: async () => url === '/api/editor/content-publish'
+      ? { publishedRevision: 2, public: true }
+      : options?.method === 'PUT'
+        ? { ...JSON.parse(String(options.body)), revision: 2 }
+        : initialData,
   }));
   vi.stubGlobal('fetch', fetchMock);
   render(
@@ -102,6 +109,32 @@ describe('PuzzleEditor unsaved changes', { timeout: 15_000 }, () => {
     await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/editor/scenarios/scenario-001', expect.objectContaining({ method: 'PUT' })));
     const save = fetchMock.mock.calls.find((call: unknown[]) => (call[1] as RequestInit | undefined)?.method === 'PUT');
     expect(JSON.parse(String((save?.[1] as RequestInit).body)).enabledActions).not.toContain('pass');
+  });
+
+  it('keeps a saved draft private until the author explicitly publishes it', async () => {
+    const fetchMock = renderEditor();
+    await screen.findByDisplayValue('Saved Puzzle');
+
+    fireEvent.change(screen.getByDisplayValue('The saved description.'), {
+      target: { value: 'New draft description' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Save Draft' }));
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledWith(
+      '/api/editor/scenarios/scenario-001', expect.objectContaining({ method: 'PUT' })));
+    expect(fetchMock.mock.calls.some(call => call[0] === '/api/editor/content-publish')).toBe(false);
+    const publishButton = screen.getByRole('button', { name: 'Publish Draft' });
+    await waitFor(() => expect((publishButton as HTMLButtonElement).disabled).toBe(false));
+
+    fireEvent.click(publishButton);
+    expect(screen.getByText(/Players will see the current saved draft/)).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Publish Draft' , hidden: false }));
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledWith(
+      '/api/editor/content-publish', expect.objectContaining({ method: 'POST' })));
+    const req = fetchMock.mock.calls.find(call => call[0] === '/api/editor/content-publish');
+    expect(JSON.parse(String(req?.[1]?.body))).toMatchObject({
+      kind: 'scenarios', id: 'scenario-001', expectedRevision: 2,
+      expectedPublishedRevision: 1,
+    });
   });
 
   it('marks admin-only puzzles and series in their libraries', async () => {
