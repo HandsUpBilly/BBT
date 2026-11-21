@@ -1,4 +1,4 @@
-import { editorStore, readDraftScenarios, readDraftSeries, toPublicView } from './editorStore.js';
+import { editorStore, readPublishedContent } from './editorStore.js';
 import { leaderboardStore, readEntries } from './blobEntries.js';
 import { sortEntries } from '../../shared/scoreValidation.js';
 import { PROGRESS_RATE_LIMIT, createRateLimiter, rateLimitKey } from '../../shared/rateLimit.js';
@@ -39,11 +39,7 @@ export default async function handler(req) {
   if (throttled) return throttled;
 
   const drafts = editorStore();
-  const [savedScenarios, savedSeries] = await Promise.all([
-    readDraftScenarios(drafts),
-    readDraftSeries(drafts),
-  ]);
-  const { scenarios } = toPublicView(savedScenarios, savedSeries);
+  const { scenarios } = await readPublishedContent(drafts);
 
   const scenarioStore = leaderboardStore('leaderboard');
   const seriesStore = leaderboardStore('series-leaderboard');
