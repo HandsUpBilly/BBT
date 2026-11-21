@@ -126,10 +126,12 @@ export function reconcileToDeployment(snapshot, next = source()) {
   if (contentEqual(before, next)) return null;
   const a = reconcileCollection(before.scenarios, snapshot.scenarios, next.scenarios);
   const b = reconcileCollection(before.series, snapshot.series, next.series);
+  const publishedScenarios = snapshot.publishedScenarios ?? snapshot.scenarios.filter(item => item.published !== false);
+  const publishedSeries = snapshot.publishedSeries ?? snapshot.series.filter(item => item.published !== false);
   // Repository deployments update published content automatically, but
   // unpublished editor drafts remain separate until explicitly promoted.
-  const publishedA = reconcileCollection(before.scenarios, snapshot.publishedScenarios, next.scenarios);
-  const publishedB = reconcileCollection(before.series, snapshot.publishedSeries, next.series);
+  const publishedA = reconcileCollection(before.scenarios, publishedScenarios, next.scenarios);
+  const publishedB = reconcileCollection(before.series, publishedSeries, next.series);
   const revisions = { ...snapshot.revisions };
   const recordChanges = (kind, oldItems, newItems) => {
     const old = new Map(oldItems.map(item => [item.id, item]));
@@ -143,7 +145,7 @@ export function reconcileToDeployment(snapshot, next = source()) {
   };
   recordChanges('scenarios', snapshot.scenarios, a.items);
   recordChanges('series', snapshot.series, b.items);
-  const publishedRevisions = { ...snapshot.publishedRevisions };
+  const publishedRevisions = { ...(snapshot.publishedRevisions ?? snapshot.revisions) };
   const trackPublic = (kind, oldItems, updatedItems) => {
     const oldMap = new Map(oldItems.map(item => [item.id, item]));
     const newMap = new Map(updatedItems.map(item => [item.id, item]));
@@ -154,8 +156,8 @@ export function reconcileToDeployment(snapshot, next = source()) {
       }
     }
   };
-  trackPublic('scenarios', snapshot.publishedScenarios, publishedA.items);
-  trackPublic('series', snapshot.publishedSeries, publishedB.items);
+  trackPublic('scenarios', publishedScenarios, publishedA.items);
+  trackPublic('series', publishedSeries, publishedB.items);
   return {
     ...snapshot, baseline: clone(next), scenarios: a.items, series: b.items, revisions,
     publishedScenarios: publishedA.items.filter(item => item.published !== false),
