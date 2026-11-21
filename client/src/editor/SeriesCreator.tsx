@@ -3,7 +3,8 @@ import type { Scenario, SeriesDefinition, Team } from '../types';
 import { AVATAR_ALLOWED_TYPES, encodeAvatarFile, validateAvatarFile } from '../avatarImage';
 import { seriesLogoSource } from '../seriesLogo';
 import { TEAMS, teamLabel } from '../teamPresentation';
-import { deleteSeries, saveSeries } from './editorApi';
+import { deleteSeries, saveSeries, publishContent } from './editorApi';
+import { ConfirmDialog } from '../ConfirmDialog';
 import { seriesMembershipErrors } from '../../../shared/scenarioValidation.js';
 
 interface Props {
@@ -11,7 +12,11 @@ interface Props {
   series: SeriesDefinition[];
   idToken: string | null;
   revisions: Record<string, number>;
+  publishedRevisions: Record<string, number>;
+  pendingPublish: string[];
   onRevision: (id: string, revision: number) => void;
+  onPublished: (id: string, revision: number) => void;
+  onDraftSaved: (id: string) => void;
   onChange: (series: SeriesDefinition[]) => void;
   onStatus: (status: string) => void;
 }
@@ -30,12 +35,13 @@ function newSeries(order: number): SeriesDefinition {
   };
 }
 
-export function SeriesCreator({ scenarios, series, idToken, revisions, onRevision, onChange, onStatus }: Props) {
+export function SeriesCreator({ scenarios, series, idToken, revisions, publishedRevisions, pendingPublish, onRevision, onPublished, onDraftSaved, onChange, onStatus }: Props) {
   const [selectedId, setSelectedId] = useState(series[0]?.id ?? '');
   const selected = series.find(item => item.id === selectedId);
   const [draft, setDraft] = useState<SeriesDefinition>(() => selected ?? newSeries(series.length));
   const [creating, setCreating] = useState(series.length === 0);
   const [saving, setSaving] = useState(false);
+  const [confirmPublish, setConfirmPublish] = useState(false);
   const [stepToAdd, setStepToAdd] = useState('');
   const [logoBusy, setLogoBusy] = useState(false);
   const [logoError, setLogoError] = useState('');
@@ -48,6 +54,7 @@ export function SeriesCreator({ scenarios, series, idToken, revisions, onRevisio
       owner: series.find(item => item.id !== draft.id && item.scenarioIds.includes(scenario.id)),
     })), [draft.id, draft.scenarioIds, scenarios, series]);
   const selectedStep = stepOptions.find(item => item.scenario.id === stepToAdd);
+  const hasUnsavedChanges = creating || JSON.stringify(selected) !== JSON.stringify(draft);
   const logoSource = seriesLogoSource(draft.logo);
   const validationErrors = useMemo(
     () => seriesMembershipErrors(draft, series, scenarios),
@@ -81,15 +88,37 @@ export function SeriesCreator({ scenarios, series, idToken, revisions, onRevisio
     try {
       const saved = await saveSeries(draft, creating, idToken, creating ? 0 : revisions[`series/${draft.id}`] ?? 0);
       onRevision(saved.id, saved.revision);
+      onDraftSaved(saved.id);
       const next = [...series.filter(item => item.id !== saved.id), saved]
         .sort((a, b) => (a.order ?? 0) - (b.order ?? 0) || a.name.localeCompare(b.name));
       onChange(next);
       setSelectedId(saved.id);
       setDraft(structuredClone(saved));
       setCreating(false);
-      onStatus(`Saved ${saved.name}. ${saved.published !== false ? 'Enabled for everyone.' : saved.adminEnabled ? 'Enabled for admins only.' : 'Creator only.'}`);
+      onStatus(`Saved draft ${saved.name}. Publish it when you want players to see the changes.`);
     } catch (error) {
       onStatus(error instanceof Error ? error.message : 'Failed to save series.');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function publishSaved() {
+    if (creating || hasUnsavedChanges) {
+      onStatus('Save the series draft before publishing.');
+      return;
+    }
+    setSaving(true);
+    try {
+      const result = await publishContent('series', draft.id,
+        revisions[`series/${draft.id}`] ?? 0,
+        publishedRevisions[`series/${draft.id}`] ?? 0, idToken);
+      onPublished(draft.id, result.publishedRevision);
+      onStatus(result.public
+        ? `Published series ${draft.name}.`
+        : `Unpublished series ${draft.name}.`);
+    } catch (error) {
+      onStatus(error instanceof Error ? error.message : 'Could not publish series.');
     } finally {
       setSaving(false);
     }
@@ -238,7 +267,27 @@ export function SeriesCreator({ scenarios, series, idToken, revisions, onRevisio
             </ul>
           ) : null}
         </section>
-        <div className="series-creator__footer"><button className="btn btn--primary" disabled={saving || validationErrors.length > 0} onClick={() => { void persist(); }}>Save Series</button><button className="btn btn--ghost" disabled={saving} onClick={() => { void remove(); }}>Delete Series</button></div>
+        <div className="series-creator__footer">
+          <button className="btn btn--primary" disabled={saving || validationErrors.length > 0}
+            onClick={() => { void persist(); }}>Save Draft</button>
+          <button className="btn btn--primary"
+            disabled={saving || creating || hasUnsavedChanges || !pendingPublish.includes(draft.id)}
+            onClick={() => setConfirmPublish(true)}>
+            {draft.published === false ? 'Unpublish Draft' : 'Publish Draft'}
+          </button>
+          <button className="btn btn--ghost" disabled={saving}
+            onClick={() => { void remove(); }}>Delete Series</button>
+        </div>
+        {confirmPublish && <ConfirmDialog
+          title={draft.published === false ? 'Unpublish this series?' : 'Publish this series?'}
+          message={draft.published === false
+            ? 'Players will no longer see the series. Historical scores are preserved.'
+            : 'Players will see this saved series version. All referenced puzzles must already be published.'}
+          confirmLabel={draft.published === false ? 'Unpublish' : 'Publish Draft'}
+          cancelLabel="Keep Editing"
+          onConfirm={() => { setConfirmPublish(false); void publishSaved(); }}
+          onCancel={() => setConfirmPublish(false)}
+        />}
       </div>
     </section>
   );
