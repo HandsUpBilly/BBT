@@ -29,8 +29,13 @@ pre-v3 Blob collection, including its historical one-off migrations.
 
 ## Live Puzzle Creator
 
-Saves take effect immediately, using the existing `published` and
-`adminEnabled` visibility flags. Each item has an optimistic revision,
+**Save Draft** modifies the private editor revision only. **Publish Draft**
+uses a separate CAS guarded by draft and published revisions and updates the
+public snapshot. Unpublish requires saving `published=false` and then
+publishing that change. Explicit confirmed Delete is destructive and removes
+the item from public play immediately; old leaderboards are retained.
+The existing `published` and `adminEnabled` flags still express the intended
+visibility of a saved draft. Each item has an optimistic revision,
 and every write uses Netlify's atomic `onlyIfMatch` ETag. Stale editor tabs
 receive HTTP 409 and must reload before saving. Writes to different items
 retry independently, avoiding the old full-collection lost-update problem.
@@ -63,9 +68,12 @@ an explicit HTTP 503; it must not silently pretend to have synced.
    stale revisions.
 4. Test GitHub-only updates, editor-only updates and incompatible simultaneous
    edits in a preview. Inspect the conflict paths in the editor.
-5. Configure `GITHUB_CONTENT_SYNC_TOKEN`, open a PR from the live editor,
+5. Verify Save Draft does not change public API responses, Publish Draft does,
+   and stale published revisions are rejected. Ensure old v3 snapshots are
+   upgraded without exposing unpublished editor content.
+6. Configure `GITHUB_CONTENT_SYNC_TOKEN`, open a PR from the live editor,
    verify the PR contains only intended content files and merge into staging.
-6. Run `npm run verify`, test the browser editor and public scenario endpoint,
+7. Run `npm run verify`, test the browser editor and public scenario endpoint,
    and then promote to production. Check that edited live puzzles survive
    a redeploy and new repo-authored puzzles appear on the next read.
 
@@ -77,6 +85,9 @@ atomic and avoids 25+ reads per page load, while providing independent item
 optimistic concurrency. The retained history is a bounded (40-entry) record
 of prior values inside the snapshot. The Puzzle Editor offers a bounded in-app revision history and rollback,
 using the same CAS guard to prevent restoring over someone else's changes.
-Bulk GitHub export remains a reviewable explicit action, not an unreviewed
-production push. A separate draft/publish queue and automatically scheduled
-GitHub PR creation are not yet part of this release.
+Drafts and published revisions have separate optimistic revision numbers;
+GitHub deployments reconcile both against the previous baseline, while
+retaining unpublished saved edits. Public scenario, progress and statistics
+endpoints read only the published snapshot. Bulk GitHub export remains a
+reviewable explicit action, not an unreviewed production push. Automatically
+scheduled GitHub PR creation is not part of this release.
