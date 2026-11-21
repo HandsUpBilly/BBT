@@ -8,10 +8,14 @@ const json = (status, data) => new Response(JSON.stringify(data), {
 
 export default async function handler(req) {
   if (req.method !== 'POST') return json(405, { errors: ['Method not allowed'] });
-  try { await requireAdminGoogleUser(req); } catch (error) {
+  let admin;
+  try { admin = await requireAdminGoogleUser(req); } catch (error) {
     if (error instanceof AdminAuthError) return authErrorResponse(error);
     throw error;
   }
+  // This endpoint changes the public catalogue. A legacy open-local-editor
+  // fallback must not be treated as proof of a verified administrator.
+  if (!admin?.email) return json(403, { errors: ['Verified administrator access is required to publish.'] });
   let payload;
   try { payload = await req.json(); } catch { return json(400, { errors: ['Invalid JSON'] }); }
   const { kind, id, expectedRevision, expectedPublishedRevision } = payload ?? {};

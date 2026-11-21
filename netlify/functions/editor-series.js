@@ -13,6 +13,11 @@ function revisionFromRequest(req) {
   return raw !== null && /^(0|[1-9][0-9]*)$/.test(raw) && Number.isSafeInteger(Number(raw))
     ? Number(raw) : null;
 }
+export function isSeriesAssignmentPath(pathname) {
+  const last = pathname.split('/').filter(Boolean).at(-1);
+  return last === 'assignment' || last === 'series-assignment';
+}
+
 const readLegacy = async store => {
   const [scenarios, series] = await Promise.all([readLegacyScenarios(store), readLegacySeries(store)]);
   return { scenarios, series };
@@ -47,7 +52,10 @@ export default async function handler(req) {
   const catalog = await loadContent(store);
   const existing = catalog.series;
 
-  if (seriesId === 'assignment' && req.method === 'PUT') {
+  // Netlify may preserve the original /api/editor/series-assignment URL
+  // or expose the rewritten /.netlify/functions/editor-series/assignment URL.
+  // Handle both forms explicitly rather than treating one as a series ID.
+  if (isSeriesAssignmentPath(url.pathname) && req.method === 'PUT') {
     let request;
     try { request = await req.json(); } catch { return jsonResponse(400, { errors: ['Invalid JSON'] }); }
     const scenarioId = String(request?.scenarioId ?? '');
@@ -62,7 +70,7 @@ export default async function handler(req) {
     if (saved === existing) return jsonResponse(200, existing);
     try {
       const outcome = await writeContentAssignment(store, () => readLegacy(store), {
-        scenarioId, targetSeriesId, expectedRevisions: assignment?.revisions,
+        scenarioId, targetSeriesId, expectedRevisions: request?.revisions,
       });
       if (outcome.errors.length) return jsonResponse(409, { errors: outcome.errors });
       return jsonResponse(200, {
