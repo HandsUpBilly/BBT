@@ -1,4 +1,4 @@
-import { editorStore, readLegacyScenarios, readLegacySeries, loadContent } from './editorStore.js';
+import { editorStore, readLegacyScenarios, readLegacySeries } from './editorStore.js';
 import { publishContentItem, contentVersions, ContentConflictError } from './contentStore.js';
 import { AdminAuthError, authErrorResponse, requireAdminGoogleUser } from './auth.js';
 
