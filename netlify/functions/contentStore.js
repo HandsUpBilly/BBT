@@ -1,6 +1,6 @@
 import { STATIC_SCENARIOS, STATIC_SERIES } from './scenarioSeed.js';
 import { reconcileCollection, contentEqual } from '../../shared/contentReconcile.js';
-import { normalizeScenario, normalizeSeriesCollection, updateSeriesAssignment } from '../../shared/scenarioValidation.js';
+import { normalizeScenario, normalizeSeriesCollection, updateSeriesAssignment, validateScenario, seriesMembershipErrors } from '../../shared/scenarioValidation.js';
 
 export const CONTENT_KEY = 'content-v3/catalog';
 
@@ -381,7 +381,13 @@ export async function publishContentItem(store, readLegacy, {
     const previous = catalog[publicKey].find(item => item.id === id);
     const next = draft?.published !== false ? draft : undefined;
     if (!draft && !previous) throw new ContentConflictError('There is no saved content to publish.');
+    if (kind === 'scenarios' && next) {
+      const errors = validateScenario(normalizeScenario(next), new Set(), { allowExisting: true });
+      if (errors.length) throw new ContentConflictError(`Cannot publish invalid puzzle: ${errors.join('; ')}`);
+    }
     if (kind === 'series' && next) {
+      const errors = seriesMembershipErrors(next, catalog.publishedSeries, catalog.publishedScenarios);
+      if (errors.length) throw new ContentConflictError(`Cannot publish invalid series: ${errors.join('; ')}`);
       const liveIds = new Set(catalog.publishedScenarios.map(item => item.id));
       const missing = next.scenarioIds.filter(itemId => !liveIds.has(itemId));
       if (missing.length) throw new ContentConflictError(
