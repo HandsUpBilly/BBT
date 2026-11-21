@@ -1,6 +1,7 @@
 import { editorStore, loadContent } from './editorStore.js';
 import { contentVersions } from './contentStore.js';
 import { planContentExport } from '../../shared/contentGitSync.js';
+import { parseExportSelection, filterExportItems } from '../../shared/contentExportSelection.js';
 import { AdminAuthError, authErrorResponse, requireAdminGoogleUser } from './auth.js';
 
 const REPO = 'HandsUpBilly/BBT';
@@ -30,12 +31,12 @@ function findItem(list, id) {
   return (list ?? []).find(item => item.id === id);
 }
 
-async function editorDiff(catalog, token, baseSha) {
+async function editorDiff(catalog, token, baseSha, selected) {
   const versions = contentVersions(catalog);
   const changes = [];
   const conflicts = [];
-  for (const kind of ['scenarios', 'series']) {
-    for (const id of versions.dirty[kind]) {
+  for (const { kind, id } of selected ?? ['scenarios', 'series'].flatMap(kind =>
+    versions.dirty[kind].map(id => ({ kind, id })))) {
       const base = findItem(catalog.baseline[kind], id);
       const live = findItem(catalog[kind], id);
       const path = `client/src/${kind}/${id}.json`;
@@ -54,7 +55,6 @@ async function editorDiff(catalog, token, baseSha) {
         continue;
       }
       if (result.change) changes.push(result.change);
-    }
   }
   return { changes, conflicts };
 }
@@ -77,25 +77,66 @@ export default async function handler(req) {
   const token = process.env.GITHUB_CONTENT_SYNC_TOKEN;
   const catalog = await loadContent(editorStore());
   const status = contentVersions(catalog);
-  if (req.method === 'GET') return json(200, {
-    configured: Boolean(token), ...status,
-  });
+  if (req.method === 'GET' && new URL(req.url).searchParams.get('preview') !== '1') {
+    return json(200, { configured: Boolean(token), ...status });
+  }
   if (!token) return json(503, { errors: [
     'Configure GITHUB_CONTENT_SYNC_TOKEN (Contents and Pull requests: read/write) on the Netlify site.',
   ] });
-  if (Object.values(status.conflicts).some(map => Object.values(map).some(paths => paths.length))) {
-    return json(409, { errors: ['Resolve existing GitHub/editor conflicts before exporting.'], conflicts: status.conflicts });
-  }
   try {
-    // Pin the GitHub snapshot before inspecting any file so we cannot merge
-    // changes read from different staging commits into one PR.
+    let selected = null;
+    let requestedBaseSha = null;
+    if (req.method === 'POST') {
+      let payload;
+      try { payload = await req.json(); } catch { return json(400, { errors: ['Invalid JSON selection'] }); }
+      const allowed = new Set(['scenarios', 'series'].flatMap(kind =>
+        status.dirty[kind].map(id => `${kind}/${id}`)));
+      try { selected = parseExportSelection(payload?.items, allowed); }
+      catch (error) { return json(400, { errors: [error.message] }); }
+      if (typeof payload?.baseSha !== 'string' || !/^[a-f0-9]{40}$/.test(payload.baseSha)) {
+        return json(428, { errors: ['Preview the current staging revision before exporting.'] });
+      }
+      requestedBaseSha = payload.baseSha;
+      for (const item of selected) {
+        const key = `${item.kind}/${item.id}`;
+        if ((status.revisions[key] ?? 0) !== item.revision) {
+          return json(409, { errors: [`Live item ${key} changed since preview. Refresh the selection.`] });
+        }
+        if ((status.conflicts[item.kind]?.[item.id] ?? []).length) {
+          return json(409, { errors: [`Resolve GitHub/editor conflict for ${key} before exporting.`] });
+        }
+      }
+    }
+    // Read one immutable staging snapshot. POST must match the exact snapshot
+    // shown to the author in the preview; never silently export a new diff.
     const baseRef = await github(`git/ref/heads/${branch}`, token);
-    const { changes, conflicts } = await editorDiff(catalog, token, baseRef.object.sha);
+    if (requestedBaseSha && requestedBaseSha !== baseRef.object.sha) {
+      return json(409, { errors: ['Staging changed since preview. Review the new diff before exporting.'] });
+    }
+    const candidates = selected ? filterExportItems(status, selected) : null;
+    const { changes, conflicts } = await editorDiff(catalog, token, baseRef.object.sha, candidates);
+    if (req.method === 'GET') {
+      const conflicted = new Map(conflicts.map(item => [`${item.kind}/${item.id}`, item.paths]));
+      const changesByPath = new Map(changes.map(item => [item.path, item]));
+      const items = ['scenarios', 'series'].flatMap(kind =>
+        status.dirty[kind].map(id => {
+          const path = `client/src/${kind}/${id}.json`;
+          const change = changesByPath.get(path);
+          const paths = [...new Set([
+            ...(status.conflicts[kind]?.[id] ?? []),
+            ...(conflicted.get(`${kind}/${id}`) ?? []),
+          ])];
+          return { kind, id, path, revision: status.revisions[`${kind}/${id}`] ?? 0,
+            action: change ? (change.value === undefined ? 'delete' : 'update') : 'none',
+            conflictPaths: paths, selectable: Boolean(change) && paths.length === 0 };
+        }));
+      return json(200, { configured: true, baseSha: baseRef.object.sha, items });
+    }
     if (conflicts.length) return json(409, {
-      errors: ['GitHub changed since this editor content was last synchronised. Resolve these differences first.'],
+      errors: ['Selected content conflicts with GitHub. Review the updated preview.'],
       conflicts,
     });
-    if (!changes.length) return json(200, { synced: true, changes: 0 });
+    if (!changes.length) return json(409, { errors: ['Selected items have no exportable changes. Refresh preview.'] });
     // Branch off the fresh staging commit so unrelated source changes survive.
     const baseCommit = await github(`git/commits/${baseRef.object.sha}`, token);
     const tree = await github('git/trees', token, {
