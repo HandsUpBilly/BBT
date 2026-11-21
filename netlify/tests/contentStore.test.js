@@ -24,10 +24,22 @@ function fakeStore() {
   };
   return { store, data };
 }
+const testScenario = (id, name, col) => ({
+  id, name, description: 'Original', objective: 'touchdown',
+  activeTeam: 'human', teams: ['human', 'orc'], enabledActions: ['move'],
+  published: true, ballPosition: null, pieces: [{
+    id: 'p', team: 'human', role: 'lineman', name: 'Runner',
+    ma: 6, st: 3, ag: 3, pa: 4, av: 8, skills: [],
+    position: { col, row: 2 }, hasBall: true,
+  }],
+});
 const old = { scenarios: [
-  { id: 'one', name: 'One', description: 'Original', pieces: [{ id: 'p', position: { col: 1, row: 2 } }] },
-  { id: 'two', name: 'Two' },
-], series: [{ id: 'demo', name: 'Demo', scenarioIds: ['one', 'two'] }] };
+  testScenario('one', 'One', 1),
+  testScenario('two', 'Two', 4),
+], series: [{
+  id: 'demo', name: 'Demo', description: 'Demo series',
+  scenarioIds: ['one', 'two'], teams: ['human', 'orc'], published: true, order: 0,
+}] };
 const importLegacy = async () => structuredClone(old);
 
 test('bootstraps legacy authored content once, preserving all existing IDs', async () => {
