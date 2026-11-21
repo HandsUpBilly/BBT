@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   CONTENT_KEY, catalogStorageKey, ContentConflictError, contentVersions, readContentCatalog,
-  reconcileToDeployment, writeContentItem,
+  reconcileToDeployment, writeContentItem, publishContentItem, contentPublicView,
 } from '../functions/contentStore.js';
 
 function fakeStore() {
@@ -24,10 +24,22 @@ function fakeStore() {
   };
   return { store, data };
 }
+const testScenario = (id, name, col) => ({
+  id, name, description: 'Original', objective: 'touchdown',
+  activeTeam: 'human', teams: ['human', 'orc'], enabledActions: ['move'],
+  published: true, ballPosition: null, pieces: [{
+    id: 'p', team: 'human', role: 'lineman', name: 'Runner',
+    ma: 6, st: 3, ag: 3, pa: 4, av: 8, skills: [],
+    position: { col, row: 2 }, hasBall: true,
+  }],
+});
 const old = { scenarios: [
-  { id: 'one', name: 'One', description: 'Original', pieces: [{ id: 'p', position: { col: 1, row: 2 } }] },
-  { id: 'two', name: 'Two' },
-], series: [{ id: 'demo', name: 'Demo', scenarioIds: ['one', 'two'] }] };
+  testScenario('one', 'One', 1),
+  testScenario('two', 'Two', 4),
+], series: [{
+  id: 'demo', name: 'Demo', description: 'Demo series',
+  scenarioIds: ['one', 'two'], teams: ['human', 'orc'], published: true, order: 0,
+}] };
 const importLegacy = async () => structuredClone(old);
 
 test('bootstraps legacy authored content once, preserving all existing IDs', async () => {
@@ -164,4 +176,133 @@ test('GitHub adopting the live editor value resolves an existing conflict', () =
     scenarios: [{ id: 'x', name: 'Editor' }], series: [],
   });
   assert.equal(merged.conflicts.scenarios.x, undefined);
+});
+
+test('Save Draft leaves public puzzle and series definitions unchanged until Publish', async () => {
+  const { store } = fakeStore();
+  await readContentCatalog(store, importLegacy);
+  const saved = await writeContentItem(store, importLegacy, {
+    kind: 'scenarios', id: 'one', expectedRevision: 1,
+    value: { ...old.scenarios[0], description: 'Private work in progress' },
+  });
+  assert.equal(saved.revision, 2);
+  assert.equal(contentPublicView(saved.catalog).scenarios.find(item => item.id === 'one').description, 'Original');
+  assert.deepEqual(contentVersions(saved.catalog).pendingPublish.scenarios, ['one']);
+  const published = await publishContentItem(store, importLegacy, {
+    kind: 'scenarios', id: 'one', expectedRevision: 2, expectedPublishedRevision: 1,
+  });
+  assert.equal(published.publishedRevision, 2);
+  assert.equal(contentPublicView(published.catalog).scenarios.find(item => item.id === 'one').description,
+    'Private work in progress');
+  assert.deepEqual(contentVersions(published.catalog).pendingPublish.scenarios, []);
+});
+
+test('Publish rejects a stale draft or stale published revision', async () => {
+  const { store } = fakeStore();
+  await readContentCatalog(store, importLegacy);
+  await writeContentItem(store, importLegacy, {
+    kind: 'scenarios', id: 'one', expectedRevision: 1,
+    value: { ...old.scenarios[0], description: 'Changed' },
+  });
+  await assert.rejects(publishContentItem(store, importLegacy, {
+    kind: 'scenarios', id: 'one', expectedRevision: 1, expectedPublishedRevision: 1,
+  }), ContentConflictError);
+  await publishContentItem(store, importLegacy, {
+    kind: 'scenarios', id: 'one', expectedRevision: 2, expectedPublishedRevision: 1,
+  });
+  await assert.rejects(publishContentItem(store, importLegacy, {
+    kind: 'scenarios', id: 'one', expectedRevision: 2, expectedPublishedRevision: 1,
+  }), ContentConflictError);
+});
+
+test('unpublish requires its own explicit promotion and retains the saved draft', async () => {
+  const { store } = fakeStore();
+  await readContentCatalog(store, importLegacy);
+  const draft = await writeContentItem(store, importLegacy, {
+    kind: 'scenarios', id: 'one', expectedRevision: 1,
+    value: { ...old.scenarios[0], published: false },
+  });
+  assert.equal(contentPublicView(draft.catalog).scenarios.some(item => item.id === 'one'), true);
+  const unpublished = await publishContentItem(store, importLegacy, {
+    kind: 'scenarios', id: 'one', expectedRevision: 2, expectedPublishedRevision: 1,
+  });
+  assert.equal(contentPublicView(unpublished.catalog).scenarios.some(item => item.id === 'one'), false);
+  assert.equal(unpublished.catalog.scenarios.find(item => item.id === 'one').published, false);
+  assert.deepEqual(contentPublicView(unpublished.catalog).series[0].scenarioIds, ['two']);
+});
+
+test('series drafts stay private and cannot publish references to unpublished puzzles', async () => {
+  const { store } = fakeStore();
+  await readContentCatalog(store, importLegacy);
+  await writeContentItem(store, importLegacy, {
+    kind: 'series', id: 'demo', expectedRevision: 1,
+    value: { ...old.series[0], name: 'New series draft' },
+  });
+  const publicBefore = contentPublicView(await readContentCatalog(store, importLegacy));
+  assert.equal(publicBefore.series[0].name, 'Demo');
+  const published = await publishContentItem(store, importLegacy, {
+    kind: 'series', id: 'demo', expectedRevision: 2, expectedPublishedRevision: 1,
+  });
+  assert.equal(contentPublicView(published.catalog).series[0].name, 'New series draft');
+
+  // Disable the puzzle and explicitly unpublish it. The saved series draft
+  // still refers to that ID and cannot be published until it removes the step.
+  await writeContentItem(store, importLegacy, {
+    kind: 'scenarios', id: 'one', expectedRevision: 1,
+    value: { ...old.scenarios[0], published: false },
+  });
+  await publishContentItem(store, importLegacy, {
+    kind: 'scenarios', id: 'one', expectedRevision: 2, expectedPublishedRevision: 1,
+  });
+  await writeContentItem(store, importLegacy, {
+    kind: 'series', id: 'demo', expectedRevision: 2,
+    value: { ...old.series[0], name: 'Different name' },
+  });
+  await assert.rejects(publishContentItem(store, importLegacy, {
+    kind: 'series', id: 'demo', expectedRevision: 3, expectedPublishedRevision: 2,
+  }), /Publish its puzzles first/);
+});
+
+test('GitHub-only changes reach the public snapshot but editor-only drafts do not', () => {
+  const baseline = { scenarios: [{ id: 'x', name: 'Original', description: 'Old' }], series: [] };
+  const snapshot = {
+    schema: 3, baseline,
+    scenarios: [{ id: 'x', name: 'Editor draft', description: 'Old' }],
+    series: [], publishedScenarios: [{ id: 'x', name: 'Original', description: 'Old' }],
+    publishedSeries: [], revisions: { 'scenarios/x': 2 },
+    publishedRevisions: { 'scenarios/x': 1 },
+    conflicts: { scenarios: {}, series: {} }, history: [],
+  };
+  const merged = reconcileToDeployment(snapshot, {
+    scenarios: [{ id: 'x', name: 'Original', description: 'GitHub deployment' }], series: [],
+  });
+  assert.equal(merged.scenarios[0].name, 'Editor draft');
+  assert.equal(merged.scenarios[0].description, 'GitHub deployment');
+  assert.equal(contentPublicView(merged).scenarios[0].name, 'Original');
+  assert.equal(contentPublicView(merged).scenarios[0].description, 'GitHub deployment');
+});
+
+test('explicit destructive deletion unpublishes a puzzle and cleans series references', async () => {
+  const { store } = fakeStore();
+  await readContentCatalog(store, importLegacy);
+  const result = await writeContentItem(store, importLegacy, {
+    kind: 'scenarios', id: 'one', value: null, expectedRevision: 1,
+  });
+  assert.equal(contentPublicView(result.catalog).scenarios.some(item => item.id === 'one'), false);
+  assert.deepEqual(contentPublicView(result.catalog).series[0].scenarioIds, ['two']);
+});
+
+test('upgrades old v3 catalog to separate publication snapshots on first read', async () => {
+  const { store, data } = fakeStore();
+  const initial = await readContentCatalog(store, importLegacy);
+  const legacyV3 = { ...initial };
+  delete legacyV3.publishedScenarios;
+  delete legacyV3.publishedSeries;
+  delete legacyV3.publishedRevisions;
+  const oldEntry = data.get(CONTENT_KEY);
+  data.set(CONTENT_KEY, { ...oldEntry, value: JSON.stringify(legacyV3) });
+  const upgraded = await readContentCatalog(store, importLegacy);
+  assert.equal(upgraded.publishedScenarios.length, 2);
+  assert.equal(upgraded.publishedSeries.length, 1);
+  assert.equal(upgraded.publishedRevisions['scenarios/one'], 1);
 });

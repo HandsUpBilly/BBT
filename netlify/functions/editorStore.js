@@ -9,7 +9,7 @@ import { getStore } from '@netlify/blobs';
 // import.meta.glob behavior.
 import { STATIC_SCENARIOS, STATIC_SERIES } from './scenarioSeed.js';
 import { normalizeScenario, normalizeSeriesCollection } from '../../shared/scenarioValidation.js';
-import { readContentCatalog } from './contentStore.js';
+import { readContentCatalog, contentPublicView } from './contentStore.js';
 
 const SCENARIOS_KEY = 'scenarios';
 const SERIES_KEY = 'series-default';
@@ -213,6 +213,7 @@ export const loadContent = store => readContentCatalog(store, async () => {
   ]);
   return { scenarios, series };
 });
+export const readPublishedContent = async store => contentPublicView(await loadContent(store));
 export const readDraftScenarios = async store => (await loadContent(store)).scenarios.map(normalizeScenario);
 export const readDraftSeries = async store =>
   normalizeSeriesCollection((await loadContent(store)).series);

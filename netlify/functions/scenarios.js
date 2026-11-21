@@ -1,4 +1,4 @@
-import { editorStore, readDraftScenarios, readDraftSeries, toPublicView } from './editorStore.js';
+import { editorStore, readPublishedContent } from './editorStore.js';
 
 // Public, unauthenticated read endpoint — this is what the deployed game client
 // fetches at runtime to get the current puzzle set, instead of the build-time
@@ -14,12 +14,9 @@ export default async function handler(req) {
   }
 
   const store = editorStore();
-  const [scenarios, series] = await Promise.all([
-    readDraftScenarios(store),
-    readDraftSeries(store),
-  ]);
+  const published = await readPublishedContent(store);
 
-  return new Response(JSON.stringify(toPublicView(scenarios, series)), {
+  return new Response(JSON.stringify(published), {
     status: 200,
     headers: {
       'Content-Type': 'application/json',
