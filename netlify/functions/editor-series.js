@@ -47,7 +47,10 @@ export default async function handler(req) {
   const catalog = await loadContent(store);
   const existing = catalog.series;
 
-  if (seriesId === 'assignment' && req.method === 'PUT') {
+  // Netlify may preserve the original /api/editor/series-assignment URL
+  // or expose the rewritten /.netlify/functions/editor-series/assignment URL.
+  // Handle both forms explicitly rather than treating one as a series ID.
+  if (['assignment', 'series-assignment'].includes(seriesId) && req.method === 'PUT') {
     let request;
     try { request = await req.json(); } catch { return jsonResponse(400, { errors: ['Invalid JSON'] }); }
     const scenarioId = String(request?.scenarioId ?? '');
