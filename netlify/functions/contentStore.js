@@ -266,6 +266,19 @@ export async function writeContentItem(store, readLegacy, { kind, id, value, exp
       history: [...catalog.history, { kind, id, revision, at: new Date().toISOString(),
         actor, before: previous ?? null, after: value }].slice(-HISTORY_LIMIT),
     };
+    // Explicit deletion is destructive and already requires a separate
+    // confirmation in the editor. Unpublish the deleted item atomically so
+    // players never retain a ghost puzzle without a draft to manage it.
+    if (value === null) {
+      const publicKey = kind === 'scenarios' ? 'publishedScenarios' : 'publishedSeries';
+      if (catalog[publicKey].some(item => item.id === id)) {
+        updated[publicKey] = catalog[publicKey].filter(item => item.id !== id);
+        updated.publishedRevisions = {
+          ...catalog.publishedRevisions,
+          [key]: (catalog.publishedRevisions[key] ?? 0) + 1,
+        };
+      }
+    }
     if (kind === 'scenarios' && value === null) {
       updated.series = catalog.series.map(series => ({
         ...series, scenarioIds: series.scenarioIds.filter(scenarioId => scenarioId !== id),
@@ -274,6 +287,22 @@ export async function writeContentItem(store, readLegacy, { kind, id, value, exp
         const old = catalog.series.find(item => item.id === series.id);
         if (!contentEqual(old, series)) updated.revisions[ref('series', series.id)] =
           (updated.revisions[ref('series', series.id)] ?? 0) + 1;
+      }
+    }
+    if (kind === 'scenarios' && value === null) {
+      const changedPublished = catalog.publishedSeries.map(item => ({
+        ...item, scenarioIds: item.scenarioIds.filter(scenarioId => scenarioId !== id),
+      }));
+      updated.publishedSeries = changedPublished;
+      for (const series of changedPublished) {
+        const before = catalog.publishedSeries.find(item => item.id === series.id);
+        if (!contentEqual(before, series)) {
+          const pubKey = ref('series', series.id);
+          updated.publishedRevisions = {
+            ...(updated.publishedRevisions ?? catalog.publishedRevisions),
+            [pubKey]: ((updated.publishedRevisions ?? catalog.publishedRevisions)[pubKey] ?? 0) + 1,
+          };
+        }
       }
     }
     // ETag belongs to the snapshot we actually edited; a concurrent writer
@@ -323,6 +352,60 @@ export async function writeContentAssignment(store, readLegacy, {
     if (await casWrite(store, updated, etag)) return { catalog: updated, errors: [] };
   }
   throw new ContentConflictError('Concurrent series updates exceeded retry limit.');
+}
+
+/**
+ * Publish the exact saved draft revision. The public view is independent of
+ * subsequent Save Draft changes until this succeeds. A previously disabled
+ * item can be unpublished by saving published=false and publishing that draft.
+ */
+export async function publishContentItem(store, readLegacy, {
+  kind, id, expectedRevision, expectedPublishedRevision, actor = 'editor-publish',
+}) {
+  if (!['scenarios', 'series'].includes(kind)) throw new TypeError('Invalid kind');
+  if (![expectedRevision, expectedPublishedRevision].every(value =>
+    Number.isSafeInteger(value) && value >= 0)) {
+    throw new ContentConflictError('Current draft and published revisions are required.');
+  }
+  for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+    const { catalog, etag } = await readContentCatalog(store, readLegacy, { withEtag: true });
+    const key = ref(kind, id);
+    if ((catalog.revisions[key] ?? 0) !== expectedRevision
+      || (catalog.publishedRevisions[key] ?? 0) !== expectedPublishedRevision) {
+      throw new ContentConflictError('Draft or published content changed. Reload before publishing.');
+    }
+    const draft = catalog[kind].find(item => item.id === id);
+    const publicKey = kind === 'scenarios' ? 'publishedScenarios' : 'publishedSeries';
+    const previous = catalog[publicKey].find(item => item.id === id);
+    const next = draft?.published !== false ? draft : undefined;
+    if (!draft && !previous) throw new ContentConflictError('There is no saved content to publish.');
+    if (kind === 'series' && next) {
+      const liveIds = new Set(catalog.publishedScenarios.map(item => item.id));
+      const missing = next.scenarioIds.filter(itemId => !liveIds.has(itemId));
+      if (missing.length) throw new ContentConflictError(
+        `Publish its puzzles first: ${missing.join(', ')}`);
+    }
+    if (contentEqual(previous, next)) return { catalog, publishedRevision: expectedPublishedRevision };
+    const updated = {
+      ...catalog,
+      [publicKey]: [
+        ...catalog[publicKey].filter(item => item.id !== id),
+        ...(next ? [clone(next)] : []),
+      ],
+      publishedRevisions: {
+        ...catalog.publishedRevisions,
+        [key]: expectedPublishedRevision + 1,
+      },
+      publishedHistory: [...(catalog.publishedHistory ?? []), {
+        kind, id, revision: expectedPublishedRevision + 1, at: new Date().toISOString(),
+        actor, before: previous ?? null, after: next ?? null,
+      }].slice(-HISTORY_LIMIT),
+    };
+    if (await casWrite(store, updated, etag)) {
+      return { catalog: updated, publishedRevision: expectedPublishedRevision + 1 };
+    }
+  }
+  throw new ContentConflictError('Concurrent publication updates exceeded retry limit.');
 }
 
 export function contentPublicView(catalog) {
