@@ -146,6 +146,17 @@
   to     = "/.netlify/functions/editor-series/:splat"
   status = 200
 
+# Admin-only versioned content history/restore and GitHub PR export.
+[[redirects]]
+  from   = "/api/editor/content-history"
+  to     = "/.netlify/functions/editor-content-history"
+  status = 200
+
+[[redirects]]
+  from   = "/api/editor/content-sync"
+  to     = "/.netlify/functions/editor-content-sync"
+  status = 200
+
 [[redirects]]
   from   = "/api/editor/publish"
   to     = "/.netlify/functions/editor-publish"
