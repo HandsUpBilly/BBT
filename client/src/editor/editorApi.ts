@@ -3,9 +3,14 @@ import type { PlayerStatistics } from '../../../shared/statistics.js';
 import type { EngagementAnalytics } from '../../../shared/analyticsStatistics.js';
 import type { AdminLoginEntry } from '../../../shared/loginTracking.js';
 
-interface EditorLoadResponse {
+export interface EditorLoadResponse {
   scenarios: Scenario[];
   series: SeriesDefinition[];
+  revisions: Record<string, number>;
+  syncConfigured?: boolean;
+  conflicts: Record<'scenarios' | 'series', Record<string, string[]>>;
+  dirty?: Record<'scenarios' | 'series', string[]>;
+  history?: Array<{ kind: string; id: string; revision: number; at: string; actor: string }>;
 }
 
 export interface AdminAccess {
@@ -163,45 +168,98 @@ export async function resetRankings(
   return parseJsonResponse<{ removed: number; summary: RankingResetSummary }>(response);
 }
 
-export async function createScenario(scenario: Scenario, idToken: string | null): Promise<Scenario> {
+const revisionHeaders = (idToken: string | null, revision: number): HeadersInit => ({
+  ...authHeaders(idToken), 'If-Match': String(revision),
+});
+
+export async function createScenario(scenario: Scenario, idToken: string | null): Promise<Scenario & { revision: number }> {
   const response = await fetch('/api/editor/scenarios', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...authHeaders(idToken) },
+    headers: { 'Content-Type': 'application/json', ...revisionHeaders(idToken, 0) },
     body: JSON.stringify(scenario),
   });
-  return parseJsonResponse<Scenario>(response);
+  return parseJsonResponse<Scenario & { revision: number }>(response);
 }
 
-export async function updateScenario(scenario: Scenario, idToken: string | null): Promise<Scenario> {
+export async function updateScenario(scenario: Scenario, idToken: string | null, revision: number): Promise<Scenario & { revision: number }> {
   const response = await fetch(`/api/editor/scenarios/${encodeURIComponent(scenario.id)}`, {
     method: 'PUT',
-    headers: { 'Content-Type': 'application/json', ...authHeaders(idToken) },
+    headers: { 'Content-Type': 'application/json', ...revisionHeaders(idToken, revision) },
     body: JSON.stringify(scenario),
   });
-  return parseJsonResponse<Scenario>(response);
+  return parseJsonResponse<Scenario & { revision: number }>(response);
 }
 
-export async function deleteScenario(scenarioId: string, idToken: string | null): Promise<EditorLoadResponse> {
+export async function deleteScenario(scenarioId: string, idToken: string | null, revision: number): Promise<EditorLoadResponse> {
   const response = await fetch(`/api/editor/scenarios/${encodeURIComponent(scenarioId)}`, {
-    method: 'DELETE',
-    headers: authHeaders(idToken),
+    method: 'DELETE', headers: revisionHeaders(idToken, revision),
   });
   return parseJsonResponse<EditorLoadResponse>(response);
 }
 
-export async function saveSeries(series: SeriesDefinition, creating: boolean, idToken: string | null): Promise<SeriesDefinition> {
+export async function saveSeries(series: SeriesDefinition, creating: boolean, idToken: string | null, revision: number): Promise<SeriesDefinition & { revision: number }> {
   const response = await fetch(creating ? '/api/editor/series' : `/api/editor/series/${encodeURIComponent(series.id)}`, {
     method: creating ? 'POST' : 'PUT',
-    headers: { 'Content-Type': 'application/json', ...authHeaders(idToken) },
+    headers: { 'Content-Type': 'application/json', ...revisionHeaders(idToken, revision) },
     body: JSON.stringify(series),
   });
-  return parseJsonResponse<SeriesDefinition>(response);
+  return parseJsonResponse<SeriesDefinition & { revision: number }>(response);
 }
 
-export async function deleteSeries(seriesId: string, idToken: string | null): Promise<SeriesDefinition[]> {
+export async function deleteSeries(seriesId: string, idToken: string | null, revision: number): Promise<EditorLoadResponse> {
   const response = await fetch(`/api/editor/series/${encodeURIComponent(seriesId)}`, {
-    method: 'DELETE',
+    method: 'DELETE', headers: revisionHeaders(idToken, revision),
+  });
+  return parseJsonResponse<EditorLoadResponse>(response);
+}
+
+export async function fetchContentSyncStatus(idToken: string | null): Promise<{
+  configured: boolean;
+  dirty: Record<'scenarios' | 'series', string[]>;
+  conflicts: Record<'scenarios' | 'series', Record<string, string[]>>;
+}> {
+  const response = await fetch('/api/editor/content-sync', { headers: authHeaders(idToken) });
+  return parseJsonResponse(response);
+}
+
+export async function openContentSyncPullRequest(idToken: string | null): Promise<{
+  synced: boolean;
+  changes: number;
+  pullRequest?: string;
+}> {
+  const response = await fetch('/api/editor/content-sync', {
+    method: 'POST', headers: authHeaders(idToken),
+  });
+  return parseJsonResponse(response);
+}
+
+export interface ContentHistoryEntry {
+  kind: 'scenarios' | 'series';
+  id: string;
+  revision: number;
+  at: string;
+  actor: string;
+  canRestore: boolean;
+}
+
+export async function fetchContentHistory(
+  kind: 'scenarios' | 'series', id: string, idToken: string | null,
+): Promise<{ revision: number; changes: ContentHistoryEntry[] }> {
+  const params = new URLSearchParams({ kind, id });
+  const response = await fetch(`/api/editor/content-history?${params}`, {
     headers: authHeaders(idToken),
   });
-  return parseJsonResponse<SeriesDefinition[]>(response);
+  return parseJsonResponse(response);
+}
+
+export async function restoreContentHistory(
+  kind: 'scenarios' | 'series', id: string, targetRevision: number,
+  expectedRevision: number, idToken: string | null,
+): Promise<{ revision: number }> {
+  const response = await fetch('/api/editor/content-history', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...authHeaders(idToken) },
+    body: JSON.stringify({ kind, id, targetRevision, expectedRevision }),
+  });
+  return parseJsonResponse(response);
 }
