@@ -193,7 +193,8 @@ export function SeriesCreator({ scenarios, series, idToken, revisions, published
         </div>
         {series.map(item => (
           <button key={item.id} type="button" className={`editor__puzzle-row${item.id === selectedId ? ' editor__puzzle-row--active' : ''}`} onClick={() => select(item.id)}>
-            <strong>{item.name}</strong><span>{item.scenarioIds.length} steps · position {(item.order ?? 0) + 1} · {item.published !== false ? 'Everyone' : item.adminEnabled ? <span className="editor__visibility-tag">Admin only</span> : 'Creator only'}</span>
+            <strong>{item.name}</strong><span>{item.scenarioIds.length} steps · position {(item.order ?? 0) + 1} · {pendingPublish.includes(item.id) ? <span className="editor__visibility-tag">Unpublished draft changes</span>
+              : item.published !== false ? 'Published' : item.adminEnabled ? <span className="editor__visibility-tag">Admin only</span> : 'Creator only'}</span>
           </button>
         ))}
       </aside>
