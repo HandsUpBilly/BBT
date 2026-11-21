@@ -115,6 +115,7 @@ export function PuzzleEditor({ onBack, onPlay, onReport, previewScenario, idToke
   const [series, setSeries] = useState<SeriesDefinition[]>([]);
   const [revisions, setRevisions] = useState<Record<string, number>>({});
   const [publishedRevisions, setPublishedRevisions] = useState<Record<string, number>>({});
+  const [supportsPublish, setSupportsPublish] = useState(false);
   const [pendingPublish, setPendingPublish] = useState<Record<'scenarios' | 'series', string[]>>({ scenarios: [], series: [] });
   const [syncConflicts, setSyncConflicts] = useState<Record<'scenarios' | 'series', Record<string, string[]>>>({ scenarios: {}, series: {} });
   const [dirtyContent, setDirtyContent] = useState<Record<'scenarios' | 'series', string[]>>({ scenarios: [], series: [] });
@@ -167,6 +168,7 @@ export function PuzzleEditor({ onBack, onPlay, onReport, previewScenario, idToke
       setSeries(Array.isArray(data.series) ? data.series : [data.series]);
       setRevisions(data.revisions ?? {});
       setPublishedRevisions(data.publishedRevisions ?? {});
+      setSupportsPublish(data.publishedRevisions !== undefined);
       setPendingPublish(data.pendingPublish ?? { scenarios: [], series: [] });
       setSyncConflicts(data.conflicts ?? { scenarios: {}, series: {} });
       setDirtyContent(data.dirty ?? { scenarios: [], series: [] });
@@ -513,7 +515,9 @@ export function PuzzleEditor({ onBack, onPlay, onReport, previewScenario, idToke
       setDraft(cloneScenario(saved));
       setSavedDraft(cloneScenario(saved));
       setOriginalId(saved.id);
-      setStatus(`Saved draft ${saved.id}. Publish the saved revision when you want players to see the change.`);
+      setStatus(supportsPublish
+        ? `Saved draft ${saved.id}. Publish the saved revision when you want players to see the change.`
+        : `Saved ${saved.id}. Local development saves directly to scenario files.`);
     } catch (error) {
       setStatus(error instanceof Error ? error.message : 'Failed to save puzzle.');
     } finally {
@@ -666,6 +670,7 @@ export function PuzzleEditor({ onBack, onPlay, onReport, previewScenario, idToke
             </div>
           </header>
           <SeriesCreator scenarios={scenarios} series={series} idToken={idToken}
+            supportsPublish={supportsPublish}
             revisions={revisions} publishedRevisions={publishedRevisions}
             pendingPublish={pendingPublish.series}
             onRevision={(id, revision) => setRevisions(current => ({ ...current, [`series/${id}`]: revision }))}
@@ -737,12 +742,14 @@ export function PuzzleEditor({ onBack, onPlay, onReport, previewScenario, idToke
             disabled={saving || validationErrors.length > 0}
             onClick={() => { void saveScenario(Boolean(originalId)); }}
           >
-            {saving ? 'Saving...' : 'Save Draft'}
+            {saving ? 'Saving...' : supportsPublish ? 'Save Draft' : 'Save Puzzle'}
           </button>
-          <button className="btn btn--primary" onClick={requestPublishScenario}
-            disabled={publishing || saving || !originalId || hasUnsavedEditorChanges || !pendingPublish.scenarios.includes(originalId)}>
-            {publishing ? 'Publishing...' : draft.published === false ? 'Unpublish Draft' : 'Publish Draft'}
-          </button>
+          {supportsPublish ? (
+            <button className="btn btn--primary" onClick={requestPublishScenario}
+              disabled={publishing || saving || !originalId || hasUnsavedEditorChanges || !pendingPublish.scenarios.includes(originalId)}>
+              {publishing ? 'Publishing...' : draft.published === false ? 'Unpublish Draft' : 'Publish Draft'}
+            </button>
+          ) : null}
         </div>
       </header>
 
