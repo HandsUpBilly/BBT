@@ -9,7 +9,8 @@ function jsonResponse(status, body) {
   });
 }
 function revisionFromRequest(req) {
-  const raw = req.headers.get('If-Match');
+  // Use an application header so HTTP conditional request handling cannot consume it.
+  const raw = req.headers.get('X-Editor-Revision') ?? req.headers.get('If-Match');
   return raw !== null && /^(0|[1-9][0-9]*)$/.test(raw) && Number.isSafeInteger(Number(raw))
     ? Number(raw) : null;
 }

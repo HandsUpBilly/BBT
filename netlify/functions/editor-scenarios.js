@@ -16,7 +16,8 @@ function scenarioIdFromPath(pathname) {
 }
 
 function requiredRevision(req) {
-  const raw = req.headers.get('If-Match');
+  // Use an application header so HTTP conditional request handling cannot consume it.
+  const raw = req.headers.get('X-Editor-Revision') ?? req.headers.get('If-Match');
   if (raw === null || !/^(0|[1-9][0-9]*)$/.test(raw)) return null;
   const revision = Number(raw);
   return Number.isSafeInteger(revision) ? revision : null;

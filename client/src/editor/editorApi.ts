@@ -171,7 +171,7 @@ export async function resetRankings(
 }
 
 const revisionHeaders = (idToken: string | null, revision: number): HeadersInit => ({
-  ...authHeaders(idToken), 'If-Match': String(revision),
+  ...authHeaders(idToken), 'X-Editor-Revision': String(revision),
 });
 
 export async function createScenario(scenario: Scenario, idToken: string | null): Promise<Scenario & { revision: number }> {
