@@ -62,7 +62,7 @@ export default async function handler(req) {
     if (saved === existing) return jsonResponse(200, existing);
     try {
       const outcome = await writeContentAssignment(store, () => readLegacy(store), {
-        scenarioId, targetSeriesId, expectedRevisions: assignment?.revisions,
+        scenarioId, targetSeriesId, expectedRevisions: request?.revisions,
       });
       if (outcome.errors.length) return jsonResponse(409, { errors: outcome.errors });
       return jsonResponse(200, {
