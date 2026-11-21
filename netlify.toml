@@ -146,6 +146,12 @@
   to     = "/.netlify/functions/editor-series/:splat"
   status = 200
 
+# Promote saved editor drafts to public puzzle/series snapshots.
+[[redirects]]
+  from   = "/api/editor/content-publish"
+  to     = "/.netlify/functions/editor-content-publish"
+  status = 200
+
 # Admin-only per-item revision history and safe rollback.
 [[redirects]]
   from   = "/api/editor/content-history"

@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { Scenario, SeriesDefinition } from '../types';
 import { PuzzleEditor } from './PuzzleEditor';
@@ -47,6 +47,9 @@ afterEach(() => {
 function renderEditor(scenarios: Scenario[] = [savedScenario], series?: SeriesDefinition[]) {
   const initialData = {
     scenarios,
+    revisions: { 'scenarios/scenario-001': 1, 'series/default': 1 },
+    publishedRevisions: { 'scenarios/scenario-001': 1, 'series/default': 1 },
+    pendingPublish: { scenarios: [], series: [] },
     series: series ?? [{
       id: 'default',
       name: 'Tutorial',
@@ -56,9 +59,13 @@ function renderEditor(scenarios: Scenario[] = [savedScenario], series?: SeriesDe
       order: 0,
     }],
   };
-  const fetchMock = vi.fn().mockImplementation((_: unknown, options?: RequestInit) => Promise.resolve({
+  const fetchMock = vi.fn().mockImplementation((url: unknown, options?: RequestInit) => Promise.resolve({
     ok: true,
-    json: async () => options?.method === 'PUT' ? JSON.parse(String(options.body)) : initialData,
+    json: async () => url === '/api/editor/content-publish'
+      ? { publishedRevision: 2, public: true }
+      : options?.method === 'PUT'
+        ? { ...JSON.parse(String(options.body)), revision: 2 }
+        : initialData,
   }));
   vi.stubGlobal('fetch', fetchMock);
   render(
@@ -97,11 +104,37 @@ describe('PuzzleEditor unsaved changes', { timeout: 15_000 }, () => {
       expect(screen.getByLabelText(`Enable ${action}`)).toHaveProperty('checked', true);
     }
     fireEvent.click(screen.getByLabelText('Enable Pass'));
-    fireEvent.click(screen.getByRole('button', { name: 'Save Puzzle' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Save Draft' }));
 
     await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/editor/scenarios/scenario-001', expect.objectContaining({ method: 'PUT' })));
     const save = fetchMock.mock.calls.find((call: unknown[]) => (call[1] as RequestInit | undefined)?.method === 'PUT');
     expect(JSON.parse(String((save?.[1] as RequestInit).body)).enabledActions).not.toContain('pass');
+  });
+
+  it('keeps a saved draft private until the author explicitly publishes it', async () => {
+    const fetchMock = renderEditor();
+    await screen.findByDisplayValue('Saved Puzzle');
+
+    fireEvent.change(screen.getByDisplayValue('The saved description.'), {
+      target: { value: 'New draft description' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Save Draft' }));
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledWith(
+      '/api/editor/scenarios/scenario-001', expect.objectContaining({ method: 'PUT' })));
+    expect(fetchMock.mock.calls.some(call => call[0] === '/api/editor/content-publish')).toBe(false);
+    const publishButton = screen.getByRole('button', { name: 'Publish Draft' });
+    await waitFor(() => expect((publishButton as HTMLButtonElement).disabled).toBe(false));
+
+    fireEvent.click(publishButton);
+    expect(screen.getByText(/Players will see the current saved draft/)).toBeTruthy();
+    fireEvent.click(within(screen.getByRole('alertdialog')).getByRole('button', { name: 'Publish Draft' }));
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledWith(
+      '/api/editor/content-publish', expect.objectContaining({ method: 'POST' })));
+    const req = fetchMock.mock.calls.find(call => call[0] === '/api/editor/content-publish');
+    expect(JSON.parse(String(req?.[1]?.body))).toMatchObject({
+      kind: 'scenarios', id: 'scenario-001', expectedRevision: 2,
+      expectedPublishedRevision: 1,
+    });
   });
 
   it('marks admin-only puzzles and series in their libraries', async () => {
@@ -186,7 +219,7 @@ describe('PuzzleEditor unsaved changes', { timeout: 15_000 }, () => {
     expect(screen.getByText(/Matchup inherited from/).textContent).toContain('New League');
 
     fireEvent.change(screen.getByLabelText('Name'), { target: { value: 'Series Matchup' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Save Puzzle' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Save Draft' }));
     await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
     const request = fetchMock.mock.calls[1][1] as RequestInit;
     expect(JSON.parse(String(request.body)).teams).toEqual(['black-orc', 'imperial-nobility']);
@@ -308,7 +341,7 @@ describe('PuzzleEditor unsaved changes', { timeout: 15_000 }, () => {
     fireEvent.click(screen.getByRole('checkbox', { name: 'Enabled for admins' }));
     fireEvent.click(screen.getByRole('checkbox', { name: 'Also enabled for Free Play' }));
 
-    fireEvent.click(screen.getByRole('button', { name: 'Save Puzzle' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Save Draft' }));
     await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/editor/scenarios/scenario-001', expect.objectContaining({ method: 'PUT' })));
     const scenarioCall = fetchMock.mock.calls.find(([url]) => url === '/api/editor/scenarios/scenario-001');
     expect(JSON.parse(String(scenarioCall?.[1]?.body))).toMatchObject({
@@ -323,7 +356,7 @@ describe('PuzzleEditor unsaved changes', { timeout: 15_000 }, () => {
     fireEvent.change(screen.getByRole('combobox', { name: 'Objective' }), {
       target: { value: 'crowd-surf' },
     });
-    fireEvent.click(screen.getByRole('button', { name: 'Save Puzzle' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Save Draft' }));
 
     await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/editor/scenarios/scenario-001', expect.objectContaining({ method: 'PUT' })));
     const scenarioCall = fetchMock.mock.calls.find(([url]) => url === '/api/editor/scenarios/scenario-001');
@@ -366,7 +399,7 @@ describe('PuzzleEditor unsaved changes', { timeout: 15_000 }, () => {
     openCreatorTool(/^Series Creator$/);
 
     expect(screen.getByText('Two Troll Trouble: Orc roster allows at most 1 Troll (currently 2)')).toBeTruthy();
-    expect((screen.getByRole('button', { name: 'Save Series' }) as HTMLButtonElement).disabled).toBe(true);
+    expect((screen.getByRole('button', { name: 'Save Draft' }) as HTMLButtonElement).disabled).toBe(true);
   });
 
   it('saves title, description, and an uploaded chooser logo in the distinct Series Creator', async () => {
@@ -388,7 +421,7 @@ describe('PuzzleEditor unsaved changes', { timeout: 15_000 }, () => {
     fireEvent.click(screen.getByRole('checkbox', { name: 'Enabled for everyone' }));
     fireEvent.click(screen.getByRole('checkbox', { name: 'Enabled for admins' }));
 
-    fireEvent.click(screen.getByRole('button', { name: 'Save Series' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Save Draft' }));
 
     await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/editor/series/default', expect.objectContaining({ method: 'PUT' })));
     const [, options] = fetchMock.mock.calls[fetchMock.mock.calls.length - 1] as [string, RequestInit];
