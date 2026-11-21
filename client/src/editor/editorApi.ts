@@ -7,6 +7,8 @@ export interface EditorLoadResponse {
   scenarios: Scenario[];
   series: SeriesDefinition[];
   revisions: Record<string, number>;
+  publishedRevisions?: Record<string, number>;
+  pendingPublish?: Record<'scenarios' | 'series', string[]>;
   syncConfigured?: boolean;
   conflicts: Record<'scenarios' | 'series', Record<string, string[]>>;
   dirty?: Record<'scenarios' | 'series', string[]>;
@@ -260,6 +262,19 @@ export async function restoreContentHistory(
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...authHeaders(idToken) },
     body: JSON.stringify({ kind, id, targetRevision, expectedRevision }),
+  });
+  return parseJsonResponse(response);
+}
+
+/** Publish only the exact saved draft revision, never unsaved browser changes. */
+export async function publishContent(
+  kind: 'scenarios' | 'series', id: string, expectedRevision: number,
+  expectedPublishedRevision: number, idToken: string | null,
+): Promise<{ publishedRevision: number; public: boolean }> {
+  const response = await fetch('/api/editor/content-publish', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...authHeaders(idToken) },
+    body: JSON.stringify({ kind, id, expectedRevision, expectedPublishedRevision }),
   });
   return parseJsonResponse(response);
 }
