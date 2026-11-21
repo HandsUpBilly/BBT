@@ -97,7 +97,7 @@ describe('PuzzleEditor unsaved changes', { timeout: 15_000 }, () => {
       expect(screen.getByLabelText(`Enable ${action}`)).toHaveProperty('checked', true);
     }
     fireEvent.click(screen.getByLabelText('Enable Pass'));
-    fireEvent.click(screen.getByRole('button', { name: 'Save Puzzle' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Save Draft' }));
 
     await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/editor/scenarios/scenario-001', expect.objectContaining({ method: 'PUT' })));
     const save = fetchMock.mock.calls.find((call: unknown[]) => (call[1] as RequestInit | undefined)?.method === 'PUT');
@@ -186,7 +186,7 @@ describe('PuzzleEditor unsaved changes', { timeout: 15_000 }, () => {
     expect(screen.getByText(/Matchup inherited from/).textContent).toContain('New League');
 
     fireEvent.change(screen.getByLabelText('Name'), { target: { value: 'Series Matchup' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Save Puzzle' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Save Draft' }));
     await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
     const request = fetchMock.mock.calls[1][1] as RequestInit;
     expect(JSON.parse(String(request.body)).teams).toEqual(['black-orc', 'imperial-nobility']);
@@ -308,7 +308,7 @@ describe('PuzzleEditor unsaved changes', { timeout: 15_000 }, () => {
     fireEvent.click(screen.getByRole('checkbox', { name: 'Enabled for admins' }));
     fireEvent.click(screen.getByRole('checkbox', { name: 'Also enabled for Free Play' }));
 
-    fireEvent.click(screen.getByRole('button', { name: 'Save Puzzle' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Save Draft' }));
     await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/editor/scenarios/scenario-001', expect.objectContaining({ method: 'PUT' })));
     const scenarioCall = fetchMock.mock.calls.find(([url]) => url === '/api/editor/scenarios/scenario-001');
     expect(JSON.parse(String(scenarioCall?.[1]?.body))).toMatchObject({
@@ -323,7 +323,7 @@ describe('PuzzleEditor unsaved changes', { timeout: 15_000 }, () => {
     fireEvent.change(screen.getByRole('combobox', { name: 'Objective' }), {
       target: { value: 'crowd-surf' },
     });
-    fireEvent.click(screen.getByRole('button', { name: 'Save Puzzle' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Save Draft' }));
 
     await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/editor/scenarios/scenario-001', expect.objectContaining({ method: 'PUT' })));
     const scenarioCall = fetchMock.mock.calls.find(([url]) => url === '/api/editor/scenarios/scenario-001');
@@ -366,7 +366,7 @@ describe('PuzzleEditor unsaved changes', { timeout: 15_000 }, () => {
     openCreatorTool(/^Series Creator$/);
 
     expect(screen.getByText('Two Troll Trouble: Orc roster allows at most 1 Troll (currently 2)')).toBeTruthy();
-    expect((screen.getByRole('button', { name: 'Save Series' }) as HTMLButtonElement).disabled).toBe(true);
+    expect((screen.getByRole('button', { name: 'Save Draft' }) as HTMLButtonElement).disabled).toBe(true);
   });
 
   it('saves title, description, and an uploaded chooser logo in the distinct Series Creator', async () => {
@@ -388,7 +388,7 @@ describe('PuzzleEditor unsaved changes', { timeout: 15_000 }, () => {
     fireEvent.click(screen.getByRole('checkbox', { name: 'Enabled for everyone' }));
     fireEvent.click(screen.getByRole('checkbox', { name: 'Enabled for admins' }));
 
-    fireEvent.click(screen.getByRole('button', { name: 'Save Series' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Save Draft' }));
 
     await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/editor/series/default', expect.objectContaining({ method: 'PUT' })));
     const [, options] = fetchMock.mock.calls[fetchMock.mock.calls.length - 1] as [string, RequestInit];
