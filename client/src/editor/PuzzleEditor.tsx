@@ -4,7 +4,7 @@ import type { PuzzleAction, Scenario, ScenarioPieceDef, SeriesDefinition, Team }
 import { ConfirmDialog } from '../ConfirmDialog';
 import { AdminStatistics } from './AdminStatistics';
 import { AdminConsole } from './AdminConsole';
-import { createScenario, deleteScenario, fetchEditorData, updateScenario, openContentSyncPullRequest, fetchContentHistory, restoreContentHistory } from './editorApi';
+import { createScenario, deleteScenario, fetchEditorData, updateScenario, publishContent, openContentSyncPullRequest, fetchContentHistory, restoreContentHistory } from './editorApi';
 import type { ContentHistoryEntry } from './editorApi';
 import { nextScenarioId, validateScenarioDraft } from './editorValidation';
 import { PLAYER_TEMPLATES, generatedPlayerName, templateToPiece } from './playerTemplates';
@@ -114,6 +114,8 @@ export function PuzzleEditor({ onBack, onPlay, onReport, previewScenario, idToke
   const [scenarios, setScenarios] = useState<Scenario[]>([]);
   const [series, setSeries] = useState<SeriesDefinition[]>([]);
   const [revisions, setRevisions] = useState<Record<string, number>>({});
+  const [publishedRevisions, setPublishedRevisions] = useState<Record<string, number>>({});
+  const [pendingPublish, setPendingPublish] = useState<Record<'scenarios' | 'series', string[]>>({ scenarios: [], series: [] });
   const [syncConflicts, setSyncConflicts] = useState<Record<'scenarios' | 'series', Record<string, string[]>>>({ scenarios: {}, series: {} });
   const [dirtyContent, setDirtyContent] = useState<Record<'scenarios' | 'series', string[]>>({ scenarios: [], series: [] });
   const [draft, setDraft] = useState<Scenario>(() => emptyScenario([]));
@@ -126,6 +128,7 @@ export function PuzzleEditor({ onBack, onPlay, onReport, previewScenario, idToke
   const [status, setStatus] = useState('Loading editor data...');
   const [saving, setSaving] = useState(false);
   const [syncing, setSyncing] = useState(false);
+  const [publishing, setPublishing] = useState(false);
   const [syncConfigured, setSyncConfigured] = useState(false);
   const [historyEntries, setHistoryEntries] = useState<ContentHistoryEntry[] | null>(null);
   const [historyBusy, setHistoryBusy] = useState(false);
@@ -163,6 +166,8 @@ export function PuzzleEditor({ onBack, onPlay, onReport, previewScenario, idToke
       setScenarios(data.scenarios);
       setSeries(Array.isArray(data.series) ? data.series : [data.series]);
       setRevisions(data.revisions ?? {});
+      setPublishedRevisions(data.publishedRevisions ?? {});
+      setPendingPublish(data.pendingPublish ?? { scenarios: [], series: [] });
       setSyncConflicts(data.conflicts ?? { scenarios: {}, series: {} });
       setDirtyContent(data.dirty ?? { scenarios: [], series: [] });
       setSyncConfigured(data.syncConfigured === true);
@@ -501,18 +506,61 @@ export function PuzzleEditor({ onBack, onPlay, onReport, previewScenario, idToke
         : await createScenario(scenarioToSave, idToken);
       setRevisions(current => ({ ...current, [`scenarios/${saved.id}`]: saved.revision }));
       setDirtyContent(current => ({ ...current, scenarios: [...new Set([...current.scenarios, saved.id])] }));
+      setPendingPublish(current => ({ ...current, scenarios: [...new Set([...current.scenarios, saved.id])] }));
       const next = scenarios.filter(scenario => scenario.id !== saved.id);
       const sorted = [...next, saved].sort((a, b) => a.id.localeCompare(b.id));
       setScenarios(sorted);
       setDraft(cloneScenario(saved));
       setSavedDraft(cloneScenario(saved));
       setOriginalId(saved.id);
-      setStatus(`Saved ${saved.id}. ${saved.published !== false ? 'Enabled for everyone.' : saved.adminEnabled ? 'Enabled for admins only.' : 'Creator only.'}`);
+      setStatus(`Saved draft ${saved.id}. Publish the saved revision when you want players to see the change.`);
     } catch (error) {
       setStatus(error instanceof Error ? error.message : 'Failed to save puzzle.');
     } finally {
       setSaving(false);
     }
+  }
+
+  async function publishSavedScenario() {
+    if (!originalId || hasUnsavedEditorChanges) {
+      setStatus('Save your draft before publishing.');
+      return;
+    }
+    setPublishing(true);
+    try {
+      const result = await publishContent(
+        'scenarios', originalId, revisions[`scenarios/${originalId}`] ?? 0,
+        publishedRevisions[`scenarios/${originalId}`] ?? 0, idToken,
+      );
+      setPublishedRevisions(current => ({
+        ...current, [`scenarios/${originalId}`]: result.publishedRevision,
+      }));
+      setPendingPublish(current => ({
+        ...current, scenarios: current.scenarios.filter(id => id !== originalId),
+      }));
+      setStatus(result.public
+        ? `Published ${originalId}. Players now see the saved revision.`
+        : `Unpublished ${originalId}. It is hidden from players.`);
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : 'Could not publish puzzle.');
+    } finally {
+      setPublishing(false);
+    }
+  }
+
+  function requestPublishScenario() {
+    if (!originalId || hasUnsavedEditorChanges) {
+      setStatus('Save your draft before publishing.');
+      return;
+    }
+    setConfirm({
+      title: draft.published === false ? 'Unpublish this puzzle?' : 'Publish the saved draft?',
+      message: draft.published === false
+        ? 'The puzzle will be hidden from public play. Past scores are retained.'
+        : 'Players will see the current saved draft. Unsaved changes are not included.',
+      confirmLabel: draft.published === false ? 'Unpublish' : 'Publish Draft',
+      run: () => { void publishSavedScenario(); },
+    });
   }
 
   function requestDelete() {
@@ -535,6 +583,8 @@ export function PuzzleEditor({ onBack, onPlay, onReport, previewScenario, idToke
     try {
       const data = await deleteScenario(originalId, idToken, revisions[`scenarios/${originalId}`] ?? 0);
       setRevisions(data.revisions);
+      setPublishedRevisions(data.publishedRevisions ?? {});
+      setPendingPublish(data.pendingPublish ?? { scenarios: [], series: [] });
       setSyncConflicts(data.conflicts);
       setScenarios(data.scenarios);
       setSeries(Array.isArray(data.series) ? data.series : [data.series]);
@@ -615,7 +665,16 @@ export function PuzzleEditor({ onBack, onPlay, onReport, previewScenario, idToke
               <button className="btn btn--secondary" onClick={onBack}>Back</button>
             </div>
           </header>
-          <SeriesCreator scenarios={scenarios} series={series} idToken={idToken} revisions={revisions} onRevision={(id, revision) => setRevisions(current => ({ ...current, [`series/${id}`]: revision }))} onChange={setSeries} onStatus={setStatus} />
+          <SeriesCreator scenarios={scenarios} series={series} idToken={idToken}
+            revisions={revisions} publishedRevisions={publishedRevisions}
+            pendingPublish={pendingPublish.series}
+            onRevision={(id, revision) => setRevisions(current => ({ ...current, [`series/${id}`]: revision }))}
+            onPublished={(id, revision) => {
+              setPublishedRevisions(current => ({ ...current, [`series/${id}`]: revision }));
+              setPendingPublish(current => ({ ...current, series: current.series.filter(item => item !== id) }));
+            }}
+            onDraftSaved={id => setPendingPublish(current => ({ ...current, series: [...new Set([...current.series, id])] }))}
+            onChange={setSeries} onStatus={setStatus} />
           {currentSyncConflict?.length ? (
         <div className="editor__status" role="alert">
           GitHub and live edits conflict on: {currentSyncConflict.join(', ')}. The live version is preserved; review before saving.
@@ -678,7 +737,11 @@ export function PuzzleEditor({ onBack, onPlay, onReport, previewScenario, idToke
             disabled={saving || validationErrors.length > 0}
             onClick={() => { void saveScenario(Boolean(originalId)); }}
           >
-            {saving ? 'Saving...' : 'Save Puzzle'}
+            {saving ? 'Saving...' : 'Save Draft'}
+          </button>
+          <button className="btn btn--primary" onClick={requestPublishScenario}
+            disabled={publishing || saving || !originalId || hasUnsavedEditorChanges || !pendingPublish.scenarios.includes(originalId)}>
+            {publishing ? 'Publishing...' : draft.published === false ? 'Unpublish Draft' : 'Publish Draft'}
           </button>
         </div>
       </header>
