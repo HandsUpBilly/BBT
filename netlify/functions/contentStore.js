@@ -51,6 +51,9 @@ function initialCatalog(legacy) {
     scenarios: clone(legacy.scenarios),
     series: clone(legacy.series),
     revisions: revisionsFor(legacy.scenarios, legacy.series),
+    publishedScenarios: clone(legacy.scenarios.filter(item => item.published !== false)),
+    publishedSeries: clone(legacy.series.filter(item => item.published !== false)),
+    publishedRevisions: revisionsFor(legacy.scenarios, legacy.series),
     conflicts: { scenarios: {}, series: {} },
     history: [],
   };
@@ -66,6 +69,23 @@ async function fetchSnapshot(store) {
   }
   if (!current.etag) throw new ContentStoreError('Content store did not provide an ETag; refusing unsafe writes');
   return { snapshot, etag: current.etag };
+}
+
+/**
+ * Upgrade existing v3 catalogues without touching legacy backups or rewriting
+ * puzzle drafts. Before this release saves were immediately public, so their
+ * effective published content is the exact current enabled view.
+ */
+function upgradePublicationSnapshot(snapshot) {
+  if (Array.isArray(snapshot.publishedScenarios)
+    && Array.isArray(snapshot.publishedSeries)
+    && snapshot.publishedRevisions) return null;
+  return {
+    ...snapshot,
+    publishedScenarios: clone(snapshot.scenarios.filter(item => item.published !== false)),
+    publishedSeries: clone(snapshot.series.filter(item => item.published !== false)),
+    publishedRevisions: { ...snapshot.revisions },
+  };
 }
 
 async function casWrite(store, snapshot, etag) {
@@ -106,6 +126,10 @@ export function reconcileToDeployment(snapshot, next = source()) {
   if (contentEqual(before, next)) return null;
   const a = reconcileCollection(before.scenarios, snapshot.scenarios, next.scenarios);
   const b = reconcileCollection(before.series, snapshot.series, next.series);
+  // Repository deployments update published content automatically, but
+  // unpublished editor drafts remain separate until explicitly promoted.
+  const publishedA = reconcileCollection(before.scenarios, snapshot.publishedScenarios, next.scenarios);
+  const publishedB = reconcileCollection(before.series, snapshot.publishedSeries, next.series);
   const revisions = { ...snapshot.revisions };
   const recordChanges = (kind, oldItems, newItems) => {
     const old = new Map(oldItems.map(item => [item.id, item]));
@@ -119,8 +143,24 @@ export function reconcileToDeployment(snapshot, next = source()) {
   };
   recordChanges('scenarios', snapshot.scenarios, a.items);
   recordChanges('series', snapshot.series, b.items);
+  const publishedRevisions = { ...snapshot.publishedRevisions };
+  const trackPublic = (kind, oldItems, updatedItems) => {
+    const oldMap = new Map(oldItems.map(item => [item.id, item]));
+    const newMap = new Map(updatedItems.map(item => [item.id, item]));
+    for (const id of new Set([...oldMap.keys(), ...newMap.keys()])) {
+      if (!contentEqual(oldMap.get(id), newMap.get(id))) {
+        const key = ref(kind, id);
+        publishedRevisions[key] = (publishedRevisions[key] ?? 0) + 1;
+      }
+    }
+  };
+  trackPublic('scenarios', snapshot.publishedScenarios, publishedA.items);
+  trackPublic('series', snapshot.publishedSeries, publishedB.items);
   return {
     ...snapshot, baseline: clone(next), scenarios: a.items, series: b.items, revisions,
+    publishedScenarios: publishedA.items.filter(item => item.published !== false),
+    publishedSeries: publishedB.items.filter(item => item.published !== false),
+    publishedRevisions,
     conflicts: {
       scenarios: retainUnresolvedConflicts(snapshot.conflicts?.scenarios, a.conflicts, a.items, next.scenarios),
       series: retainUnresolvedConflicts(snapshot.conflicts?.series, b.conflicts, b.items, next.series),
@@ -148,6 +188,14 @@ export async function readContentCatalog(store, readLegacy, { withEtag = false }
       }
       continue;
     }
+    const upgraded = upgradePublicationSnapshot(snapshot);
+    if (upgraded) {
+      if (await casWrite(store, upgraded, etag)) {
+        if (!withEtag) return upgraded;
+        continue;
+      }
+      continue;
+    }
     const reconciled = reconcileToDeployment(snapshot);
     if (!reconciled) return withEtag ? { catalog: snapshot, etag } : snapshot;
     if (await casWrite(store, reconciled, etag)) {
@@ -161,6 +209,17 @@ export async function readContentCatalog(store, readLegacy, { withEtag = false }
 export function contentVersions(catalog) {
   return {
     revisions: { ...catalog.revisions },
+    publishedRevisions: { ...catalog.publishedRevisions },
+    pendingPublish: Object.fromEntries(['scenarios', 'series'].map(kind => {
+      const pubKey = kind === 'scenarios' ? 'publishedScenarios' : 'publishedSeries';
+      const draft = new Map(catalog[kind].map(item => [item.id, item]));
+      const published = new Map(catalog[pubKey].map(item => [item.id, item]));
+      return [kind, [...new Set([...draft.keys(), ...published.keys()])]
+        .filter(id => {
+          const intended = draft.get(id)?.published !== false ? draft.get(id) : undefined;
+          return !contentEqual(intended, published.get(id));
+        })];
+    })),
     conflicts: clone(catalog.conflicts),
     dirty: Object.fromEntries(['scenarios', 'series'].map(kind => {
       const base = new Map(catalog.baseline[kind].map(item => [item.id, item]));
@@ -267,10 +326,9 @@ export async function writeContentAssignment(store, readLegacy, {
 }
 
 export function contentPublicView(catalog) {
-  const scenarios = catalog.scenarios.filter(item => item.published !== false).map(normalizeScenario);
+  const scenarios = catalog.publishedScenarios.map(normalizeScenario);
   const published = new Set(scenarios.map(item => item.id));
-  const series = normalizeSeriesCollection(catalog.series)
-    .filter(item => item.published !== false)
+  const series = normalizeSeriesCollection(catalog.publishedSeries)
     .map(item => ({ ...item, scenarioIds: item.scenarioIds.filter(id => published.has(id)) }));
   return { scenarios, series };
 }
