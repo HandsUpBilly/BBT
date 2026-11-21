@@ -4,7 +4,8 @@ import type { PuzzleAction, Scenario, ScenarioPieceDef, SeriesDefinition, Team }
 import { ConfirmDialog } from '../ConfirmDialog';
 import { AdminStatistics } from './AdminStatistics';
 import { AdminConsole } from './AdminConsole';
-import { createScenario, deleteScenario, fetchEditorData, updateScenario } from './editorApi';
+import { createScenario, deleteScenario, fetchEditorData, updateScenario, openContentSyncPullRequest, fetchContentHistory, restoreContentHistory } from './editorApi';
+import type { ContentHistoryEntry } from './editorApi';
 import { nextScenarioId, validateScenarioDraft } from './editorValidation';
 import { PLAYER_TEMPLATES, generatedPlayerName, templateToPiece } from './playerTemplates';
 import { agilityTarget, armourTarget, storedAgility, storedArmour, targetLabel } from '../playerStats';
@@ -112,6 +113,9 @@ interface Props {
 export function PuzzleEditor({ onBack, onPlay, onReport, previewScenario, idToken }: Props) {
   const [scenarios, setScenarios] = useState<Scenario[]>([]);
   const [series, setSeries] = useState<SeriesDefinition[]>([]);
+  const [revisions, setRevisions] = useState<Record<string, number>>({});
+  const [syncConflicts, setSyncConflicts] = useState<Record<'scenarios' | 'series', Record<string, string[]>>>({ scenarios: {}, series: {} });
+  const [dirtyContent, setDirtyContent] = useState<Record<'scenarios' | 'series', string[]>>({ scenarios: [], series: [] });
   const [draft, setDraft] = useState<Scenario>(() => emptyScenario([]));
   // The last-saved shape of the current draft, so we can tell whether the
   // editor holds unsaved work before discarding it.
@@ -121,6 +125,10 @@ export function PuzzleEditor({ onBack, onPlay, onReport, previewScenario, idToke
   const [ballTool, setBallTool] = useState(false);
   const [status, setStatus] = useState('Loading editor data...');
   const [saving, setSaving] = useState(false);
+  const [syncing, setSyncing] = useState(false);
+  const [syncConfigured, setSyncConfigured] = useState(false);
+  const [historyEntries, setHistoryEntries] = useState<ContentHistoryEntry[] | null>(null);
+  const [historyBusy, setHistoryBusy] = useState(false);
   const [puzzleQuery, setPuzzleQuery] = useState('');
   const [puzzleFilter, setPuzzleFilter] = useState<'all' | 'enabled' | 'disabled' | 'series'>('all');
   const [inspectorSection, setInspectorSection] = useState<InspectorSection>('roster');
@@ -130,22 +138,82 @@ export function PuzzleEditor({ onBack, onPlay, onReport, previewScenario, idToke
   } | null>(null);
   const [adminSection, setAdminSection] = useState<'editor' | 'series' | 'statistics' | 'console'>('editor');
 
+  const currentSyncConflict = originalId ? syncConflicts.scenarios[originalId] : undefined;
+  const pendingSync = dirtyContent.scenarios.length + dirtyContent.series.length;
+  const syncToGithub = useCallback(async () => {
+    setSyncing(true);
+    try {
+      const outcome = await openContentSyncPullRequest(idToken);
+      if (outcome.pullRequest) {
+        setStatus(`Opened GitHub content review for ${outcome.changes} edited items: ${outcome.pullRequest}`);
+        window.open(outcome.pullRequest, '_blank', 'noopener,noreferrer');
+      } else {
+        setStatus('Live editor and GitHub content are already in sync.');
+      }
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : 'Could not open GitHub sync PR.');
+    } finally {
+      setSyncing(false);
+    }
+  }, [idToken]);
+
   const load = useCallback(async () => {
     try {
       const data = await fetchEditorData(idToken);
       setScenarios(data.scenarios);
       setSeries(Array.isArray(data.series) ? data.series : [data.series]);
+      setRevisions(data.revisions ?? {});
+      setSyncConflicts(data.conflicts ?? { scenarios: {}, series: {} });
+      setDirtyContent(data.dirty ?? { scenarios: [], series: [] });
+      setSyncConfigured(data.syncConfigured === true);
       const first = previewScenario ?? data.scenarios[0] ?? emptyScenario([]);
       const clone = cloneScenario(first);
       setDraft(clone);
       setSavedDraft(data.scenarios.some(scenario => scenario.id === first.id) ? cloneScenario(first) : null);
       setOriginalId(data.scenarios.some(scenario => scenario.id === first.id) ? first.id : undefined);
       setSelectedPieceId(null);
-      setStatus('Loaded editor data.');
+      const count = Object.values(data.conflicts ?? {}).reduce((sum, group) => sum + Object.values(group).filter(paths => paths.length > 0).length, 0);
+      setStatus(count ? `Loaded with ${count} GitHub/editor content conflicts. Review before overwriting.` : 'Loaded editor data.');
     } catch (error) {
       setStatus(error instanceof Error ? error.message : 'Failed to load editor data.');
     }
   }, [previewScenario, idToken]);
+
+  const requestGithubSync = () => setConfirm({
+    title: 'Open a GitHub content pull request?',
+    message: 'GitHub pull requests in this public repository are visible to everyone, including unpublished puzzle drafts. Review the resulting changes before merging. This will not deploy to production.',
+    confirmLabel: 'Create Review PR',
+    run: () => { void syncToGithub(); },
+  });
+
+  const openHistory = useCallback(async () => {
+    if (!originalId) return;
+    setHistoryBusy(true);
+    try {
+      const data = await fetchContentHistory('scenarios', originalId, idToken);
+      setHistoryEntries(data.changes.slice().reverse());
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : 'Could not read history.');
+    } finally {
+      setHistoryBusy(false);
+    }
+  }, [originalId, idToken]);
+
+  const restoreHistory = async (targetRevision: number) => {
+    if (!originalId) return;
+    setHistoryBusy(true);
+    try {
+      await restoreContentHistory('scenarios', originalId, targetRevision,
+        revisions[`scenarios/${originalId}`] ?? 0, idToken);
+      setHistoryEntries(null);
+      await load();
+      setStatus(`Restored saved revision ${targetRevision} of ${originalId}.`);
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : 'Could not restore revision.');
+    } finally {
+      setHistoryBusy(false);
+    }
+  };
 
   // Deferred to a macrotask so React 19 StrictMode's double-invoked effect
   // doesn't fire two concurrent loads on mount.
@@ -429,8 +497,10 @@ export function PuzzleEditor({ onBack, onPlay, onReport, previewScenario, idToke
     setSaving(true);
     try {
       const saved = overwrite && originalId === draft.id
-        ? await updateScenario(scenarioToSave, idToken)
+        ? await updateScenario(scenarioToSave, idToken, revisions[`scenarios/${scenarioToSave.id}`] ?? 0)
         : await createScenario(scenarioToSave, idToken);
+      setRevisions(current => ({ ...current, [`scenarios/${saved.id}`]: saved.revision }));
+      setDirtyContent(current => ({ ...current, scenarios: [...new Set([...current.scenarios, saved.id])] }));
       const next = scenarios.filter(scenario => scenario.id !== saved.id);
       const sorted = [...next, saved].sort((a, b) => a.id.localeCompare(b.id));
       setScenarios(sorted);
@@ -463,7 +533,9 @@ export function PuzzleEditor({ onBack, onPlay, onReport, previewScenario, idToke
     if (!originalId) return;
     setSaving(true);
     try {
-      const data = await deleteScenario(originalId, idToken);
+      const data = await deleteScenario(originalId, idToken, revisions[`scenarios/${originalId}`] ?? 0);
+      setRevisions(data.revisions);
+      setSyncConflicts(data.conflicts);
       setScenarios(data.scenarios);
       setSeries(Array.isArray(data.series) ? data.series : [data.series]);
       const nextDraft = data.scenarios[0] ?? emptyScenario([]);
@@ -536,10 +608,42 @@ export function PuzzleEditor({ onBack, onPlay, onReport, previewScenario, idToke
         <>
           <header className="editor__header">
             <div className="editor__heading"><span className="editor__kicker">Campaign workshop</span><h1 className="editor__title">Series Creator</h1><p className="editor__subtitle">Create a series, set its identity and list position, then arrange its puzzle steps.</p></div>
-            <div className="editor__header-actions"><button className="btn btn--secondary" onClick={onBack}>Back</button></div>
+            <div className="editor__header-actions">
+              <button className="btn btn--secondary" onClick={requestGithubSync} disabled={syncing || !syncConfigured} title={syncConfigured ? 'Open a reviewable GitHub PR' : 'GitHub content sync token is not configured'}>
+                {syncing ? 'Syncing...' : 'Review Live Changes in GitHub'}
+              </button>
+              <button className="btn btn--secondary" onClick={onBack}>Back</button>
+            </div>
           </header>
-          <SeriesCreator scenarios={scenarios} series={series} idToken={idToken} onChange={setSeries} onStatus={setStatus} />
-          <div className="editor__status" role="status">{status}</div>
+          <SeriesCreator scenarios={scenarios} series={series} idToken={idToken} revisions={revisions} onRevision={(id, revision) => setRevisions(current => ({ ...current, [`series/${id}`]: revision }))} onChange={setSeries} onStatus={setStatus} />
+          {currentSyncConflict?.length ? (
+        <div className="editor__status" role="alert">
+          GitHub and live edits conflict on: {currentSyncConflict.join(', ')}. The live version is preserved; review before saving.
+        </div>
+      ) : null}
+      {historyEntries !== null ? (
+        <section className="editor__status" role="dialog" aria-modal="false" aria-label="Puzzle revision history">
+          <div><strong>Saved puzzle revisions</strong> (latest first)</div>
+          {historyEntries.length === 0 ? <p>No saved revisions yet.</p> : null}
+          {historyEntries.map(entry => (
+            <div key={entry.revision} className="editor__history-row">
+              <span>Revision {entry.revision}, {new Date(entry.at).toLocaleString()}, {entry.actor}</span>
+              <button className="btn btn--secondary" disabled={historyBusy}
+                onClick={() => setConfirm({
+                  title: `Restore revision ${entry.revision}?`,
+                  message: 'This creates another saved version. Your current puzzle will remain in history.',
+                  confirmLabel: 'Restore', run: () => { void restoreHistory(entry.revision); },
+                })}>Restore</button>
+            </div>
+          ))}
+          <button className="btn btn--secondary" onClick={() => setHistoryEntries(null)}>Close History</button>
+        </section>
+      ) : null}
+<div className="editor__status" aria-label="GitHub content sync status">
+        {!syncConfigured ? 'GitHub PR export needs GITHUB_CONTENT_SYNC_TOKEN in Netlify. ' : ''}
+        {pendingSync > 0 ? `${pendingSync} live-edited item(s) pending GitHub review.` : 'Content matches the deployed GitHub baseline.'}
+      </div>
+            <div className="editor__status" role="status">{status}</div>
         </>
       ) : (
         <>
@@ -559,6 +663,12 @@ export function PuzzleEditor({ onBack, onPlay, onReport, previewScenario, idToke
           </span>
         </div>
         <div className="editor__header-actions">
+          <button className="btn btn--secondary" onClick={() => { void openHistory(); }} disabled={historyBusy || !originalId}>
+            View History
+          </button>
+          <button className="btn btn--secondary" onClick={requestGithubSync} disabled={syncing || saving || !syncConfigured} title={syncConfigured ? 'Open a reviewable GitHub PR' : 'GitHub content sync token is not configured'}>
+            {syncing ? 'Syncing...' : 'Review Live Changes in GitHub'}
+          </button>
           <button className="btn btn--secondary" onClick={() => guardUnsaved(onBack, 'Leaving the editor')}>Back</button>
           <button className="btn btn--secondary" onClick={() => onPlay(effectiveDraft)} disabled={validationErrors.length > 0}>
             Play Draft
@@ -738,6 +848,25 @@ export function PuzzleEditor({ onBack, onPlay, onReport, previewScenario, idToke
                 </label>
               ))}
             </fieldset>
+            <section className="editor__side-missions" aria-labelledby="side-missions-title">
+              <div className="editor__side-missions-heading">
+                <div>
+                  <span className="editor__side-missions-kicker">Planned</span>
+                  <h3 id="side-missions-title">Side missions</h3>
+                </div>
+                <button type="button" className="btn btn--secondary" disabled>
+                  Add side mission
+                </button>
+              </div>
+              <p>
+                Optional criteria will award a bonus to the overall score. This is a visual placeholder only;
+                side missions are not saved or scored yet.
+              </p>
+              <div className="editor__side-mission-examples" aria-label="Future side mission examples">
+                <span>Touchdown after throwing a team-mate</span>
+                <span>Complete at least one Jump</span>
+              </div>
+            </section>
             <label className="editor__metadata-desc">
               Description
               <textarea value={draft.description} onChange={event => setMetadata('description', event.target.value)} />
