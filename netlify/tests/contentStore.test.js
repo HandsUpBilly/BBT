@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   CONTENT_KEY, catalogStorageKey, ContentConflictError, contentVersions, readContentCatalog,
-  reconcileToDeployment, writeContentItem, publishContentItem, contentPublicView,
+  reconcileToDeployment, writeContentItem, writeContentAssignment, publishContentItem, contentPublicView,
 } from '../functions/contentStore.js';
 
 function fakeStore() {
@@ -305,4 +305,27 @@ test('upgrades old v3 catalog to separate publication snapshots on first read', 
   assert.equal(upgraded.publishedScenarios.length, 2);
   assert.equal(upgraded.publishedSeries.length, 1);
   assert.equal(upgraded.publishedRevisions['scenarios/one'], 1);
+});
+
+test('legacy series assignment uses submitted revisions and mutates atomically', async () => {
+  const { store } = fakeStore();
+  await readContentCatalog(store, importLegacy);
+  const result = await writeContentAssignment(store, importLegacy, {
+    scenarioId: 'one', targetSeriesId: '', expectedRevisions: { demo: 1 },
+  });
+  assert.deepEqual(result.errors, []);
+  assert.deepEqual(result.catalog.series[0].scenarioIds, ['two']);
+  assert.equal(result.catalog.revisions['series/demo'], 2);
+  // Saving a series draft never implicitly mutates the public series version.
+  assert.deepEqual(contentPublicView(result.catalog).series[0].scenarioIds, ['one', 'two']);
+});
+
+test('legacy assignment rejects stale series revisions without losing changes', async () => {
+  const { store } = fakeStore();
+  await readContentCatalog(store, importLegacy);
+  await assert.rejects(writeContentAssignment(store, importLegacy, {
+    scenarioId: 'one', targetSeriesId: '', expectedRevisions: { demo: 0 },
+  }), ContentConflictError);
+  assert.deepEqual((await readContentCatalog(store, importLegacy)).series[0].scenarioIds,
+    ['one', 'two']);
 });

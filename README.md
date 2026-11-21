@@ -136,28 +136,44 @@ deploy finishes, confirm:
 
 ### Puzzle Editor on Netlify
 
-Admin Mode has separate **Puzzle Editor** and **Statistics** sections. The
-editor (create/edit scenarios, edit the default series) writes to **Netlify
-Blobs**, since Netlify Functions have no persistent filesystem — unlike local
-dev, where the editor writes straight to `client/src/scenarios/*.json` via
-`server/editor.js`.
+Admin Mode has separate **Puzzle Editor** and **Statistics** sections. On
+Netlify, the editor stores versioned content in the `editor-drafts` Blobs store;
+local Express development still writes directly to
+`client/src/scenarios/*.json` and `client/src/series/*.json`.
 
-Blobs holds two states:
+The production catalogue (`content-v3/catalog`) keeps **saved editor drafts**
+and **published snapshots** separately. The original legacy Blob keys remain
+untouched as migration backups. Branch deployments and deploy previews use
+isolated content keys.
 
-- **Draft** — every scenario/series save from the editor
-  (`netlify/functions/editor-scenarios.js`, `editor-series.js`) goes
-  here. Lets you stage multiple edits without affecting players.
-- **Published** — what the live game actually serves to players, via
-  the public `GET /api/scenarios` endpoint
-  (`netlify/functions/scenarios.js`), fetched at runtime by the client
-  (`client/src/scenarios/runtime.ts`). Falls back to the build-time
-  static bundle (`client/src/scenarios/*.json`,
-  `client/src/series/default.json`) if that fetch fails.
+- **Save Draft** stores an editable puzzle or series revision without changing
+  the public game. It is guarded by a per-item revision and atomic ETag checks,
+  preventing stale tabs from overwriting newer work.
+- **Publish Draft** (or **Unpublish Draft**) promotes that exact saved revision
+  into the public snapshot, with an independent published-revision check. A
+  published series can only reference published puzzles. No redeploy is needed.
+- **Delete** is intentionally destructive: after confirmation, a deleted item is
+  removed from public play and puzzle membership references are updated. Player
+  scores and profiles are not reset.
+- The public `GET /api/scenarios` and `GET /api/progress` endpoints read the
+  published snapshot, not pending editor changes. The browser can fall back
+  to the bundled scenario JSON if runtime loading fails.
 
-**Publishing**: click **Publish** in the editor toolbar. This calls
-`POST /api/editor/publish` (`netlify/functions/editor-publish.js`),
-which copies the current draft into the published Blobs keys — no
-redeploy required, and it's live for players within a page refresh.
+`POST /api/editor/content-publish` is the revision-checked publishing API.
+The legacy `POST /api/editor/publish` endpoint is a compatibility no-op for
+older cached clients; it **does not publish**. Use the editor's explicit
+Publish Draft action instead.
+
+**GitHub synchronisation**: the checked-in JSON is a versioned deployment
+baseline. New deploys reconcile GitHub updates with live edits using three-way
+field-level merges; conflicting changes remain visible and keep the live value
+until reviewed. **Review Live Changes in GitHub** shows a read-only preview and
+requires explicit selection of individual puzzle or series files, then opens a
+reviewable PR against `staging`. It never automatically merges, publishes or
+copies unrelated unpublished drafts. The server-side GitHub credential must be
+configured as `GITHUB_CONTENT_SYNC_TOKEN` in Netlify Functions. See
+`docs/agent-context/content-sync.md` and issue #376 for verification and
+deployment requirements.
 
 **Statistics**: the admin-only `GET /api/editor/statistics` endpoint reads the
 full retained puzzle and series leaderboards and returns anonymous aggregates.
@@ -170,18 +186,17 @@ or one individual puzzle. Each action is confirmed and affects leaderboard
 personal bests only—profiles, logins, analytics, drafts, and players' local
 attempt history remain intact.
 
-If you'd rather commit puzzles to the repo (e.g. to keep the static
-fallback current, or avoid depending on Blobs), fetch the published JSON
-directly and copy it into the scenario files by hand:
+For an independent backup, the public published catalogue can still be
+retrieved using:
 
 ```bash
 curl https://<your-site>.netlify.app/api/scenarios
 ```
 
-After adding or editing `client/src/scenarios/*.json`, run `npm run build`
-(or `npm run generate:seed`) so `netlify/functions/scenarioSeed.js` — the
-first-read seed for the Blobs store — is regenerated. It is a generated file;
-don't hand-edit it.
+For new repository-authored puzzles and series, edit the corresponding
+JSON in `client/src/scenarios/` and `client/src/series/`; the Netlify build
+regenerates `netlify/functions/scenarioSeed.js` via `npm run generate:seed`.
+This is generated content and must not be edited directly.
 
 **Access control**: every `/api/editor/*` route — including reads of drafts and
 statistics — checks the permanent owner, `ADMIN_EMAILS`, and the runtime Managed
