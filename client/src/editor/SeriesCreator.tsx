@@ -11,6 +11,7 @@ interface Props {
   scenarios: Scenario[];
   series: SeriesDefinition[];
   idToken: string | null;
+  supportsPublish: boolean;
   revisions: Record<string, number>;
   publishedRevisions: Record<string, number>;
   pendingPublish: string[];
@@ -35,7 +36,7 @@ function newSeries(order: number): SeriesDefinition {
   };
 }
 
-export function SeriesCreator({ scenarios, series, idToken, revisions, publishedRevisions, pendingPublish, onRevision, onPublished, onDraftSaved, onChange, onStatus }: Props) {
+export function SeriesCreator({ scenarios, series, idToken, supportsPublish, revisions, publishedRevisions, pendingPublish, onRevision, onPublished, onDraftSaved, onChange, onStatus }: Props) {
   const [selectedId, setSelectedId] = useState(series[0]?.id ?? '');
   const selected = series.find(item => item.id === selectedId);
   const [draft, setDraft] = useState<SeriesDefinition>(() => selected ?? newSeries(series.length));
@@ -95,7 +96,7 @@ export function SeriesCreator({ scenarios, series, idToken, revisions, published
       setSelectedId(saved.id);
       setDraft(structuredClone(saved));
       setCreating(false);
-      onStatus(`Saved draft ${saved.name}. Publish it when you want players to see the changes.`);
+      onStatus(supportsPublish ? `Saved draft ${saved.name}. Publish it when you want players to see the changes.` : `Saved ${saved.name}.`);
     } catch (error) {
       onStatus(error instanceof Error ? error.message : 'Failed to save series.');
     } finally {
@@ -270,12 +271,12 @@ export function SeriesCreator({ scenarios, series, idToken, revisions, published
         </section>
         <div className="series-creator__footer">
           <button className="btn btn--primary" disabled={saving || validationErrors.length > 0}
-            onClick={() => { void persist(); }}>Save Draft</button>
-          <button className="btn btn--primary"
+            onClick={() => { void persist(); }}>{supportsPublish ? 'Save Draft' : 'Save Series'}</button>
+          {supportsPublish ? <button className="btn btn--primary"
             disabled={saving || creating || hasUnsavedChanges || !pendingPublish.includes(draft.id)}
             onClick={() => setConfirmPublish(true)}>
             {draft.published === false ? 'Unpublish Draft' : 'Publish Draft'}
-          </button>
+          </button> : null}
           <button className="btn btn--ghost" disabled={saving}
             onClick={() => { void remove(); }}>Delete Series</button>
         </div>
