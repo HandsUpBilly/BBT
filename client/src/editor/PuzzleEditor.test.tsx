@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { Scenario, SeriesDefinition } from '../types';
 import { PuzzleEditor } from './PuzzleEditor';
@@ -127,7 +127,7 @@ describe('PuzzleEditor unsaved changes', { timeout: 15_000 }, () => {
 
     fireEvent.click(publishButton);
     expect(screen.getByText(/Players will see the current saved draft/)).toBeTruthy();
-    fireEvent.click(screen.getByRole('button', { name: 'Publish Draft' , hidden: false }));
+    fireEvent.click(within(screen.getByRole('alertdialog')).getByRole('button', { name: 'Publish Draft' }));
     await waitFor(() => expect(fetchMock).toHaveBeenCalledWith(
       '/api/editor/content-publish', expect.objectContaining({ method: 'POST' })));
     const req = fetchMock.mock.calls.find(call => call[0] === '/api/editor/content-publish');
