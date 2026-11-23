@@ -4,12 +4,7 @@ import {
 } from '../../shared/rankingReset.js';
 import { AdminAuthError, authErrorResponse, requireAdminGoogleUser } from './auth.js';
 import { leaderboardStore } from './blobEntries.js';
-import {
-  editorStore,
-  readDraftScenarios,
-  readDraftSeries,
-  toPublicView,
-} from './editorStore.js';
+import { editorStore, readPublishedContent } from './editorStore.js';
 import { clearRankingTarget, readRankingResetSummary } from './rankingResetStore.js';
 
 function json(status, body) {
@@ -20,12 +15,7 @@ function json(status, body) {
 }
 
 async function context() {
-  const drafts = editorStore();
-  const [savedScenarios, savedSeries] = await Promise.all([
-    readDraftScenarios(drafts),
-    readDraftSeries(drafts),
-  ]);
-  const { scenarios, series } = toPublicView(savedScenarios, savedSeries);
+  const { scenarios, series } = await readPublishedContent(editorStore());
   return {
     scenarioStore: leaderboardStore('leaderboard'),
     seriesStore: leaderboardStore('series-leaderboard'),
