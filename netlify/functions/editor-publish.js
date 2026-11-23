@@ -12,8 +12,9 @@ function jsonResponse(status, body) {
   });
 }
 
-// Compatibility endpoint for older cached clients. Saves are now live
-// immediately, so there is no separate publish operation to perform.
+// Compatibility endpoint for older cached clients that predate the
+// Save Draft/Publish Draft split (see editor-content-publish.js and
+// docs/agent-context/content-sync.md). This route itself remains a no-op.
 export default async function handler(req) {
   if (req.method !== 'POST') {
     return jsonResponse(405, { errors: ['Method not allowed'] });

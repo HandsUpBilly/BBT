@@ -11,6 +11,7 @@ task.
 | Scenario JSON, published puzzles, series order | `scenarios-and-series.md` |
 | Google login, guest identity, leaderboards, score integrity | `leaderboard-and-auth.md` |
 | Puzzle Creator, puzzle editor, local save API | `puzzle-editor.md` |
+| Puzzle editor Save Draft/Publish Draft CAS, GitHub content sync, revision history | `content-sync.md` |
 | Netlify build, redirects, production functions, headers, analytics | `netlify-deploy.md` |
 | Verification commands, tests, PR conflicts | `testing-and-pr-workflow.md` |
 

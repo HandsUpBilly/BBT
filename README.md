@@ -83,6 +83,7 @@ Set these in Netlify's UI under **Site configuration → Environment variables**
 | `NETLIFY_TOKEN` (or `NETLIFY_AUTH_TOKEN`) | Functions | Netlify Blobs auth |
 | `ADMIN_EMAILS` | Functions | Optional comma-separated deployment administrators, combined with the permanent owner and Managed Administrators for `/api/editor/*` access |
 | `GITHUB_ISSUES_TOKEN` | Functions | Fine-grained token limited to `HandsUpBilly/BBT` with **Issues: Read and write**, for player-submitted reports. Server-only — never a `VITE_` variable. |
+| `GITHUB_CONTENT_SYNC_TOKEN` | Functions | Fine-grained token limited to `HandsUpBilly/BBT` with **Contents: Read and write** and **Pull requests: Read and write**, for exporting live editor content as a GitHub PR. Server-only — never a `VITE_` variable. See `docs/agent-context/content-sync.md`. |
 | `RESEND_API_KEY` | Functions | [Resend](https://resend.com) API key used to send Contact form messages. Server-only — never a `VITE_` variable. |
 | `CONTACT_EMAIL_TO` | Functions | The real inbox a contact message is delivered to. Server-only; never appears in the client bundle. |
 | `CONTACT_EMAIL_FROM` | Functions | The verified sending address (e.g. `contact@turn-16.com`) — the domain must be verified with Resend (SPF/DKIM records added at your DNS host). |

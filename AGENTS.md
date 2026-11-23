@@ -63,6 +63,9 @@ editor accepted drafts the server then rejected).
 | `analyticsValidation.js` | `server/analytics.js`, both `/api/analytics` implementations |
 | `analyticsStatistics.js` | `server/analytics.js`, `editor-analytics.js`, client `AdminAnalytics.tsx` |
 | `blockWeights.js` | `client/src/blockBranching.ts`, `shared/scoreValidation.js` |
+| `contentReconcile.js` | `netlify/functions/contentStore.js`, `shared/contentGitSync.js` |
+| `contentGitSync.js` | `netlify/functions/editor-content-sync.js` |
+| `contentExportSelection.js` | `netlify/functions/editor-content-sync.js` |
 
 They are plain ESM `.js` with hand-written `.d.ts` siblings so TypeScript can
 consume them. **Do not fork these into a package-local copy.** Vite is
@@ -218,6 +221,7 @@ Never hand-edit `netlify/functions/scenarioSeed.js`.
 | `ADMIN_EMAILS` | `shared/googleAuth.js` | Optional comma-separated deployment administrators, unioned with the permanent owner and managed-admin list — see "Editor auth policy" below |
 | `EDITOR_ALLOW_UNAUTHENTICATED` | `shared/googleAuth.js` | Set to `false` to fail closed when no allowlist is set. Defaults **true** everywhere |
 | `GITHUB_ISSUES_TOKEN` | `shared/githubIssues.js` | Fine-grained token, `HandsUpBilly/BBT` + Issues:RW. Server-only — never a `VITE_` var |
+| `GITHUB_CONTENT_SYNC_TOKEN` | `netlify/functions/editor-content-sync.js` | Fine-grained token, `HandsUpBilly/BBT` + Contents:RW + Pull requests:RW, for exporting live editor content as a GitHub PR. Server-only — never a `VITE_` var. See `docs/agent-context/content-sync.md` |
 | `RESEND_API_KEY` | `shared/resendEmail.js` | Resend API key for the Contact form. Server-only — never a `VITE_` var |
 | `CONTACT_EMAIL_TO` | `shared/resendEmail.js` | Destination inbox for contact messages. Never shown to the client — keeps the real address out of the bundle |
 | `CONTACT_EMAIL_FROM` | `shared/resendEmail.js` | Verified sending address (e.g. `contact@turn-16.com`) — must match a domain verified with Resend |
@@ -261,6 +265,7 @@ Before broad source inspection, read the smallest matching doc in
 | Scenario JSON, published puzzles, series order | `scenarios-and-series.md` |
 | Google login, guest identity, leaderboards, score integrity | `leaderboard-and-auth.md` |
 | Admin Mode, puzzle editor, local save API | `puzzle-editor.md` |
+| Puzzle editor Save Draft/Publish Draft CAS, GitHub content sync, revision history | `content-sync.md` |
 | Netlify build, redirects, production functions | `netlify-deploy.md` |
 | Verification commands, tests, PR conflicts | `testing-and-pr-workflow.md` |
 
@@ -271,15 +276,21 @@ as outstanding work.
 ## Puzzle Editor: Saved and Player-Visible Scenarios
 
 On Netlify, the editor reads/writes scenario/series state in Netlify Blobs
-(`editor-scenarios.js`, `editor-series.js`, `editorStore.js`). Save is the live
-action; there is no separate publish step. The `published` field is retained as
-the per-item **Enabled for players** flag.
+(`editor-scenarios.js`, `editor-series.js`, `editorStore.js`), in a single
+CAS-protected `content-v3` catalog with separate draft and published
+revisions per item — see `docs/agent-context/content-sync.md`. Save Draft
+updates the draft revision only; a separate, explicit Publish Draft
+(`POST /api/editor/content-publish`) promotes it to the published snapshot
+that players see. The `published` field is retained as the per-item
+**Enabled for players** flag, evaluated against the *published* snapshot.
+Local dev (`server/editor.js`) has no publish step — saving writes straight
+to `client/src/scenarios/*.json`, which is immediately live.
 
 Players' clients fetch enabled saved state at runtime from the public
 `GET /api/scenarios` endpoint — see `client/src/scenarios/runtime.ts`. If that
 fetch fails, the app falls back to the build-time static bundle. Returning to
 the home screen refetches, and the endpoint requires cache revalidation so a
-save is not hidden behind the former one-minute cache.
+publish is not hidden behind the former one-minute cache.
 
 Scenario and series visibility has two independent authoring flags:
 `published !== false` means **Enabled for everyone**, while

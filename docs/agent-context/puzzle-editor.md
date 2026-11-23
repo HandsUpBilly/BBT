@@ -130,13 +130,20 @@ analytics, editor drafts, and browser-local attempt history untouched.
   silently. The Save panel also exposes **Discard Unsaved Changes**, which
   confirms before restoring the open puzzle to its last saved draft without a
   network request. A never-saved puzzle resets to a fresh blank draft.
-- **Save is live.** There is no second Publish step. Saving a puzzle or series
-  updates the live data immediately. `published !== false` enables it for
-  everyone; `adminEnabled: true` additionally enables it in the confirmed-admin
-  home view when it is not public. With both off it remains Creator-only.
-  Returning home refetches this
-  data, and the public endpoint requires cache revalidation so enabled changes
-  are not hidden for a minute.
+- **Save Draft and Publish Draft are separate actions on Netlify.** Save
+  Draft updates the private editor revision only; players keep seeing the
+  previously published snapshot. An explicit Publish Draft
+  (`POST /api/editor/content-publish`) promotes that revision, CAS-guarded by
+  both the draft and published revisions — see
+  `docs/agent-context/content-sync.md` for the full model. `published !==
+  false` on the *published* snapshot enables a puzzle for everyone;
+  `adminEnabled: true` additionally enables it in the confirmed-admin home
+  view when it is not public. With both off it remains Creator-only. Local
+  dev (`server/editor.js`) has no publish step — Save writes straight to
+  `client/src/scenarios/*.json`, which is immediately what both players and
+  admins see locally. Returning home refetches published data, and the
+  public endpoint requires cache revalidation so a Publish is not hidden for
+  a minute.
 - **Piece ids commit on blur**, not per keystroke — editing them live meant every
   intermediate value (including the empty string) briefly became the real id.
 
@@ -165,16 +172,29 @@ These write local JSON files under:
 - `client/src/scenarios/`
 - `client/src/series/*.json`
 
-Deleting a scenario also removes its id from every series JSON file.
+Deleting a scenario also removes its id from every series JSON file. Local
+dev has no draft/publish split — see Production Editor below for the
+Netlify-only `content-publish`/`content-sync`/`content-history` endpoints.
 
 ## Production Editor
 
-Netlify production persists saved editor data in Netlify Blobs:
+Netlify production persists saved editor data in Netlify Blobs, in a single
+CAS-protected `content-v3` catalog with per-item draft and published
+revisions — see `docs/agent-context/content-sync.md` for the full model:
 
 - `netlify/functions/editor-scenarios.js` handles scenario create/update/delete.
 - `netlify/functions/editor-series.js` handles the series collection and exclusive puzzle membership.
+- `netlify/functions/editor-content-publish.js` promotes a saved draft
+  revision to the published snapshot (`POST /api/editor/content-publish`),
+  CAS-guarded by both `expectedRevision` and `expectedPublishedRevision`.
+- `netlify/functions/editor-content-history.js` reads and restores an item's
+  bounded in-app revision history (`GET`/`POST /api/editor/content-history`).
+- `netlify/functions/editor-content-sync.js` previews and exports selected
+  live-edited items as a reviewable GitHub pull request against `staging`
+  (`GET`/`POST /api/editor/content-sync`); it requires the server-only
+  `GITHUB_CONTENT_SYNC_TOKEN` environment variable and never pushes directly.
 - `netlify/functions/editor-publish.js` remains a no-op compatibility endpoint
-  for an older cached editor UI.
+  for an older cached editor UI that predates the content-publish split.
 - `netlify/functions/editor-statistics.js` reads the full leaderboard Blobs and
   returns anonymous aggregates built by `shared/statistics.js`.
 - `netlify/functions/editor-analytics.js` reads retained game-session summaries
@@ -183,11 +203,17 @@ Netlify production persists saved editor data in Netlify Blobs:
 - `netlify/functions/editor-admins.js` stores runtime-managed administrator
   emails in a separate protected Blobs store.
 - `netlify/functions/editor-rankings.js` counts and clears retained puzzle and
-  series ranking boards; all operations are admin-gated.
-- `netlify/functions/scenarios.js` serves enabled saved scenarios/series to players.
+  series ranking boards, read from the same published snapshot players see;
+  all operations are admin-gated.
+- `netlify/functions/scenarios.js` serves enabled saved scenarios/series to
+  players from the published snapshot.
 
-Saving is immediately player-visible when the item is enabled. Deleting a
-scenario also removes it from every series in the same operation.
+Save Draft is not player-visible — it updates the draft revision only. A
+puzzle or series only reaches players once an explicit Publish Draft promotes
+that revision, and `published !== false` on the published snapshot then
+determines whether it is enabled. Deleting a puzzle removes it from the
+published snapshot immediately (old leaderboards are retained) and also
+removes it from every series in the same operation.
 
 Admin-only visibility is not implemented by sending hidden records through the
 public response. Confirmed admins fetch the protected editor collection and the
