@@ -278,7 +278,8 @@ indefinitely.
   personal-best leaderboards
 - Admin-only game engagement, completion/drop-off, Tutorial, action, and active
   play-time graphs from first-party game-session summaries
-- **Persistent live puzzle-editor saves** via Netlify Blobs; enabled flags
-  control player visibility without a separate publish step
+- **Persistent live puzzle-editor saves** via Netlify Blobs, with a separate
+  Save Draft and Publish Draft step; enabled flags on the published snapshot
+  control player visibility — see `docs/agent-context/content-sync.md`
 - Touchdown and crowd-surf puzzle objectives, and per-puzzle restriction of the
   five player-menu actions
